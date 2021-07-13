@@ -201,6 +201,7 @@ C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\assembly_sunshafts_pub
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\assembly_utils_publicized.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\assembly_valheim_publicized.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\BepInEx.dll
+C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\HarmonyXInterop.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\ModConfigEnforcer.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\Mono.Cecil.dll
@@ -268,6 +269,7 @@ C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.VehiclesMo
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.WindModule.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.ARModule.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.XRModule.dll
+C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\Deadheim.pdb
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\ModConfigEnforcer.pdb
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\Mono.Cecil.pdb
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\Mono.Cecil.Mdb.pdb
@@ -280,5 +282,3 @@ C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.csproj.Cor
 C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.pdb
-C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\Deadheim.dll
-C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\Deadheim.pdb
