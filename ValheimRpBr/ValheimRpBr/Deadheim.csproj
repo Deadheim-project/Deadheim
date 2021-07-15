@@ -34,14 +34,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="agesystem\AgeSystem.cs" />
-    <Compile Include="AntiCheat\AntiCheat.cs" />
+    <Compile Include="Craft\agesystem\AgeSystem.cs" />
+    <Compile Include="Antimods\Antimods.cs" />
     <Compile Include="AssetHelper.cs" />
     <Compile Include="Craft\Craft.cs" />
     <Compile Include="Datadog\Datadog.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="Plugin.cs" />
-    <Compile Include="portal\BetterPortal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server\ServerPatches.cs" />
     <Compile Include="StartButton.cs" />

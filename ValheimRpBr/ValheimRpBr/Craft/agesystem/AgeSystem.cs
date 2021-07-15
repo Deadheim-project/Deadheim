@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Deadheim.agesystem
 {
@@ -9,7 +10,6 @@ namespace Deadheim.agesystem
     {
         public static List<string> ageOfBronze = new List<string>()
         {
-            "portal",
             "item_chest_bronze",
             "item_legs_bronze",
             "item_helmet_bronze",
@@ -50,7 +50,7 @@ namespace Deadheim.agesystem
             "razor",
             "chitin",
             "serpentscale",
-            "battleaxe",
+            "battleaxe"
         };
 
         public static List<string> ageOfSilver = new List<string>()
@@ -60,7 +60,7 @@ namespace Deadheim.agesystem
             "huntsman",
             "piece_forge_ext4",
             "arrow_obsidian",
-            "arrow_frost",     
+            "arrow_frost",
             "item_serpentstew",
             "item_turnipstew",
             "silver",
@@ -91,7 +91,7 @@ namespace Deadheim.agesystem
               "lox",
               "blackmetal",
               "item_mace_needle",
-              "padded",
+              "padded"
         };
 
         public static List<string> Enchantments = new List<string>()
@@ -102,62 +102,22 @@ namespace Deadheim.agesystem
               " Reagent",
               "Enchanter",
               "Augmenter",
-              "Rune of",
+              "Rune of"
         };
 
         public static List<string> disabledCrafts = ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).ToList();
 
         public static bool isDisabled(string recipeName)
         {
-           bool disabled = false;
-           AgeSystem.disabledCrafts.ForEach(x =>
-           {
-               if (!recipeName.Contains(x))
-                   return;
-
-               disabled = true;
-           });
-           return disabled;
-        }
-
-        [HarmonyPatch(typeof(Player), "GetBuildPieces")]
-        private class GetBuildPieces
-        {
-            private static void Postfix(List<Piece> __instance)
+            bool disabled = false;
+            AgeSystem.disabledCrafts.ForEach(x =>
             {
-                if (__instance == null) return;
-                    
-                List<Piece> piecesToBeRemoved = new List<Piece>();
-                __instance.ForEach(p =>
-               {
-                   if (!isDisabled((string)p.m_name))
-                       return;
-                   piecesToBeRemoved.Add(p);
-               });
-                for (int index = 0; index < piecesToBeRemoved.Count; ++index)
-                {
-                    Piece piece = piecesToBeRemoved[index];
-                    __instance.Remove(piece);
-                }
-            }
-        }
+                if (!recipeName.Contains(x))
+                    return;
 
-        [HarmonyPatch(typeof(Player), "GetAvailableRecipes")]
-        private class GetAvailableRecipes
-        {
-            private static void Postfix(ref List<Recipe> available)
-            {
-                List<Recipe> recipeList = new List<Recipe>();
-                foreach (Recipe recipe in available)
-                {
-                    if (isDisabled(recipe.m_item.m_itemData.m_shared.m_name))
-                    {
-                        recipeList.Add(recipe); 
-                    }
-                }
-                foreach (Recipe recipe in recipeList)
-                    available.Remove(recipe);
-            }
-        }
+                disabled = true;
+            });
+            return disabled;
+        }       
     }
 }
