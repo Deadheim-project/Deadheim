@@ -37,12 +37,15 @@
     <Compile Include="agesystem\AgeSystem.cs" />
     <Compile Include="AntiCheat\AntiCheat.cs" />
     <Compile Include="AssetHelper.cs" />
-    <Compile Include="Discord\Discord.cs" />
+    <Compile Include="Craft\Craft.cs" />
+    <Compile Include="Datadog\Datadog.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="portal\BetterPortal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Server\ServerPatches.cs" />
     <Compile Include="StartButton.cs" />
+    <Compile Include="World\World.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="LitJson">

@@ -105,7 +105,7 @@ namespace Deadheim.agesystem
               "Rune of",
         };
 
-        public static List<string> disabledCrafts = ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).Concat(Enchantments).ToList();
+        public static List<string> disabledCrafts = ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).ToList();
 
         public static bool isDisabled(string recipeName)
         {

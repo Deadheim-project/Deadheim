@@ -222,7 +222,6 @@ C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.Localizati
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.Physics2DModule.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.PhysicsModule.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.UI.dll
-C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\LitJSON.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.UnityWebRequestWWWModule.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.UIModule.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\UnityEngine.IMGUIModule.dll
@@ -282,3 +281,4 @@ C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.csproj.Cor
 C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.dll
 C:\Users\Werner\Desktop\anticheat\BetterWards\obj\Release\BetterWards.pdb
+C:\Users\Werner\Desktop\anticheat\BetterWards\bin\Release\LitJSON.dll

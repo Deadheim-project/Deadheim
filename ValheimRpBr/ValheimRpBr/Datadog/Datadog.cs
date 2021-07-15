@@ -7,7 +7,9 @@ using System.Net;
 using UnityEngine;
 using System;
 using System.Net.NetworkInformation;
+using System.Net.Http;
 using Ping = System.Net.NetworkInformation.Ping;
+using Deadheim.Server;
 
 namespace ValheimRpBr.Discord
 {
@@ -20,10 +22,6 @@ namespace ValheimRpBr.Discord
         public class DiscordBot
         {
             public static string WebhookUrl = "https://discord.com/api/webhooks/862492469466759168/tgv79xCNVnAydXXOHB-QEW6nn6d291I2WhknGyrYCsVlqT25aORl2JE5EVQl7skerzHR";
-            public static string WebhookUrlChat = "https://discord.com/api/webhooks/862492366246379560/mhkFj0N9Rsvt_AcXqeM6HlVCLxGQ2x33I-JWIWlTqm4OWON0YVR4wAMNExxDGCLDJnUN";
-            public static string WebhookUrlPing = "https://discord.com/api/webhooks/862492594155290625/8baBXNSjQQ9UD1bYmi0IKzbVOqVgJhyGzc68vjnd1O6ww9aY_8ip6vfwlVOcuf1l4Cay";
-            public static string WebhookBetterWards = "https://discord.com/api/webhooks/862492652753780777/ViCw36VGiGdjVEPV9SOeuFx4eX2aze48HbBUZpDmJqJd55AAd5oSaWMMOn8tB9xPKrPy";
-            public static string WebhookPlayerPosition = "https://discord.com/api/webhooks/864124295663190066/79mgpNal1Va5YWWbARj28H-aarpUc0x7n0j89UihmQuXLUVQ6hsSoAr0p6097qysJcq9";
             public static bool cheatInfstam = false;
             public static bool cheatGhost = false;
             public static bool cheatNocost = false;
@@ -35,17 +33,12 @@ namespace ValheimRpBr.Discord
 
             public static void postBetterWardsMessage(string message)
             {
-                PostMessage(message, "DetailsBotLog", WebhookBetterWards);
+                ServerPatches.SendLog("-- WardLog: " + message);               
             }
 
             public static void PostMessage(string message, string username, string url)
             {
-                HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-                httpWebRequest.ContentType = "application/json";
-                httpWebRequest.Method = "POST";
-                using (StreamWriter streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
-                {
-                    Dictionary<string, string> dictionary = new Dictionary<string, string>()
+                Dictionary<string, string> dictionary = new Dictionary<string, string>()
                     {
                         {
                             "content",
@@ -53,8 +46,15 @@ namespace ValheimRpBr.Discord
                         }
                     };
 
-                    if (username != null)
-                        dictionary.Add(nameof(username), username);
+                if (username != null)
+                    dictionary.Add(nameof(username), username);
+
+                HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
+                httpWebRequest.ContentType = "application/json";
+                httpWebRequest.Method = "POST";
+                using (StreamWriter streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                {
+
 
                     streamWriter.Write(LitJson.JsonMapper.ToJson((object)dictionary));
                 }
@@ -89,7 +89,7 @@ namespace ValheimRpBr.Discord
 
                 if (reply.RoundtripTime > 250)
                 {
-                    PostMessage("**" + __instance.GetPlayerName() + "** steamId: **" + Plugin.steamId + "** is laggy **" + reply.RoundtripTime + "**ms", "DetailsBotLog", WebhookUrlPing);
+                    ServerPatches.SendLog("-- PingLog: " +  __instance.GetPlayerName() + " steamId: " + Plugin.steamId + " is laggy " + reply.RoundtripTime + "ms");
                 }
             }
 
@@ -99,7 +99,7 @@ namespace ValheimRpBr.Discord
                 if (span.Minutes < 5) return;
 
                 lastPlayerPositionExecution = DateTime.Now;
-                PostMessage("**" + __instance.GetPlayerName() + "** steamId: **" + Plugin.steamId + "** is located at: **" + __instance.transform.position + "**", "DetailsBotLog", WebhookPlayerPosition);
+                ServerPatches.SendLog("-- LocationLog: " + __instance.GetPlayerName() + " steamId: " + Plugin.steamId + " is located at: " + __instance.transform.position);
             }
 
             public static void verifyIfPlayerIsCheating(Player __instance)
@@ -165,19 +165,9 @@ namespace ValheimRpBr.Discord
             [HarmonyPatch(typeof(Chat), "OnNewChatMessage")]
             internal class OnNewChatMessage
             {
-                private static bool Prefix(GameObject go, long senderID, Vector3 pos, Talker.Type type, string user, string text)
+                private static void Prefix(GameObject go, long senderID, Vector3 pos, Talker.Type type, string user, string text)
                 {
-                    Talker.Type type1 = type;
-
-                    if ((int)type1 == 1)
-                    {
-                        PostMessage(text, "steamId: " + Plugin.steamId + " user:" + user + " LocalChat", WebhookUrlChat);
-                    }
-                    else
-                    {
-                        PostMessage(text, user + " LocalChat", WebhookUrlChat);
-                    }
-                    return true;
+                    ServerPatches.SendLog("-- Chatlog: " + text + " steamId: " + Plugin.steamId + " user:" + user + " LocalChat");
                 }
             }
         }
