@@ -57,7 +57,7 @@ namespace BetterWards.PatchClasses
                                             Chat.instance.AddString("[Better Wards] " + str);
 
                                         String discordMessage = "**" + Player.m_localPlayer.GetPlayerName() + "** steamId: **" + Plugin.steamId + "** is now permitted the ward at: **" + Player.m_localPlayer.transform.position + "** ward owner: **" + componentInParent.GetCreatorName() + "**";
-                                        Datadog.Log.postBetterWardsMessage(discordMessage);
+                                        Datadog.postBetterWardsMessage(discordMessage);
                                     }
                                 }
                                 if (!gameObjectList.Contains(componentInParent.gameObject))
@@ -68,7 +68,7 @@ namespace BetterWards.PatchClasses
                                     {
                                         Player.m_localPlayer.Message(MessageHud.MessageType.Center, string.Format("Entered {0}'s ward", (object)componentInParent.GetCreatorName(), (object)0, (object)null), 0, (Sprite)null);
                                         String discordMessage = "**" + Player.m_localPlayer.GetPlayerName() + "** steamId: **" + Plugin.steamId + "** entered the ward at: **" + Player.m_localPlayer.transform.position + "** ward owner: **" + componentInParent.GetCreatorName() + "**";
-                                        Datadog.Log.postBetterWardsMessage(discordMessage);
+                                        Datadog.postBetterWardsMessage(discordMessage);
                                     }
                                 }
 
@@ -86,7 +86,7 @@ namespace BetterWards.PatchClasses
                             
                             Player.m_localPlayer.Message(MessageHud.MessageType.Center, string.Format("{0} you have left the ward", (object)Player.m_localPlayer.GetPlayerName()), 0, (Sprite)null);
                             String discordMessage = "**" + Player.m_localPlayer.GetPlayerName() + "** steamId: **" + Plugin.steamId + "** left the ward at: **" + Player.m_localPlayer.transform.position + "**";
-                            Datadog.Log.postBetterWardsMessage(discordMessage);
+                            Datadog.postBetterWardsMessage(discordMessage);
                         }
                         WardPrivateArea.ClientInWardArea = false;
                     }

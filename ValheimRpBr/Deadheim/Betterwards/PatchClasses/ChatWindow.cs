@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Deadheim;
 
 namespace BetterWards.PatchClasses
 {
@@ -33,8 +34,10 @@ namespace BetterWards.PatchClasses
                     }
                     if (text.ToLower() == "sync")
                     {
+                        ZPackage pkg = new ZPackage();
+                        pkg.Write(Plugin.steamId);
                         ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestSync", (object)new ZPackage());
-                        ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestAdminSync", (object)new ZPackage());
+                        ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestAdminSync", pkg);
                         return;
                     }
 

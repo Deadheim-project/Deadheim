@@ -1,9 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
-using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine;
 
 namespace Deadheim
 {
@@ -15,19 +13,13 @@ namespace Deadheim
         public static string steamId = "";
         public static string age = "stone";
         public static long playerPing;
+        public static bool playerIsVip = false;
         Harmony _Harmony;
         public static ManualLogSource Log;
 
         private void Awake()
         {
-#if DEBUG
-			Log = Logger;
-#else
-            Log = new ManualLogSource(null);
-#endif
-            Logger.LogError("Inicio Awake");
             _Harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
-            Logger.LogError("Fim Awake");
         }
 
         private void OnDestroy()

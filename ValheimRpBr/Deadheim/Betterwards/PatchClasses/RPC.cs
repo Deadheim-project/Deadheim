@@ -3,6 +3,7 @@ using System;
 using UnityEngine;
 using BetterWards.Util;
 using System.Collections.Generic;
+using Deadheim;
 
 namespace BetterWards.PatchClasses
 {
@@ -24,6 +25,7 @@ namespace BetterWards.PatchClasses
                     ZRoutedRpc.instance.Register<ZPackage>("EventTestConnection", new Action<long, ZPackage>(ClientSystem.RPC_EventTestConnection));
                     ZRoutedRpc.instance.Register<ZPackage>("RequestAdminSync", new Action<long, ZPackage>(ClientSystem.RPC_RequestAdminSync));
                     ZRoutedRpc.instance.Register<ZPackage>("EventAdminSync", new Action<long, ZPackage>(ClientSystem.RPC_EventAdminSync));
+                    ZRoutedRpc.instance.Register<ZPackage>("EventVipSync", new Action<long, ZPackage>(ClientSystem.RPC_EventVipSync));
                     ZRoutedRpc.instance.Register<ZPackage>("BadRequestMsg", new Action<long, ZPackage>(ClientSystem.RPC_BadRequestMsg));
                 }
             }
@@ -37,7 +39,9 @@ namespace BetterWards.PatchClasses
             if (ZRoutedRpc.instance == null)
                 return;
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestSync", (object)new ZPackage());
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestAdminSync", (object)new ZPackage());
+            ZPackage pkg = new ZPackage();
+            pkg.Write(Plugin.steamId);
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestAdminSync", pkg);
         }
 
 
@@ -64,7 +68,9 @@ namespace BetterWards.PatchClasses
                     if (text.ToLower() == "sync")
                     {
                         ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestSync", (object)new ZPackage());
-                        ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestAdminSync", (object)new ZPackage());
+                        ZPackage pkg = new ZPackage();
+                        pkg.Write(Plugin.steamId);
+                        ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestAdminSync", pkg);
                         ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestCostConfigSync", (object)new ZPackage());
                         return;
                     }

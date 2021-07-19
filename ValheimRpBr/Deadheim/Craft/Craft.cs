@@ -26,9 +26,9 @@ namespace Deadheim.Craft
 
                     if (p.m_name.Contains("portal"))
                     {
-                        p.m_resources[0].m_amount = 150;
-                        p.m_resources[1].m_amount = 300;
-                        p.m_resources[2].m_amount = 100;
+                        p.m_resources[0].m_amount = 500;
+                        p.m_resources[1].m_amount = 75;
+                        p.m_resources[2].m_amount = 50;
                         return;
                     }
 

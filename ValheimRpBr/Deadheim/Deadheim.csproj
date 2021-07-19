@@ -49,15 +49,25 @@
     <Compile Include="Betterwards\Util\ClientSystem.cs" />
     <Compile Include="Betterwards\Util\CustomCheck.cs" />
     <Compile Include="Betterwards\Util\ServerAdminSystem.cs" />
+    <Compile Include="BossControl\BossControl.cs" />
     <Compile Include="Craft\agesystem\AgeSystem.cs" />
     <Compile Include="Antimods\Antimods.cs" />
-    <Compile Include="AssetHelper.cs" />
     <Compile Include="Craft\Craft.cs" />
+    <Compile Include="CustomSails\Plugin.cs" />
+    <Compile Include="CustomSails\ShipSailUrlSetter.cs" />
+    <Compile Include="CustomSails\Ship_Patch.cs" />
     <Compile Include="Datadog\Datadog.cs" />
+    <Compile Include="FasterBoats\FasterBoats.cs" />
+    <Compile Include="NameYourTame\Config\Config.cs" />
+    <Compile Include="NameYourTame\Config\Info.cs" />
+    <Compile Include="NameYourTame\Main\Namer.cs" />
+    <Compile Include="NameYourTame\Utils\ChangeName.cs" />
+    <Compile Include="NameYourTame\Utils\Instances.cs" />
+    <Compile Include="NameYourTame\Utils\NameReciever.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Server\ClientPatches.cs" />
-    <Compile Include="Server\ServerPatches.cs" />
+    <Compile Include="Patches\ClientPatches.cs" />
+    <Compile Include="Patches\ServerPatches.cs" />
     <Compile Include="StartButton.cs" />
     <Compile Include="World\World.cs" />
   </ItemGroup>
@@ -89,5 +99,6 @@
       <HintPath>..\..\BetterWards\Libs\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

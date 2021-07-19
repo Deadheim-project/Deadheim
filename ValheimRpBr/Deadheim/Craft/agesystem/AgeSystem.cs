@@ -21,13 +21,13 @@ namespace Deadheim.agesystem
             "item_axe_bronze",
             "item_atgeir_bronze",
             "item_knife_copper",
-            "arrow_fire",
             "item_carrotsoup",
             "Porridge",
             " jam",
             "Carrot Butter",
             "Pork Rind",
-            "Broth"
+            "Broth",
+            "item_meadbase"
         };
 
         public static List<string> ageOfIron = new List<string>()
@@ -39,10 +39,9 @@ namespace Deadheim.agesystem
             "piece_workbench_ext4",
             "piece_forge_ext3",
             "sausage",
-            "item_meadbase",
             "draugr",
             "ooze",
-            "queensjam",
+            "waqueensjam",
             "Vial",
             "Elixir",
             "Flask",

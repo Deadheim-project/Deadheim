@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using HarmonyLib;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BetterWards.Server
 {
@@ -9,7 +11,6 @@ namespace BetterWards.Server
     {
         public static void RPC_RequestSync(long sender, ZPackage pkg)
         {
-
             if (ZNet.instance.GetPeer(sender) != null)
             {
                 ZPackage zpackage1 = new ZPackage();
@@ -20,7 +21,6 @@ namespace BetterWards.Server
                 zpackage2.Write(debugEnv);
                 Debug.Log((object)"Syncing with clients...");
                 ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventTestConnection", (object)new ZPackage());
-
             }
             else
             {
@@ -45,6 +45,11 @@ namespace BetterWards.Server
                     return;
                 ZPackage zpackage = new ZPackage();
                 zpackage.Write(File.ReadAllText(Utils.GetSaveDataPath() + "/era.txt"));
+
+                string playerSteamId = pkg.ReadString();
+                List<string> vipList = File.ReadAllText(Utils.GetSaveDataPath() + "/vip.txt").Split(' ').ToList();
+                if (vipList.Contains(playerSteamId)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventVipSync", new ZPackage());
+
                 ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventAdminSync", zpackage);
             }
             else

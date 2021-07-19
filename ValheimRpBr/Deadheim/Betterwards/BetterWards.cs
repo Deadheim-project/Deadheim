@@ -67,8 +67,6 @@ namespace BetterWards
 
             Logger.LogInfo("Loading Better Wards configuration file");
             Logger.LogInfo("Starting Better Wards-Client");
-            harmony = new Harmony(HarmonyGUID);
-            harmony.PatchAll();
         }
 
         // unpatch on game close

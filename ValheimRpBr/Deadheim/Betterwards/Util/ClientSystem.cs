@@ -37,6 +37,14 @@ namespace BetterWards.Util
             BetterWardsPlugin.admin = true;
         }
 
+        public static void RPC_EventVipSync(long sender, ZPackage pkg)
+        {
+            Debug.Log((object)"This account is vip.");
+            Chat.m_instance.AddString("[Vip]", "<color=\"green\">" + "Vip permissions synced" + "</color>", Talker.Type.Normal);
+
+            Plugin.playerIsVip = true;        
+        }
+
         public static void RPC_RequestAdminSync(long sender, ZPackage pkg)
         {
         }
