@@ -27,7 +27,8 @@ namespace Deadheim.agesystem
             "Carrot Butter",
             "Pork Rind",
             "Broth",
-            "item_meadbase"
+            "item_meadbase",
+            "chitin"
         };
 
         public static List<string> ageOfIron = new List<string>()
@@ -46,8 +47,9 @@ namespace Deadheim.agesystem
             "Elixir",
             "Flask",
             "Potion",
+            "knifechitin",
             "razor",
-            "chitin",
+            "banded",
             "serpentscale",
             "battleaxe"
         };

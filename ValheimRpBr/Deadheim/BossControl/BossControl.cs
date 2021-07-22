@@ -35,7 +35,6 @@ namespace Deadheim.BossControl
 
         private void Awake()
         {
-            ConfigFile configFile = new ConfigFile(Path.Combine(Paths.ConfigPath, "bossControll_config.cfg"), true);
             Real = false;
             EikthyrInvokeDay = 30;
             EikthyrItemAmount = 20;
@@ -46,44 +45,43 @@ namespace Deadheim.BossControl
             ModerInvokeDay = 5000;
             YagluthInvokeDay = 10000;
             bossList = new List<ControlBossConfig>()
-      {
-        new ControlBossConfig()
-        {
-          NameTranslate = "Eikthyr",
-          PlaceName = "$piece_offerbowl_eikthyr",
-          Days = EikthyrInvokeDay,
-          ItemAmount = EikthyrItemAmount
-        },
-        new ControlBossConfig()
-        {
-          NameTranslate = "Ancião",
-          PlaceName = "$prop_eldersummoningbowl_name",
-          Days = ElderInvokeDay,
-          ItemAmount = ElderItemAmount
-        },
-        new ControlBossConfig()
-        {
-          NameTranslate = "Massa Óssea",
-          PlaceName = "$piece_offerbowl_bonemass",
-          Days = BoneMassInvokeDay,
-          ItemAmount = BoneMassItemAmount
-        },
-        new ControlBossConfig()
-        {
-          NameTranslate = "Moder",
-          PlaceName = "$prop_dragonsummoningbowl_name",
-          Days = ModerInvokeDay,
-          ItemAmount = 0
-        },
-        new ControlBossConfig()
-        {
-          NameTranslate = "Yagluth",
-          PlaceName = "$piece_offerbowl_yagluth",
-          Days = YagluthInvokeDay,
-          ItemAmount = 0
-        }
-      };
-            this.harmony.PatchAll();
+          {
+            new ControlBossConfig()
+            {
+              NameTranslate = "Eikthyr",
+              PlaceName = "$piece_offerbowl_eikthyr",
+              Days = EikthyrInvokeDay,
+              ItemAmount = EikthyrItemAmount
+            },
+            new ControlBossConfig()
+            {
+              NameTranslate = "Ancião",
+              PlaceName = "$prop_eldersummoningbowl_name",
+              Days = ElderInvokeDay,
+              ItemAmount = ElderItemAmount
+            },
+            new ControlBossConfig()
+            {
+              NameTranslate = "Massa Óssea",
+              PlaceName = "$piece_offerbowl_bonemass",
+              Days = BoneMassInvokeDay,
+              ItemAmount = BoneMassItemAmount
+            },
+            new ControlBossConfig()
+            {
+              NameTranslate = "Moder",
+              PlaceName = "$prop_dragonsummoningbowl_name",
+              Days = ModerInvokeDay,
+              ItemAmount = 0
+            },
+            new ControlBossConfig()
+            {
+              NameTranslate = "Yagluth",
+              PlaceName = "$piece_offerbowl_yagluth",
+              Days = YagluthInvokeDay,
+              ItemAmount = 0
+            }
+          };
         }
 
         public static bool isBossEnabled(string bossPlace, OfferingBowl __instance, Humanoid user)

@@ -3,6 +3,7 @@ using HarmonyLib;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace BetterWards.Server
 {
@@ -36,21 +37,22 @@ namespace BetterWards.Server
 
         public static void RPC_RequestAdminSync(long sender, ZPackage pkg)
         {
-
             ZNetPeer peer = ZNet.instance.GetPeer(sender);
+
             if (peer != null)
             {
                 string str = ((ZSteamSocket)peer.m_socket).GetPeerID().m_SteamID.ToString();
+                List<string> vipList = File.ReadAllText(Utils.GetSaveDataPath() + "/vip.txt").Split(' ').ToList();
+                if (!String.IsNullOrEmpty(str) && vipList.Contains(str)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventVipSync", new ZPackage());
+
+                ZPackage eraPackage = new ZPackage();
+                eraPackage.Write(File.ReadAllText(Utils.GetSaveDataPath() + "/era.txt"));
+                ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventEraSync", eraPackage);
+
                 if (ZNet.instance.m_adminList == null || !ZNet.instance.m_adminList.Contains(str))
                     return;
-                ZPackage zpackage = new ZPackage();
-                zpackage.Write(File.ReadAllText(Utils.GetSaveDataPath() + "/era.txt"));
 
-                string playerSteamId = pkg.ReadString();
-                List<string> vipList = File.ReadAllText(Utils.GetSaveDataPath() + "/vip.txt").Split(' ').ToList();
-                if (vipList.Contains(playerSteamId)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventVipSync", new ZPackage());
-
-                ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventAdminSync", zpackage);
+                ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventAdminSync", new ZPackage());
             }
             else
             {

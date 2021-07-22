@@ -26,6 +26,7 @@ namespace BetterWards.PatchClasses
                     ZRoutedRpc.instance.Register<ZPackage>("RequestAdminSync", new Action<long, ZPackage>(ClientSystem.RPC_RequestAdminSync));
                     ZRoutedRpc.instance.Register<ZPackage>("EventAdminSync", new Action<long, ZPackage>(ClientSystem.RPC_EventAdminSync));
                     ZRoutedRpc.instance.Register<ZPackage>("EventVipSync", new Action<long, ZPackage>(ClientSystem.RPC_EventVipSync));
+                    ZRoutedRpc.instance.Register<ZPackage>("EventEraSync", new Action<long, ZPackage>(ClientSystem.RPC_EventEraSync));
                     ZRoutedRpc.instance.Register<ZPackage>("BadRequestMsg", new Action<long, ZPackage>(ClientSystem.RPC_BadRequestMsg));
                 }
             }

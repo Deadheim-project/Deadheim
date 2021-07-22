@@ -71,6 +71,7 @@ namespace Deadheim.Datadog
 
         public static void SendPlayerPosition(Player __instance)
         {
+            if (!__instance.transform) return;
             TimeSpan span = DateTime.Now - lastPlayerPositionExecution;
             if (span.Minutes < 1) return;
 

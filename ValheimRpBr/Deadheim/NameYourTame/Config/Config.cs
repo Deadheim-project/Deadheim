@@ -29,11 +29,6 @@ namespace NameYourTame.Config
             EnableHasToCrouch = true;
             ChangeName = KeyCode.N;
 
-            //--
-            Debug.Log("Name Your Tame Patched!");
-            harmonyNameYourTame = new Harmony("NameYourTame.Config.GuiriGuyMods");
-            harmonyNameYourTame.PatchAll();
-
             //Logs
             if (!EnableMod)
                 Debug.LogWarning("[NameYourTame] Mod Disabled");

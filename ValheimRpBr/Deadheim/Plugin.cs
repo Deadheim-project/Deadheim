@@ -1,5 +1,4 @@
 ﻿using BepInEx;
-using BepInEx.Logging;
 using HarmonyLib;
 using System.Reflection;
 
@@ -14,17 +13,11 @@ namespace Deadheim
         public static string age = "stone";
         public static long playerPing;
         public static bool playerIsVip = false;
-        Harmony _Harmony;
-        public static ManualLogSource Log;
+        Harmony _Harmony = new Harmony("Detalhes.deadheim");
 
         private void Awake()
         {
-            _Harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
-        }
-
-        private void OnDestroy()
-        {
-            if (_Harmony != null) _Harmony.UnpatchSelf();
+            _Harmony.PatchAll();
         }
     }
 }

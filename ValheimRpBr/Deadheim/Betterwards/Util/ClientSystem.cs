@@ -33,7 +33,6 @@ namespace BetterWards.Util
         {
             Debug.Log((object)"This account is an admin.");
             Chat.m_instance.AddString("[Better Wards]", "<color=\"green\">" + "Admin permissions synced" + "</color>", Talker.Type.Normal);
-            Plugin.age = pkg.ReadString();
             BetterWardsPlugin.admin = true;
         }
 
@@ -42,7 +41,14 @@ namespace BetterWards.Util
             Debug.Log((object)"This account is vip.");
             Chat.m_instance.AddString("[Vip]", "<color=\"green\">" + "Vip permissions synced" + "</color>", Talker.Type.Normal);
 
-            Plugin.playerIsVip = true;        
+            Plugin.playerIsVip = true;
+        }
+
+        public static void RPC_EventEraSync(long sender, ZPackage pkg)
+        {
+            string age = pkg.ReadString();
+            Chat.m_instance.AddString("[Era]", "<color=\"green\">" + "Voce está na era do: " + age + "</color>", Talker.Type.Normal);
+            Plugin.age = age;
         }
 
         public static void RPC_RequestAdminSync(long sender, ZPackage pkg)

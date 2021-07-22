@@ -17,7 +17,7 @@ namespace Deadheim.Patches
             {
                 if (!__instance.IsServer())
                 {
-                    string steamId = SteamUser.GetSteamID().ToString();
+                    Plugin.steamId = SteamUser.GetSteamID().ToString();
                 }
             }
         }
@@ -36,8 +36,7 @@ namespace Deadheim.Patches
         {
             private static void Postfix(Player __instance)
             {
-                if (String.IsNullOrEmpty(__instance.GetPlayerName())) return;
-                if (String.IsNullOrEmpty(Plugin.steamId)) return;
+                if (!__instance && !String.IsNullOrEmpty(Plugin.steamId)) return;
 
                 Datadog.Datadog.SendPlayerPosition(__instance);
                 Datadog.Datadog.SendPlayerPing(__instance);
@@ -67,21 +66,6 @@ namespace Deadheim.Patches
         public static class TeleportText
         {
             private static void Postfix(string text) => Datadog.Datadog.SendLog("-- SetTextLog: " + Player.m_localPlayer.GetPlayerName() + " : teleport_text : " + text + " -- located at: " + Player.m_localPlayer.transform.position);
-        }
-
-
-        [HarmonyPatch(typeof(WearNTear), "OnPlaced")]
-        private class shipCreated
-        {
-            private static void Postfix(ref WearNTear __instance)
-            {
-                if (!__instance) return;
-                Ship component = (Ship)((Component)__instance).gameObject.GetComponent<Ship>();
-                {
-                    ((ZNetView)component.m_nview).GetZDO().Set("creatorName", Game.instance.GetPlayerProfile().GetName());
-                    Datadog.Datadog.SendLog("-- Shiplog: ship created " + component.gameObject.name + " " + Game.instance.GetPlayerProfile().GetName() + " -- located at: " + Player.m_localPlayer.transform.position);
-                }
-            }
         }
 
         [HarmonyPatch(typeof(Ship), "OnDestroyed")]

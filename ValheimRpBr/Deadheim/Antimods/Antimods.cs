@@ -129,7 +129,6 @@ namespace Deadheim.AntiCheat
             KGAntiCheat.ExcludePlugins.Add("ValheimFPSBoost.dll");
             bool Server = Paths.ProcessName.Equals("valheim_server", StringComparison.OrdinalIgnoreCase);
             KGAntiCheat.hhh = this.hhhCombine(this.hhhPLget(Server), this.hhhCFget(Server));
-            KGAntiCheat.HARM.PatchAll(Assembly.GetExecutingAssembly());
             if (Server)
                 return;
             MethodInfo methodInfo = AccessTools.Method(typeof(ZNet), "SendPeerInfo", new System.Type[2]

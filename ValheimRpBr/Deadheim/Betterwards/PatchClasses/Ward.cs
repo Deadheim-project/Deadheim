@@ -107,7 +107,7 @@ namespace BetterWards.PatchClasses
 
                         if (!BetterWardsPlugin.wardEnabled.Value) return;
 
-                        KeyCode altWardPress = BetterWardsPlugin.wardHotKey.Value;
+                        KeyCode altWardPress = BetterWardsPlugin.wardHotKey;
                         if (__instance.m_hovering)
                         {
 

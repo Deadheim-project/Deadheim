@@ -90,3 +90,4 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.pdb
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.AssemblyReference.cache

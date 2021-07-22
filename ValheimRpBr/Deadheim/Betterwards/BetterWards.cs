@@ -25,7 +25,7 @@ namespace BetterWards
         public static ManualLogSource logger;
 
         public static ConfigVariable<bool> wardEnabled;
-        public static ConfigVariable<UnityEngine.KeyCode> wardHotKey;
+        public static UnityEngine.KeyCode wardHotKey;
         public static ConfigVariable<bool> wardRangeEnabled;
         public static ConfigVariable<float> wardRange;
         public static ConfigVariable<bool> showMarker;
@@ -52,7 +52,7 @@ namespace BetterWards
 
             wardEnabled = ConfigManager.RegisterModConfigVariable(ModName, "wardEnabled", true, "General", "Enable Better Ward Configurations", false);
             showMarker = ConfigManager.RegisterModConfigVariable(ModName, "showMarker", true, "General", "Whether or not you want to show the area marker for wards", true);
-            wardHotKey = ConfigManager.RegisterModConfigVariable(ModName, "wardHotKey", UnityEngine.KeyCode.G, "General", "Personal hotkey to toggle a ward on which you're permitted on/off", true);
+            wardHotKey = UnityEngine.KeyCode.K;
             autoClose = ConfigManager.RegisterModConfigVariable(ModName, "AutoCloseDoors", true, "General", "Whether or not you want to have doors auto close inside the ward.", true);
             wardNotify = ConfigManager.RegisterModConfigVariable(ModName, "wardNotify", true, "General", "Whether or not you want to be notified when entering and leaving a ward.", true);
             adminAutoPerm = ConfigManager.RegisterModConfigVariable(ModName, "adminAutoPerm", true, "General", "Enable or disable the auto-permit on wards for admins (CLIENT SIDE)", true);
