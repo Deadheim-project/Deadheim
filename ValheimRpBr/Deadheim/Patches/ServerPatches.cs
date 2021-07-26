@@ -18,6 +18,5 @@ namespace Deadheim.Patches
                 ZRoutedRpc.instance.Register<ZPackage>("SendLog", new Action<long, ZPackage>(Datadog.Datadog.RPC_SendLog));
             }
         }
-
     }
 }

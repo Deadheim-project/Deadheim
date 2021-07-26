@@ -1,5 +1,4 @@
 ﻿using BepInEx;
-using BepInEx.Configuration;
 using HarmonyLib;
 using System.Collections.Generic;
 using System.IO;
@@ -38,12 +37,12 @@ namespace Deadheim.BossControl
             Real = false;
             EikthyrInvokeDay = 30;
             EikthyrItemAmount = 20;
-            ElderInvokeDay = 800;
+            ElderInvokeDay = 600;
             ElderItemAmount = 30;
-            BoneMassInvokeDay = 2000;
+            BoneMassInvokeDay = 1200;
             BoneMassItemAmount = 50;
-            ModerInvokeDay = 5000;
-            YagluthInvokeDay = 10000;
+            ModerInvokeDay = 1800;
+            YagluthInvokeDay = 3000;
             bossList = new List<ControlBossConfig>()
           {
             new ControlBossConfig()

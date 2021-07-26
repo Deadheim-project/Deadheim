@@ -85,6 +85,12 @@ namespace CustomSails
 
         public void SetText(string text)
         {
+            if (!Deadheim.Plugin.playerIsVip)
+            {
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem usar velas personalizadas.");
+                return;
+            }
+
             if (!PrivateArea.CheckAccess(transform.position, 0f, true))
             {
                 return;
@@ -95,10 +101,6 @@ namespace CustomSails
 
         private void ApplyTexture(string url, Texture2D obj)
         {
-            string str = "https://raw.githubusercontent.com/Deadheim-project/deadheim-images/";
-            if (!url.Contains(str))
-                return;
-
             m_nview.ClaimOwnership();
             m_nview.GetZDO().Set("SailUrl", url);
 

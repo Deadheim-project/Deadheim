@@ -50,8 +50,8 @@
     <Compile Include="Betterwards\Util\CustomCheck.cs" />
     <Compile Include="Betterwards\Util\ServerAdminSystem.cs" />
     <Compile Include="BossControl\BossControl.cs" />
-    <Compile Include="Craft\agesystem\AgeSystem.cs" />
     <Compile Include="Antimods\Antimods.cs" />
+    <Compile Include="Craft\agesystem\AgeSystem.cs" />
     <Compile Include="Craft\Craft.cs" />
     <Compile Include="CustomSails\Plugin.cs" />
     <Compile Include="CustomSails\ShipSailUrlSetter.cs" />
@@ -87,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="pdb2mdb.exe" />
+    <Content Include="ValheimPermissions.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ModConfigEnforcer">
@@ -98,7 +99,10 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\BetterWards\Libs\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="ValheimPermissions, Version=1.1.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Downloads\ValheimPermissions.dll</HintPath>
+    </Reference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

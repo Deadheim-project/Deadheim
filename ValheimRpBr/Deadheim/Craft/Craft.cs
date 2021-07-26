@@ -21,7 +21,7 @@ namespace Deadheim.Craft
             {
                 if (__result == null) return;
 
-                __result.ForEach((Action<Piece>)(p =>
+                __result.ForEach(p =>
                 {
 
                     if (p.m_name.Contains("portal"))
@@ -36,8 +36,11 @@ namespace Deadheim.Craft
                         return;
 
                     for (int index = 0; index < p.m_resources.Length; ++index)
-                        ((Piece.Requirement)p.m_resources[index]).m_amount = 9999;
-                }));
+                    {
+                        p.m_resources[index].m_amount = 9999;
+                        p.m_resources[index].m_recover = false;
+                    }
+                });
             }
         }
 
@@ -46,13 +49,12 @@ namespace Deadheim.Craft
         {
             private static void Postfix(ref List<Recipe> available)
             {
-                List<Recipe> recipeList = new List<Recipe>();
                 foreach (Recipe recipe in available)
                 {
                     if (AgeSystem.isDisabled(recipe.m_item.m_itemData.m_shared.m_name))
                     {
                         for (int index = 0; index < recipe.m_resources.Length; ++index)
-                            ((Piece.Requirement)recipe.m_resources[index]).m_amount = 9999;
+                            recipe.m_resources[index].m_amount = 9999;
                     }
                 }
             }

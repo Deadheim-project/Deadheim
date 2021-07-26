@@ -91,3 +91,6 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.pdb
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.AssemblyReference.cache
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.Zones.Properties.Resources.resources
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.GenerateResource.cache
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\ValheimPermissions.dll

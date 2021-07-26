@@ -1,8 +1,5 @@
-﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Deadheim.agesystem
 {
@@ -27,8 +24,7 @@ namespace Deadheim.agesystem
             "Carrot Butter",
             "Pork Rind",
             "Broth",
-            "item_meadbase",
-            "chitin"
+            "item_meadbase"
         };
 
         public static List<string> ageOfIron = new List<string>()
@@ -42,7 +38,6 @@ namespace Deadheim.agesystem
             "sausage",
             "draugr",
             "ooze",
-            "waqueensjam",
             "Vial",
             "Elixir",
             "Flask",
