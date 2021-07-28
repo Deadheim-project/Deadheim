@@ -183,3 +183,4 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.cspr
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.pdb
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.csproj.AssemblyReference.cache

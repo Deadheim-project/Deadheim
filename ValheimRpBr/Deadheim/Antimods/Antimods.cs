@@ -126,6 +126,10 @@ namespace Deadheim.AntiCheat
             KGAntiCheat.ExcludeConfigs.Add("RewardSystemKG.cfg");
             KGAntiCheat.ExcludeConfigs.Add("Koosemose.MountUp.cfg");
             KGAntiCheat.ExcludeConfigs.Add("org.bepinex.plugins.creaturelevelcontrol.cfg");
+            KGAntiCheat.ExcludeConfigs.Add("net.bdew.valheim.QuickConnect.cfg");
+            KGAntiCheat.ExcludeConfigs.Add("quick_connect_servers.cfg");
+            KGAntiCheat.ExcludeConfigs.Add("MK_BetterUI.cfg");
+            KGAntiCheat.ExcludeConfigs.Add("virtuacode.valheim.trashitems.cfg");
             KGAntiCheat.ExcludePlugins.Add("ValheimFPSBoost.dll");
             bool Server = Paths.ProcessName.Equals("valheim_server", StringComparison.OrdinalIgnoreCase);
             KGAntiCheat.hhh = this.hhhCombine(this.hhhPLget(Server), this.hhhCFget(Server));
