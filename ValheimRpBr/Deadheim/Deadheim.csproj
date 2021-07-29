@@ -51,12 +51,14 @@
     <Compile Include="Betterwards\Util\ServerAdminSystem.cs" />
     <Compile Include="BossControl\BossControl.cs" />
     <Compile Include="Antimods\Antimods.cs" />
+    <Compile Include="ColorfulPieces\ColorfulPieces.cs" />
     <Compile Include="Craft\agesystem\AgeSystem.cs" />
     <Compile Include="Craft\Craft.cs" />
     <Compile Include="CustomSails\Plugin.cs" />
     <Compile Include="CustomSails\ShipSailUrlSetter.cs" />
     <Compile Include="CustomSails\Ship_Patch.cs" />
     <Compile Include="Datadog\Datadog.cs" />
+    <Compile Include="DyeHard\DyeHard.cs" />
     <Compile Include="FasterBoats\FasterBoats.cs" />
     <Compile Include="NameYourTame\Config\Config.cs" />
     <Compile Include="NameYourTame\Config\Info.cs" />
@@ -87,7 +89,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="pdb2mdb.exe" />
-    <Content Include="ValheimPermissions.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ModConfigEnforcer">

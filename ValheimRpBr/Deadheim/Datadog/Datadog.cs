@@ -1,10 +1,7 @@
-﻿using BepInEx;
-using HarmonyLib;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
 using System.Net;
-using UnityEngine;
 using System;
 using System.Net.NetworkInformation;
 using Ping = System.Net.NetworkInformation.Ping;

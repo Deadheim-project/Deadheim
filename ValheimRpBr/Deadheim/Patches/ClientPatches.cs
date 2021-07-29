@@ -27,6 +27,18 @@ namespace Deadheim.Patches
         {
             private static void Prefix(string user, string text)
             {
+                if (text.Contains("/setcolor"))
+                {
+                    var colorValueFromText = text.Split(' ')[1];
+                    ColorfulPieces.ColorfulPieces.UpdateColorValue(colorValueFromText);
+                }
+
+                if (text.Contains("/sethaircolor"))
+                {
+                    var colorValueFromText = text.Split(' ')[1];
+                    DyeHard.DyeHard.UpdatePlayerHairColorValue(colorValueFromText);
+                }
+
                 Datadog.Datadog.SendLog("-- Chatlog: " + text + " steamId: " + Plugin.steamId + " user:" + user + " LocalChat");
             }
         }
@@ -85,6 +97,28 @@ namespace Deadheim.Patches
         private class shipControlled
         {
             private static void Postfix(ref ShipControlls shipControl) => Datadog.Datadog.SendLog("-- Shiplog: ship controlled " + shipControl.GetShip().gameObject.name + " creator: " + shipControl.GetShip().m_nview.GetZDO().GetString("creatorName", "") + " player: " + Game.instance.GetPlayerProfile().GetName());
+        }
+
+        [HarmonyPatch(typeof(ZNet), "GetOtherPublicPlayers")]
+        private class playpinsadmin
+        {
+            private static bool Prefix(List<ZNet.PlayerInfo> playerList, ZNet __instance)
+            {
+                if (BetterWards.BetterWardsPlugin.admin)
+                {
+                    foreach (ZNet.PlayerInfo player in __instance.m_players)
+                    {
+                        Debug.Log(player.m_name + player.m_publicPosition + player.m_position);
+
+                        Debug.Log(player.m_name + player.m_position);
+                        ZDOID characterId = (ZDOID)player.m_characterID;
+                        if (!characterId.IsNone() && !player.m_characterID.Equals(__instance.m_characterID))
+                            playerList.Add(player);
+
+                    }
+                }
+                return false;
+            }
         }
     }
 }
