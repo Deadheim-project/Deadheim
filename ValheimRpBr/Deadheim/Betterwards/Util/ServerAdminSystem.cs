@@ -43,7 +43,10 @@ namespace BetterWards.Server
             {
                 string str = ((ZSteamSocket)peer.m_socket).GetPeerID().m_SteamID.ToString();
                 List<string> vipList = File.ReadAllText(Utils.GetSaveDataPath() + "/vip.txt").Split(' ').ToList();
+                List<string> moderatorList = File.ReadAllText(Utils.GetSaveDataPath() + "/moderator.txt").Split(' ').ToList();
+
                 if (!String.IsNullOrEmpty(str) && vipList.Contains(str)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventVipSync", new ZPackage());
+                if (!String.IsNullOrEmpty(str) && moderatorList.Contains(str)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "EventModeratorSync", new ZPackage());
 
                 ZPackage eraPackage = new ZPackage();
                 eraPackage.Write(File.ReadAllText(Utils.GetSaveDataPath() + "/era.txt"));

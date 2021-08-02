@@ -51,14 +51,9 @@ namespace Deadheim.agesystem
 
         public static List<string> ageOfSilver = new List<string>()
         {
-            "stonecutter",
-            "arrow_poison",
-            "huntsman",
-            "piece_forge_ext4",
             "arrow_obsidian",
             "arrow_frost",
             "item_serpentstew",
-            "item_turnipstew",
             "silver",
             "drake",
             "wolf",

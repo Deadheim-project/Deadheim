@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Deadheim.Craft
 {
-    public class Craft
+    public class CraftPatches
     {
         [HarmonyPatch(typeof(InventoryGui), "UpdateRecipe")]
         private class FasterCrafting : BaseUnityPlugin

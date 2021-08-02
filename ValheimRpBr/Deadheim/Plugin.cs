@@ -12,6 +12,7 @@ namespace Deadheim
         public static string age = "stone";
         public static long playerPing;
         public static bool playerIsVip = false;
+        public static bool isModerator = false;
         Harmony _Harmony = new Harmony("Detalhes.deadheim");
 
         private void Awake()

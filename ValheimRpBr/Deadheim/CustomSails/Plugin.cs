@@ -16,6 +16,7 @@ namespace CustomSails
         {
             instance = this;
             keyConfig = "LeftControl";
+            Harmony.CreateAndPatchAll(typeof(Ship_Patch));
         }
 
         public bool AllowInput()

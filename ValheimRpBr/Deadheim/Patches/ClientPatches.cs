@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Deadheim.Patches
 {
@@ -27,16 +28,22 @@ namespace Deadheim.Patches
         {
             private static void Prefix(string user, string text)
             {
-                if (text.Contains("/setcolor"))
+                if (text.Contains("/setcolor") && user == Player.m_localPlayer.GetPlayerName())
                 {
                     var colorValueFromText = text.Split(' ')[1];
                     ColorfulPieces.ColorfulPieces.UpdateColorValue(colorValueFromText);
                 }
 
-                if (text.Contains("/sethaircolor"))
+                if (text.Contains("/sethaircolor") && user == Player.m_localPlayer.GetPlayerName())
                 {
                     var colorValueFromText = text.Split(' ')[1];
                     DyeHard.DyeHard.UpdatePlayerHairColorValue(colorValueFromText);
+                }
+
+                if (text.Contains("/whitelist") && user == Player.m_localPlayer.GetPlayerName() && Plugin.isModerator)
+                {
+                    var steamIdFromText = text.Split(' ')[1];
+                    RPC.SendWhitelist(steamIdFromText);
                 }
 
                 Datadog.Datadog.SendLog("-- Chatlog: " + text + " steamId: " + Plugin.steamId + " user:" + user + " LocalChat");
@@ -108,9 +115,6 @@ namespace Deadheim.Patches
                 {
                     foreach (ZNet.PlayerInfo player in __instance.m_players)
                     {
-                        Debug.Log(player.m_name + player.m_publicPosition + player.m_position);
-
-                        Debug.Log(player.m_name + player.m_position);
                         ZDOID characterId = (ZDOID)player.m_characterID;
                         if (!characterId.IsNone() && !player.m_characterID.Equals(__instance.m_characterID))
                             playerList.Add(player);
@@ -119,6 +123,22 @@ namespace Deadheim.Patches
                 }
                 return false;
             }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(FejdStartup), "Update")]
+        private static void FejdStartup__Update(GameObject ___m_startGamePanel, Button ___m_worldStart)
+        {
+            if (!___m_startGamePanel.activeInHierarchy)
+                return;
+            GameObject gameObject = GameObject.Find("Start");
+            if (gameObject != null)
+            {
+                Text componentInChildren = gameObject.GetComponentInChildren<Text>();
+                if (componentInChildren != null)
+                    componentInChildren.text = "Desativado no Deadheim";
+            }
+            ___m_worldStart.interactable = false;
         }
     }
 }

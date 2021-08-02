@@ -44,6 +44,14 @@ namespace BetterWards.Util
             Plugin.playerIsVip = true;
         }
 
+        public static void RPC_EventModeratorSync(long sender, ZPackage pkg)
+        {
+            Debug.Log((object)"This account is a moderator.");
+            Chat.m_instance.AddString("[Vip]", "<color=\"green\">" + "Moderator permissions synced" + "</color>", Talker.Type.Normal);
+
+            Plugin.isModerator = true;
+        }
+
         public static void RPC_EventEraSync(long sender, ZPackage pkg)
         {
             string age = pkg.ReadString();

@@ -90,6 +90,7 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\ValheimRpBr\bin\Release\ModConfigE
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\ValheimRpBr\obj\Release\Deadheim.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\ValheimRpBr\obj\Release\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\ValheimRpBr\obj\Release\Deadheim.pdb
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\snappy32.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\Deadheim.pdb
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\DnsClient.dll
@@ -97,7 +98,6 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\LitJSON.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\MongoDB.Bson.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\MongoDB.Driver.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\libzstd.dll
-C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\snappy32.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\snappy64.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\MongoDB.Driver.Core.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Release\mongocrypt.dll
@@ -182,3 +182,4 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.cspr
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.pdb
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Release\Deadheim.csproj.AssemblyReference.cache

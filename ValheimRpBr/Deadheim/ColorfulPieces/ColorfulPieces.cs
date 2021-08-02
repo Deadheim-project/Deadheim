@@ -66,7 +66,7 @@ namespace Deadheim.ColorfulPieces
 
         private void Awake()
         {
-            _targetPieceColor = Color.cyan;
+            _targetPieceColor = Color.black;
             _targetPieceColorHex = ColorUtility.ToHtmlStringRGB(_targetPieceColor);
             _logger = Logger;
         }
@@ -282,7 +282,7 @@ namespace Deadheim.ColorfulPieces
 
                 WearNTear wearNTear = player.m_hovering.GetComponentInParent<WearNTear>();
 
-                if (!wearNTear || !wearNTear.m_nview || !wearNTear.m_nview.IsValid())
+                if (!wearNTear || !wearNTear.m_nview || !wearNTear.m_nview.IsValid() || CustomSails.Plugin.instance.AllowInput())
                 {
                     return;
                 }
