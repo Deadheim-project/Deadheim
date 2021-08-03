@@ -95,7 +95,6 @@ namespace NameYourTame.Main
         [HarmonyPatch(typeof(EnemyHud), "UpdateHuds")]
         public static class Test
         {
-            public static int count;
             public static void Postfix(ref EnemyHud __instance)
             {
                 if (NameYourTame_Instances._player != null)

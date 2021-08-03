@@ -60,6 +60,7 @@
     <Compile Include="Datadog\Datadog.cs" />
     <Compile Include="DyeHard\DyeHard.cs" />
     <Compile Include="FasterBoats\FasterBoats.cs" />
+    <Compile Include="Hearthstone\Hearthstone.cs" />
     <Compile Include="NameYourTame\Config\Config.cs" />
     <Compile Include="NameYourTame\Config\Info.cs" />
     <Compile Include="NameYourTame\Main\Namer.cs" />
@@ -73,6 +74,9 @@
     <Compile Include="World\World.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="JotunnLib">
+      <Version>2.2.1</Version>
+    </PackageReference>
     <PackageReference Include="LitJson">
       <Version>0.17.0</Version>
     </PackageReference>

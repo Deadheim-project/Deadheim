@@ -34,6 +34,10 @@
       "frameworks": {
         "net472": {
           "dependencies": {
+            "JotunnLib": {
+              "target": "Package",
+              "version": "[2.2.1, )"
+            },
             "LitJson": {
               "target": "Package",
               "version": "[0.17.0, )"

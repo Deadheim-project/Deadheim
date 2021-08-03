@@ -15,4 +15,7 @@
   <PropertyGroup>
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
+  <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)jotunnlib\2.2.1\build\JotunnLib.props" Condition="Exists('$(NuGetPackageRoot)jotunnlib\2.2.1\build\JotunnLib.props')" />
+  </ImportGroup>
 </Project>

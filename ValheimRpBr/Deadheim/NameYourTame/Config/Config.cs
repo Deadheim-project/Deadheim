@@ -60,13 +60,6 @@ namespace NameYourTame.Config
                 }
             }
         }
-        private void OnDestroy()
-        {
-            Debug.Log("NameYourTame UnPatched!");
-            harmonyNameYourTame.UnpatchSelf();
-        }
-
-        private Harmony harmonyNameYourTame;
     }
 }
 

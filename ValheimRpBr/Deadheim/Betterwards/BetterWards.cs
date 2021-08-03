@@ -41,11 +41,6 @@ namespace BetterWards
         public static ConfigVariable<float> wardDamageReduction;        
         public static ConfigVariable<string> itemNames;
         public static ConfigVariable<bool> wardStructures;
-
-        //harmony
-        internal static Harmony harmony;
-
-
         public void Awake()
         {
             ConfigManager.RegisterMod(ModName, Config);
@@ -67,12 +62,6 @@ namespace BetterWards
 
             Logger.LogInfo("Loading Better Wards configuration file");
             Logger.LogInfo("Starting Better Wards-Client");
-        }
-
-        // unpatch on game close
-        private void OnDestroy()
-        {
-            if (harmony != null) harmony.UnpatchSelf();
         }
 
         public static AssetBundle GetAssetBundle(string filename)
