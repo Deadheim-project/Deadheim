@@ -60,7 +60,6 @@
     <Compile Include="Datadog\Datadog.cs" />
     <Compile Include="DyeHard\DyeHard.cs" />
     <Compile Include="FasterBoats\FasterBoats.cs" />
-    <Compile Include="Hearthstone\Hearthstone.cs" />
     <Compile Include="NameYourTame\Config\Config.cs" />
     <Compile Include="NameYourTame\Config\Info.cs" />
     <Compile Include="NameYourTame\Main\Namer.cs" />
