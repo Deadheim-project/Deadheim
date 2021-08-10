@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using HarmonyLib;
-using UnityEngine;
 
 namespace Deadheim
 {
@@ -10,7 +9,7 @@ namespace Deadheim
         public const string Version = "1.1";
         public const string ModName = "Deadheim";
         public static string steamId = "";
-        public static string age = "stone";
+        public static string age = "iron";
         public static long playerPing;
         public static bool playerIsVip = false;
         public static bool isModerator = false;

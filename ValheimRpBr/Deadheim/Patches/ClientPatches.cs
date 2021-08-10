@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using Deadheim.agesystem;
+using HarmonyLib;
 using Steamworks;
 using System;
 using System.Collections.Generic;
@@ -58,11 +59,9 @@ namespace Deadheim.Patches
                 if (!__instance && !String.IsNullOrEmpty(Plugin.steamId)) return;
 
                 Datadog.Datadog.SendPlayerPosition(__instance);
-                Datadog.Datadog.SendPlayerPing(__instance);
                 Datadog.Datadog.verifyIfPlayerIsCheating(__instance);
             }
         }
-
 
         [HarmonyPatch(typeof(Player), "ConsumeItem")]
         public static class ConsumeLog

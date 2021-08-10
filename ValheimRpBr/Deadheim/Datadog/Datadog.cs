@@ -3,8 +3,6 @@ using System.IO;
 using System.Diagnostics;
 using System.Net;
 using System;
-using System.Net.NetworkInformation;
-using Ping = System.Net.NetworkInformation.Ping;
 
 namespace Deadheim.Datadog
 {
@@ -17,7 +15,6 @@ namespace Deadheim.Datadog
         public static bool cheatGod = false;
         public static bool cheatFly = false;
         public static DateTime lastExecution;
-        public static DateTime lastPingExecution;
         public static DateTime lastPlayerPositionExecution;
 
         public static void postBetterWardsMessage(string message)
@@ -46,24 +43,6 @@ namespace Deadheim.Datadog
                 streamWriter.Write(LitJson.JsonMapper.ToJson((object)dictionary));
             }
             httpWebRequest.GetResponseAsync();
-        }
-
-        public static void SendPlayerPing(Player __instance)
-        {
-            TimeSpan span = DateTime.Now - lastPingExecution;
-            if (span.Minutes < 5) return;
-
-            lastPingExecution = DateTime.Now;
-
-            Ping pingSender = new Ping();
-            PingOptions options = new PingOptions();
-
-            PingReply reply = pingSender.Send("159.89.188.149");
-
-            if (reply.RoundtripTime > 250)
-            {
-                SendLog("-- PingLog: " + __instance.GetPlayerName() + " steamId: " + Plugin.steamId + " is laggy " + reply.RoundtripTime + "ms");
-            }
         }
 
         public static void SendPlayerPosition(Player __instance)

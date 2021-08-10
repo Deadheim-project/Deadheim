@@ -26,7 +26,7 @@
           "lib/net45/0Harmony.dll": {}
         }
       },
-      "JotunnLib/2.2.1": {
+      "JotunnLib/2.2.2": {
         "type": "package",
         "dependencies": {
           "HarmonyX": "2.5.1",
@@ -625,7 +625,7 @@
           "lib/net45/0Harmony.dll": {}
         }
       },
-      "JotunnLib/2.2.1": {
+      "JotunnLib/2.2.2": {
         "type": "package",
         "dependencies": {
           "HarmonyX": "2.5.1",
@@ -1140,7 +1140,7 @@
           "lib/net45/0Harmony.dll": {}
         }
       },
-      "JotunnLib/2.2.1": {
+      "JotunnLib/2.2.2": {
         "type": "package",
         "dependencies": {
           "HarmonyX": "2.5.1",
@@ -1647,7 +1647,7 @@
           "lib/net45/0Harmony.dll": {}
         }
       },
-      "JotunnLib/2.2.1": {
+      "JotunnLib/2.2.2": {
         "type": "package",
         "dependencies": {
           "HarmonyX": "2.5.1",
@@ -2172,10 +2172,10 @@
         "logo_mini.png"
       ]
     },
-    "JotunnLib/2.2.1": {
-      "sha512": "9YbaXT0/7+sflWmZCsqTBfBmxiyUreIKpKDetouURueA4SEERjnw5tqpkrF4V7Geu4uHEhreZfFUr9rOrGrjvQ==",
+    "JotunnLib/2.2.2": {
+      "sha512": "iBQoFIL8umbOXKBdxFMiVK+lGwRAPq+2kEHJbTMY49n5L8mxSSgonHWYVDo/oOcq27NjrK4oc1E9HJ8xrS7A2Q==",
       "type": "package",
-      "path": "jotunnlib/2.2.1",
+      "path": "jotunnlib/2.2.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2192,7 +2192,7 @@
         "build/MonoMod.Utils.dll",
         "build/MonoMod.exe",
         "images/JVL_Logo_128x128.png",
-        "jotunnlib.2.2.1.nupkg.sha512",
+        "jotunnlib.2.2.2.nupkg.sha512",
         "jotunnlib.nuspec",
         "lib/net462/Jotunn.dll",
         "lib/net462/Jotunn.pdb",
@@ -3085,7 +3085,7 @@
   },
   "projectFileDependencyGroups": {
     ".NETFramework,Version=v4.7.2": [
-      "JotunnLib >= 2.2.1",
+      "JotunnLib >= 2.2.2",
       "LitJson >= 0.17.0",
       "MongoDB.Driver >= 2.12.3",
       "Pfhoenix.Valheim.ModProjectReferences >= 1.0.6",
@@ -3127,7 +3127,7 @@
         "dependencies": {
           "JotunnLib": {
             "target": "Package",
-            "version": "[2.2.1, )"
+            "version": "[2.2.2, )"
           },
           "LitJson": {
             "target": "Package",

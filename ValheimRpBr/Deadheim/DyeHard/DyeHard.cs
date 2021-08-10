@@ -47,49 +47,14 @@ namespace Deadheim.DyeHard
             return colorVector;
         }
 
-        [HarmonyPatch(typeof(FejdStartup))]
-        private class FejdStartupPatch
-        {
-            [HarmonyPostfix]
-            [HarmonyPatch(nameof(FejdStartup.SetupCharacterPreview))]
-            private static void FejdStartupSetupCharacterPreviewPostfix(ref FejdStartup __instance)
-            {
-                _localPlayer = __instance.m_playerInstance.GetComponent<Player>();
-                SetPlayerZdoHairColor();
-            }
-        }
-
-        [HarmonyPatch(typeof(VisEquipment))]
-        private class VisEquipmentPatch
-        {
-            [HarmonyPrefix]
-            [HarmonyPatch(nameof(VisEquipment.SetHairColor))]
-            private static void VisEquipmentSetHairColorPrefix(ref VisEquipment __instance, ref Vector3 color)
-            {
-                if (_isModEnabled && __instance.TryGetComponent(out Player player) && player == _localPlayer)
-                {
-                    color = GetPlayerHairColorVector();
-                }
-            }
-        }
-
         [HarmonyPatch(typeof(Player))]
         private class PlayerPatch
         {
-            [HarmonyPostfix]
-            [HarmonyPatch(nameof(Player.SetLocalPlayer))]
-            private static void PlayerSetLocalPlayerPostfix(ref Player __instance)
-            {
-                _localPlayer = __instance;
-                SetPlayerZdoHairColor();
-            }
-
             [HarmonyPostfix]
             [HarmonyPatch(nameof(Player.OnSpawned))]
             private static void PlayerOnSpawnedPostfix(ref Player __instance)
             {
                 _localPlayer = __instance;
-                SetPlayerZdoHairColor();
             }
         }
 

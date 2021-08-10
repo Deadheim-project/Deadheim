@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "WuxjCHXEYU8K1stgVbr2+EWd1XKylBVZaje39mFXwclLCE4bFU+1kfrKzesXQdPkLliaVg/1p1uLura3P8aD2Q==",
+  "dgSpecHash": "dDol75f0KzUrX1F3VMpx28Wg5tUnB0dlPoy16ZbVwyCJbjNx6tFFw4kHOz2ar36u1YTHD2SyVVovv2jQbF9lIQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\Werner\\Desktop\\anticheat\\ValheimRpBr\\Deadheim\\Deadheim.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Werner\\.nuget\\packages\\dnsclient\\1.4.0\\dnsclient.1.4.0.nupkg.sha512",
     "C:\\Users\\Werner\\.nuget\\packages\\harmonyx\\2.5.1\\harmonyx.2.5.1.nupkg.sha512",
-    "C:\\Users\\Werner\\.nuget\\packages\\jotunnlib\\2.2.1\\jotunnlib.2.2.1.nupkg.sha512",
+    "C:\\Users\\Werner\\.nuget\\packages\\jotunnlib\\2.2.2\\jotunnlib.2.2.2.nupkg.sha512",
     "C:\\Users\\Werner\\.nuget\\packages\\litjson\\0.17.0\\litjson.0.17.0.nupkg.sha512",
     "C:\\Users\\Werner\\.nuget\\packages\\mongodb.bson\\2.12.3\\mongodb.bson.2.12.3.nupkg.sha512",
     "C:\\Users\\Werner\\.nuget\\packages\\mongodb.driver\\2.12.3\\mongodb.driver.2.12.3.nupkg.sha512",

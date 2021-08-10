@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Deadheim.agesystem
 {
@@ -24,7 +26,8 @@ namespace Deadheim.agesystem
             "Carrot Butter",
             "Pork Rind",
             "Broth",
-            "item_meadbase"
+            "item_meadbase",
+            "T2"
         };
 
         public static List<string> ageOfIron = new List<string>()
@@ -46,7 +49,8 @@ namespace Deadheim.agesystem
             "razor",
             "banded",
             "serpentscale",
-            "battleaxe"
+            "battleaxe",
+            "T3"
         };
 
         public static List<string> ageOfSilver = new List<string>()
@@ -61,7 +65,8 @@ namespace Deadheim.agesystem
             "item_spear_ancientbark",
             "Kebab",
             "Smoked Fish",
-            "Pancakes"
+            "Pancakes",
+            "T4"
         };
 
         public static List<string> ageOfLinen = new List<string>()
@@ -82,7 +87,8 @@ namespace Deadheim.agesystem
               "lox",
               "blackmetal",
               "item_mace_needle",
-              "padded"
+              "padded",
+              "T5"
         };
 
         public static List<string> Enchantments = new List<string>()
@@ -96,27 +102,61 @@ namespace Deadheim.agesystem
               "Rune of"
         };
 
-        public static List<string> GetDisabledCrafts() {
+        public static List<string> GetDisabledCrafts()
+        {
             if (Plugin.age == "bronze") return ageOfIron.Concat(ageOfSilver).Concat(ageOfLinen).ToList();
             if (Plugin.age == "iron") return ageOfSilver.Concat(ageOfLinen).ToList();
             if (Plugin.age == "silver") return ageOfLinen.ToList();
-            if (Plugin.age == "linen") return new List<string> ();
+            if (Plugin.age == "linen") return new List<string>();
 
-            return ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).ToList();            
+            return ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).ToList();
         }
 
-        
-        public static bool isDisabled(string recipeName)
+        public static bool IsDisabled(string recipeName)
         {
-            bool disabled = false;
-            GetDisabledCrafts().ForEach(x =>
+            List<string> disabledCrafts = GetDisabledCrafts();
+            foreach (string craft in disabledCrafts)
             {
-                if (!recipeName.Contains(x))
-                    return;
+                if (recipeName.ToLower().Contains(craft.ToLower())) return true;
+            }
 
-                disabled = true;
-            });
-            return disabled;
-        }       
+            return false;
+        }
+
+        public static void RemoveDisabledRecipes()
+        {
+            var recipesToRemove = new List<Recipe>();
+            var recipes = ObjectDB.instance.m_recipes;
+
+            if (!recipes.Any()) return;
+
+            foreach (Recipe recipe in recipes)
+            {
+                if (IsDisabled(recipe.name)) recipesToRemove.Add(recipe);
+            }
+
+            foreach (Recipe recipe in recipesToRemove)
+            {
+                recipes.Remove(recipe);
+            }
+        }
+
+        public static void RemoveDisabledItems()
+        {
+            if (ObjectDB.instance.m_items.Count == 0 || ObjectDB.instance.GetItemPrefab("Amber") == null) return;
+
+            var itemToRemove = new List<GameObject>();
+            var items = ObjectDB.instance.m_items;
+
+            foreach (GameObject item in items)
+            {
+                if (IsDisabled(item.name)) itemToRemove.Add(item);
+            }
+
+            foreach (GameObject item in itemToRemove)
+            {
+                items.Remove(item);
+            }
+        }
     }
 }
