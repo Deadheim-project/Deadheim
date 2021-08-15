@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -66,6 +67,7 @@ namespace Deadheim.agesystem
             "Kebab",
             "Smoked Fish",
             "Pancakes",
+            "draugr",
             "T4"
         };
 
@@ -76,6 +78,7 @@ namespace Deadheim.agesystem
               "windmill",
               "spinning",
               "arrow_needle",
+              "needle",
               "lox",
               "item_loxpie",
               "item_fishwraps",
@@ -123,39 +126,59 @@ namespace Deadheim.agesystem
             return false;
         }
 
+        public static void RemoveDisabledItems()
+        {
+            if (ObjectDB.instance.m_items.Count == 0 || ObjectDB.instance.GetItemPrefab("Amber") == null) return;
+
+            var items = ObjectDB.instance.m_items;
+
+            foreach (GameObject item in items)
+            {
+                if (IsDisabled(item.name))
+                {
+                    Piece piece = item.GetComponent<Piece>();
+
+                    if (piece)
+                    {
+                        foreach (Piece.Requirement requirement in piece.m_resources.ToList())
+                        {
+                            requirement.m_amount = 9999;
+                            requirement.m_recover = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        public static void AddPortal()
+        {
+            foreach (GameObject gameObject in Resources.FindObjectsOfTypeAll(typeof(GameObject)))
+            {
+                if (gameObject.name == "portal_wood")
+                {
+                    gameObject.GetComponent<Piece>().m_resources[0].m_amount = 500;
+                    gameObject.GetComponent<Piece>().m_resources[1].m_amount = 75;
+                    gameObject.GetComponent<Piece>().m_resources[2].m_amount = 50;
+                }
+            }
+        }
+
         public static void RemoveDisabledRecipes()
         {
-            var recipesToRemove = new List<Recipe>();
             var recipes = ObjectDB.instance.m_recipes;
 
             if (!recipes.Any()) return;
 
             foreach (Recipe recipe in recipes)
             {
-                if (IsDisabled(recipe.name)) recipesToRemove.Add(recipe);
-            }
-
-            foreach (Recipe recipe in recipesToRemove)
-            {
-                recipes.Remove(recipe);
-            }
-        }
-
-        public static void RemoveDisabledItems()
-        {
-            if (ObjectDB.instance.m_items.Count == 0 || ObjectDB.instance.GetItemPrefab("Amber") == null) return;
-
-            var itemToRemove = new List<GameObject>();
-            var items = ObjectDB.instance.m_items;
-
-            foreach (GameObject item in items)
-            {
-                if (IsDisabled(item.name)) itemToRemove.Add(item);
-            }
-
-            foreach (GameObject item in itemToRemove)
-            {
-                items.Remove(item);
+                if (IsDisabled(recipe.name))
+                {
+                    foreach (Piece.Requirement requirement in recipe.m_resources.ToList())
+                    {
+                        requirement.m_amount = 9999;
+                        requirement.m_recover = false;
+                    }
+                }
             }
         }
     }

@@ -63,6 +63,19 @@ namespace Deadheim.Patches
             }
         }
 
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Game), "Update")]
+        private static void GameUpdate()
+        {
+            if (Player.m_localPlayer)
+            {
+                Player.m_localPlayer.SetPVP(true);
+                ZNet.instance.SetPublicReferencePosition(true);
+                InventoryGui.instance.m_pvp.isOn = true;
+                InventoryGui.instance.m_pvp.interactable = false;
+            }
+        }
+
         [HarmonyPatch(typeof(Player), "ConsumeItem")]
         public static class ConsumeLog
         {
@@ -121,6 +134,43 @@ namespace Deadheim.Patches
                     }
                 }
                 return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), "PlacePiece")]
+        public static class NoBuild_Patch
+        {
+            private static bool Prefix(Piece piece, Player __instance)
+            {
+                if (ZNet.m_isServer)
+                {
+                    return true;
+                }
+
+                bool isInNotAllowedArea = false;
+
+                List<PrivateArea> privateAreaList = new List<PrivateArea>();
+
+                foreach (PrivateArea area in PrivateArea.m_allAreas)
+                {
+                    bool isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (BetterWards.BetterWardsPlugin.wardRange.Value * 2.5);
+                    if (isInsideArea) privateAreaList.Add(area);
+                }
+
+
+                foreach (PrivateArea area in privateAreaList)
+                {
+                    bool isPermitted = area.m_piece.GetCreator() == Game.instance.GetPlayerProfile().GetPlayerID() || area.IsPermitted(Game.instance.GetPlayerProfile().GetPlayerID());
+                    if (!isPermitted) isInNotAllowedArea = true;
+                }
+
+                if (isInNotAllowedArea)
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível construir próximo da área de outros wards.", 0, null);
+                    return false;
+
+                }
+                return true;
             }
         }
 

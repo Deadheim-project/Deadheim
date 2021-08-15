@@ -15,10 +15,28 @@ namespace Deadheim.Craft
         [HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")]
         private class UpdateKnownRecipesList : BaseUnityPlugin
         {
-            private static void Prefix()
+            private static void Postfix()
             {
                 AgeSystem.RemoveDisabledRecipes();
                 AgeSystem.RemoveDisabledItems();
+            }
+        }
+
+        [HarmonyPatch(typeof(ObjectDB), "CopyOtherDB")]
+        public static class ObjectDB_CopyOtherDB_Patch
+        {
+            public static void Postfix()
+            {
+                AgeSystem.AddPortal();
+            }
+        }
+
+        [HarmonyPatch(typeof(ObjectDB), "Awake")]
+        public static class ObjectDB_Awake_Patch
+        {
+            public static void Postfix()
+            {
+                AgeSystem.AddPortal();
             }
         }
     }

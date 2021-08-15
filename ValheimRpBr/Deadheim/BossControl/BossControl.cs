@@ -41,8 +41,8 @@ namespace Deadheim.BossControl
             ElderItemAmount = 30;
             BoneMassInvokeDay = 1200;
             BoneMassItemAmount = 50;
-            ModerInvokeDay = 1800;
-            YagluthInvokeDay = 3000;
+            ModerInvokeDay = 2200;
+            YagluthInvokeDay = 5000;
             bossList = new List<ControlBossConfig>()
           {
             new ControlBossConfig()

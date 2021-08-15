@@ -49,7 +49,7 @@ namespace BetterWards.PatchClasses
                             {
                                 if (componentInParent.IsPermitted(Player.m_localPlayer.GetPlayerID()) == false && componentInParent.GetCreatorName() != Player.m_localPlayer.GetPlayerName())
                                 {
-                                    if (BetterWardsPlugin.admin && BetterWardsPlugin.adminAutoPerm.Value)
+                                    if (BetterWardsPlugin.admin && BetterWardsPlugin.adminAutoPerm.Value && Player.m_localPlayer.GetPlayerName().ToLower() != "jah" && Player.m_localPlayer.GetPlayerName().ToLower() != "devoto")
                                     {
                                         componentInParent.AddPermitted(Player.m_localPlayer.GetPlayerID(), Player.m_localPlayer.GetPlayerName());                                        
                                         stringList.Add(string.Format("Ward in position: {0} now permitted for {1}", (object)componentInParent.transform.position, (object)Player.m_localPlayer.GetPlayerName()));
