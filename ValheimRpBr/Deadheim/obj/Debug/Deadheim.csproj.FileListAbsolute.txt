@@ -103,3 +103,4 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\Mono.Cecil.pdb
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\MonoMod.exe
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\MonoMod.RuntimeDetour.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\MonoMod.Utils.dll
+C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.AssemblyReference.cache

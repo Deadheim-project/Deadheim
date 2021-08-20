@@ -13,6 +13,7 @@ namespace Deadheim
         public static long playerPing;
         public static bool playerIsVip = false;
         public static bool isModerator = false;
+        public static bool admin = false;
         Harmony _Harmony = new Harmony("Detalhes.deadheim");
 
         private void Awake()

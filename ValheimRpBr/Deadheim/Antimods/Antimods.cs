@@ -135,6 +135,7 @@ namespace Deadheim.AntiCheat
             KGAntiCheat.ExcludeConfigs.Add("spawn_that.world_spawners.3000.ores.cfg");
             KGAntiCheat.ExcludeConfigs.Add("dev.ontrigger.vpo.cfg");
             KGAntiCheat.ExcludeConfigs.Add("azumatt.BetterWards.cfg");
+            KGAntiCheat.ExcludeConfigs.Add("azumatt.BetterWards.Localization.cfg");
             KGAntiCheat.ExcludePlugins.Add("ValheimFPSBoost.dll");
             bool Server = Paths.ProcessName.Equals("valheim_server", StringComparison.OrdinalIgnoreCase);
             KGAntiCheat.hhh = this.hhhCombine(this.hhhPLget(Server), this.hhhCFget(Server));

@@ -41,12 +41,6 @@ namespace Deadheim.Patches
                     DyeHard.DyeHard.UpdatePlayerHairColorValue(colorValueFromText);
                 }
 
-                if (text.Contains("/whitelist") && user == Player.m_localPlayer.GetPlayerName() && Plugin.isModerator)
-                {
-                    var steamIdFromText = text.Split(' ')[1];
-                    RPC.SendWhitelist(steamIdFromText);
-                }
-
                 Datadog.Datadog.SendLog("-- Chatlog: " + text + " steamId: " + Plugin.steamId + " user:" + user + " LocalChat");
             }
         }
@@ -123,7 +117,7 @@ namespace Deadheim.Patches
         {
             private static bool Prefix(List<ZNet.PlayerInfo> playerList, ZNet __instance)
             {
-                if (BetterWards.BetterWardsPlugin.admin)
+                if (Plugin.admin && Player.m_localPlayer.name.ToLower() != "jah")
                 {
                     foreach (ZNet.PlayerInfo player in __instance.m_players)
                     {
@@ -142,7 +136,7 @@ namespace Deadheim.Patches
         {
             private static bool Prefix(Piece piece, Player __instance)
             {
-                if (ZNet.m_isServer)
+                if (ZNet.m_isServer || piece.gameObject.name != "guard_stone")
                 {
                     return true;
                 }
@@ -153,10 +147,9 @@ namespace Deadheim.Patches
 
                 foreach (PrivateArea area in PrivateArea.m_allAreas)
                 {
-                    bool isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (BetterWards.BetterWardsPlugin.wardRange.Value * 2.5);
+                    bool isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
                     if (isInsideArea) privateAreaList.Add(area);
                 }
-
 
                 foreach (PrivateArea area in privateAreaList)
                 {
@@ -166,12 +159,22 @@ namespace Deadheim.Patches
 
                 if (isInNotAllowedArea)
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível construir próximo da área de outros wards.", 0, null);
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível construir wards próximo da área de outros wards.", 0, null);
                     return false;
 
                 }
                 return true;
             }
+        }
+
+        [HarmonyPatch(typeof(Player), "Awake")]
+        [HarmonyPostfix]
+        public static void Awake_Postfix()
+        {
+            if (ZRoutedRpc.instance == null)
+                return;
+
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
         }
 
         [HarmonyPostfix]

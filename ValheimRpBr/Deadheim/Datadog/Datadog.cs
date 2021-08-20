@@ -94,7 +94,7 @@ namespace Deadheim.Datadog
             if (str == "")
                 return;
 
-            if (BetterWards.BetterWardsPlugin.admin) return;
+            if (Plugin.admin) return;
 
             PostMessage("**" + __instance.GetPlayerName() + "** steamId: **" + Plugin.steamId + "** is using Cheat**" + str + "**", "DetailsBotLog", WebhookUrl);
         }

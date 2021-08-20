@@ -34,21 +34,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Betterwards\BetterWards.cs" />
-    <Compile Include="Betterwards\PatchClasses\ChatWindow.cs" />
-    <Compile Include="Betterwards\PatchClasses\Doors.cs" />
-    <Compile Include="Betterwards\PatchClasses\Local.cs" />
-    <Compile Include="Betterwards\PatchClasses\ObjectDBWrapper.cs" />
-    <Compile Include="Betterwards\PatchClasses\PlaceWard.cs" />
-    <Compile Include="Betterwards\PatchClasses\RPC.cs" />
-    <Compile Include="Betterwards\PatchClasses\Ward.cs" />
-    <Compile Include="Betterwards\PatchClasses\WearNTear.cs" />
-    <Compile Include="Betterwards\Server\ServerPatches.cs" />
-    <Compile Include="Betterwards\Server\VersionHandshake.cs" />
-    <Compile Include="Betterwards\Util\Changelog.cs" />
-    <Compile Include="Betterwards\Util\ClientSystem.cs" />
-    <Compile Include="Betterwards\Util\CustomCheck.cs" />
-    <Compile Include="Betterwards\Util\ServerAdminSystem.cs" />
     <Compile Include="BossControl\BossControl.cs" />
     <Compile Include="Antimods\Antimods.cs" />
     <Compile Include="ColorfulPieces\ColorfulPieces.cs" />
