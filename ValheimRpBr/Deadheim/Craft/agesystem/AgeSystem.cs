@@ -6,6 +6,11 @@ namespace Deadheim.agesystem
 {
     internal class AgeSystem
     {
+        public static List<string> vipItems = new List<string>()
+        {
+
+        };
+
         public static List<string> ageOfBronze = new List<string>()
         {
             "item_chest_bronze",
@@ -126,25 +131,28 @@ namespace Deadheim.agesystem
 
         public static void RemoveDisabledItems()
         {
+            Debug.Log(Plugin.playerIsVip);
+
             if (ObjectDB.instance.m_items.Count == 0 || ObjectDB.instance.GetItemPrefab("Amber") == null) return;
 
             var items = ObjectDB.instance.m_items;
 
             foreach (GameObject item in items)
             {
+                Piece piece = item.GetComponent<Piece>();
+
+                if (!piece) continue;
+
                 if (IsDisabled(item.name))
                 {
-                    Piece piece = item.GetComponent<Piece>();
-
-                    if (piece)
+                    foreach (Piece.Requirement requirement in piece.m_resources.ToList())
                     {
-                        foreach (Piece.Requirement requirement in piece.m_resources.ToList())
-                        {
-                            requirement.m_amount = 9999;
-                            requirement.m_recover = false;
-                        }
+                        requirement.m_amount = 9999;
+                        requirement.m_recover = false;
                     }
-                }
+
+                    continue;
+                }             
             }
         }
 

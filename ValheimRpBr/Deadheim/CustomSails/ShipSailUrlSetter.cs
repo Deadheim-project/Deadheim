@@ -113,11 +113,6 @@ namespace CustomSails
                 }
                 else
                 {
-                    if (!Deadheim.Plugin.playerIsVip)
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem usar velas personalizadas.");
-                        yield break;
-                    }
                     var tex = new Texture2D(2, 2);
                     tex.LoadImage(uwr.downloadHandler.data);
                     callback.Invoke(url, tex);

@@ -140,12 +140,6 @@ namespace Deadheim.ColorfulPieces
                 return;
             }
 
-            if (!Plugin.playerIsVip)
-            {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem usar cores personalizadas.");
-                return;
-            }
-
             wearNTear.m_nview.m_zdo.Set(_pieceColorHashCode, Utils.ColorToVec3(_targetPieceColor));
             wearNTear.m_nview.m_zdo.Set(_pieceEmissionColorFactorHashCode, _targetPieceEmissionColorFactor);
 
@@ -167,12 +161,6 @@ namespace Deadheim.ColorfulPieces
         {
             if (!ClaimOwnership(wearNTear))
             {
-                return;
-            }
-
-            if (!Plugin.playerIsVip)
-            {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem usar cores personalizadas.");
                 return;
             }
 

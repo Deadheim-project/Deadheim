@@ -35,7 +35,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BossControl\BossControl.cs" />
-    <Compile Include="Antimods\Antimods.cs" />
     <Compile Include="ColorfulPieces\ColorfulPieces.cs" />
     <Compile Include="Craft\agesystem\AgeSystem.cs" />
     <Compile Include="Craft\CraftPatches.cs" />

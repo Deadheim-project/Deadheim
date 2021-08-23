@@ -7,11 +7,6 @@ namespace NameYourTame.Utils
     {
         public static void SetName(ref Tameable instance, ref string name)
         {
-            if (!Plugin.playerIsVip)
-            {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem renomear seus pets.");
-                return;
-            }
             if (name != null)
             {
                 if (instance.m_nview.GetZDO().GetString("TameName") == Namer.NotChanged)

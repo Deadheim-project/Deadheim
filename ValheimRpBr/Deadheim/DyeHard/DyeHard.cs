@@ -20,12 +20,6 @@ namespace Deadheim.DyeHard
 
         public static void UpdatePlayerHairColorValue(string colorString)
         {
-            if (!Plugin.playerIsVip)
-            {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem pintar seus cabelos.");
-                return;
-            }
-
             if (ColorUtility.TryParseHtmlString(colorString, out Color color))
             {
                 color.a = 1f;

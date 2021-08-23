@@ -192,5 +192,29 @@ namespace Deadheim.Patches
             }
             ___m_worldStart.interactable = false;
         }
+
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Player), "GetBuildPieces")]
+        private static void GetBuildPieces(List<Piece> __result)
+        {
+            List<string> vipItems = new List<string>() { "wall", "roof", "floor", "stake", "pole", "pillar", "stair", "beam" };
+            foreach (Piece piece in __result)
+            {
+                if (Plugin.playerIsVip)
+                {
+                    if (vipItems.Any(x => piece.m_name.Contains(x)))
+                    {
+                        foreach (Piece.Requirement requirement in piece.m_resources.ToList())
+                        {
+                            if (requirement.m_amount > 1)
+                            {
+                                requirement.m_amount = (int) Math.Ceiling((decimal)(requirement.m_amount / 2));
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
