@@ -20,7 +20,7 @@ namespace Deadheim.Craft
                 AgeSystem.RemoveDisabledRecipes();
                 AgeSystem.RemoveDisabledItems();
             }
-        }
+        }       
 
         [HarmonyPatch(typeof(ObjectDB), "CopyOtherDB")]
         public static class ObjectDB_CopyOtherDB_Patch

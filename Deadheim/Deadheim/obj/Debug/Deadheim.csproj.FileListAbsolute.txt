@@ -98,7 +98,6 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\bepinex.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\SharpCompress.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\System.Buffers.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
-C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\bin\Debug\ModConfigEnforcer.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.CoreCompileInputs.cache
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.dll

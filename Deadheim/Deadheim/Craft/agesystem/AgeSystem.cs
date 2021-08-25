@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -131,8 +132,6 @@ namespace Deadheim.agesystem
 
         public static void RemoveDisabledItems()
         {
-            Debug.Log(Plugin.playerIsVip);
-
             if (ObjectDB.instance.m_items.Count == 0 || ObjectDB.instance.GetItemPrefab("Amber") == null) return;
 
             var items = ObjectDB.instance.m_items;
@@ -183,6 +182,34 @@ namespace Deadheim.agesystem
                     {
                         requirement.m_amount = 9999;
                         requirement.m_recover = false;
+                    }
+                }
+            }
+        }
+
+        public static void UpdateVipCosts()
+        {
+            if (Plugin.playerIsVip)
+            {
+                List<string> vipItems = new List<string>() { "wall", "roof", "floor", "stake", "pole", "pillar", "stair", "beam" };
+
+                if (ObjectDB.instance.m_items.Count == 0 || ObjectDB.instance.GetItemPrefab("Amber") == null) return;
+
+                List<GameObject> items = ObjectDB.instance.m_items;
+
+                foreach (GameObject item in items)
+                {
+                    Piece piece = item.GetComponent<Piece>();
+
+                    if (vipItems.Any(x => piece.m_name.Contains(x)))
+                    {
+                        foreach (Piece.Requirement requirement in piece.m_resources.ToList())
+                        {
+                            if (requirement.m_amount > 1)
+                            {
+                                requirement.m_amount = (int)Math.Floor((double)(requirement.m_amount / 2));
+                            }
+                        }
                     }
                 }
             }

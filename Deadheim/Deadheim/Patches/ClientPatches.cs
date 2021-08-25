@@ -131,42 +131,6 @@ namespace Deadheim.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), "PlacePiece")]
-        public static class NoBuild_Patch
-        {
-            private static bool Prefix(Piece piece, Player __instance)
-            {
-                if (ZNet.m_isServer || piece.gameObject.name != "guard_stone")
-                {
-                    return true;
-                }
-
-                bool isInNotAllowedArea = false;
-
-                List<PrivateArea> privateAreaList = new List<PrivateArea>();
-
-                foreach (PrivateArea area in PrivateArea.m_allAreas)
-                {
-                    bool isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
-                    if (isInsideArea) privateAreaList.Add(area);
-                }
-
-                foreach (PrivateArea area in privateAreaList)
-                {
-                    bool isPermitted = area.m_piece.GetCreator() == Game.instance.GetPlayerProfile().GetPlayerID() || area.IsPermitted(Game.instance.GetPlayerProfile().GetPlayerID());
-                    if (!isPermitted) isInNotAllowedArea = true;
-                }
-
-                if (isInNotAllowedArea)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível construir wards próximo da área de outros wards.", 0, null);
-                    return false;
-
-                }
-                return true;
-            }
-        }
-
         [HarmonyPatch(typeof(Player), "Awake")]
         [HarmonyPostfix]
         public static void Awake_Postfix()
@@ -175,46 +139,6 @@ namespace Deadheim.Patches
                 return;
 
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(FejdStartup), "Update")]
-        private static void FejdStartup__Update(GameObject ___m_startGamePanel, Button ___m_worldStart)
-        {
-            if (!___m_startGamePanel.activeInHierarchy)
-                return;
-            GameObject gameObject = GameObject.Find("Start");
-            if (gameObject != null)
-            {
-                Text componentInChildren = gameObject.GetComponentInChildren<Text>();
-                if (componentInChildren != null)
-                    componentInChildren.text = "Desativado no Deadheim";
-            }
-            ___m_worldStart.interactable = false;
-        }
-
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Player), "GetBuildPieces")]
-        private static void GetBuildPieces(List<Piece> __result)
-        {
-            List<string> vipItems = new List<string>() { "wall", "roof", "floor", "stake", "pole", "pillar", "stair", "beam" };
-            foreach (Piece piece in __result)
-            {
-                if (Plugin.playerIsVip)
-                {
-                    if (vipItems.Any(x => piece.m_name.Contains(x)))
-                    {
-                        foreach (Piece.Requirement requirement in piece.m_resources.ToList())
-                        {
-                            if (requirement.m_amount > 1)
-                            {
-                                requirement.m_amount = (int) Math.Ceiling((decimal)(requirement.m_amount / 2));
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
