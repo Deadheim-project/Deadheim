@@ -126,7 +126,7 @@ namespace Deadheim.Datadog
         {
             if (!ZNet.m_isServer) return;
 
-            using (StreamWriter streamWriter1 = new StreamWriter(Utils.GetSaveDataPath() + "/moderation.txt", true))
+            using (StreamWriter streamWriter1 = new StreamWriter(Utils.GetSaveDataPath() + "/log.txt", true))
             {
                 StreamWriter streamWriter2 = streamWriter1;
                 DateTime dateTime = DateTime.Now;

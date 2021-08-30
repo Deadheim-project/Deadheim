@@ -38,7 +38,9 @@ namespace Deadheim
         {
             private static bool Prefix(ZRpc rpc, ref ZNet __instance)
             {
-                if (__instance.IsServer() && !Plugin.validatedUsers.Contains(rpc))
+                if (!__instance.IsServer()) return true;
+
+                if (!Plugin.validatedUsers.Contains(rpc))
                 {
                     rpc.Invoke("Error", 3);
                     return false;
@@ -53,10 +55,9 @@ namespace Deadheim
         {
             private static void Prefix(ZNetPeer peer, ref ZNet __instance)
             {
-                if (__instance.IsServer())
-                {
-                    Plugin.validatedUsers.Remove(peer.m_rpc);
-                }
+                if (__instance.IsServer()) return;
+
+                Plugin.validatedUsers.Remove(peer.m_rpc);
             }
         }
     }

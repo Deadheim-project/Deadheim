@@ -1,9 +1,8 @@
-﻿using BepInEx;
-using HarmonyLib;
+﻿using HarmonyLib;
 
 namespace Deadheim.FasterBoats
 {
-    public class FasterBoats : BaseUnityPlugin
+    public class FasterBoats
     {
         private static float boatWindSpeedmultiplier = 1.15f;
         private static float boatRudderSpeedmultiplier = 2.5f;

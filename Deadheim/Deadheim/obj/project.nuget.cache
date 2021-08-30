@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "dDol75f0KzUrX1F3VMpx28Wg5tUnB0dlPoy16ZbVwyCJbjNx6tFFw4kHOz2ar36u1YTHD2SyVVovv2jQbF9lIQ==",
+  "dgSpecHash": "+0dobxBCiIGDxf3GMCoWAV81dZevUfRnMO8PY+/UChODlLuBwD6qFZV5YESbAlpXobETVlwn+Z4UsyZfYpg2VA==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Werner\\Desktop\\anticheat\\ValheimRpBr\\Deadheim\\Deadheim.csproj",
+  "projectFilePath": "C:\\Users\\Werner\\Desktop\\anticheat\\Deadheim\\Deadheim\\Deadheim.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Werner\\.nuget\\packages\\dnsclient\\1.4.0\\dnsclient.1.4.0.nupkg.sha512",
     "C:\\Users\\Werner\\.nuget\\packages\\harmonyx\\2.5.1\\harmonyx.2.5.1.nupkg.sha512",

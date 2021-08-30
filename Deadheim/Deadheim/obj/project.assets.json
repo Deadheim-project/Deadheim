@@ -3098,11 +3098,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Werner\\Desktop\\anticheat\\ValheimRpBr\\Deadheim\\Deadheim.csproj",
+      "projectUniqueName": "C:\\Users\\Werner\\Desktop\\anticheat\\Deadheim\\Deadheim\\Deadheim.csproj",
       "projectName": "Deadheim",
-      "projectPath": "C:\\Users\\Werner\\Desktop\\anticheat\\ValheimRpBr\\Deadheim\\Deadheim.csproj",
+      "projectPath": "C:\\Users\\Werner\\Desktop\\anticheat\\Deadheim\\Deadheim\\Deadheim.csproj",
       "packagesPath": "C:\\Users\\Werner\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Werner\\Desktop\\anticheat\\ValheimRpBr\\Deadheim\\obj\\",
+      "outputPath": "C:\\Users\\Werner\\Desktop\\anticheat\\Deadheim\\Deadheim\\obj\\",
       "projectStyle": "PackageReference",
       "skipContentFileWrite": true,
       "configFilePaths": [

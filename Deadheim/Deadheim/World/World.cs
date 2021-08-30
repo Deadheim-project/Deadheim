@@ -6,7 +6,7 @@ namespace Deadheim.world
     internal class World
     {
         [HarmonyPrefix]
-        [HarmonyPatch(typeof(DungeonGenerator), "Generate", new Type[] { typeof(int), typeof(ZoneSystem.SpawnMode) })]
+        [HarmonyPatch(typeof(DungeonGenerator), "Generate", typeof(ZoneSystem.SpawnMode))]
         private static void ApplyGeneratorSettings(ref DungeonGenerator __instance)
         {
             __instance.m_minRooms = 15;

@@ -34,12 +34,9 @@ namespace Deadheim.EnhancedWards
         public static class NoBuild_Patch
         {
             private static bool Prefix(Piece piece, Player __instance)
-            {
-                if (ZNet.m_isServer || piece.gameObject.name != "guard_stone")
-                {
-                    return true;
-                }
-
+            {                               
+                if (piece.gameObject.name != "guard_stone") return true;
+                
                 bool isInNotAllowedArea = false;
 
                 List<PrivateArea> privateAreaList = new List<PrivateArea>();
@@ -63,82 +60,6 @@ namespace Deadheim.EnhancedWards
 
                 }
                 return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(Player), "Update")]
-        public static class Update
-        {
-            private static void Postfix(ref Player __instance)
-            {
-                StringBuilder text = new StringBuilder(256);
-
-                KeyCode wardOptionalKey = KeyCode.K;
-                if (__instance.m_hovering)
-                {
-                    Interactable componentInParent = __instance.m_hovering.GetComponentInParent<Interactable>();
-                    if (componentInParent != null)
-                    {
-                        __instance.m_lastHoverInteractTime = Time.time;
-
-                        if (componentInParent is PrivateArea)
-                        {
-                            PrivateArea pa = (PrivateArea)componentInParent;
- 
-                            if (pa.IsPermitted(__instance.GetPlayerID()))
-                            {
-                                text.Append("\n[<color=yellow><b>" + wardOptionalKey.ToString() + "</b></color>]");
-                                pa.m_name = text.ToString();
-                                pa.AddUserList(text);
-                            }        
-                        }
-                    }
-                }
-
-                if (Input.GetKeyDown(wardOptionalKey))
-                {
-                    if (__instance.m_hovering)
-                    {
-                        Interact(__instance, __instance.m_hovering, false);
-                    }
-                }
-            }
-
-           public static void Interact(Player thes, GameObject go, bool hold)
-            {
-                if (thes.InAttack() || thes.InDodge())
-                {
-                    return;
-                }
-
-                if (hold && Time.time - thes.m_lastHoverInteractTime < 0.2f)
-                {
-                    return;
-                }
-
-                Interactable componentInParent = go.GetComponentInParent<Interactable>();
-                if (componentInParent != null)
-                {
-                    thes.m_lastHoverInteractTime = Time.time;
-
-                    if (componentInParent is PrivateArea)
-                    {
-                        PrivateArea pa = (PrivateArea)componentInParent;
-                        if (pa.IsPermitted(thes.GetPlayerID()))
-                        {
-                            pa.m_nview.InvokeRPC("ToggleEnabled", new object[]
-                            {
-                                pa.m_piece.GetCreator()
-                            });
-
-                            Vector3 vector = go.transform.position - thes.transform.position;
-                            vector.y = 0f;
-                            vector.Normalize();
-                            thes.transform.rotation = Quaternion.LookRotation(vector);
-                            thes.m_zanim.SetTrigger("interact");
-                        }
-                    }
-                }
             }
         }
     }

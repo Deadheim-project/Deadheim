@@ -1,16 +1,14 @@
-﻿using Deadheim.agesystem;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Deadheim.Patches
 {
     [HarmonyPatch]
-    public class ClientPatches
+    public class ClientPatches : MonoBehaviour
     {
         [HarmonyPatch(typeof(ZNet), "OnNewConnection")]
         private static class ZNet__OnNewConnection
@@ -29,18 +27,6 @@ namespace Deadheim.Patches
         {
             private static void Prefix(string user, string text)
             {
-                if (text.Contains("/setcolor") && user == Player.m_localPlayer.GetPlayerName())
-                {
-                    var colorValueFromText = text.Split(' ')[1];
-                    ColorfulPieces.ColorfulPieces.UpdateColorValue(colorValueFromText);
-                }
-
-                if (text.Contains("/sethaircolor") && user == Player.m_localPlayer.GetPlayerName())
-                {
-                    var colorValueFromText = text.Split(' ')[1];
-                    DyeHard.DyeHard.UpdatePlayerHairColorValue(colorValueFromText);
-                }
-
                 Datadog.Datadog.SendLog("-- Chatlog: " + text + " steamId: " + Plugin.steamId + " user:" + user + " LocalChat");
             }
         }
@@ -63,57 +49,24 @@ namespace Deadheim.Patches
         {
             if (Player.m_localPlayer)
             {
-                Player.m_localPlayer.SetPVP(true);
                 ZNet.instance.SetPublicReferencePosition(true);
-                InventoryGui.instance.m_pvp.isOn = true;
+
+                if (Vector3.Distance(Player.m_localPlayer.transform.position, new Vector3 { x = 0, y = 0, z = 0 }) <= 1000)
+                {
+                    InventoryGui.instance.m_pvp.isOn = false;
+                    Player.m_localPlayer.SetPVP(false);
+                }
+                else
+                {
+                    Player.m_localPlayer.SetPVP(true);
+                    InventoryGui.instance.m_pvp.isOn = true;
+                }
                 InventoryGui.instance.m_pvp.interactable = false;
             }
         }
 
-        [HarmonyPatch(typeof(Player), "ConsumeItem")]
-        public static class ConsumeLog
-        {
-            private static void Postfix(Inventory inventory, ItemDrop.ItemData item, Player __instance)
-            {
-                if (item == null) return;
-                if (__instance == null) return;
-                Datadog.Datadog.SendLog("-- ConsumeLog: " + __instance.GetPlayerName() + " : consume : " + item.m_shared.m_name + " crafted by: " + (string)item.m_crafterName + " -- located at: " + Player.m_localPlayer.transform.position);
-            }
-        }
-
-        [HarmonyPatch(typeof(Sign), "SetText")]
-        public static class SignText
-        {
-            private static void Postfix(string text) => Datadog.Datadog.SendLog("-- SetTextLog: " + Player.m_localPlayer.GetPlayerName() + " : sign_text : " + text + " -- located at: " + Player.m_localPlayer.transform.position);
-        }
-
-        [HarmonyPatch(typeof(TeleportWorld), "SetText")]
-        public static class TeleportText
-        {
-            private static void Postfix(string text) => Datadog.Datadog.SendLog("-- SetTextLog: " + Player.m_localPlayer.GetPlayerName() + " : teleport_text : " + text + " -- located at: " + Player.m_localPlayer.transform.position);
-        }
-
-        [HarmonyPatch(typeof(Ship), "OnDestroyed")]
-        private class shipDestroyed
-        {
-            private static void Postfix(ref Ship __instance)
-            {
-                if (__instance == null) return;
-
-                List<Player> playerList = new List<Player>();
-                Player.GetPlayersInRange(((Component)__instance).transform.position, 20f, playerList);
-                Datadog.Datadog.SendLog("-- Shiplog: Ship destroyed" + __instance.gameObject.name + " creator: " + __instance.m_nview.GetZDO().GetString("creatorName", "") + " around: " + string.Join(",", ((IEnumerable<Player>)playerList).Select<Player, string>((Func<Player, string>)(p => p.GetPlayerName()))));
-            }
-        }
-
-        [HarmonyPatch(typeof(Player), "StartShipControl")]
-        private class shipControlled
-        {
-            private static void Postfix(ref ShipControlls shipControl) => Datadog.Datadog.SendLog("-- Shiplog: ship controlled " + shipControl.GetShip().gameObject.name + " creator: " + shipControl.GetShip().m_nview.GetZDO().GetString("creatorName", "") + " player: " + Game.instance.GetPlayerProfile().GetName());
-        }
-
         [HarmonyPatch(typeof(ZNet), "GetOtherPublicPlayers")]
-        private class playpinsadmin
+        private class GetOtherPublicPlayers
         {
             private static bool Prefix(List<ZNet.PlayerInfo> playerList, ZNet __instance)
             {
@@ -138,7 +91,71 @@ namespace Deadheim.Patches
             if (ZRoutedRpc.instance == null)
                 return;
 
+            GameObject gameObject = new GameObject("AppPaused");
+            Plugin.appPaused = gameObject.AddComponent<AppPaused>();
+
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
+        }
+
+        [HarmonyPatch(typeof(Player), "OnDeath")]
+        [HarmonyPriority(Priority.First)]
+        static class OnDeath
+        {
+            static bool Prefix(Player __instance, Inventory ___m_inventory, ZNetView ___m_nview)
+            {
+                List<ItemDrop.ItemData> itemsToDrop = new List<ItemDrop.ItemData>();
+                List<ItemDrop.ItemData> itemsToKeep = Traverse.Create(___m_inventory).Field("m_inventory").GetValue<List<ItemDrop.ItemData>>();
+
+                ___m_nview.GetZDO().Set("dead", true);
+                ___m_nview.InvokeRPC(ZNetView.Everybody, "OnDeath", new object[] { });
+                Traverse.Create(__instance).Method("CreateDeathEffects").GetValue();
+
+
+                for (int i = itemsToKeep.Count - 1; i >= 0; i--)
+                {
+                    ItemDrop.ItemData item = itemsToKeep[i];
+
+                    if (item.m_equiped)
+                        continue;
+
+                    if (item.m_gridPos.y == 0)
+                        continue;
+
+                    if (item.m_shared.m_questItem)
+                        continue;
+
+                    if (Plugin.dropTypes.Contains(Enum.GetName(typeof(ItemDrop.ItemData.ItemType), item.m_shared.m_itemType)))
+                    {
+                        itemsToDrop.Add(item);
+                        itemsToKeep.RemoveAt(i);
+                    }
+                }
+
+                Traverse.Create(___m_inventory).Method("Changed").GetValue();
+
+                if (itemsToDrop.Any())
+                {
+                    GameObject gameObject = Instantiate(__instance.m_tombstone, __instance.GetCenterPoint(), __instance.transform.rotation);
+                    gameObject.GetComponent<Container>().GetInventory().RemoveAll();
+
+                    int width = Traverse.Create(___m_inventory).Field("m_width").GetValue<int>();
+                    int height = Traverse.Create(___m_inventory).Field("m_height").GetValue<int>();
+                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Field("m_width").SetValue(width);
+                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Field("m_height").SetValue(height);
+                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Field("m_inventory").SetValue(itemsToDrop);
+                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Method("Changed").GetValue();
+
+                    TombStone component = gameObject.GetComponent<TombStone>();
+                    PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
+                    component.Setup(playerProfile.GetName(), playerProfile.GetPlayerID());
+                }
+
+                Game.instance.GetPlayerProfile().m_playerStats.m_deaths++;
+                Game.instance.GetPlayerProfile().SetDeathPoint(__instance.transform.position);
+                Game.instance.RequestRespawn(10f);
+                return false;
+            }
+
         }
     }
 }
