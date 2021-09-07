@@ -31,6 +31,15 @@ namespace Deadheim.Patches
             }
         }
 
+        [HarmonyPatch(typeof(Player), "SetPlayerID")]
+        internal class SetPlayerID
+        {
+            private static void Postfix(long playerID, string name)
+            {
+                if (Plugin.isPvp) Player.m_localPlayer.m_nview.GetZDO().Set("playerName", name + " - PVP");
+            }
+        }
+
         [HarmonyPatch(typeof(Player), "FixedUpdate")]
         public static class PlayerCheck
         {
@@ -51,19 +60,20 @@ namespace Deadheim.Patches
             {
                 ZNet.instance.SetPublicReferencePosition(true);
 
-                if (Vector3.Distance(Player.m_localPlayer.transform.position, new Vector3 { x = 0, y = 0, z = 0 }) <= 1000)
+                if (Vector3.Distance(new Vector3(-249, 262), Player.m_localPlayer.transform.position) <= Plugin.safeArea)
                 {
                     InventoryGui.instance.m_pvp.isOn = false;
                     Player.m_localPlayer.SetPVP(false);
-                }
-                else
+                } else
                 {
-                    Player.m_localPlayer.SetPVP(true);
                     InventoryGui.instance.m_pvp.isOn = true;
+                    Player.m_localPlayer.SetPVP(true);
                 }
+                
                 InventoryGui.instance.m_pvp.interactable = false;
             }
         }
+
 
         [HarmonyPatch(typeof(ZNet), "GetOtherPublicPlayers")]
         private class GetOtherPublicPlayers
@@ -80,9 +90,11 @@ namespace Deadheim.Patches
 
                     }
                 }
+
                 return false;
             }
         }
+
 
         [HarmonyPatch(typeof(Player), "Awake")]
         [HarmonyPostfix]
@@ -91,10 +103,22 @@ namespace Deadheim.Patches
             if (ZRoutedRpc.instance == null)
                 return;
 
-            GameObject gameObject = new GameObject("AppPaused");
-            Plugin.appPaused = gameObject.AddComponent<AppPaused>();
-
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
+        }
+
+
+        [HarmonyPatch(typeof(Attack), "DoMeleeAttack")]
+        private class EnhanceHitDirection
+        {
+            private static void Prefix(
+              ref float ___m_maxYAngle,
+              ref float ___m_attackOffset,
+              ref float ___m_attackHeight)
+            {
+                ___m_maxYAngle = 180f;
+                ___m_attackOffset = 0;
+                ___m_attackHeight = 1f;
+            }
         }
 
         [HarmonyPatch(typeof(Player), "OnDeath")]
@@ -109,7 +133,6 @@ namespace Deadheim.Patches
                 ___m_nview.GetZDO().Set("dead", true);
                 ___m_nview.InvokeRPC(ZNetView.Everybody, "OnDeath", new object[] { });
                 Traverse.Create(__instance).Method("CreateDeathEffects").GetValue();
-
 
                 for (int i = itemsToKeep.Count - 1; i >= 0; i--)
                 {
@@ -150,6 +173,7 @@ namespace Deadheim.Patches
                     component.Setup(playerProfile.GetName(), playerProfile.GetPlayerID());
                 }
 
+                Player.m_localPlayer.ClearFood();
                 Game.instance.GetPlayerProfile().m_playerStats.m_deaths++;
                 Game.instance.GetPlayerProfile().SetDeathPoint(__instance.transform.position);
                 Game.instance.RequestRespawn(10f);

@@ -34,7 +34,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AppPaused.cs" />
     <Compile Include="Boss\Boss.cs" />
     <Compile Include="Craft\agesystem\AgeSystem.cs" />
     <Compile Include="Craft\CraftPatches.cs" />

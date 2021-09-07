@@ -66,15 +66,14 @@ namespace Deadheim.agesystem
             "Smoked Fish",
             "Pancakes",
             "draugr",
+            "Omlette",
             "T4"
         };
 
-        public static List<string> ageOfLinen = new List<string>()
+        public static List<string> ageOfBarley = new List<string>()
         {
-              "artisan",
-              "piece_blastfurnace",
+              "artisan",              
               "windmill",
-              "spinning",
               "arrow_needle",
               "needle",
               "lox",
@@ -84,11 +83,17 @@ namespace Deadheim.agesystem
               "item_bread",
               "Fish Stew",
               "Blood Sausage",
-              "Omlette",
-              "lox",
-              "blackmetal",
-              "item_mace_needle",
-              "padded",
+              "lox"
+        };
+
+
+        public static List<string> ageOfLinen = new List<string>()
+        {
+            "spinning",
+            "blastfurnace",
+            "blackmetal",
+            "item_mace_needle",
+            "padded",
               "T5"
         };
 
@@ -105,12 +110,13 @@ namespace Deadheim.agesystem
 
         public static List<string> GetDisabledCrafts()
         {
-            if (Plugin.age == "bronze") return ageOfIron.Concat(ageOfSilver).Concat(ageOfLinen).ToList();
-            if (Plugin.age == "iron") return ageOfSilver.Concat(ageOfLinen).ToList();
-            if (Plugin.age == "silver") return ageOfLinen.ToList();
+            if (Plugin.age == "bronze") return ageOfIron.Concat(ageOfSilver).Concat(ageOfBarley).Concat(ageOfLinen).ToList();
+            if (Plugin.age == "iron") return ageOfSilver.Concat(ageOfBarley).Concat(ageOfLinen).ToList();
+            if (Plugin.age == "silver") return ageOfBarley.Concat(ageOfLinen).ToList();
+            if (Plugin.age == "barley") return ageOfLinen;
             if (Plugin.age == "linen") return new List<string>();
 
-            return ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).ToList();
+            return ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).Concat(ageOfBarley).ToList();
         }
 
         public static bool IsDisabled(string recipeName)
@@ -124,29 +130,21 @@ namespace Deadheim.agesystem
             return false;
         }
 
-        public static void RemoveDisabledItems()
+        public static List<Piece> RemoveDisabledItems(List<Piece> pieces)
         {
-            if (ObjectDB.instance.m_items.Count == 0 || ObjectDB.instance.GetItemPrefab("Amber") == null) return;
-
-            var items = ObjectDB.instance.m_items;
-
-            foreach (GameObject item in items)
+            foreach (Piece piece in pieces)
             {
-                Piece piece = item.GetComponent<Piece>();
-
-                if (!piece) continue;
-
-                if (IsDisabled(item.name))
+                if (IsDisabled(piece.name))
                 {
                     foreach (Piece.Requirement requirement in piece.m_resources.ToList())
                     {
                         requirement.m_amount = 9999;
                         requirement.m_recover = false;
                     }
-
-                    continue;
                 }             
             }
+
+            return pieces;
         }
 
         public static void AddPortal()

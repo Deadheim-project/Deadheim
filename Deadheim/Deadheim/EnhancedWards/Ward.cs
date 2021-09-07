@@ -10,7 +10,7 @@ namespace Deadheim.EnhancedWards
         [HarmonyPatch(typeof(WearNTear), "RPC_Damage")]
         public static class RPC_Damage
         {
-            private static bool Prefix(WearNTear __instance, ref HitData hit, ZNetView ___m_nview)
+            private static void Prefix(WearNTear __instance, ref HitData hit, ZNetView ___m_nview)
             {
                 if (PrivateArea.CheckInPrivateArea(__instance.transform.position) && ___m_nview != null)
                 {
@@ -25,8 +25,6 @@ namespace Deadheim.EnhancedWards
                     hit.m_damage.m_poison *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
                     hit.m_damage.m_spirit *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
                 }
-
-                return true;
             }
         }
 
@@ -34,7 +32,7 @@ namespace Deadheim.EnhancedWards
         public static class NoBuild_Patch
         {
             private static bool Prefix(Piece piece, Player __instance)
-            {                               
+            {    
                 if (piece.gameObject.name != "guard_stone") return true;
                 
                 bool isInNotAllowedArea = false;

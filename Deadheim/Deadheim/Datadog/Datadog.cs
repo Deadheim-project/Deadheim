@@ -57,6 +57,8 @@ namespace Deadheim.Datadog
 
         public static void verifyIfPlayerIsCheating(Player __instance)
         {
+            if (Player.m_localPlayer) return;
+
             string str = "";
             if (!cheatInfstam && ((double)__instance.m_runStaminaDrain == 0.0 || (double)__instance.GetMaxStamina() > 600.0))
             {

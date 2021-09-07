@@ -15,7 +15,7 @@ namespace Deadheim.Boss
         {
             private static bool Prefix(OfferingBowl __instance, Humanoid user)
             {
-                if (__instance.m_name == dragon || __instance.m_name == yagluth)
+                if (__instance.m_name == yagluth)
                 {
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível invocar esse boss nessa era.", 0, null);
 
@@ -31,13 +31,16 @@ namespace Deadheim.Boss
         {
             private static bool Prefix(OfferingBowl __instance, Humanoid user, ItemDrop.ItemData item)
             {
-                if (__instance.m_name == dragon || __instance.m_name == yagluth)
+                if (__instance.m_name == yagluth)
                 {
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível invocar esse boss nessa era.", 0, null);
 
                     return false;
                 }
 
+                if (__instance.m_name == eikhthyr) __instance.m_bossItems = 20;
+                if (__instance.m_name == elder) __instance.m_bossItems = 30;
+                if (__instance.m_name == bonemass) __instance.m_bossItems = 50;
 
                 return true;
             }

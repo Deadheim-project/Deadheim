@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Steamworks;
 
 namespace Deadheim.Patches
 { 
@@ -22,6 +23,7 @@ namespace Deadheim.Patches
                 ZRoutedRpc.instance.Register<ZPackage>("Sync", new Action<long, ZPackage>(RPC_Sync));
                 ZRoutedRpc.instance.Register<ZPackage>("AdminSync", new Action<long, ZPackage>(RPC_AdminSync));
                 ZRoutedRpc.instance.Register<ZPackage>("VipSync", new Action<long, ZPackage>(RPC_VipSync));
+                ZRoutedRpc.instance.Register<ZPackage>("PVPSync", new Action<long, ZPackage>(RPC_PVPSync));
                 ZRoutedRpc.instance.Register<ZPackage>("ModeratorSync", new Action<long, ZPackage>(RPC_ModeratorSync));
                 ZRoutedRpc.instance.Register<ZPackage>("EraSync", new Action<long, ZPackage>(RPC_EraSync));
             }
@@ -31,6 +33,12 @@ namespace Deadheim.Patches
         {
             Chat.m_instance.AddString("Server", "Admin permissions synced", Talker.Type.Normal);
             Plugin.admin = true;
+        }
+
+        public static void RPC_PVPSync(long sender, ZPackage pkg)
+        {
+            Chat.m_instance.AddString("Server", "PVP permissions synced", Talker.Type.Normal);
+            Plugin.isPvp = true;
         }
 
         public static void RPC_VipSync(long sender, ZPackage pkg)
@@ -60,9 +68,11 @@ namespace Deadheim.Patches
             {
                 string str = ((ZSteamSocket)peer.m_socket).GetPeerID().m_SteamID.ToString();
                 List<string> vipList = File.ReadAllText(Utils.GetSaveDataPath() + "/vip.txt").Split(' ').ToList();
+                List<string> pvpList = File.ReadAllText(Utils.GetSaveDataPath() + "/pvp.txt").Split(' ').ToList();
                 List<string> moderatorList = File.ReadAllText(Utils.GetSaveDataPath() + "/moderator.txt").Split(' ').ToList();
 
                 if (!String.IsNullOrEmpty(str) && vipList.Contains(str)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "VipSync", new ZPackage());
+                if (!String.IsNullOrEmpty(str) && pvpList.Contains(str)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "PVPSync", new ZPackage());
                 if (!String.IsNullOrEmpty(str) && moderatorList.Contains(str)) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "ModeratorSync", new ZPackage());
 
                 ZPackage eraPackage = new ZPackage();

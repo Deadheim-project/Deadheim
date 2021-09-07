@@ -103,12 +103,11 @@ C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.pdb
 C:\Users\Werner\Desktop\anticheat\ValheimRpBr\Deadheim\obj\Debug\Deadheim.csproj.AssemblyReference.cache
+C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\obj\Debug\Deadheim.csproj.CoreCompileInputs.cache
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Deadheim.pdb
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\DnsClient.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\0Harmony.dll
-C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Jotunn.dll
-C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Jotunn.pdb
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\LitJSON.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\MongoDB.Bson.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\MongoDB.Driver.dll
@@ -126,7 +125,6 @@ C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Mono.Cecil.Rocks.d
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Mono.Cecil.Rocks.pdb
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Mono.Cecil.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Mono.Cecil.pdb
-C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\MonoMod.exe
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\MonoMod.RuntimeDetour.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\MonoMod.Utils.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\UnityEngine.AIModule.dll
@@ -203,8 +201,9 @@ C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\bepinex.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\SharpCompress.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\System.Buffers.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
-C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\obj\Debug\Deadheim.csproj.CoreCompileInputs.cache
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\obj\Debug\Deadheim.csproj.CopyComplete
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\obj\Debug\Deadheim.dll
 C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\obj\Debug\Deadheim.pdb
-C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\obj\Debug\Deadheim.csproj.AssemblyReference.cache
+C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Jotunn.dll
+C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\Jotunn.pdb
+C:\Users\Werner\Desktop\anticheat\Deadheim\Deadheim\bin\Debug\MonoMod.exe
