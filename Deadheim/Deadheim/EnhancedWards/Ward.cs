@@ -10,21 +10,14 @@ namespace Deadheim.EnhancedWards
         [HarmonyPatch(typeof(WearNTear), "RPC_Damage")]
         public static class RPC_Damage
         {
-            private static void Prefix(WearNTear __instance, ref HitData hit, ZNetView ___m_nview)
+            private static bool Prefix(WearNTear __instance, ref HitData hit, ZNetView ___m_nview)
             {
                 if (PrivateArea.CheckInPrivateArea(__instance.transform.position) && ___m_nview != null)
                 {
-                    hit.m_damage.m_blunt *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_slash *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_pierce *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_chop *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_pickaxe *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_fire *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_frost *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_lightning *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_poison *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
-                    hit.m_damage.m_spirit *= (float)(1.0 - Plugin.wardReductionDamage / 100.0);
+                    return false;
                 }
+
+                return true;
             }
         }
 

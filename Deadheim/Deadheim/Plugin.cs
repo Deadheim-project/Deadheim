@@ -20,6 +20,7 @@ namespace Deadheim
         public static List<string> dropTypes = new List<string>(new string[] { "Material", "Ammo", "Customization", "Trophie", "Torch", "Misc" });
         public static float wardReductionDamage = 99;
         public static float safeArea = 1500;
+        public static bool hasSpawned = false;
         Harmony _Harmony = new Harmony("Detalhes.deadheim");
 
         private void Awake()
