@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "UDNHtrU6YoQJz4QdA2uiUE1Q7njLFJ3lkTBOu1MAcIdv3KsJBwNPyf4AADlwY6a0iXREyBWXsisa1ZnUyS1LCA==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Werner\\source\\repos\\Deadheim\\Deadheim\\Deadheim.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Werner\\.nuget\\packages\\litjson\\0.17.0\\litjson.0.17.0.nupkg.sha512"
+  ],
+  "logs": []
+}
