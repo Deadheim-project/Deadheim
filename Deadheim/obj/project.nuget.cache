@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "UDNHtrU6YoQJz4QdA2uiUE1Q7njLFJ3lkTBOu1MAcIdv3KsJBwNPyf4AADlwY6a0iXREyBWXsisa1ZnUyS1LCA==",
+  "dgSpecHash": "I/J8e5efKsUD45Qpau+CuilT3uoohtcFsmdRuQcZH2cwRR7mB8MegDsjQTg/2L+NZmnQR4YIb/jqVD9pMSvL2w==",
   "success": true,
   "projectFilePath": "C:\\Users\\Werner\\source\\repos\\Deadheim\\Deadheim\\Deadheim.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Werner\\.nuget\\packages\\jetbrains.annotations\\2021.2.0\\jetbrains.annotations.2021.2.0.nupkg.sha512",
     "C:\\Users\\Werner\\.nuget\\packages\\litjson\\0.17.0\\litjson.0.17.0.nupkg.sha512"
   ],
   "logs": []

@@ -138,7 +138,7 @@ namespace Deadheim.Patches
         {
             private static bool Prefix(List<ZNet.PlayerInfo> playerList, ZNet __instance)
             {
-                if (Plugin.admin && Player.m_localPlayer.name.ToLower() != "jah")
+                if (Plugin.admin)
                 {
                     foreach (ZNet.PlayerInfo player in __instance.m_players)
                     {
@@ -177,7 +177,7 @@ namespace Deadheim.Patches
                 GameObject playerGrid = InventoryGui.instance.m_playerGrid.gameObject;
 
                 // Player inventory background size, only enlarge it up to 6x8 rows, after that use the scroll bar
-                int playerInventoryBackgroundSize =  Math.Min(6, Math.Max(4, 8));
+                int playerInventoryBackgroundSize = Math.Min(6, Math.Max(4, 8));
                 float containerNewY = containerOriginalY - oneRowSize * playerInventoryBackgroundSize;
                 // Resize player inventory
                 player.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, playerInventoryBackgroundSize * oneRowSize);
@@ -246,69 +246,6 @@ namespace Deadheim.Patches
                 {
                     __instance.m_serverPlayerLimit = maxPlayers;
                 }
-            }
-        }
-
-        [HarmonyPatch(typeof(Attack), "DoMeleeAttack")]
-        private class EnhanceHitDirection
-        {
-            private static void Prefix(
-              ref float ___m_maxYAngle,
-              ref float ___m_attackOffset,
-              ref float ___m_attackHeight)
-            {
-                ___m_maxYAngle = 180f;
-                ___m_attackOffset = 0;
-                ___m_attackHeight = 1f;
-            }
-        }
-
-
-        [HarmonyPatch(typeof(Player), "PlacePiece")]
-        public static class NoBuild_Patch
-        {
-            private static bool Prefix(Piece piece, Player __instance)
-            {
-                int areaInstances = (ZNetScene.m_instance.m_instances.Count);
-
-                bool isInsideArea = false;
-                bool isTotem = piece.gameObject.name == "guard_stone";
-
-                foreach (PrivateArea area in PrivateArea.m_allAreas)
-                {
-                    isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
-                    if (isInsideArea) break;
-                }
-
-                if (isTotem)
-                {
-                    if (!Plugin.playerIsVip && areaInstances >= 5000)
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 5000 instâncias", 0, null);
-                        return false;
-                    }
-
-                    if (Plugin.playerIsVip && areaInstances >= 7000)
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
-                        return false;
-                    }
-                }
-
-                if (!Plugin.playerIsVip && areaInstances >= 5000 && isInsideArea)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 5000 instâncias", 0, null);
-                    return false;
-                }
-
-                if (Plugin.playerIsVip && areaInstances >= 7000 && isInsideArea)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
-                    return false;
-                }
-
-
-                return true;
             }
         }
 

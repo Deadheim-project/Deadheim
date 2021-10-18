@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace Deadheim.EnhancedWards
 {
-    class Ward
+    [HarmonyPatch]
+    public class Ward
     {
         [HarmonyPatch(typeof(WearNTear), "RPC_Damage")]
         public static class RPC_Damage
@@ -28,7 +29,52 @@ namespace Deadheim.EnhancedWards
             {
                 if (Plugin.admin) return true;
 
-                if (piece.gameObject.name != "guard_stone") return true;
+                if (piece.gameObject.name.ToLower().Contains("mofarm"))
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Somente disponível para administradores", 0, null);
+
+                    return false;
+                }
+
+                int areaInstances = (ZNetScene.m_instance.m_instances.Count);
+
+                bool isInsideArea = false;
+                bool isTotem = piece.gameObject.name == "guard_stone";
+
+                foreach (PrivateArea area in PrivateArea.m_allAreas)
+                {
+                    isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
+                    if (isInsideArea) break;
+                }
+
+                if (isTotem)
+                {
+                    if (!Plugin.playerIsVip && areaInstances >= 5000)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 5000 instâncias", 0, null);
+                        return false;
+                    }
+
+                    if (Plugin.playerIsVip && areaInstances >= 7000)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
+                        return false;
+                    }
+                }
+
+                if (!Plugin.playerIsVip && areaInstances >= 5000 && isInsideArea)
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 5000 instâncias", 0, null);
+                    return false;
+                }
+
+                if (Plugin.playerIsVip && areaInstances >= 7000 && isInsideArea)
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
+                    return false;
+                }
+
+                if (!isTotem) return true;
 
                 bool isInNotAllowedArea = false;
 
@@ -36,8 +82,8 @@ namespace Deadheim.EnhancedWards
 
                 foreach (PrivateArea area in PrivateArea.m_allAreas)
                 {
-                    bool isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
-                    if (isInsideArea) privateAreaList.Add(area);
+                    bool isInsideAreaa = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
+                    if (isInsideAreaa) privateAreaList.Add(area);
                 }
 
                 foreach (PrivateArea area in privateAreaList)

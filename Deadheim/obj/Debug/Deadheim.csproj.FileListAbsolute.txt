@@ -208,4 +208,5 @@ C:\Users\Werner\source\repos\Deadheim\Deadheim\obj\Debug\Deadheim.csproj.CoreCom
 C:\Users\Werner\source\repos\Deadheim\Deadheim\obj\Debug\Deadheim.csproj.CopyComplete
 C:\Users\Werner\source\repos\Deadheim\Deadheim\obj\Debug\Deadheim.dll
 C:\Users\Werner\source\repos\Deadheim\Deadheim\obj\Debug\Deadheim.pdb
+C:\Users\Werner\source\repos\Deadheim\Deadheim\bin\Debug\JetBrains.Annotations.dll
 C:\Users\Werner\source\repos\Deadheim\Deadheim\obj\Debug\Deadheim.csproj.AssemblyReference.cache

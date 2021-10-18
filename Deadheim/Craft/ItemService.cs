@@ -203,45 +203,5 @@ namespace Deadheim
                 }
             }
         }
-
-        [HarmonyPatch]
-        public static class EquipPatches
-        {
-            public static KeyCode keyCodeHelmet = KeyCode.UpArrow;
-            public static bool isHelmetActive = true;
-
-            [HarmonyPrefix]
-            [HarmonyPatch(typeof(VisEquipment), "SetHelmetEquiped")]
-            public static bool VisEquipment_SetHelmetEquiped(
-              ref VisEquipment __instance,
-              int hash,
-              int hairHash)
-            {
-                if (hash == 0 || hash == 703889544)
-                    return true;
-
-                if (IsKeyDown() && isHelmetActive)
-                {
-                    if (__instance.m_helmetItemInstance)
-                        Object.Destroy(__instance.m_helmetItemInstance);
-                    __instance.m_helmetItemInstance = __instance.AttachItem(hash, 0, __instance.m_helmet);
-                    isHelmetActive = false;
-                    return false;
-                }
-
-                if (!IsKeyDown() || isHelmetActive)
-                    return false;
-
-                Object.Destroy(__instance.m_helmetItemInstance);
-                isHelmetActive = true;
-
-                return false;
-            }
-
-            public static bool IsKeyDown()
-            {
-                return (Input.GetKeyDown(keyCodeHelmet));
-            }
-        }
     }
 }

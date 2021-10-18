@@ -4,8 +4,8 @@ namespace Deadheim.FasterBoats
 {
     public class FasterBoats
     {
-        private static float boatWindSpeedmultiplier = 2f;
-        private static float boatRudderSpeedmultiplier = 4f;
+        private static float boatWindSpeedmultiplier = 3f;
+        private static float boatRudderSpeedmultiplier = 5f;
 
         [HarmonyPatch(typeof(Ship), "GetSailForce")]
         private class BoatWindSpeedPatcher
