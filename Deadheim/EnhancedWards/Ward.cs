@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Jotunn.Managers;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -15,7 +16,13 @@ namespace Deadheim.EnhancedWards
             {
                 if (PrivateArea.CheckInPrivateArea(__instance.transform.position) && ___m_nview != null)
                 {
-                    return false;
+                    if ((Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value))
+                    {
+                        return false;
+                    } else
+                    {
+                        hit.ApplyModifier(1 - (Plugin.WardReductionDamage.Value / 100));
+                    }         
                 }
 
                 return true;
@@ -26,12 +33,14 @@ namespace Deadheim.EnhancedWards
         public static class NoBuild_Patch
         {
             private static bool Prefix(Piece piece, Player __instance)
-            {
-                if (Plugin.admin) return true;
+            { 
+                if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
 
-                if (piece.gameObject.name.ToLower().Contains("mofarm"))
+                bool isTotem = piece.gameObject.name == "guard_stone";
+
+                if (isTotem && Vector3.Distance(Vector3.zero, Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value)
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Somente disponível para administradores", 0, null);
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não e possível construir totems nessa região", 0, null);
 
                     return false;
                 }
@@ -39,7 +48,6 @@ namespace Deadheim.EnhancedWards
                 int areaInstances = (ZNetScene.m_instance.m_instances.Count);
 
                 bool isInsideArea = false;
-                bool isTotem = piece.gameObject.name == "guard_stone";
 
                 foreach (PrivateArea area in PrivateArea.m_allAreas)
                 {
@@ -49,26 +57,26 @@ namespace Deadheim.EnhancedWards
 
                 if (isTotem)
                 {
-                    if (!Plugin.playerIsVip && areaInstances >= 5000)
+                    if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 5000)
                     {
                         Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 5000 instâncias", 0, null);
                         return false;
                     }
 
-                    if (Plugin.playerIsVip && areaInstances >= 7000)
+                    if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 7000)
                     {
                         Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
                         return false;
                     }
                 }
 
-                if (!Plugin.playerIsVip && areaInstances >= 5000 && isInsideArea)
+                if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 5000 && isInsideArea)
                 {
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 5000 instâncias", 0, null);
                     return false;
                 }
 
-                if (Plugin.playerIsVip && areaInstances >= 7000 && isInsideArea)
+                if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 7000 && isInsideArea)
                 {
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
                     return false;
@@ -115,12 +123,8 @@ namespace Deadheim.EnhancedWards
                     Interactable componentInParent = __instance.m_hovering.GetComponentInParent<Interactable>();
                     if (componentInParent != null)
                     {
-                        __instance.m_lastHoverInteractTime = Time.time;
-
-                        if (componentInParent is PrivateArea)
+                        if (componentInParent is PrivateArea pa)
                         {
-                            PrivateArea pa = (PrivateArea)componentInParent;
-
                             if (pa.IsPermitted(__instance.GetPlayerID()))
                             {
                                 text.Append("\n[<color=yellow><b>" + wardOptionalKey.ToString() + "</b></color>]");
@@ -135,18 +139,13 @@ namespace Deadheim.EnhancedWards
                 {
                     if (__instance.m_hovering)
                     {
-                        Interact(__instance, __instance.m_hovering, false);
+                        Interact(__instance, __instance.m_hovering);
                     }
                 }
             }
 
-            public static void Interact(Player thes, GameObject go, bool hold)
-            {
-                if (hold && Time.time - thes.m_lastHoverInteractTime < 1f)
-                {
-                    return;
-                }
-
+            public static void Interact(Player thes, GameObject go)
+            {  
                 Interactable componentInParent = go.GetComponentInParent<Interactable>();
                 if (componentInParent != null)
                 {
@@ -157,6 +156,7 @@ namespace Deadheim.EnhancedWards
                         PrivateArea pa = (PrivateArea)componentInParent;
                         if (pa.IsPermitted(thes.GetPlayerID()))
                         {
+
                             pa.m_nview.InvokeRPC("ToggleEnabled", new object[]
                             {
                                 pa.m_piece.GetCreator()

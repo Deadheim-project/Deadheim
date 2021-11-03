@@ -38,6 +38,10 @@
               "target": "Package",
               "version": "[2021.2.0, )"
             },
+            "JotunnLib": {
+              "target": "Package",
+              "version": "[2.3.10, )"
+            },
             "LitJson": {
               "target": "Package",
               "version": "[0.17.0, )"

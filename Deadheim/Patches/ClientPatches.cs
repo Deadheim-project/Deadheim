@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
+using Jotunn.Managers;
 
 namespace Deadheim.Patches
 {
@@ -31,8 +32,6 @@ namespace Deadheim.Patches
             {
 
                 if (text.ToLower().Contains("i have arrived")) return false;
-                Datadog.Datadog.SendLog("-- Chatlog: " + text + " steamId: " + Plugin.steamId + " user:" + user + " LocalChat");
-
                 return true;
             }
         }
@@ -44,25 +43,7 @@ namespace Deadheim.Patches
             {
                 if (!Player.m_localPlayer) return;
 
-                if (Plugin.isPvp) Player.m_localPlayer.m_nview.GetZDO().Set("playerName", name + " - PVP");
-            }
-        }
-
-        [HarmonyPatch(typeof(Player), "FixedUpdate")]
-        public static class PlayerCheck
-        {
-            private static void Postfix(Player __instance)
-            {
-                if (__instance && !String.IsNullOrEmpty(Plugin.steamId))
-                {
-                    try
-                    {
-                        Datadog.Datadog.SendPlayerPosition(__instance);
-                        Datadog.Datadog.verifyIfPlayerIsCheating(__instance);
-                    }
-                    catch { }
-                }
-
+                if (Plugin.Pvp.Value.Contains(Plugin.steamId)) Player.m_localPlayer.m_nview.GetZDO().Set("playerName", name + " - PVP");
             }
         }
 
@@ -117,7 +98,7 @@ namespace Deadheim.Patches
             {
                 ZNet.instance.SetPublicReferencePosition(true);
 
-                if (Vector3.Distance(new Vector3(-249, 262), Player.m_localPlayer.transform.position) <= Plugin.safeArea)
+                if (Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value)
                 {
                     InventoryGui.instance.m_pvp.isOn = false;
                     Player.m_localPlayer.SetPVP(false);
@@ -138,7 +119,7 @@ namespace Deadheim.Patches
         {
             private static bool Prefix(List<ZNet.PlayerInfo> playerList, ZNet __instance)
             {
-                if (Plugin.admin)
+                if (SynchronizationManager.Instance.PlayerIsAdmin)
                 {
                     foreach (ZNet.PlayerInfo player in __instance.m_players)
                     {
@@ -176,16 +157,12 @@ namespace Deadheim.Patches
                 RectTransform player = __instance.m_player;
                 GameObject playerGrid = InventoryGui.instance.m_playerGrid.gameObject;
 
-                // Player inventory background size, only enlarge it up to 6x8 rows, after that use the scroll bar
                 int playerInventoryBackgroundSize = Math.Min(6, Math.Max(4, 8));
                 float containerNewY = containerOriginalY - oneRowSize * playerInventoryBackgroundSize;
-                // Resize player inventory
                 player.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, playerInventoryBackgroundSize * oneRowSize);
-                // Move chest inventory based on new player invetory size
                 container.offsetMax = new Vector2(610, containerNewY);
                 container.offsetMin = new Vector2(40, containerNewY + containerHeight);
 
-                // Add player inventory scroll bar if it does not exist
                 if (!playerGrid.GetComponent<InventoryGrid>().m_scrollbar)
                 {
                     GameObject playerGridScroll = GameObject.Instantiate(InventoryGui.instance.m_containerGrid.m_scrollbar.gameObject, playerGrid.transform.parent);

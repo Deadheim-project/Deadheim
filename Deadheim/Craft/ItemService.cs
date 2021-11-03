@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Jotunn.Managers;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -111,11 +112,11 @@ namespace Deadheim
 
         public static List<string> GetDisabledCrafts()
         {
-            if (Plugin.age == "bronze") return ageOfIron.Concat(ageOfSilver).Concat(ageOfBarley).Concat(ageOfLinen).ToList();
-            if (Plugin.age == "iron") return ageOfSilver.Concat(ageOfBarley).Concat(ageOfLinen).ToList();
-            if (Plugin.age == "silver") return ageOfBarley.Concat(ageOfLinen).ToList();
-            if (Plugin.age == "barley") return ageOfLinen;
-            if (Plugin.age == "linen") return new List<string>();
+            if (Plugin.Age.Value == "bronze") return ageOfIron.Concat(ageOfSilver).Concat(ageOfBarley).Concat(ageOfLinen).ToList();
+            if (Plugin.Age.Value == "iron") return ageOfSilver.Concat(ageOfBarley).Concat(ageOfLinen).ToList();
+            if (Plugin.Age.Value == "silver") return ageOfBarley.Concat(ageOfLinen).ToList();
+            if (Plugin.Age.Value == "barley") return ageOfLinen;
+            if (Plugin.Age.Value == "linen") return new List<string>();
 
             return ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).Concat(ageOfBarley).ToList();
         }
@@ -156,9 +157,11 @@ namespace Deadheim
                 {
                     if (gameObject.name == "portal_wood")
                     {
-                        gameObject.GetComponent<Piece>().m_resources[0].m_amount = 500;
-                        gameObject.GetComponent<Piece>().m_resources[1].m_amount = 75;
-                        gameObject.GetComponent<Piece>().m_resources[2].m_amount = 50;
+                        var piece = gameObject.GetComponent<Piece>();
+                        piece.m_resources[0].m_amount = 1500;
+                        piece.m_resources[1].m_amount = 1;
+                        piece.m_resources[1].m_resItem = PrefabManager.Instance.GetPrefab("PortalToken").GetComponent<ItemDrop>();
+                        piece.m_resources[2].m_amount = 225;
                     }
 
                     if (gameObject.name == "piece_cartographytable")
@@ -174,11 +177,6 @@ namespace Deadheim
                         gameObject.GetComponent<Piece>().m_resources[3].m_resItem = linen.GetComponent<ItemDrop>();
                         gameObject.GetComponent<Piece>().m_resources[4].m_amount = 800;
                         gameObject.GetComponent<Piece>().m_resources[4].m_resItem = blueberries.GetComponent<ItemDrop>();
-                    }
-
-                    if (gameObject.name.ToLower().Contains("knife_butcher") || gameObject.name.ToLower().ToLower().Contains("knifebutcher"))
-                    {
-                        gameObject.GetComponent<ItemDrop>().m_itemData.m_shared.m_damages.m_damage = 50;
                     }
                 }
             }

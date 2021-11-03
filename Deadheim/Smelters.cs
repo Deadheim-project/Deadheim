@@ -42,9 +42,22 @@ namespace Deadheim
             {
                 if (!__instance) return;
 
-                var item = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("flametal"));
+                var flametal = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("flametal"));
+                var bronze = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("bronze"));
+                var tin = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("tin"));
+                var iron = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("iron"));
+                var silver = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("silver"));
+                var blackmetal = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("blackmetal"));
 
-                __instance.m_conversion.Remove(item);
+                if (Plugin.Age.Value != "fire") __instance.m_conversion.Remove(flametal);
+                if (Plugin.Age.Value != "linen") __instance.m_conversion.Remove(blackmetal);
+                if (Plugin.Age.Value != "silver") __instance.m_conversion.Remove(silver);
+                if (Plugin.Age.Value != "iron") __instance.m_conversion.Remove(iron);
+                if (Plugin.Age.Value != "bronze")
+                {
+                    __instance.m_conversion.Remove(tin);
+                    __instance.m_conversion.Remove(bronze);
+                }
             }
         }
     }

@@ -1,11 +1,17 @@
 {
   "version": 2,
-  "dgSpecHash": "I/J8e5efKsUD45Qpau+CuilT3uoohtcFsmdRuQcZH2cwRR7mB8MegDsjQTg/2L+NZmnQR4YIb/jqVD9pMSvL2w==",
+  "dgSpecHash": "0e+kvYzog4rd3SvvOt1INOKFhJY9D2t3Nxz45MGDSA+kq1DB4ARYp9l7JSmH6RcVr5iS80M68iqCTvi7pAqrow==",
   "success": true,
   "projectFilePath": "C:\\Users\\Werner\\source\\repos\\Deadheim\\Deadheim\\Deadheim.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Werner\\.nuget\\packages\\harmonyx\\2.5.5\\harmonyx.2.5.5.nupkg.sha512",
     "C:\\Users\\Werner\\.nuget\\packages\\jetbrains.annotations\\2021.2.0\\jetbrains.annotations.2021.2.0.nupkg.sha512",
-    "C:\\Users\\Werner\\.nuget\\packages\\litjson\\0.17.0\\litjson.0.17.0.nupkg.sha512"
+    "C:\\Users\\Werner\\.nuget\\packages\\jotunnlib\\2.3.10\\jotunnlib.2.3.10.nupkg.sha512",
+    "C:\\Users\\Werner\\.nuget\\packages\\litjson\\0.17.0\\litjson.0.17.0.nupkg.sha512",
+    "C:\\Users\\Werner\\.nuget\\packages\\mono.cecil\\0.11.4\\mono.cecil.0.11.4.nupkg.sha512",
+    "C:\\Users\\Werner\\.nuget\\packages\\monomod\\21.9.19.1\\monomod.21.9.19.1.nupkg.sha512",
+    "C:\\Users\\Werner\\.nuget\\packages\\monomod.runtimedetour\\21.8.19.1\\monomod.runtimedetour.21.8.19.1.nupkg.sha512",
+    "C:\\Users\\Werner\\.nuget\\packages\\monomod.utils\\21.9.19.1\\monomod.utils.21.9.19.1.nupkg.sha512"
   ],
   "logs": []
 }
