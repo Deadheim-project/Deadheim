@@ -7,128 +7,28 @@ using UnityEngine;
 namespace Deadheim
 {
     internal class ItemService
-    {
-        public static List<string> ageOfBronze = new List<string>()
-        {
-            "item_chest_bronze",
-            "item_legs_bronze",
-            "item_helmet_bronze",
-            "item_shield_bronzebuckler",
-            "item_mace_bronze",
-            "item_spear_bronze",
-            "item_sword_bronze",
-            "item_pickaxe_bronze",
-            "item_axe_bronze",
-            "item_atgeir_bronze",
-            "item_knife_copper",
-            "item_carrotsoup",
-            "Porridge",
-            " jam",
-            "Carrot Butter",
-            "Pork Rind",
-            "Broth",
-            "item_meadbase",
-            "T2"
-        };
-
-        public static List<string> ageOfIron = new List<string>()
-        {
-            "iron",
-            "stonecutter",
-            "arrow_poison",
-            "huntsman",
-            "piece_workbench_ext4",
-            "piece_forge_ext3",
-            "sausage",
-            "draugr",
-            "ooze",
-            "Vial",
-            "Elixir",
-            "Flask",
-            "Potion",
-            "knifechitin",
-            "razor",
-            "banded",
-            "serpentscale",
-            "battleaxe",
-            "T3"
-        };
-
-        public static List<string> ageOfSilver = new List<string>()
-        {
-            "arrow_obsidian",
-            "arrow_frost",
-            "item_serpentstew",
-            "silver",
-            "drake",
-            "wolf",
-            "item_spear_wolffang",
-            "item_spear_ancientbark",
-            "Kebab",
-            "Smoked Fish",
-            "Pancakes",
-            "draugr",
-            "Omlette",
-            "T4"
-        };
-
-        public static List<string> ageOfBarley = new List<string>()
-        {
-              "artisan",
-              "windmill",
-              "arrow_needle",
-              "needle",
-              "lox",
-              "item_loxpie",
-              "item_fishwraps",
-              "item_bloodpudding",
-              "item_bread",
-              "Fish Stew",
-              "Blood Sausage",
-              "lox"
-        };
-
-
-        public static List<string> ageOfLinen = new List<string>()
-        {
-            "spinning",
-            "blastfurnace",
-            "blackmetal",
-            "item_mace_needle",
-            "padded",
-              " T5"
-        };
-
-        public static List<string> Enchantments = new List<string>()
-        {
-              " Dust",
-              " Shard",
-              " Essence",
-              " Reagent",
-              "Enchanter",
-              "Augmenter",
-              "Rune of"
-        };
+    {  
 
         public static List<string> GetDisabledCrafts()
         {
-            if (Plugin.Age.Value == "bronze") return ageOfIron.Concat(ageOfSilver).Concat(ageOfBarley).Concat(ageOfLinen).ToList();
-            if (Plugin.Age.Value == "iron") return ageOfSilver.Concat(ageOfBarley).Concat(ageOfLinen).ToList();
-            if (Plugin.Age.Value == "silver") return ageOfBarley.Concat(ageOfLinen).ToList();
-            if (Plugin.Age.Value == "barley") return ageOfLinen;
-            if (Plugin.Age.Value == "linen") return new List<string>();
+            if (Plugin.Age.Value == "bronze") return Plugin.Iron.Value.Split(',').Concat(Plugin.Silver.Value.Split(',')).Concat(Plugin.Blackmetal.Value.Split(',')).Concat(Plugin.Fire.Value.Split(',')).ToList();
+            if (Plugin.Age.Value == "iron") return (Plugin.Silver.Value.Split(',')).Concat(Plugin.Blackmetal.Value.Split(',')).Concat(Plugin.Fire.Value.Split(',')).ToList();
+            if (Plugin.Age.Value == "silver") return (Plugin.Blackmetal.Value.Split(',')).Concat(Plugin.Fire.Value.Split(',')).ToList();
+            if (Plugin.Age.Value == "blackmetal") return (Plugin.Fire.Value.Split(',')).ToList();
+            if (Plugin.Age.Value == "fire") return new List<string>();
 
-            return ageOfBronze.Concat(ageOfIron).Concat(ageOfSilver).Concat(ageOfLinen).Concat(ageOfBarley).ToList();
+            return Plugin.Bronze.Value.Split(',').Concat(Plugin.Iron.Value.Split(',')).Concat(Plugin.Silver.Value.Split(',')).Concat(Plugin.Blackmetal.Value.Split(',')).Concat(Plugin.Fire.Value.Split(',')).ToList();
         }
 
         public static bool IsDisabled(string recipeName)
         {
             List<string> disabledCrafts = GetDisabledCrafts();
-            foreach (string craft in disabledCrafts)
-            {
-                if (recipeName.ToLower().Contains(craft.ToLower())) return true;
-            }
 
+            foreach (string x in disabledCrafts)
+            {
+                if (string.IsNullOrWhiteSpace(x)) continue;
+                if (recipeName.ToLower().Contains(x.ToLower())) return true;
+            }
             return false;
         }
 

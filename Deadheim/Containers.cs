@@ -5,22 +5,22 @@ namespace Deadheim
     [HarmonyPatch(typeof(Container), "Awake")]
     public static class Container_Awake_Patch
     {
-        private const int woodChestRows = 8;
-        private const int woodChestColumns = 8;
+        private const int woodChestRows = 4;
+        private const int woodChestColumns = 5;
 
-        private const int personalChestRows = 8;
-        private const int personalChestColumns = 8;
+        private const int personalChestRows = 6;
+        private const int personalChestColumns = 6;
 
-        private const int ironChestRows = 12;
-        private const int ironChestColumns = 8;
+        private const int ironChestRows = 8;
+        private const int ironChestColumns = 6;
 
         private const int karveInventoryRows = 4;
         private const int karveInventoryColumns = 2;
 
-        private const int longboatInventoryRows = 8;
+        private const int longboatInventoryRows = 6;
         private const int longboatInventoryColumns = 6;
 
-        private const int cartInventoryRows = 8;
+        private const int cartInventoryRows = 5;
         private const int cartInventoryColumns = 6;
 
         static void Postfix(Container __instance, ref Inventory ___m_inventory)

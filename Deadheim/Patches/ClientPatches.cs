@@ -30,7 +30,6 @@ namespace Deadheim.Patches
         {
             private static bool Prefix(string user, string text)
             {
-
                 if (text.ToLower().Contains("i have arrived")) return false;
                 return true;
             }
@@ -39,11 +38,34 @@ namespace Deadheim.Patches
         [HarmonyPatch(typeof(Player), "SetPlayerID")]
         internal class SetPlayerID
         {
-            private static void Postfix(long playerID, string name)
+            private static bool Prefix(long playerID, string name)
             {
-                if (!Player.m_localPlayer) return;
+                try
+                {
+                    if (!Player.m_localPlayer) return true;
 
-                if (Plugin.Pvp.Value.Contains(Plugin.steamId)) Player.m_localPlayer.m_nview.GetZDO().Set("playerName", name + " - PVP");
+                    if (Plugin.Tag.Value.Contains(Plugin.steamId))
+                    {
+                        foreach (var playerTag in Plugin.Tag.Value.Trim(' ').Split(';'))
+                        {
+                            if (playerTag.Split(',')[0] == Plugin.steamId)
+                            {
+                                if (Plugin.Tag.Value.Contains(Plugin.steamId))
+                                {
+                                    Player.m_localPlayer.m_nview.GetZDO().Set("playerName", playerTag.Split(',')[1] + " " + name);
+                                    Player.m_localPlayer.m_nview.GetZDO().Set(nameof(playerID), playerID);
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                } catch  (Exception e)
+                {
+                    throw e;
+                }
+ 
+
+                return true;
             }
         }
 
@@ -60,31 +82,12 @@ namespace Deadheim.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
-        public static class Player_UpdatePlacementGhost_Patch
-        {
-            private static void Postfix(ref Player __instance)
-            {
-                try
-                {
-                    if (__instance.m_placementStatus == Player.PlacementStatus.Invalid)
-                    {
-                        __instance.m_placementStatus = Player.PlacementStatus.Valid;
-                        __instance.m_placementGhost.GetComponent<Piece>().SetInvalidPlacementHeightlight(false);
-                    }
-                }
-                catch
-                {
-                }
-            }
-        }
-
         [HarmonyPatch(typeof(SE_Stats), nameof(SE_Stats.Setup))]
         public static class SE_Stats_Setup_Patch
         {
             private static void Postfix(ref SE_Stats __instance)
             {
-                int meginjordbuff = 300;
+                int meginjordbuff = 200;
                 if (__instance.m_addMaxCarryWeight > 0)
                     __instance.m_addMaxCarryWeight = (__instance.m_addMaxCarryWeight - 150) + meginjordbuff;
             }
@@ -139,7 +142,7 @@ namespace Deadheim.Patches
         {
             public static void Prefix(string name, ref int w, ref int h)
             {
-                if (h == 4 && w == 8 || name == "Inventory") h = 9;
+                if (h == 4 && w == 8 || name == "Inventory") h = 6;
             }
         }
 
@@ -195,7 +198,7 @@ namespace Deadheim.Patches
             if (ZRoutedRpc.instance == null)
                 return;
 
-            __instance.m_maxCarryWeight = 550;
+            __instance.m_maxCarryWeight = 450;
 
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
         }
@@ -273,6 +276,7 @@ namespace Deadheim.Patches
                     TombStone component = gameObject.GetComponent<TombStone>();
                     PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
                     component.Setup(playerProfile.GetName(), playerProfile.GetPlayerID());
+                    Minimap.instance.AddPin(__instance.transform.position, Minimap.PinType.Death, string.Format("$hud_mapday {0}", (object)EnvMan.instance.GetDay(ZNet.instance.GetTimeSeconds())), true, false);
                 }
 
                 Player.m_localPlayer.ClearFood();
@@ -280,6 +284,16 @@ namespace Deadheim.Patches
                 Game.instance.GetPlayerProfile().SetDeathPoint(__instance.transform.position);
                 Game.instance.RequestRespawn(10f);
                 return false;
+            }
+
+                    }
+
+        [HarmonyPatch(typeof(Skills), "RaiseSkill")]
+        public static class RaiseSkill
+        {
+            private static void Prefix(ref Skills __instance, ref Skills.SkillType skillType, ref float factor)
+            {
+                factor *= Plugin.SkillMultiplier.Value;
             }
         }
 

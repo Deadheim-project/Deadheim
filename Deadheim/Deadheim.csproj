@@ -39,6 +39,7 @@
     <Compile Include="CraftingStations.cs" />
     <Compile Include="Craft\ItemService.cs" />
     <Compile Include="Craft\CraftPatches.cs" />
+    <Compile Include="Drop.cs" />
     <Compile Include="EnhancedWards\Ward.cs" />
     <Compile Include="Boats\Boats.cs" />
     <Compile Include="NewCharacterValidatior.cs" />

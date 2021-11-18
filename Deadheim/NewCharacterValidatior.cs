@@ -6,6 +6,7 @@ namespace Deadheim
     class NewCharacterValidatior
     {
         private static string connectionError = "";
+        private static bool hasSpawned = false;
 
         [HarmonyPatch(typeof(Game), "Start")]
         public static class GameStart
@@ -19,8 +20,28 @@ namespace Deadheim
             }
         }
 
+        [HarmonyPatch(typeof(Player), "OnSpawned")]
+        public static class OnSpawned
+        {
+            public static void Postfix()
+            {
+                hasSpawned = true;
+            }
+        }
+
+        [HarmonyPatch(typeof(ZNet), "Shutdown")]
+        public static class Shutdown
+        {
+            public static void Postfix()
+            {
+                hasSpawned = false;
+            }
+        }
+
         public static void DontHaveInventory(long sender, ZPackage pkg)
         {
+            if (hasSpawned) return;
+
             if (Game.instance.m_playerProfile.m_worldData.Count != 0)
             {
                 Game.instance.Logout();

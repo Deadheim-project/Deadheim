@@ -34,16 +34,7 @@ namespace Deadheim.EnhancedWards
         {
             private static bool Prefix(Piece piece, Player __instance)
             { 
-                if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
-
                 bool isTotem = piece.gameObject.name == "guard_stone";
-
-                if (isTotem && Vector3.Distance(Vector3.zero, Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não e possível construir totems nessa região", 0, null);
-
-                    return false;
-                }
 
                 int areaInstances = (ZNetScene.m_instance.m_instances.Count);
 
@@ -63,9 +54,9 @@ namespace Deadheim.EnhancedWards
                         return false;
                     }
 
-                    if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 7000)
+                    if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 8000)
                     {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 8000 instâncias.", 0, null);
                         return false;
                     }
                 }
@@ -76,9 +67,9 @@ namespace Deadheim.EnhancedWards
                     return false;
                 }
 
-                if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 7000 && isInsideArea)
+                if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 8000 && isInsideArea)
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 7000 instâncias.", 0, null);
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 8000 instâncias.", 0, null);
                     return false;
                 }
 

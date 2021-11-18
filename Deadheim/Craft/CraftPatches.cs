@@ -40,9 +40,9 @@ namespace Deadheim.Craft
                 float itemStackMultiplier = 0.6f;
                 __instance.m_itemData.m_shared.m_weight = __instance.m_itemData.m_shared.m_weight * (1 - itemWeightReduction);
 
-                if (__instance.m_itemData.m_shared.m_maxStackSize <= 1) return; 
+                if (__instance.m_itemData.m_shared.m_maxStackSize <= 1) return;
 
-                __instance.m_itemData.m_shared.m_maxStackSize = (int)Math.Round(__instance.m_itemData.m_shared.m_maxStackSize *  (1 + itemStackMultiplier));
+                __instance.m_itemData.m_shared.m_maxStackSize = (int)Math.Round(__instance.m_itemData.m_shared.m_maxStackSize * (1 + itemStackMultiplier));
             }
         }
     }

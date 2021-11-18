@@ -49,15 +49,42 @@ namespace Deadheim
                 var silver = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("silver"));
                 var blackmetal = __instance.m_conversion.Find(x => x.m_from.m_itemData.m_dropPrefab.name.ToLower().Contains("blackmetal"));
 
-                if (Plugin.Age.Value != "fire") __instance.m_conversion.Remove(flametal);
-                if (Plugin.Age.Value != "linen") __instance.m_conversion.Remove(blackmetal);
-                if (Plugin.Age.Value != "silver") __instance.m_conversion.Remove(silver);
-                if (Plugin.Age.Value != "iron") __instance.m_conversion.Remove(iron);
-                if (Plugin.Age.Value != "bronze")
+  
+                if (Plugin.Age.Value == "bronze")
+                {
+                    __instance.m_conversion.Remove(flametal);
+                    __instance.m_conversion.Remove(blackmetal);
+                    __instance.m_conversion.Remove(silver);
+                    __instance.m_conversion.Remove(iron);
+                }
+                else if (Plugin.Age.Value == "iron")
+                {
+                    __instance.m_conversion.Remove(flametal);
+                    __instance.m_conversion.Remove(blackmetal);
+                    __instance.m_conversion.Remove(silver);
+                }
+                else if (Plugin.Age.Value == "silver")
+                {
+                    __instance.m_conversion.Remove(flametal);
+                    __instance.m_conversion.Remove(blackmetal);
+                }
+                else if (Plugin.Age.Value == "blackmetal")
+                {
+                    __instance.m_conversion.Remove(flametal);
+                }
+                else if (Plugin.Age.Value == "fire")
+                {
+                }
+                else
                 {
                     __instance.m_conversion.Remove(tin);
                     __instance.m_conversion.Remove(bronze);
+                    __instance.m_conversion.Remove(flametal);
+                    __instance.m_conversion.Remove(blackmetal);
+                    __instance.m_conversion.Remove(silver);
+                    __instance.m_conversion.Remove(iron);
                 }
+
             }
         }
     }

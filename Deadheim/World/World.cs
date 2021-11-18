@@ -19,7 +19,16 @@ namespace Deadheim.world
 			__instance.m_campRadiusMax = 40;
 		}
 
-		[HarmonyPatch(typeof(Game), nameof(Game.UpdateSaving))]
+        [HarmonyPatch(typeof(ZNet), "SaveWorldThread")]
+        internal class SaveWorldThread
+        {
+            private static void Prefix(ref ZNet __instance)
+            {
+				if (Plugin.Age.Value == "stone" && Plugin.ResetWorldDay.Value == true)  __instance.m_netTime = 2040.0;
+            }
+        }
+
+        [HarmonyPatch(typeof(Game), nameof(Game.UpdateSaving))]
 		private static class PatchGameUpdateSaving
 		{
 			private static readonly MethodInfo getAutoSaveInterval = AccessTools.DeclaredMethod(typeof(PatchGameUpdateSaving), nameof(getAutoSaveIntervalSetting));
