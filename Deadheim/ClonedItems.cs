@@ -1,10 +1,11 @@
 ﻿using Jotunn.Entities;
 using Jotunn.Managers;
+using UnityEngine;
 using System;
 
 namespace Deadheim
 {
-    public class PortalToken
+    public class ClonedItems
     {
         public static void LoadAssets()
         {
@@ -28,8 +29,6 @@ namespace Deadheim
             }
             finally
             {
-                ItemService.AddPortal();
-                PrefabManager.OnPrefabsRegistered -= AddClonedItems;
             }
         }
     }

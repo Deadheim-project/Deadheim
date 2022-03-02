@@ -74,7 +74,7 @@ namespace Deadheim
 
                     string steamId = ((ZSteamSocket)peer.m_socket).GetPeerID().m_SteamID.ToString();
                     string playerName = peer.m_playerName;
-                    string directory = ".config/unity3d/IronGate/Valheim/inventories/" + playerName + "-" + steamId + ".json";
+                    string directory = Utils.GetSaveDataPath() + "/inventories/" + playerName + "-" + steamId + ".json";
 
                     bool hasInventory = System.IO.File.Exists(directory);
 

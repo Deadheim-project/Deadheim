@@ -15,6 +15,23 @@ namespace Deadheim
             }
         }
 
+        [HarmonyPatch(typeof(PrivateArea), "Awake")]
+        public static class PrivateAreaAwake
+        {
+            public static void Postfix(ref PrivateArea __instance)
+            {
+                try
+                {
+                    __instance.m_areaMarker.m_radius = Plugin.WardRadius.Value;
+                    __instance.m_radius = Plugin.WardRadius.Value;
+
+                }
+                catch
+                {
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(CraftingStation), "Start")]
         public static class WorkbenchRangeIncrease
         {

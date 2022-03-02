@@ -24,7 +24,7 @@ namespace Deadheim.world
         {
             private static void Prefix(ref ZNet __instance)
             {
-				if (Plugin.Age.Value == "stone" && Plugin.ResetWorldDay.Value == true)  __instance.m_netTime = 2040.0;
+				if (Plugin.ResetWorldDay.Value == true)  __instance.m_netTime = 2040.0;
             }
         }
 

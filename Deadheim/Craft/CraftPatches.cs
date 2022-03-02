@@ -13,24 +13,6 @@ namespace Deadheim.Craft
             private static void Prefix(ref InventoryGui __instance) => __instance.m_craftDuration = 0.25f;
         }
 
-        [HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")]
-        private class UpdateKnownRecipesList
-        {
-            private static void Postfix()
-            {
-                ItemService.RemoveDisabledRecipes();
-            }
-        }
-
-        [HarmonyPatch(typeof(Player), "GetBuildPieces")]
-        private class GetBuildPieces
-        {
-            private static List<Piece> Postfix(List<Piece> __result)
-            {
-                return ItemService.RemoveDisabledItems(__result);
-            }
-        }
-
         [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.Awake))]
         public static class ItemDrop_Awake_Patch
         {

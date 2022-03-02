@@ -35,40 +35,6 @@ namespace Deadheim.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), "SetPlayerID")]
-        internal class SetPlayerID
-        {
-            private static bool Prefix(long playerID, string name)
-            {
-                try
-                {
-                    if (!Player.m_localPlayer) return true;
-
-                    if (Plugin.Tag.Value.Contains(Plugin.steamId))
-                    {
-                        foreach (var playerTag in Plugin.Tag.Value.Trim(' ').Split(';'))
-                        {
-                            if (playerTag.Split(',')[0] == Plugin.steamId)
-                            {
-                                if (Plugin.Tag.Value.Contains(Plugin.steamId))
-                                {
-                                    Player.m_localPlayer.m_nview.GetZDO().Set("playerName", playerTag.Split(',')[1] + " " + name);
-                                    Player.m_localPlayer.m_nview.GetZDO().Set(nameof(playerID), playerID);
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                } catch  (Exception e)
-                {
-                    throw e;
-                }
- 
-
-                return true;
-            }
-        }
-
         [HarmonyPatch(typeof(Player), "HaveSeenTutorial")]
         public class Player_HaveSeenTutorial_Patch
         {
@@ -101,7 +67,7 @@ namespace Deadheim.Patches
             {
                 ZNet.instance.SetPublicReferencePosition(true);
 
-                if (Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value)
+                if (Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= 1000)
                 {
                     InventoryGui.instance.m_pvp.isOn = false;
                     Player.m_localPlayer.SetPVP(false);
@@ -190,7 +156,6 @@ namespace Deadheim.Patches
             }
         }
 
-
         [HarmonyPatch(typeof(Player), "Awake")]
         [HarmonyPostfix]
         public static void Awake_Postfix(ref Player __instance)
@@ -200,7 +165,7 @@ namespace Deadheim.Patches
 
             __instance.m_maxCarryWeight = 450;
 
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());        
         }
 
         [HarmonyPatch(typeof(SteamGameServer), "SetMaxPlayerCount")]
@@ -217,7 +182,7 @@ namespace Deadheim.Patches
         }
 
         [HarmonyPatch(typeof(ZNet), "Awake")]
-        public static class ChangeGameServerVariables
+        public static class ZNetAwake
         {
             private static void Postfix(ref ZNet __instance)
             {
@@ -226,7 +191,7 @@ namespace Deadheim.Patches
                 {
                     __instance.m_serverPlayerLimit = maxPlayers;
                 }
-            }
+            }   
         }
 
         [HarmonyPatch(typeof(Player), "OnDeath")]
@@ -242,17 +207,17 @@ namespace Deadheim.Patches
                 ___m_nview.InvokeRPC(ZNetView.Everybody, "OnDeath", new object[] { });
                 Traverse.Create(__instance).Method("CreateDeathEffects").GetValue();
 
+                var random = new System.Random();
+
                 for (int i = itemsToKeep.Count - 1; i >= 0; i--)
                 {
                     ItemDrop.ItemData item = itemsToKeep[i];
 
-                    if (item.m_equiped)
-                        continue;
-
+  
                     if (item.m_shared.m_questItem)
                         continue;
 
-                    if (Plugin.dropTypes.Contains(Enum.GetName(typeof(ItemDrop.ItemData.ItemType), item.m_shared.m_itemType)))
+                    if (random.Next(1, 100) <= Plugin.DropPercentagePerItem.Value)
                     {
                         itemsToDrop.Add(item);
                         itemsToKeep.RemoveAt(i);
@@ -286,7 +251,7 @@ namespace Deadheim.Patches
                 return false;
             }
 
-                    }
+        }
 
         [HarmonyPatch(typeof(Skills), "RaiseSkill")]
         public static class RaiseSkill
@@ -334,15 +299,6 @@ namespace Deadheim.Patches
 
             public static void LowerAllSkills(Skills instance, float factor)
             {
-            }
-        }
-
-        [HarmonyPatch(typeof(WearNTear), "HaveRoof")]
-        public static class RemoveWearNTear
-        {
-            private static void Postfix(ref bool __result)
-            {
-                __result = true;
             }
         }
     }

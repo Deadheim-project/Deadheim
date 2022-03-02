@@ -5,13 +5,11 @@ namespace Deadheim.FasterBoats
     [HarmonyPatch]
     public class FasterBoats
     {
-        private static float boatWindSpeedmultiplier = 2f;
-        private static float boatRudderSpeedmultiplier = 4f;
 
         [HarmonyPatch(typeof(Ship), "GetSailForce")]
         private class BoatWindSpeedPatcher
         {
-            private static void Prefix(ref float sailSize) => sailSize *= boatWindSpeedmultiplier;
+            private static void Prefix(ref float sailSize) => sailSize *= Plugin.BoatWindSpeedmultiplier.Value;
         }
 
         [HarmonyPatch(typeof(Ship), "Start")]
@@ -19,7 +17,7 @@ namespace Deadheim.FasterBoats
         {
             private static void Prefix(Ship __instance)
             {
-                float num = boatRudderSpeedmultiplier * 0.125f;
+                float num = Plugin.BoatRudderSpeedmultiplier.Value * 0.125f;
                 __instance.m_backwardForce = num;
             }
         }

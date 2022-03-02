@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using Jotunn.Managers;
 using Jotunn.Utils;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,41 +13,144 @@ namespace Deadheim
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "2.1.0";
-        public const string PluginGUID = "Detalhes.Deadheim";
+        public const string Version = "2.9.5";
+        public const string PluginGUID = "ZzDetalhes.Deadheim";
         public static string steamId = "";
-        public static ConfigEntry<string> Age;
         public static ConfigEntry<string> Vip;
         public static ConfigEntry<string> Tag;
-        public static ConfigEntry<string> Stone;
-        public static ConfigEntry<string> Bronze;
-        public static ConfigEntry<string> Iron;
-        public static ConfigEntry<string> Silver;
-        public static ConfigEntry<string> Blackmetal;
-        public static ConfigEntry<string> Fire;
         public static ConfigEntry<float> WardReductionDamage;
+        public static ConfigEntry<float> MonsterDamageWardReduction;
+        public static ConfigEntry<int> WardRadius;
+        public static ConfigEntry<string> TimeToBlockRaid;
+        public static ConfigEntry<string> ItemToSetMaxLevel;
+        public static ConfigEntry<int> PlayersInsideWardForRaid;
         public static ConfigEntry<float> SkillMultiplier;
-        public static ConfigEntry<int> SafeArea;
+        public static ConfigEntry<float> BoatWindSpeedmultiplier;
+        public static ConfigEntry<float> BoatRudderSpeedmultiplier;
+        public static ConfigEntry<int> SafeArea;        
+        public static ConfigEntry<int> WardLimit;        
+        public static ConfigEntry<int> WardLimitVip;        
+        public static ConfigEntry<int> DropPercentagePerItem;
+        public static ConfigEntry<int> WardChargeDurationInSec;
+        public static ConfigEntry<int> RecipeCostMultiplier;
+        public static ConfigEntry<int> RecipeArrowCostMultiplier;
+        public static ConfigEntry<int> RecipeShieldCostMultiplier;
+        public static ConfigEntry<int> RecipeTwoHandedCostMultiplier;
+        public static ConfigEntry<int> RecipeOneHandedCostMultiplier;
+        public static ConfigEntry<int> RecipeBowCostMultiplier;
+        public static ConfigEntry<int> RecipeConsumableCostMultiplier;
         public static ConfigEntry<bool> ResetWorldDay;
+        public static ConfigEntry<string> HatArmor;
 
-        public static int maxPlayers = 50;
+        public static int maxPlayers = 100;
         public static List<ZRpc> validatedUsers = new List<ZRpc>();
-        public static List<string> dropTypes = new List<string>(new string[] { "Material", "Ammo", "Customization", "Trophie", "Torch", "Misc" });
 
         public static bool hasSpawned = false;
-        Harmony _harmony = new Harmony("Detalhes.deadheim");
+        Harmony _harmony = new Harmony("ZzDetalhes.deadheim");
 
         private void Awake()
         {
-            Config.SaveOnConfigSet = true;
+            SynchronizationManager.OnConfigurationSynchronized += (obj, attr) =>
+            {
+                if (attr.InitialSynchronization)
+                {
+                    ItemService.ModifyRecipesCost();
+                    ItemService.ModififyItemMaxLevel();
+                    ItemService.SetBoatsToDrop();
+                    ItemService.SetWardFirePlace();
+                    ItemService.ModifyItemsCost();
+                }
+                else
+                {
+                    ItemService.ModififyItemMaxLevel();
+                    Jotunn.Logger.LogMessage("Config sync event received");
+                }
+            };
 
-            Age = Config.Bind("Server config", "Age", "stone",
-                       new ConfigDescription("Age", null,
-                                new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            Config.SaveOnConfigSet = true;
+            HatArmor = Config.Bind("HatArmor config", "HatArmor", "Catears;armor=10,CatTail;armor=10,DarkRavenCowl;armor=10,DemonMask;armor=10,GrimAgeWarlord;armor=10,HoodofYggdrasil;armor=10,Catmask;armor=10,wolfhead;armor=10,Neckhead;armor=10,Magehat;armor=10,Greydwarfhat;armor=10,Sheida;armor=10,GrimAgeHornedHelm;armor=10,GrimAgeChaosWarrior;armor=10,LunarCrown;armor=10,MerchantsHat;armor=10,EphemeralHelm;armor=10,SGTLShogunHat;armor=10,DeathKnightHelm;armor=10,FallenWarriorHelm;armor=10,Goblinhat;armor=10,SamuraiHelm;armor=10,DragonHeaddress;armor=10",
+new ConfigDescription("HatArmor", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             Vip = Config.Bind("Server config", "Vip", "76561198053330247",
            new ConfigDescription("VipList", null,
                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            RecipeCostMultiplier = Config.Bind("Server config", "RecipeCostMultiplier", 2,
+            new ConfigDescription("RecipeCostMultiplier", null,
+                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            RecipeArrowCostMultiplier = Config.Bind("Server config", "RecipeArrowCostMultiplier", 2,
+new ConfigDescription("RecipeArrowCostMultiplier", null,
+         new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            RecipeShieldCostMultiplier = Config.Bind("Server config", "RecipeShieldCostMultiplier", 2,
+new ConfigDescription("RecipeShieldCostMultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            RecipeTwoHandedCostMultiplier = Config.Bind("Server config", "RecipeTwoHandedCostMultiplier", 2,
+new ConfigDescription("RecipeTwoHandedCostMultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            RecipeOneHandedCostMultiplier = Config.Bind("Server config", "RecipeOneHandedCostMultiplier", 2,
+new ConfigDescription("RecipeOneHandedCostMultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            RecipeConsumableCostMultiplier = Config.Bind("Server config", "RecipeConsumableCostMultiplier", 2,
+new ConfigDescription("RecipeConsumableCostMultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            RecipeBowCostMultiplier = Config.Bind("Server config", "RecipeBowCostMultiplier", 2,
+new ConfigDescription("RecipeArrowCostMultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            SafeArea = Config.Bind("Server config", "SafeArea", 1500,
+new ConfigDescription("SafeArea", null,
+         new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            WardChargeDurationInSec = Config.Bind("Server config", "WardChargeDurationInSec", 86400,
+    new ConfigDescription("WardChargeDurationInSec", null,
+             new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            WardLimit = Config.Bind("Server config", "WardLimit", 3,
+    new ConfigDescription("WardLimit", null,
+             new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            WardLimitVip = Config.Bind("Server config", "WardLimitVip", 5,
+    new ConfigDescription("WardLimitVip", null,
+             new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            TimeToBlockRaid = Config.Bind("Server config", "TimeToBlockRaid", "21,12",
+new ConfigDescription("Hora de inicio UTC:Duracao", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            ItemToSetMaxLevel = Config.Bind("Server config", "ItemToSetMaxLevel", "RogueSword_DoD:5,RogueSword_DoD:5",
+new ConfigDescription("RogueSword_DoD:5,RogueSword_DoD:5", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            PlayersInsideWardForRaid = Config.Bind("Server config", "PlayersInsideWardForRaid", 0,
+new ConfigDescription("PlayersInsideWardForRaid", null,
+         new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            DropPercentagePerItem = Config.Bind("Server config", "DropPercentagePerItem", 5,
+new ConfigDescription("DropPercentagePerItem", null,
+         new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            WardRadius = Config.Bind("Server config", "WardRadius", 150,
+new ConfigDescription("WardRadius", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            BoatWindSpeedmultiplier = Config.Bind("Server config", "boatWindSpeedmultiplier", 1f,
+new ConfigDescription("boatWindSpeedmultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            BoatRudderSpeedmultiplier = Config.Bind("Server config", "BoatRudderSpeedmultiplier", 1f,
+new ConfigDescription("BoatRudderSpeedmultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            WardRadius = Config.Bind("Server config", "WardRadius", 150,
+new ConfigDescription("WardRadius", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             Tag = Config.Bind("Server config", "Tag", "76561198053330247,PVPTOTAL;",
            new ConfigDescription("PvpList", null,
@@ -56,49 +160,24 @@ namespace Deadheim
             new ConfigDescription("WardReductionDamage", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            SkillMultiplier = Config.Bind("Server config", "SkillMultiplier", 0.5f,
-            new ConfigDescription("SkillMultiplier", null,
+            MonsterDamageWardReduction = Config.Bind("Server config", "MonsterDamageWardReduction", 95.0f,
+            new ConfigDescription("MonsterDamageWardReduction", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            SafeArea = Config.Bind("Server config", "SafeArea", 1500,
-            new ConfigDescription("SafeArea", null,
+            SkillMultiplier = Config.Bind("Server config", "SkillMultiplier", 0.5f,
+            new ConfigDescription("SkillMultiplier", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             ResetWorldDay = Config.Bind("Server config", "ResetWorldDay", false,
             new ConfigDescription("ResetWorldDay", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-
             Tag = Config.Bind("Server config", "Tag", "76561198053330247,PVPTOTAL;",
            new ConfigDescription("PvpList", null,
                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            Stone = Config.Bind("Age Server config", "Stone", "",
-                new ConfigDescription("Stone", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            Bronze = Config.Bind("Age Server config", "Bronze", "item_chest_bronze,item_legs_bronze,item_helmet_bronze,item_shield_bronzebuckler,item_mace_bronze,item_spear_bronze,item_sword_bronze,item_pickaxe_bronze,item_axe_bronze,item_atgeir_bronze,item_knife_copper,item_carrotsoup,Porridge,jam,Carrot Butter,Pork Rind,Broth,item_meadbase,T2",
-                new ConfigDescription("Bronze", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            Iron = Config.Bind("Age Server config", "Iron", "iron,stonecutter,arrow_poison,huntsman,piece_workbench_ext4,piece_forge_ext3,sausage,draugr,ooze,Vial,Elixir,Flask,Potion,knifechitin,razor,banded,serpentscale,battleaxe,T3",
-                new ConfigDescription("Iron", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            Silver = Config.Bind("Age Server config", "Silver", "arrow_obsidian,arrow_frost,item_serpentstew,silver,drake,wolf,item_spear_wolffang,item_spear_ancientbark,Kebab,Smoked Fish,Pancakes,draugr,Omlette,T4",
-                new ConfigDescription("Silver", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            Blackmetal = Config.Bind("Age Server config", "Blackmetal", "artisan,windmill,arrow_needle,needle,lox,item_loxpie,item_fishwraps,item_bloodpudding,item_bread,Fish Stew,Blood Sausage,lox,spinning,blastfurnace,blackmetal,item_mace_needle,padded,T5",
-                new ConfigDescription("Blackmetal", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            Fire = Config.Bind("Age Server config", "Fire", "",
-                new ConfigDescription("Fire", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
+         
             _harmony.PatchAll();
-            PortalToken.LoadAssets();
+            ClonedItems.LoadAssets();
         }
 
         public void Update()
