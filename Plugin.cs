@@ -13,7 +13,7 @@ namespace Deadheim
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "3.2.3";
+        public const string Version = "3.2.4";
         public const string PluginGUID = "ZzDetalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;
