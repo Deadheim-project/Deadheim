@@ -77,6 +77,17 @@ namespace Deadheim
             }
         }
 
+        public static void NerfRunicCape(Player player)
+        {
+            GameObject prefab = PrefabManager.Instance.GetPrefab("CapeRunic");
+            ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
+
+            SE_Stats stats = (SE_Stats)itemDrop.m_itemData.m_shared.m_equipStatusEffect;
+            stats.m_speedModifier = Plugin.CapeRunicSpeed.Value;
+            stats.m_healthRegenMultiplier = Plugin.CapeRunicRegen.Value;
+            stats.m_staminaRegenMultiplier = Plugin.CapeRunicRegen.Value;
+        }
+
         public static void WolvesTameable()
         {
             if (Plugin.WolvesAreTameable.Value) return;

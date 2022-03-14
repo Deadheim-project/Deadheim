@@ -164,6 +164,7 @@ namespace Deadheim.Patches
 
             __instance.m_maxCarryWeight = 450;
             ItemService.SetWardFirePlace();
+            ItemService.NerfRunicCape(__instance);
 
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());        
         }

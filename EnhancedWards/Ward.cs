@@ -141,6 +141,7 @@ namespace Deadheim.EnhancedWards
             private static bool Prefix(Fireplace __instance)
             {
                 if (!__instance.gameObject.name.Contains("guard_stone")) return true;
+
                 return false;
             }
         }
@@ -238,6 +239,21 @@ namespace Deadheim.EnhancedWards
 
             }
         }
+
+        [HarmonyPatch(typeof(ShipControlls), nameof(ShipControlls.Interact))]
+        public static class ShipControllsInteract
+        {
+            private static bool Prefix()
+            {
+                if (!PrivateArea.CheckAccess(Player.m_localPlayer.transform.position))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
 
         [HarmonyPatch(typeof(Player), "PlacePiece")]
         public static class NoBuild_Patch

@@ -13,7 +13,7 @@ namespace Deadheim
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "3.2.4";
+        public const string Version = "3.2.5";
         public const string PluginGUID = "ZzDetalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;
@@ -27,6 +27,8 @@ namespace Deadheim
         public static ConfigEntry<float> SkillMultiplier;
         public static ConfigEntry<float> BoatWindSpeedmultiplier;
         public static ConfigEntry<float> BoatRudderSpeedmultiplier;
+        public static ConfigEntry<float> CapeRunicSpeed;
+        public static ConfigEntry<float> CapeRunicRegen;
         public static ConfigEntry<int> SafeArea;        
         public static ConfigEntry<int> WardLimit;        
         public static ConfigEntry<int> WardLimitVip;        
@@ -166,6 +168,14 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             BoatRudderSpeedmultiplier = Config.Bind("Server config", "BoatRudderSpeedmultiplier", 1f,
 new ConfigDescription("BoatRudderSpeedmultiplier", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            CapeRunicRegen = Config.Bind("Server config", "CapeRunicRegen", 1.25f,
+new ConfigDescription("CapeRunicRegen", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            CapeRunicSpeed = Config.Bind("Server config", "CapeRunicSpeed", 0.05f,
+new ConfigDescription("CapeRunicSpeed", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WardRadius = Config.Bind("Server config", "WardRadius", 150,
