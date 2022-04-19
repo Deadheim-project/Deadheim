@@ -7,11 +7,13 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 using Jotunn.Managers;
+using static Deadheim.Plugin;
+using System.IO;
 
-namespace Deadheim.Patches
+namespace Deadheim
 {
     [HarmonyPatch]
-    public class ClientPatches : MonoBehaviour
+    public class Patches : MonoBehaviour
     {
         [HarmonyPatch(typeof(ZNet), "OnNewConnection")]
         private static class ZNet__OnNewConnection
@@ -33,7 +35,7 @@ namespace Deadheim.Patches
                 if (text.ToLower().Contains("i have arrived")) return false;
                 return true;
             }
-        } 
+        }
 
         [HarmonyPatch(typeof(Player), "HaveSeenTutorial")]
         public class Player_HaveSeenTutorial_Patch
@@ -65,9 +67,12 @@ namespace Deadheim.Patches
         {
             if (Player.m_localPlayer)
             {
+                Vector3 playerPos = Player.m_localPlayer.transform.position;
+
                 ZNet.instance.SetPublicReferencePosition(true);
 
-                if (Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= 1000)
+                float playerDistanceFromCenter = Vector3.Distance(new Vector3(0, 0), playerPos);
+                if (playerDistanceFromCenter <= Plugin.SafeArea.Value || IsInsideAnyCity())
                 {
                     InventoryGui.instance.m_pvp.isOn = false;
                     Player.m_localPlayer.SetPVP(false);
@@ -82,23 +87,46 @@ namespace Deadheim.Patches
             }
         }
 
-
-        [HarmonyPatch(typeof(ZNet), "GetOtherPublicPlayers")]
-        private class GetOtherPublicPlayers
+        private static bool IsInsideAnyCity()
         {
-            private static bool Prefix(List<ZNet.PlayerInfo> playerList, ZNet __instance)
-            {
-                if (Plugin.IsAdmin)
-                {
-                    foreach (ZNet.PlayerInfo player in __instance.m_players)
-                    {
-                        ZDOID characterId = player.m_characterID;
-                        if (!characterId.IsNone() && !player.m_characterID.Equals(__instance.m_characterID))
-                            playerList.Add(player);
-                    }
-                }
+            Vector3 playerPos = Player.m_localPlayer.transform.position;
 
-                return false;
+            foreach (City city in Plugin.cities)
+            {
+                float playerDistanceFromCity = Vector3.Distance(city.Position, playerPos);
+
+                if (playerDistanceFromCity <= city.Radius) return true;
+            }
+
+            return false;
+        }
+
+        [HarmonyPatch(typeof(Player), nameof(Player.Update))]
+        public static class PlayerUpdate
+        {
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix(Player __instance)
+            {
+                if (Plugin.StaffMessage.Value != "") Player.m_localPlayer.Message(MessageHud.MessageType.Center, Plugin.StaffMessage.Value);
+            }
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePlayerPins))]
+        private class UpdatePlayerPins
+        {
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix(Minimap __instance)
+            {
+                if (Plugin.IsAdmin) return;
+
+                foreach (Minimap.PinData playerPin in __instance.m_playerPins)
+                {
+                   var group = Groups.API.GroupPlayers();
+
+                   if (group.Exists(x => x.name == playerPin.m_name)) continue;
+                    
+                    __instance.RemovePin(playerPin);
+                }
             }
         }
 
@@ -155,7 +183,7 @@ namespace Deadheim.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), "Awake")]
+        [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
         [HarmonyPostfix]
         public static void Awake_Postfix(ref Player __instance)
         {
@@ -166,7 +194,14 @@ namespace Deadheim.Patches
             ItemService.SetWardFirePlace();
             ItemService.NerfRunicCape(__instance);
 
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());        
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
+        }
+
+        [HarmonyPatch(typeof(Player), nameof(Player.EdgeOfWorldKill))]
+        [HarmonyPrefix]
+        public static bool EdgeOfWorldKill()
+        {
+            return false;
         }
 
         [HarmonyPatch(typeof(SteamGameServer), "SetMaxPlayerCount")]
@@ -193,14 +228,14 @@ namespace Deadheim.Patches
                 {
                     __instance.m_serverPlayerLimit = maxPlayers;
                 }
-            }   
+            }
         }
 
         [HarmonyPatch(typeof(Player), "OnDeath")]
         [HarmonyPriority(Priority.First)]
         static class OnDeath
         {
-            static bool Prefix(Player __instance, Inventory ___m_inventory, ZNetView ___m_nview)
+            static bool Prefix(Player __instance, Inventory ___m_inventory, ZNetView ___m_nview, Skills ___m_skills)
             {
                 List<ItemDrop.ItemData> itemsToDrop = new List<ItemDrop.ItemData>();
                 List<ItemDrop.ItemData> itemsToKeep = Traverse.Create(___m_inventory).Field("m_inventory").GetValue<List<ItemDrop.ItemData>>();
@@ -209,15 +244,17 @@ namespace Deadheim.Patches
                 ___m_nview.InvokeRPC(ZNetView.Everybody, "OnDeath", new object[] { });
                 Traverse.Create(__instance).Method("CreateDeathEffects").GetValue();
 
-                var random = new System.Random();
-
                 for (int i = itemsToKeep.Count - 1; i >= 0; i--)
                 {
                     ItemDrop.ItemData item = itemsToKeep[i];
 
-                    if (Plugin.IsAdmin) break;
+                    if (item.m_equiped)
+                        continue;
 
-                    if (random.Next(1, 100) <= Plugin.DropPercentagePerItem.Value && item.m_durability > 0 || item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Material)
+                    if (item.m_shared.m_questItem)
+                        continue;
+
+                    if (Plugin.dropTypes.Value.Split(',').Contains(Enum.GetName(typeof(ItemDrop.ItemData.ItemType), item.m_shared.m_itemType)))
                     {
                         itemsToDrop.Add(item);
                         itemsToKeep.RemoveAt(i);
@@ -244,13 +281,19 @@ namespace Deadheim.Patches
                     Minimap.instance.AddPin(__instance.transform.position, Minimap.PinType.Death, string.Format("$hud_mapday {0}", (object)EnvMan.instance.GetDay(ZNet.instance.GetTimeSeconds())), true, false);
                 }
 
+
+                float factor = SkillDeathFactor.Value;
+
+                if (factor > 0.1f) factor = 0.01f;
+
+                ___m_skills.LowerAllSkills(factor);
+
                 Player.m_localPlayer.ClearFood();
                 Game.instance.GetPlayerProfile().m_playerStats.m_deaths++;
                 Game.instance.GetPlayerProfile().SetDeathPoint(__instance.transform.position);
                 Game.instance.RequestRespawn(10f);
                 return false;
             }
-
         }
 
         [HarmonyPatch(typeof(Skills), "RaiseSkill")]
@@ -279,32 +322,5 @@ namespace Deadheim.Patches
             }
         }
 
-
-        [HarmonyPatch(typeof(Skills), nameof(Skills.OnDeath))]
-        public static class Skills_OnDeath_Transpiler
-        {
-            private static MethodInfo method_Skills_LowerAllSkills = AccessTools.Method(typeof(Skills), nameof(Skills.LowerAllSkills));
-            private static MethodInfo method_LowerAllSkills = AccessTools.Method(typeof(Skills_OnDeath_Transpiler), nameof(Skills_OnDeath_Transpiler.LowerAllSkills));
-
-            [HarmonyTranspiler]
-            public static IEnumerable<CodeInstruction> Transpile(IEnumerable<CodeInstruction> instructions)
-            {
-                List<CodeInstruction> il = instructions.ToList();
-
-                for (int i = 0; i < il.Count; ++i)
-                {
-                    if (il[i].Calls(method_Skills_LowerAllSkills))
-                    {
-                        il[i].operand = method_LowerAllSkills;
-                    }
-                }
-
-                return il.AsEnumerable();
-            }
-
-            public static void LowerAllSkills(Skills instance, float factor)
-            {
-            }
-        }
     }
 }

@@ -3,7 +3,7 @@ using System;
 
 namespace Deadheim
 {
-    class NewCharacterValidatior
+    class NewCharacterValidator
     {
         private static string connectionError = "";
         private static bool hasSpawned = false;

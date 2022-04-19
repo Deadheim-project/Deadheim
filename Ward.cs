@@ -14,124 +14,67 @@ namespace Deadheim.EnhancedWards
         [HarmonyPatch(typeof(WearNTear), "RPC_Damage")]
         public static class RPC_Damage
         {
+            [HarmonyPriority(Priority.First)]
             private static bool Prefix(WearNTear __instance, ref HitData hit, ZNetView ___m_nview)
             {
                 try
                 {
-                    if (!PrivateArea.CheckInPrivateArea(__instance.transform.position)) return true;
-                    if ((Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value)) return false;
                     if (___m_nview is null) return false;
-
+                    if (__instance.m_piece.m_nview.m_zdo.GetBool("isAdmin")) return false;
+                    if (!PrivateArea.CheckInPrivateArea(__instance.transform.position)) return true;
                     if (__instance.gameObject.name.Contains("guard_stone")) return false;
-
-                    var isAdmin = __instance.m_piece.m_nview.m_zdo.GetBool("isAdmin");
-                    if (isAdmin) return false;
-
-                    if (!hit.GetAttacker().IsPlayer())
-                    {
-                        hit.ApplyModifier(1 - (Plugin.MonsterDamageWardReduction.Value / 100));
-                        return true;
-                    }
-
-                    if (IsRaidBlocked())
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Proteção contra raids ativa.");
-                        return false;
-                    }
-
-                    if (hit.GetAttacker().IsPlayer() && !PrivateArea.CheckAccess(__instance.transform.position) && Plugin.PlayersInsideWardForRaid.Value != 0)
-                    {
-                        List<PrivateArea> areas = PrivateArea.m_allAreas;
-
-                        List<Player> players = new List<Player>();
-                        Player.GetPlayersInRange(__instance.transform.position, (float)Plugin.WardRadius.Value * (float)2, players);
-
-                        int allowedPlayersInsideWard = 0;
-
-                        foreach (Player player in players)
-                        {
-                            foreach (PrivateArea area in areas)
-                            {
-                                if (area.IsPermitted(player.GetPlayerID()))
-                                {
-                                    allowedPlayersInsideWard++;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (allowedPlayersInsideWard <= Plugin.PlayersInsideWardForRaid.Value)
-                        {
-                            Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Proteção contra raid ativa.");
-                            return false;
-                        }
-                    }
-
-                    hit.ApplyModifier(1 - (Plugin.WardReductionDamage.Value / 100));
+                    if (Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value) return false;
                     return true;
                 }
-                catch
+                catch (Exception e)
                 {
-                    return true;
+                    Debug.LogError(e.Message + "    - " + e.StackTrace);
+                    return false;
                 }
             }
         }
 
-        private static bool IsRaidBlocked()
+        [HarmonyPatch(typeof(Door), nameof(Door.CanInteract))]
+        public static class DoorCanInteract
         {
-
-            TimeSpan start = new TimeSpan(Convert.ToInt32(Plugin.TimeToBlockRaid.Value.Split(',')[0]), 0, 0);
-            TimeSpan end = new TimeSpan(Convert.ToInt32(Plugin.TimeToBlockRaid.Value.Split(',')[1]), 0, 0);
-            TimeSpan now = DateTime.UtcNow.TimeOfDay;
-
-            if (start <= end)
+            private static void Postfix(Door __instance, ref bool __result)
             {
-                // start and stop times are in the same day
-                if (now >= start && now <= end)
-                {
-                    // current time is between start and stop
-                    return true;
-                }
+                string name = __instance.gameObject.name;
+                name = name.Replace("(Clone)", "");
+                if (Plugin.DungeonPrefabs.Value.Split(',').Contains(__instance.gameObject.name.Replace("(Clone)", ""))) __result = true;
             }
-            else
-            {
-                // start and stop times are in different days
-                if (now >= start || now <= end)
-                {
-                    // current time is between start and stop
-                    return true;
-                }
-            }
-            return false;
         }
 
-        [HarmonyPatch(typeof(Player), "CheckCanRemovePiece")]
-        public static class CheckCanRemovePiece
+        [HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.IsEnabled))]
+        public static class PrivateAreaCheckAccess
         {
-            [HarmonyPriority(Priority.Last)]
-            private static bool Prefix(Piece piece, Player __instance)
+            private static void Postfix(PrivateArea __instance, ref bool __result)
             {
-                if (__instance.m_noPlacementCost) return true;
-                if (!piece.gameObject.name.Contains("guard_stone")) return true;
-                if (piece.m_creator != __instance.GetPlayerID() && !Plugin.IsAdmin)
-                {
-                    __instance.Message(MessageHud.MessageType.Center, "Apenas o dono do totem pode destrui-lo", 0, null);
-                    return false;
-                }
+                Player player = Player.m_localPlayer;
 
-                ZNetView znetview = piece.GetComponent<ZNetView>();
-                if (znetview == null) return false;
+                if (!player) return;
 
-                if (!piece.CanBeRemoved())
-                {
-                    __instance.Message(MessageHud.MessageType.Center, "$msg_cantremovenow", 0, (Sprite)null);
-                    return false;
-                }
+                if (!player.m_hovering) return;
 
-                WearNTear wearNTear = piece.GetComponent<WearNTear>();
-                wearNTear.Remove();
+                Interactable interactable = player.m_hovering.GetComponentInParent<Interactable>();
+                if (interactable is null) return;
 
-                return false;
+                Door door = null;
+                Container container = null;
+
+                if (interactable.GetType().Name is "Door") door = (Door)interactable;
+                if (interactable.GetType().Name is "Container") container = (Container)interactable;
+
+                if (door is null && container is null) return;
+
+                string name = "";
+                if (door is not null) name = door.gameObject.name;
+                if (container) name = container.gameObject.name;
+
+                if (name == "") return;
+
+                name = name.Replace("(Clone)", "");
+                if (Plugin.DungeonPrefabs.Value.Split(',').Contains(name)) __result = false;
             }
         }
 
@@ -240,24 +183,10 @@ namespace Deadheim.EnhancedWards
             }
         }
 
-        [HarmonyPatch(typeof(ShipControlls), nameof(ShipControlls.Interact))]
-        public static class ShipControllsInteract
-        {
-            private static bool Prefix()
-            {
-                if (!PrivateArea.CheckAccess(Player.m_localPlayer.transform.position))
-                {
-                    return false;
-                }
-
-                return true;
-            }
-        }
-
-
         [HarmonyPatch(typeof(Player), "PlacePiece")]
         public static class NoBuild_Patch
         {
+            [HarmonyPriority(Priority.First)]
             private static bool Prefix(Piece piece, Player __instance)
             {
                 bool isTotem = piece.gameObject.name.Contains("guard_stone");
@@ -266,20 +195,36 @@ namespace Deadheim.EnhancedWards
 
                 bool isInsideArea = false;
 
-                if ((Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value) && isTotem)
+                if ((Vector3.Distance(new Vector3(0, 0, 0), new Vector3(y: 0, x: Player.m_localPlayer.transform.position.x, z: Player.m_localPlayer.transform.position.z)) <= Plugin.SafeArea.Value) && isTotem)
                 {
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível colocar wards na safezone.");
                     return false;
                 }
 
-                foreach (PrivateArea area in PrivateArea.m_allAreas)
-                {
-                    isInsideArea = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
-                    if (isInsideArea) break;
-                }
-
+                Vector3 placementGhost = __instance.m_placementGhost.transform.position;
                 if (isTotem)
                 {
+
+                    var wardsZDO = GetZDOList(piece.gameObject.name.GetStableHashCode());
+
+                    foreach (ZDO zdo in wardsZDO)
+                    {
+                        Debug.LogError(Vector3.Distance(new Vector3(x: placementGhost.x, y: 0, z: placementGhost.z), new Vector3(x: zdo.m_position.x, y: 0, z: zdo.m_position.z))) ;
+                        isInsideArea = Vector3.Distance(new Vector3(x: placementGhost.x, y: 0, z: placementGhost.z), new Vector3(x: zdo.m_position.x, y: 0, z: zdo.m_position.z)) <= (Plugin.WardRadius.Value * 3);
+                        if (isInsideArea)
+                        {
+                            Debug.LogError("area transform: " + zdo.m_position);
+                            Debug.LogError("ghost transform: " + placementGhost);
+                            bool isPermitted = IsBuilderPermitted(zdo, __instance);
+                            Debug.LogError("Permitido: :" + isPermitted);
+                            if (!isPermitted)
+                            {
+                                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível construir wards próximo da área de outros wards.", 0, null);
+                                return false;
+                            }
+                        }
+                    }
+
                     if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 6500)
                     {
                         Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 6500 instâncias", 0, null);
@@ -291,43 +236,22 @@ namespace Deadheim.EnhancedWards
                         Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 10000 instâncias.", 0, null);
                         return false;
                     }
-                }
 
-                if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 6500 && isInsideArea)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 6500 instâncias", 0, null);
-                    return false;
-                }
 
-                if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 10000 && isInsideArea)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 10000 instâncias.", 0, null);
-                    return false;
+                    if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 6500 && isInsideArea)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 6500 instâncias", 0, null);
+                        return false;
+                    }
+
+                    if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 10000 && isInsideArea)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 10000 instâncias.", 0, null);
+                        return false;
+                    }
                 }
 
                 if (!isTotem) return true;
-
-                bool isInNotAllowedArea = false;
-
-                List<PrivateArea> privateAreaList = new List<PrivateArea>();
-
-                foreach (PrivateArea area in PrivateArea.m_allAreas)
-                {
-                    bool isInsideAreaa = Vector3.Distance(__instance.transform.position, area.transform.position) <= (area.m_radius * 2.5);
-                    if (isInsideAreaa) privateAreaList.Add(area);
-                }
-
-                foreach (PrivateArea area in privateAreaList)
-                {
-                    bool isPermitted = area.m_piece.GetCreator() == Game.instance.GetPlayerProfile().GetPlayerID() || area.IsPermitted(Game.instance.GetPlayerProfile().GetPlayerID());
-                    if (!isPermitted) isInNotAllowedArea = true;
-                }
-
-                if (isInNotAllowedArea)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível construir wards próximo da área de outros wards.", 0, null);
-                    return false;
-                }
 
                 int wards = GetWardCount(piece.gameObject.name.GetStableHashCode());
                 bool isVip = Plugin.Vip.Value.Contains(Plugin.steamId);
@@ -381,6 +305,46 @@ namespace Deadheim.EnhancedWards
             return wardCount;
         }
 
+        private static List<ZDO> GetZDOList(int prefabHash)
+        {
+            List<ZDO> toreturn = new();
+            foreach (List<ZDO> zdoList in ZDOMan.instance.m_objectsBySector)
+            {
+                if (zdoList == null) continue;
+
+                for (int index = 0; index < zdoList.Count; ++index)
+                {
+                    ZDO zdo2 = zdoList[index];
+                    if (zdo2.GetPrefab() == prefabHash)
+                    {
+                        toreturn.Add(zdo2);
+                    }
+                }
+            }
+            return toreturn;
+        }
+
+
+        private static bool IsBuilderPermitted(ZDO zdo, Player player)
+        {
+            List<KeyValuePair<long, string>> keyValuePairList = new List<KeyValuePair<long, string>>();
+            int num = zdo.GetInt("permitted");
+            for (int index = 0; index < num; ++index)
+            {
+                long key = zdo.GetLong("pu_id" + (object)index);
+                string str = zdo.GetString("pu_name" + (object)index);
+                if (key != 0L)
+                    keyValuePairList.Add(new KeyValuePair<long, string>(key, str));
+            }
+
+            foreach (KeyValuePair<long, string> permittedPlayer in keyValuePairList)
+            {
+                if (permittedPlayer.Key == player.GetPlayerID())
+                    return true;
+            }
+            return false;
+        }
+
         [HarmonyPatch(typeof(Player), "Update")]
         public static class Update
         {
@@ -402,7 +366,7 @@ namespace Deadheim.EnhancedWards
 
                 if (privateArea.IsPermitted(__instance.GetPlayerID()) || privateArea.m_piece.m_creator == __instance.GetPlayerID())
                 {
-                    text.Append("\n[<color=yellow><b>" + fuelWard.ToString() + "</b></color>] Fuel: " + Math.Round(fireplace.m_nview.GetZDO().GetFloat("fuel"), 2) + "/" + fireplace.m_maxFuel);
+                    if (fireplace) text.Append("\n[<color=yellow><b>" + fuelWard.ToString() + "</b></color>] Fuel: " + Math.Round(fireplace.m_nview.GetZDO().GetFloat("fuel"), 2) + "/" + fireplace.m_maxFuel);
                     text.Append("\n[<color=yellow><b>" + wardOptionalKey.ToString() + "</b></color>]");
                     privateArea.m_name = text.ToString();
                     privateArea.AddUserList(text);
@@ -411,7 +375,6 @@ namespace Deadheim.EnhancedWards
 
                     if (Input.GetKeyDown(fuelWard)) FuelWard(__instance, fireplace);
                 }
-
             }
 
             public static void FuelWard(Player player, Fireplace fireplace)

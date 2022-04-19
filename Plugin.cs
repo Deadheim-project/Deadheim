@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using Jotunn.Managers;
 using Jotunn.Utils;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,27 +11,33 @@ namespace Deadheim
 {
     [BepInPlugin(PluginGUID, PluginGUID, Version)]
     [BepInDependency(Jotunn.Main.ModGuid)]
-    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
+    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Patch)]
+    [BepInDependency("org.bepinex.plugins.groups", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "3.2.5";
+        public const string Version = "3.9.97";
         public const string PluginGUID = "ZzDetalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;
-        public static ConfigEntry<string> Tag;
-        public static ConfigEntry<float> WardReductionDamage;
-        public static ConfigEntry<float> MonsterDamageWardReduction;
+        public static ConfigEntry<string> AdminList;
+        public static ConfigEntry<string> PrefabToRecalculateRecipeOnLogout;
+        public static ConfigEntry<string> PiecesToRemoveResourceDrop;
         public static ConfigEntry<int> WardRadius;
-        public static ConfigEntry<string> TimeToBlockRaid;
+        public static ConfigEntry<string> RaidTimeToAllowUtc;
+        public static ConfigEntry<string> RaidEnabledPositions;
+        public static ConfigEntry<string> StaffMessage;
         public static ConfigEntry<string> ItemToSetMaxLevel;
+        public static ConfigEntry<string> CityLocation;
+        public static ConfigEntry<string> DungeonPrefabs;
         public static ConfigEntry<int> PlayersInsideWardForRaid;
         public static ConfigEntry<float> SkillMultiplier;
         public static ConfigEntry<float> BoatWindSpeedmultiplier;
         public static ConfigEntry<float> BoatRudderSpeedmultiplier;
         public static ConfigEntry<float> CapeRunicSpeed;
         public static ConfigEntry<float> CapeRunicRegen;
+        public static ConfigEntry<float> SkillDeathFactor;
         public static ConfigEntry<int> SafeArea;        
-        public static ConfigEntry<int> WardLimit;        
+        public static ConfigEntry<int> WardLimit;       
         public static ConfigEntry<int> WardLimitVip;        
         public static ConfigEntry<int> DropPercentagePerItem;
         public static ConfigEntry<int> WardChargeDurationInSec;
@@ -46,10 +53,14 @@ namespace Deadheim
         public static ConfigEntry<bool> LoxTameable;
         public static ConfigEntry<int> SkillCap;
 
+        public static ConfigEntry<string> dropTypes;
+
         public static bool IsAdmin = false;
 
         public static int maxPlayers = 100;
         public static List<ZRpc> validatedUsers = new List<ZRpc>();
+
+        public static List<City> cities = new();
 
         public static bool hasSpawned = false;
         Harmony _harmony = new Harmony("ZzDetalhes.deadheim");
@@ -60,7 +71,6 @@ namespace Deadheim
             {
                 if (attr.InitialSynchronization)
                 {
-                    ItemService.ModifyRecipesCost();
                     ItemService.ModififyItemMaxLevel();
                     ItemService.SetBoatsToDrop();
                     ItemService.SetWardFirePlace();
@@ -68,27 +78,65 @@ namespace Deadheim
                     ItemService.LoxTameable();
                     ItemService.WolvesTameable();
                     ItemService.StubNoLife();
+                    ItemService.PiecesToRemoveResourcesDrop();
+                    ItemService.TurnWandsIntoTwoHandeds();
 
-                    IsAdmin = SynchronizationManager.Instance.PlayerIsAdmin;
+                    cities = City.GetCities();
+
+                    IsAdmin = AdminList.Value.Contains(Plugin.steamId);
                 }
                 else
                 {
+                    cities = City.GetCities();
                     ItemService.ModififyItemMaxLevel();
-                    Jotunn.Logger.LogMessage("Config sync event received");
+                    Jotunn.Logger.LogMessage("Config sync event received");    
                 }
             };
 
             Config.SaveOnConfigSet = true;
 
-
             SkillCap = Config.Bind("Server config", "SkillCap", 100,
 new ConfigDescription("SkillCap", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            PiecesToRemoveResourceDrop = Config.Bind("Server config", "PiecesToRemoveResourceDrop", "piece_Scales",
+new ConfigDescription("PiecesToRemoveResourceDrop", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            AdminList = Config.Bind("Server config", "AdminList", "76561198053330247 76561197961128381 76561198111650012 76561197993642177 76561198993982965",
+           new ConfigDescription("AdminList", null,
+                    new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
 
             Vip = Config.Bind("Server config", "Vip", "76561198053330247",
            new ConfigDescription("VipList", null,
                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+
+            dropTypes = Config.Bind("Server config", "dropTypes", "Material,Ammo,Customization,Trophie,Torch,Misc",
+           new ConfigDescription("dropTypes", null,
+                    new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            SkillDeathFactor = Config.Bind("Server config", "SkillDeathFactor", 0.05f,
+new ConfigDescription("SkillDeathFactor", null,
+new AcceptableValueRange<float>(0f, 0.1f), null,
+        new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            PrefabToRecalculateRecipeOnLogout = Config.Bind("Server Config", "PrefabToRecalculateRecipeOnLogout", "BlackMetalBattleaxeHTD,BlackMetalGreatSwordAltHTD,BlackMetalGreatSwordHTD,BoneGreatMaceHTD,BoneGreatSwordHTD,BronzeBattleaxeHTD,BronzeCrowbillHTD,BronzeFistsHTD,BronzeGreatSwordHTD,BronzeHammerHTD,CoreAxeBlueHTD,CoreAxeGreenHTD,CoreAxeHTD,CoreGreatAxeBlueHTD,CoreGreatAxeGreenHTD,CoreGreatAxeHTD,CoreGreatMaceBlueHTD,CoreGreatMaceGreenHTD,CoreGreatMaceHTD,CoreMaceBlueHTD,CoreMaceGreenHTD,CoreMaceHTD,DeerFistsHTD,DragonSlayerSwordHTD,FlametalGreatSwordHTD,IronFistsHTD,IronGreatSwordHTD,IronHeavyGreatSwordHTD,ObsidianGreatSwordHTD,ObsidianGreatSwordRedHTD,SilverBattleaxeHTD,SilverFistsHTD,SilverGreatMaceHTD,SilverGreatSwordHTD,ArmorChestBoarHTD,ArmorHelmetBoarHTD,ArmorLegsBoarHTD,ArmorShoulderBoarHTD,ArmorBarbarianBronzeHelmetJD,ArmorBarbarianBronzeChestJD,ArmorBarbarianBronzeLegsJD,ArmorBarbarianCapeJD,ArmorMistlandsHelmet,ArmorMistlandsChest,ArmorMistlandsLegs,ArmorSerpentHelemt,ArmorSerpentChest,ArmorSerpentLegs,ArmorSerpentCape,ArmorWandererHelmet,ArmorWandererChest,ArmorWandererLegs,ArmorWandererCape,ArmorBlackmetalgarbHelmet,ArmorBlackmetalgarbChest,ArmorBlackmetalgarbLegs,ArmorPlateIronHelmetJD,ArmorPlateIronChestJD,ArmorPlateIronLegsJD,ArmorPlateCape,ArmorWarriorHelmet,ArmorWarriorChest,ArmorWarriorLegs,ArmorDragonslayerHelmet,ArmorDragonslayerChest,ArmorDragonslayerLegs,BackpackHeavy,BackpackSimple",
+                new ConfigDescription("PrefabToRecalculateRecipeOnLogout", null,
+ new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            StaffMessage = Config.Bind("Server config", "StaffMessage", "",
+new ConfigDescription("StaffMessage", null,
+ new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            CityLocation = Config.Bind("Server config", "CityLocation", "300:500:100|1000:900:100",
+new ConfigDescription("CityLocation", null,
+        new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            DungeonPrefabs = Config.Bind("Server config", "DungeonPrefabs", "dungeon_forestcrypt_door,dungeon_sunkencrypt_irongate",
+new ConfigDescription("DungeonPrefabs", null,
+        new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WolvesAreTameable = Config.Bind("Server config", "WolvesAreTameable", false,
 new ConfigDescription("WolvesAreTameable", null,
@@ -142,17 +190,9 @@ new ConfigDescription("SafeArea", null,
     new ConfigDescription("WardLimitVip", null,
              new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            TimeToBlockRaid = Config.Bind("Server config", "TimeToBlockRaid", "21,12",
-new ConfigDescription("Hora de inicio UTC:Fim", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             ItemToSetMaxLevel = Config.Bind("Server config", "ItemToSetMaxLevel", "RogueSword_DoD:5,RogueSword_DoD:5",
 new ConfigDescription("RogueSword_DoD:5,RogueSword_DoD:5", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            PlayersInsideWardForRaid = Config.Bind("Server config", "PlayersInsideWardForRaid", 0,
-new ConfigDescription("PlayersInsideWardForRaid", null,
-         new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             DropPercentagePerItem = Config.Bind("Server config", "DropPercentagePerItem", 5,
 new ConfigDescription("DropPercentagePerItem", null,
@@ -182,18 +222,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 new ConfigDescription("WardRadius", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            Tag = Config.Bind("Server config", "Tag", "76561198053330247,PVPTOTAL;",
-           new ConfigDescription("PvpList", null,
-                    new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            WardReductionDamage = Config.Bind("Server config", "WardReductionDamage", 99.0f,
-            new ConfigDescription("WardReductionDamage", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            MonsterDamageWardReduction = Config.Bind("Server config", "MonsterDamageWardReduction", 95.0f,
-            new ConfigDescription("MonsterDamageWardReduction", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             SkillMultiplier = Config.Bind("Server config", "SkillMultiplier", 0.5f,
             new ConfigDescription("SkillMultiplier", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
@@ -202,10 +230,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
             new ConfigDescription("ResetWorldDay", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            Tag = Config.Bind("Server config", "Tag", "76561198053330247,PVPTOTAL;",
-           new ConfigDescription("PvpList", null,
-                    new ConfigurationManagerAttributes { IsAdminOnly = true }));
-         
             _harmony.PatchAll();
             ClonedItems.LoadAssets();
         }
@@ -216,6 +240,28 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
             {
                 Debug.Log(EnvMan.instance.GetDay(ZNet.instance.m_netTime));
             }      
+        }
+
+        public class City
+        {
+            public Vector3 Position { get; set; }
+            public float Radius { get; set; }
+
+            public static List<City> GetCities()
+            {
+                List<City> cities = new();
+                foreach (string cityString in Plugin.CityLocation.Value.Split('|'))
+                {
+                    string[] splittedCity = cityString.Split(':');
+                    City city = new();
+                    city.Position = new Vector3(Convert.ToInt64(splittedCity[0]), 0, Convert.ToInt64(splittedCity[1]));
+                    city.Radius = Convert.ToInt64(splittedCity[2]);
+
+                    cities.Add(city);
+                }
+
+                return cities;
+            }
         }
     }
 }

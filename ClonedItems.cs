@@ -37,7 +37,24 @@ namespace Deadheim
         private static void AddVanillaClonedCreatures()
         {
             AddBatzao();
+            AddNomTameableWolf();
             CreatureManager.OnVanillaCreaturesAvailable -= AddVanillaClonedCreatures;
+        }
+
+        private static void AddNomTameableWolf()
+        {
+            var batzao = new CustomCreature("LoboNaoDomavel", "Wolf",
+                new Jotunn.Configs.CreatureConfig
+                {               
+
+                });
+
+            var humanoid = batzao.Prefab.GetComponent<Humanoid>();
+            humanoid.m_name = "Lobo nao domavel";
+            CreatureManager.Instance.AddCreature(batzao);
+
+            UnityEngine.Object.Destroy(batzao.Prefab.GetComponent<Tameable>());
+            UnityEngine.Object.Destroy(batzao.Prefab.GetComponent<Procreation>());
         }
 
         private static void AddBatzao()

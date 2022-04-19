@@ -25,6 +25,9 @@ namespace Deadheim
                 GameObject stonePortal = PrefabManager.Instance.GetPrefab("Stone_Portal");
                 var stonePortalPiece = stonePortal.GetComponent<Piece>();
                 stonePortalPiece.m_resources[0].m_amount = 1500;
+                stonePortalPiece.m_resources[0].m_recover = true;
+                stonePortalPiece.m_resources[1].m_recover = true;
+                stonePortalPiece.m_resources[2].m_recover = true;                
                 stonePortalPiece.m_resources[0].m_resItem = PrefabManager.Instance.GetPrefab("GreydwarfEye").GetComponent<ItemDrop>();
                 stonePortalPiece.m_resources[1].m_amount = 1;
                 stonePortalPiece.m_resources[1].m_resItem = PrefabManager.Instance.GetPrefab("PortalToken").GetComponent<ItemDrop>();
@@ -32,17 +35,12 @@ namespace Deadheim
                 stonePortalPiece.m_resources[2].m_resItem = PrefabManager.Instance.GetPrefab("SurtlingCore").GetComponent<ItemDrop>();
 
                 GameObject cartographyTable = PrefabManager.Instance.GetPrefab("piece_cartographytable");
-                var blueberries = ObjectDB.instance.GetItemPrefab("Blueberries");
-                var linen = ObjectDB.instance.GetItemPrefab("LinenThread");
-                var blackmetal = ObjectDB.instance.GetItemPrefab("BlackMetal");
+    
                 cartographyTable.GetComponent<Piece>().m_resources[0].m_amount = 800;
                 cartographyTable.GetComponent<Piece>().m_resources[1].m_amount = 1500;
                 cartographyTable.GetComponent<Piece>().m_resources[2].m_amount = 500;
-                cartographyTable.GetComponent<Piece>().m_resources[2].m_resItem = blackmetal.GetComponent<ItemDrop>();
                 cartographyTable.GetComponent<Piece>().m_resources[3].m_amount = 800;
-                cartographyTable.GetComponent<Piece>().m_resources[3].m_resItem = linen.GetComponent<ItemDrop>();
                 cartographyTable.GetComponent<Piece>().m_resources[4].m_amount = 800;
-                cartographyTable.GetComponent<Piece>().m_resources[4].m_resItem = blueberries.GetComponent<ItemDrop>();
             }
             catch { }
         }
@@ -77,9 +75,29 @@ namespace Deadheim
             }
         }
 
-        public static void NerfRunicCape(Player player)
+        public static void PiecesToRemoveResourcesDrop()
         {
+            foreach (var item in Plugin.PiecesToRemoveResourceDrop.Value.Split(','))
+            {
+                var gameObject = PrefabManager.Instance.GetPrefab(item);
+
+                if (gameObject)
+                {
+                    var piece = gameObject.GetComponent<Piece>();
+                    foreach (var x in piece.m_resources)
+                    {
+                        x.m_recover = false;
+                    }
+                }
+            }   
+        }
+
+        public static void NerfRunicCape(Player player)
+        {            
             GameObject prefab = PrefabManager.Instance.GetPrefab("CapeRunic");
+
+            if (!prefab) return;
+
             ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
 
             SE_Stats stats = (SE_Stats)itemDrop.m_itemData.m_shared.m_equipStatusEffect;
@@ -129,72 +147,7 @@ namespace Deadheim
 
                 itemdrop.m_itemData.m_shared.m_maxQuality = Convert.ToInt32(array[1]);
             }
-        }
-
-        private static bool recipesAlreadyModified = false;
-
-        public static void ModifyRecipesCost()
-        {
-            if (recipesAlreadyModified) return;
-            foreach (Recipe recipe in Resources.FindObjectsOfTypeAll(typeof(Recipe)))
-            {
-                if (recipe.name == "Recipe_Bronze") continue;
-                if (recipe.name == "Recipe_Bronze5") continue;
-
-                foreach (Piece.Requirement requirement in recipe.m_resources)
-                {
-                    if (recipe.m_item is null) continue;
-                    if (recipe.m_item.m_itemData is null) continue;
-                    if (recipe.m_item.m_itemData.m_shared is null) continue;
-
-                    if (recipe.m_item.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Ammo)
-                    {
-                        requirement.m_amount = requirement.m_amount * Plugin.RecipeArrowCostMultiplier.Value;
-                        requirement.m_amountPerLevel = requirement.m_amountPerLevel * Plugin.RecipeArrowCostMultiplier.Value;
-                        continue;
-                    }
-
-                    if (recipe.m_item.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon)
-                    {
-                        requirement.m_amount = requirement.m_amount * Plugin.RecipeTwoHandedCostMultiplier.Value;
-                        requirement.m_amountPerLevel = requirement.m_amountPerLevel * Plugin.RecipeTwoHandedCostMultiplier.Value;
-                        continue;
-                    }
-
-                    if (recipe.m_item.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Shield)
-                    {
-                        requirement.m_amount = requirement.m_amount * Plugin.RecipeShieldCostMultiplier.Value;
-                        requirement.m_amountPerLevel = requirement.m_amountPerLevel * Plugin.RecipeShieldCostMultiplier.Value;
-                        continue;
-                    }
-
-                    if (recipe.m_item.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow)
-                    {
-                        requirement.m_amount = requirement.m_amount * Plugin.RecipeBowCostMultiplier.Value;
-                        requirement.m_amountPerLevel = requirement.m_amountPerLevel * Plugin.RecipeBowCostMultiplier.Value;
-                        continue;
-                    }
-
-                    if (recipe.m_item.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon)
-                    {
-                        requirement.m_amount = requirement.m_amount * Plugin.RecipeOneHandedCostMultiplier.Value;
-                        requirement.m_amountPerLevel = requirement.m_amountPerLevel * Plugin.RecipeOneHandedCostMultiplier.Value;
-                        continue;
-                    }
-
-                    if (recipe.m_item.m_itemData.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Consumable)
-                    {
-                        requirement.m_amount = requirement.m_amount * Plugin.RecipeConsumableCostMultiplier.Value;
-                        requirement.m_amountPerLevel = requirement.m_amountPerLevel * Plugin.RecipeConsumableCostMultiplier.Value;
-                        continue;
-                    }
-
-                    requirement.m_amount = requirement.m_amount * Plugin.RecipeCostMultiplier.Value;
-                    requirement.m_amountPerLevel = requirement.m_amountPerLevel * Plugin.RecipeCostMultiplier.Value;
-                }
-            }
-            recipesAlreadyModified = true;
-        }
+        }              
 
         public static void StubNoLife()
         {
@@ -210,6 +163,18 @@ namespace Deadheim
             {
                 Destructible destructible = stub.GetComponent<Destructible>();
                 destructible.m_health = 1;
+            }
+        }
+
+        public static void TurnWandsIntoTwoHandeds()
+        {
+            List<string> wands = new() { "Wand_Mountain_DoD", "WarlockWand_DoD", "ShamanWand_DoD", "MageWand_DoD" };
+
+            foreach (string wand in wands)
+            {
+                GameObject prefab = PrefabManager.Instance.GetPrefab(wand);
+                ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
+                itemDrop.m_itemData.m_shared.m_itemType =  ItemDrop.ItemData.ItemType.TwoHandedWeapon;
             }
         }
     }
