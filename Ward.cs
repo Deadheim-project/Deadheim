@@ -154,6 +154,8 @@ namespace Deadheim.EnhancedWards
                         if (privateArea.IsEnabled()) privateArea.SetEnabled(false);
                     }
 
+                    if (num3 > 10) num3 = 10;
+
                     __instance.m_nview.GetZDO().Set("fuel", num3);
                 }
 
@@ -204,7 +206,6 @@ namespace Deadheim.EnhancedWards
                 Vector3 placementGhost = __instance.m_placementGhost.transform.position;
                 if (isTotem)
                 {
-
                     var wardsZDO = GetZDOList(piece.gameObject.name.GetStableHashCode());
 
                     foreach (ZDO zdo in wardsZDO)
@@ -227,7 +228,7 @@ namespace Deadheim.EnhancedWards
 
                     if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 6500)
                     {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 6500 instâncias", 0, null);
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas Aesir's podem construir em locais com mais de 6500 instâncias", 0, null);
                         return false;
                     }
 
@@ -240,7 +241,7 @@ namespace Deadheim.EnhancedWards
 
                     if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 6500 && isInsideArea)
                     {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas vips podem construir em locais com mais de 6500 instâncias", 0, null);
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas Aesir's podem construir em locais com mais de 6500 instâncias", 0, null);
                         return false;
                     }
 
@@ -253,7 +254,7 @@ namespace Deadheim.EnhancedWards
 
                 if (!isTotem) return true;
 
-                int wards = GetWardCount(piece.gameObject.name.GetStableHashCode());
+                int wards = GetWardCount();
                 bool isVip = Plugin.Vip.Value.Contains(Plugin.steamId);
 
                 if (isVip)
@@ -278,31 +279,16 @@ namespace Deadheim.EnhancedWards
             }
         }
 
-        private static int CREATORHASH = "creator".GetStableHashCode();
 
-        private static int GetWardCount(int prefabHash)
+        private static int GetWardCount()
         {
             if (Plugin.IsAdmin) return 0;
 
-            long creatorID = Player.m_localPlayer.GetPlayerID();
-            int wardCount = 0;
-            foreach (List<ZDO> zdoList in ZDOMan.instance.m_objectsBySector)
-            {
-                if (zdoList == null) continue;
+            ZPackage pkg = new();
+            pkg.Write(Player.m_localPlayer.GetPlayerID());
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "DeadheimPortalAndTotemCountServer", pkg);
 
-                for (int index = 0; index < zdoList.Count; ++index)
-                {
-                    ZDO zdo2 = zdoList[index];
-                    if (zdo2.GetPrefab() == prefabHash)
-                    {
-                        long prefabCreatorHash = zdo2.GetLong(CREATORHASH);
-                        if (prefabCreatorHash == 0) continue;
-
-                        if (prefabCreatorHash == creatorID) wardCount++;
-                    }
-                }
-            }
-            return wardCount;
+            return Plugin.PlayerWardCount;
         }
 
         private static List<ZDO> GetZDOList(int prefabHash)

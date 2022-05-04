@@ -24,6 +24,19 @@ namespace Deadheim
                 itemDrop.m_itemData.m_shared.m_description = "Use to help deadheim keep going";
                 itemDrop.m_itemData.m_shared.m_maxStackSize = 10;
                 ItemManager.Instance.AddItem(CI);
+
+                var aesirChest = PrefabManager.Instance.CreateClonedPrefab("AesirChest", "piece_chest_private");
+                Piece piece = aesirChest.GetComponent<Piece>();
+                Container container = aesirChest.GetComponent<Container>();
+                container.m_inventory.m_width = 8;
+                container.m_inventory.m_height = 8;
+
+                piece.m_description = "Aesir Chest";
+                piece.m_name = "Aesir Chest";
+                piece.m_resources[0].m_resItem = PrefabManager.Instance.GetPrefab("Wood").GetComponent<ItemDrop>();
+                piece.m_resources[1].m_resItem = PrefabManager.Instance.GetPrefab("Bronze").GetComponent<ItemDrop>();
+
+                ItemManager.Instance.AddItem(CI);
             }
             catch (Exception ex)
             {
@@ -45,7 +58,7 @@ namespace Deadheim
         {
             var batzao = new CustomCreature("LoboNaoDomavel", "Wolf",
                 new Jotunn.Configs.CreatureConfig
-                {               
+                {
 
                 });
 
@@ -80,7 +93,7 @@ namespace Deadheim
             Vector3 newScale = batzao.Prefab.transform.localScale;
             newScale.x *= 3;
             newScale.y *= 3;
-            newScale.z *= 3; 
+            newScale.z *= 3;
             batzao.Prefab.transform.localScale = newScale;
 
             var humanoid = batzao.Prefab.GetComponent<Humanoid>();

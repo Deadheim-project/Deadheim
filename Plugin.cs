@@ -15,11 +15,13 @@ namespace Deadheim
     [BepInDependency("org.bepinex.plugins.groups", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "3.9.97";
-        public const string PluginGUID = "ZzDetalhes.Deadheim";
+        public const string Version = "4.0.0";
+        public const string PluginGUID = "Detalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;
         public static ConfigEntry<string> AdminList;
+        public static ConfigEntry<string> OnlyAdminPieces;
+        public static ConfigEntry<string> VipPortalNames;
         public static ConfigEntry<string> PrefabToRecalculateRecipeOnLogout;
         public static ConfigEntry<string> PiecesToRemoveResourceDrop;
         public static ConfigEntry<int> WardRadius;
@@ -38,7 +40,9 @@ namespace Deadheim
         public static ConfigEntry<float> SkillDeathFactor;
         public static ConfigEntry<int> SafeArea;        
         public static ConfigEntry<int> WardLimit;       
-        public static ConfigEntry<int> WardLimitVip;        
+        public static ConfigEntry<int> WardLimitVip;
+        public static ConfigEntry<int> PortalLimit;
+        public static ConfigEntry<int> PortalLimitVip;
         public static ConfigEntry<int> DropPercentagePerItem;
         public static ConfigEntry<int> WardChargeDurationInSec;
         public static ConfigEntry<int> RecipeCostMultiplier;
@@ -56,14 +60,16 @@ namespace Deadheim
         public static ConfigEntry<string> dropTypes;
 
         public static bool IsAdmin = false;
+        public static int PlayerWardCount = 0;
+        public static int PlayerPortalCount = 0;
 
-        public static int maxPlayers = 100;
+        public static int maxPlayers = 50;
         public static List<ZRpc> validatedUsers = new List<ZRpc>();
 
         public static List<City> cities = new();
 
         public static bool hasSpawned = false;
-        Harmony _harmony = new Harmony("ZzDetalhes.deadheim");
+        Harmony _harmony = new Harmony("Detalhes.deadheim");
 
         private void Awake()
         {
@@ -79,7 +85,7 @@ namespace Deadheim
                     ItemService.WolvesTameable();
                     ItemService.StubNoLife();
                     ItemService.PiecesToRemoveResourcesDrop();
-                    ItemService.TurnWandsIntoTwoHandeds();
+                    ItemService.OnlyAdminPieces();
 
                     cities = City.GetCities();
 
@@ -94,6 +100,14 @@ namespace Deadheim
             };
 
             Config.SaveOnConfigSet = true;
+
+            OnlyAdminPieces = Config.Bind("Server config", "OnlyAdminPieces", "SHGateHouse,SHWallMusteringHall,SHTowerSquareTwoFloorCenter,SHTowerSquareTwoFloorCorner,SHTowerSquareTwoFloorJunction,SHWallOpenTwoFloorCapped,SHWallOpenTwoFloorWithNest,SHWallOpenTwoFloorWithNestCapped,SHWallOpenTwoFloor,SHEnclosedTower,SHBunkhouse,SHWell,SHOuterWallCovered,SHOuterWallOpenCapped,SHOuterWallOpen,SHOuterWallTowerSquareCenter,SHOuterWallTowerTransition,SHOuterWallTowerRound,SHOuterWallGate,SHWatchtower,SHTowerRoundWallEnd,SHOuterWallCoverdCapped,SHWallInnerArch,SHWallInnerPillar,SHWallInnerPlain,SHWallInnerPosh,SHHouseSmall,SHHouseMedium,SHHouseLarge,SHHayBarn,SHOldBarn,SHStorageBarn,SHMainHall",
+new ConfigDescription("OnlyAdminPieces", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            VipPortalNames = Config.Bind("Server config", "VipPortalNames", "cavalinho,eguinha",
+new ConfigDescription("VipPortalNames", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             SkillCap = Config.Bind("Server config", "SkillCap", 100,
 new ConfigDescription("SkillCap", null,
@@ -112,19 +126,11 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
            new ConfigDescription("VipList", null,
                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-
-            dropTypes = Config.Bind("Server config", "dropTypes", "Material,Ammo,Customization,Trophie,Torch,Misc",
-           new ConfigDescription("dropTypes", null,
-                    new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             SkillDeathFactor = Config.Bind("Server config", "SkillDeathFactor", 0.05f,
 new ConfigDescription("SkillDeathFactor", null,
 new AcceptableValueRange<float>(0f, 0.1f), null,
         new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            PrefabToRecalculateRecipeOnLogout = Config.Bind("Server Config", "PrefabToRecalculateRecipeOnLogout", "BlackMetalBattleaxeHTD,BlackMetalGreatSwordAltHTD,BlackMetalGreatSwordHTD,BoneGreatMaceHTD,BoneGreatSwordHTD,BronzeBattleaxeHTD,BronzeCrowbillHTD,BronzeFistsHTD,BronzeGreatSwordHTD,BronzeHammerHTD,CoreAxeBlueHTD,CoreAxeGreenHTD,CoreAxeHTD,CoreGreatAxeBlueHTD,CoreGreatAxeGreenHTD,CoreGreatAxeHTD,CoreGreatMaceBlueHTD,CoreGreatMaceGreenHTD,CoreGreatMaceHTD,CoreMaceBlueHTD,CoreMaceGreenHTD,CoreMaceHTD,DeerFistsHTD,DragonSlayerSwordHTD,FlametalGreatSwordHTD,IronFistsHTD,IronGreatSwordHTD,IronHeavyGreatSwordHTD,ObsidianGreatSwordHTD,ObsidianGreatSwordRedHTD,SilverBattleaxeHTD,SilverFistsHTD,SilverGreatMaceHTD,SilverGreatSwordHTD,ArmorChestBoarHTD,ArmorHelmetBoarHTD,ArmorLegsBoarHTD,ArmorShoulderBoarHTD,ArmorBarbarianBronzeHelmetJD,ArmorBarbarianBronzeChestJD,ArmorBarbarianBronzeLegsJD,ArmorBarbarianCapeJD,ArmorMistlandsHelmet,ArmorMistlandsChest,ArmorMistlandsLegs,ArmorSerpentHelemt,ArmorSerpentChest,ArmorSerpentLegs,ArmorSerpentCape,ArmorWandererHelmet,ArmorWandererChest,ArmorWandererLegs,ArmorWandererCape,ArmorBlackmetalgarbHelmet,ArmorBlackmetalgarbChest,ArmorBlackmetalgarbLegs,ArmorPlateIronHelmetJD,ArmorPlateIronChestJD,ArmorPlateIronLegsJD,ArmorPlateCape,ArmorWarriorHelmet,ArmorWarriorChest,ArmorWarriorLegs,ArmorDragonslayerHelmet,ArmorDragonslayerChest,ArmorDragonslayerLegs,BackpackHeavy,BackpackSimple",
-                new ConfigDescription("PrefabToRecalculateRecipeOnLogout", null,
- new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             StaffMessage = Config.Bind("Server config", "StaffMessage", "",
 new ConfigDescription("StaffMessage", null,
@@ -146,34 +152,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 new ConfigDescription("LoxTameable", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            RecipeCostMultiplier = Config.Bind("Server config", "RecipeCostMultiplier", 2,
-            new ConfigDescription("RecipeCostMultiplier", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            RecipeArrowCostMultiplier = Config.Bind("Server config", "RecipeArrowCostMultiplier", 2,
-new ConfigDescription("RecipeArrowCostMultiplier", null,
-         new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            RecipeShieldCostMultiplier = Config.Bind("Server config", "RecipeShieldCostMultiplier", 2,
-new ConfigDescription("RecipeShieldCostMultiplier", null,   
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            RecipeTwoHandedCostMultiplier = Config.Bind("Server config", "RecipeTwoHandedCostMultiplier", 2,
-new ConfigDescription("RecipeTwoHandedCostMultiplier", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            RecipeOneHandedCostMultiplier = Config.Bind("Server config", "RecipeOneHandedCostMultiplier", 2,
-new ConfigDescription("RecipeOneHandedCostMultiplier", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            RecipeConsumableCostMultiplier = Config.Bind("Server config", "RecipeConsumableCostMultiplier", 2,
-new ConfigDescription("RecipeConsumableCostMultiplier", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            RecipeBowCostMultiplier = Config.Bind("Server config", "RecipeBowCostMultiplier", 2,
-new ConfigDescription("RecipeArrowCostMultiplier", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             SafeArea = Config.Bind("Server config", "SafeArea", 1500,
 new ConfigDescription("SafeArea", null,
          new ConfigurationManagerAttributes { IsAdminOnly = true }));
@@ -181,6 +159,14 @@ new ConfigDescription("SafeArea", null,
             WardChargeDurationInSec = Config.Bind("Server config", "WardChargeDurationInSec", 86400,
     new ConfigDescription("WardChargeDurationInSec", null,
              new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            PortalLimit = Config.Bind("Server config", "PortalLimit", 2,
+new ConfigDescription("PortalLimit", null,
+ new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            PortalLimitVip = Config.Bind("Server config", "PortalLimit", 6,
+new ConfigDescription("PortalLimit", null,
+ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WardLimit = Config.Bind("Server config", "WardLimit", 3,
     new ConfigDescription("WardLimit", null,
@@ -218,10 +204,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 new ConfigDescription("CapeRunicSpeed", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            WardRadius = Config.Bind("Server config", "WardRadius", 150,
-new ConfigDescription("WardRadius", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             SkillMultiplier = Config.Bind("Server config", "SkillMultiplier", 0.5f,
             new ConfigDescription("SkillMultiplier", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
@@ -232,14 +214,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             _harmony.PatchAll();
             ClonedItems.LoadAssets();
-        }
-
-        public void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.Numlock))
-            {
-                Debug.Log(EnvMan.instance.GetDay(ZNet.instance.m_netTime));
-            }      
         }
 
         public class City

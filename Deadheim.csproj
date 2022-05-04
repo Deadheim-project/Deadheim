@@ -39,10 +39,13 @@
     <Compile Include="CraftingStations.cs" />
     <Compile Include="ItemService.cs" />
     <Compile Include="CraftPatches.cs" />
+    <Compile Include="Portal.cs" />
+    <Compile Include="Retreat.cs" />
+    <Compile Include="RPC.cs" />
+    <Compile Include="Util.cs" />
     <Compile Include="Ward.cs" />
     <Compile Include="Boats.cs" />
     <Compile Include="MassPickUp.cs" />
-    <Compile Include="NewCharacterValidator.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="ClonedItems.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

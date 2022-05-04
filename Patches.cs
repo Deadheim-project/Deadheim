@@ -23,6 +23,7 @@ namespace Deadheim
                 if (!__instance.IsServer())
                 {
                     Plugin.steamId = SteamUser.GetSteamID().ToString();
+                    ItemService.NerfRunicCape();
                 }
             }
         }
@@ -121,10 +122,10 @@ namespace Deadheim
 
                 foreach (Minimap.PinData playerPin in __instance.m_playerPins)
                 {
-                   var group = Groups.API.GroupPlayers();
+                    var group = Groups.API.GroupPlayers();
 
-                   if (group.Exists(x => x.name == playerPin.m_name)) continue;
-                    
+                    if (group.Exists(x => x.name == playerPin.m_name)) continue;
+
                     __instance.RemovePin(playerPin);
                 }
             }
@@ -192,7 +193,6 @@ namespace Deadheim
 
             __instance.m_maxCarryWeight = 450;
             ItemService.SetWardFirePlace();
-            ItemService.NerfRunicCape(__instance);
 
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
         }
@@ -231,6 +231,22 @@ namespace Deadheim
             }
         }
 
+        [HarmonyPatch(typeof(CraftingStation), "Start")]
+        public static class WorkbenchRangeIncrease
+        {
+            public static void Prefix(ref CraftingStation __instance, ref float ___m_rangeBuild, GameObject ___m_areaMarker)
+            {
+                try
+                {
+                    ___m_rangeBuild = 30;
+                    ___m_areaMarker.GetComponent<CircleProjector>().m_radius = ___m_rangeBuild;
+                }
+                catch
+                {
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(Player), "OnDeath")]
         [HarmonyPriority(Priority.First)]
         static class OnDeath
@@ -244,6 +260,7 @@ namespace Deadheim
                 ___m_nview.InvokeRPC(ZNetView.Everybody, "OnDeath", new object[] { });
                 Traverse.Create(__instance).Method("CreateDeathEffects").GetValue();
 
+                var random = new System.Random();
                 for (int i = itemsToKeep.Count - 1; i >= 0; i--)
                 {
                     ItemDrop.ItemData item = itemsToKeep[i];
@@ -254,7 +271,7 @@ namespace Deadheim
                     if (item.m_shared.m_questItem)
                         continue;
 
-                    if (Plugin.dropTypes.Value.Split(',').Contains(Enum.GetName(typeof(ItemDrop.ItemData.ItemType), item.m_shared.m_itemType)))
+                    if (random.Next(1, 100) <= Plugin.DropPercentagePerItem.Value && item.m_durability > 0 || item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Material)
                     {
                         itemsToDrop.Add(item);
                         itemsToKeep.RemoveAt(i);
@@ -322,5 +339,32 @@ namespace Deadheim
             }
         }
 
+        [HarmonyPatch(typeof(TeleportWorld), nameof(TeleportWorld.Teleport))]
+        public static class TeleportWorldAesir
+        {
+            private static bool Prefix(TeleportWorld __instance)
+            {
+                if (Plugin.Vip.Value.Contains(Plugin.steamId)) return true;
+
+                if (!Plugin.VipPortalNames.Value.Contains(__instance.GetText())) return true;
+
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Only Aesir's can access this portal.");
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), "PlacePiece")]
+        public static class NoBuild_Patch
+        {
+            [HarmonyPriority(Priority.Last)]
+            private static bool Prefix(Piece piece, Player __instance)
+            {
+                if (Plugin.Vip.Value.Contains(Plugin.steamId)) return true;
+
+                if (piece.gameObject.name == "AesirChest") return false;
+
+                return true;
+            }
+        }
     }
 }
