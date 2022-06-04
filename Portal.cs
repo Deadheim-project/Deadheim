@@ -1,9 +1,4 @@
 ﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Deadheim
 {
@@ -19,7 +14,6 @@ namespace Deadheim
                 if (Plugin.IsAdmin) return true;
 
                 if (!piece.gameObject.name.Contains("portal_wood")) return true;
-
 
                 int wards = GetPortalCount();
                 bool isVip = Plugin.Vip.Value.Contains(Plugin.steamId);
@@ -38,10 +32,12 @@ namespace Deadheim
                     return false;
                 }
 
+                ZPackage pkg = new();
+                pkg.Write(Player.m_localPlayer.GetPlayerID());
+                ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "DeadheimPortalAndTotemCountServer", pkg);
                 return true;
             }
         }
-
 
         private static int GetPortalCount()
         {

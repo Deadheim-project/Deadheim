@@ -15,23 +15,16 @@ namespace Deadheim
     [BepInDependency("org.bepinex.plugins.groups", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "4.0.0";
+        public const string Version = "4.0.9";
         public const string PluginGUID = "Detalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;
         public static ConfigEntry<string> AdminList;
         public static ConfigEntry<string> OnlyAdminPieces;
         public static ConfigEntry<string> VipPortalNames;
-        public static ConfigEntry<string> PrefabToRecalculateRecipeOnLogout;
-        public static ConfigEntry<string> PiecesToRemoveResourceDrop;
         public static ConfigEntry<int> WardRadius;
-        public static ConfigEntry<string> RaidTimeToAllowUtc;
-        public static ConfigEntry<string> RaidEnabledPositions;
         public static ConfigEntry<string> StaffMessage;
-        public static ConfigEntry<string> ItemToSetMaxLevel;
-        public static ConfigEntry<string> CityLocation;
         public static ConfigEntry<string> DungeonPrefabs;
-        public static ConfigEntry<int> PlayersInsideWardForRaid;
         public static ConfigEntry<float> SkillMultiplier;
         public static ConfigEntry<float> BoatWindSpeedmultiplier;
         public static ConfigEntry<float> BoatRudderSpeedmultiplier;
@@ -44,14 +37,7 @@ namespace Deadheim
         public static ConfigEntry<int> PortalLimit;
         public static ConfigEntry<int> PortalLimitVip;
         public static ConfigEntry<int> DropPercentagePerItem;
-        public static ConfigEntry<int> WardChargeDurationInSec;
-        public static ConfigEntry<int> RecipeCostMultiplier;
-        public static ConfigEntry<int> RecipeArrowCostMultiplier;
-        public static ConfigEntry<int> RecipeShieldCostMultiplier;
-        public static ConfigEntry<int> RecipeTwoHandedCostMultiplier;
-        public static ConfigEntry<int> RecipeOneHandedCostMultiplier;
-        public static ConfigEntry<int> RecipeBowCostMultiplier;
-        public static ConfigEntry<int> RecipeConsumableCostMultiplier;
+        public static ConfigEntry<int> WardChargeDurationInSec;  
         public static ConfigEntry<bool> ResetWorldDay;
         public static ConfigEntry<bool> WolvesAreTameable;
         public static ConfigEntry<bool> LoxTameable;
@@ -60,13 +46,11 @@ namespace Deadheim
         public static ConfigEntry<string> dropTypes;
 
         public static bool IsAdmin = false;
-        public static int PlayerWardCount = 0;
-        public static int PlayerPortalCount = 0;
+        public static int PlayerWardCount = 999;
+        public static int PlayerPortalCount = 999;
 
         public static int maxPlayers = 50;
         public static List<ZRpc> validatedUsers = new List<ZRpc>();
-
-        public static List<City> cities = new();
 
         public static bool hasSpawned = false;
         Harmony _harmony = new Harmony("Detalhes.deadheim");
@@ -77,24 +61,18 @@ namespace Deadheim
             {
                 if (attr.InitialSynchronization)
                 {
-                    ItemService.ModififyItemMaxLevel();
                     ItemService.SetBoatsToDrop();
                     ItemService.SetWardFirePlace();
                     ItemService.ModifyItemsCost();
                     ItemService.LoxTameable();
                     ItemService.WolvesTameable();
                     ItemService.StubNoLife();
-                    ItemService.PiecesToRemoveResourcesDrop();
                     ItemService.OnlyAdminPieces();
-
-                    cities = City.GetCities();
 
                     IsAdmin = AdminList.Value.Contains(Plugin.steamId);
                 }
                 else
                 {
-                    cities = City.GetCities();
-                    ItemService.ModififyItemMaxLevel();
                     Jotunn.Logger.LogMessage("Config sync event received");    
                 }
             };
@@ -113,10 +91,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 new ConfigDescription("SkillCap", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            PiecesToRemoveResourceDrop = Config.Bind("Server config", "PiecesToRemoveResourceDrop", "piece_Scales",
-new ConfigDescription("PiecesToRemoveResourceDrop", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             AdminList = Config.Bind("Server config", "AdminList", "76561198053330247 76561197961128381 76561198111650012 76561197993642177 76561198993982965",
            new ConfigDescription("AdminList", null,
                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
@@ -131,14 +105,9 @@ new ConfigDescription("SkillDeathFactor", null,
 new AcceptableValueRange<float>(0f, 0.1f), null,
         new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-
             StaffMessage = Config.Bind("Server config", "StaffMessage", "",
 new ConfigDescription("StaffMessage", null,
  new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            CityLocation = Config.Bind("Server config", "CityLocation", "300:500:100|1000:900:100",
-new ConfigDescription("CityLocation", null,
-        new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             DungeonPrefabs = Config.Bind("Server config", "DungeonPrefabs", "dungeon_forestcrypt_door,dungeon_sunkencrypt_irongate",
 new ConfigDescription("DungeonPrefabs", null,
@@ -164,8 +133,8 @@ new ConfigDescription("SafeArea", null,
 new ConfigDescription("PortalLimit", null,
  new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            PortalLimitVip = Config.Bind("Server config", "PortalLimit", 6,
-new ConfigDescription("PortalLimit", null,
+            PortalLimitVip = Config.Bind("Server config", "PortalLimitVip", 6,
+new ConfigDescription("PortalLimitVip", null,
  new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WardLimit = Config.Bind("Server config", "WardLimit", 3,
@@ -175,10 +144,6 @@ new ConfigDescription("PortalLimit", null,
             WardLimitVip = Config.Bind("Server config", "WardLimitVip", 5,
     new ConfigDescription("WardLimitVip", null,
              new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            ItemToSetMaxLevel = Config.Bind("Server config", "ItemToSetMaxLevel", "RogueSword_DoD:5,RogueSword_DoD:5",
-new ConfigDescription("RogueSword_DoD:5,RogueSword_DoD:5", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             DropPercentagePerItem = Config.Bind("Server config", "DropPercentagePerItem", 5,
 new ConfigDescription("DropPercentagePerItem", null,
@@ -214,28 +179,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             _harmony.PatchAll();
             ClonedItems.LoadAssets();
-        }
-
-        public class City
-        {
-            public Vector3 Position { get; set; }
-            public float Radius { get; set; }
-
-            public static List<City> GetCities()
-            {
-                List<City> cities = new();
-                foreach (string cityString in Plugin.CityLocation.Value.Split('|'))
-                {
-                    string[] splittedCity = cityString.Split(':');
-                    City city = new();
-                    city.Position = new Vector3(Convert.ToInt64(splittedCity[0]), 0, Convert.ToInt64(splittedCity[1]));
-                    city.Radius = Convert.ToInt64(splittedCity[2]);
-
-                    cities.Add(city);
-                }
-
-                return cities;
-            }
-        }
+        }        
     }
 }

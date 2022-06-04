@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using UnityEngine;
 
 namespace Deadheim
 {
@@ -20,11 +19,15 @@ namespace Deadheim
         {
             public static void Postfix(ref PrivateArea __instance)
             {
-                __instance.m_areaMarker.m_radius = Plugin.WardRadius.Value;
-                __instance.m_radius = Plugin.WardRadius.Value;
+                int radius = Plugin.WardRadius.Value;
 
+                if (__instance.m_name.Contains("AdminWard")) radius = 150;
+
+                __instance.m_areaMarker.m_radius = radius;
+                __instance.m_radius = radius;
             }
         }
     }
 }
+
 

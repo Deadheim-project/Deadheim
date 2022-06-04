@@ -3,18 +3,27 @@ using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
-using Jotunn.Managers;
 using static Deadheim.Plugin;
-using System.IO;
 
 namespace Deadheim
 {
     [HarmonyPatch]
     public class Patches : MonoBehaviour
     {
+
+        [HarmonyPatch(typeof(ZNetScene), "Awake")]
+        public static class OnSpawned
+        {
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix()
+            {
+                SE_Stats effect = (SE_Stats)ObjectDB.instance.GetStatusEffect("SetEffect_FenringArmor");
+                effect.m_skillLevelModifier = 1;
+            }
+        }
+
         [HarmonyPatch(typeof(ZNet), "OnNewConnection")]
         private static class ZNet__OnNewConnection
         {
@@ -25,40 +34,6 @@ namespace Deadheim
                     Plugin.steamId = SteamUser.GetSteamID().ToString();
                     ItemService.NerfRunicCape();
                 }
-            }
-        }
-
-        [HarmonyPatch(typeof(Chat), "OnNewChatMessage")]
-        internal class OnNewChatMessage
-        {
-            private static bool Prefix(string user, string text)
-            {
-                if (text.ToLower().Contains("i have arrived")) return false;
-                return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(Player), "HaveSeenTutorial")]
-        public class Player_HaveSeenTutorial_Patch
-        {
-            [HarmonyPrefix]
-            private static void Prefix(Player __instance, ref string name)
-            {
-                if (!__instance.m_shownTutorials.Contains(name))
-                {
-                    __instance.m_shownTutorials.Add(name);
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(SE_Stats), nameof(SE_Stats.Setup))]
-        public static class SE_Stats_Setup_Patch
-        {
-            private static void Postfix(ref SE_Stats __instance)
-            {
-                int meginjordbuff = 200;
-                if (__instance.m_addMaxCarryWeight > 0)
-                    __instance.m_addMaxCarryWeight = (__instance.m_addMaxCarryWeight - 150) + meginjordbuff;
             }
         }
 
@@ -73,7 +48,7 @@ namespace Deadheim
                 ZNet.instance.SetPublicReferencePosition(true);
 
                 float playerDistanceFromCenter = Vector3.Distance(new Vector3(0, 0), playerPos);
-                if (playerDistanceFromCenter <= Plugin.SafeArea.Value || IsInsideAnyCity())
+                if (playerDistanceFromCenter <= Plugin.SafeArea.Value)
                 {
                     InventoryGui.instance.m_pvp.isOn = false;
                     Player.m_localPlayer.SetPVP(false);
@@ -88,48 +63,6 @@ namespace Deadheim
             }
         }
 
-        private static bool IsInsideAnyCity()
-        {
-            Vector3 playerPos = Player.m_localPlayer.transform.position;
-
-            foreach (City city in Plugin.cities)
-            {
-                float playerDistanceFromCity = Vector3.Distance(city.Position, playerPos);
-
-                if (playerDistanceFromCity <= city.Radius) return true;
-            }
-
-            return false;
-        }
-
-        [HarmonyPatch(typeof(Player), nameof(Player.Update))]
-        public static class PlayerUpdate
-        {
-            [HarmonyPriority(Priority.Last)]
-            private static void Postfix(Player __instance)
-            {
-                if (Plugin.StaffMessage.Value != "") Player.m_localPlayer.Message(MessageHud.MessageType.Center, Plugin.StaffMessage.Value);
-            }
-        }
-
-        [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePlayerPins))]
-        private class UpdatePlayerPins
-        {
-            [HarmonyPriority(Priority.Last)]
-            private static void Postfix(Minimap __instance)
-            {
-                if (Plugin.IsAdmin) return;
-
-                foreach (Minimap.PinData playerPin in __instance.m_playerPins)
-                {
-                    var group = Groups.API.GroupPlayers();
-
-                    if (group.Exists(x => x.name == playerPin.m_name)) continue;
-
-                    __instance.RemovePin(playerPin);
-                }
-            }
-        }
 
         [HarmonyPatch(typeof(Inventory), MethodType.Constructor, new Type[] { typeof(string), typeof(Sprite), typeof(int), typeof(int) })]
         public static class Inventory_Constructor_Patch
@@ -184,6 +117,69 @@ namespace Deadheim
             }
         }
 
+        [HarmonyPatch(typeof(Chat), "OnNewChatMessage")]
+        internal class OnNewChatMessage
+        {
+            private static bool Prefix(string user, string text)
+            {
+                if (text.ToLower().Contains("i have arrived")) return false;
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), "HaveSeenTutorial")]
+        public class Player_HaveSeenTutorial_Patch
+        {
+            [HarmonyPrefix]
+            private static void Prefix(Player __instance, ref string name)
+            {
+                if (!__instance.m_shownTutorials.Contains(name))
+                {
+                    __instance.m_shownTutorials.Add(name);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(SE_Stats), nameof(SE_Stats.Setup))]
+        public static class SE_Stats_Setup_Patch
+        {
+            private static void Postfix(ref SE_Stats __instance)
+            {
+                int meginjordbuff = 200;
+                if (__instance.m_addMaxCarryWeight > 0)
+                    __instance.m_addMaxCarryWeight = (__instance.m_addMaxCarryWeight - 150) + meginjordbuff;
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), nameof(Player.Update))]
+        public static class PlayerUpdate
+        {
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix(Player __instance)
+            {
+                if (Plugin.StaffMessage.Value != "") Player.m_localPlayer.Message(MessageHud.MessageType.Center, Plugin.StaffMessage.Value);
+            }
+        }
+
+        [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePlayerPins))]
+        private class UpdatePlayerPins
+        {
+            [HarmonyPriority(Priority.Last)]
+            private static void Postfix(Minimap __instance)
+            {
+                if (Plugin.IsAdmin) return;
+
+                foreach (Minimap.PinData playerPin in __instance.m_playerPins)
+                {
+                    var group = Groups.API.GroupPlayers();
+
+                    if (group.Exists(x => x.name == playerPin.m_name)) continue;
+
+                    __instance.RemovePin(playerPin);
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
         [HarmonyPostfix]
         public static void Awake_Postfix(ref Player __instance)
@@ -191,7 +187,6 @@ namespace Deadheim
             if (ZRoutedRpc.instance == null)
                 return;
 
-            __instance.m_maxCarryWeight = 450;
             ItemService.SetWardFirePlace();
 
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
@@ -327,18 +322,6 @@ namespace Deadheim
             }
         }
 
-        [HarmonyPatch(typeof(EnvMan), "SetEnv")]
-        public static class EnvMan_SetEnv_Patch
-        {
-            private static void Prefix(ref EnvMan __instance, ref EnvSetup env)
-            {
-                env.m_fogDensityNight = 0.0001f;
-                env.m_fogDensityMorning = 0.0001f;
-                env.m_fogDensityDay = 0.0001f;
-                env.m_fogDensityEvening = 0.0001f;
-            }
-        }
-
         [HarmonyPatch(typeof(TeleportWorld), nameof(TeleportWorld.Teleport))]
         public static class TeleportWorldAesir
         {
@@ -353,6 +336,25 @@ namespace Deadheim
             }
         }
 
+        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.CanRepair))]
+        public static class CanRepair
+        {
+            private static void Postfix(InventoryGui __instance, ref bool __result, ItemDrop.ItemData item)
+            {
+
+                if (item.m_dropPrefab.name.Contains("SkeletaoSword") || item.m_dropPrefab.name.Contains("SkeletaoShield"))
+                {
+                    CraftingStation currentCraftingStation = Player.m_localPlayer.GetCurrentCraftingStation();
+
+                    if (currentCraftingStation.gameObject.name.Contains("forge"))
+                    {
+                        __result = true;
+                    }
+                }
+
+            }
+        }
+
         [HarmonyPatch(typeof(Player), "PlacePiece")]
         public static class NoBuild_Patch
         {
@@ -361,7 +363,11 @@ namespace Deadheim
             {
                 if (Plugin.Vip.Value.Contains(Plugin.steamId)) return true;
 
-                if (piece.gameObject.name == "AesirChest") return false;
+                if (piece.gameObject.name == "AesirChest")
+                {
+                    __instance.Message(MessageHud.MessageType.Center, "Esse báu é apenas para Aesir's");
+                    return false;
+                }
 
                 return true;
             }

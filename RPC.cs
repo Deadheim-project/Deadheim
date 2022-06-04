@@ -8,9 +8,9 @@ namespace Deadheim
     {
         public static void RPC_PortalAndTotemCountServer(long sender, ZPackage pkg)
         {
-            if (ZNet.instance.IsServer()) return;
+            if (!ZNet.instance.IsServer()) return;
 
-            int creatorId = Convert.ToInt32(pkg.ReadString());
+            long creatorId = pkg.ReadLong();
 
             string result = Util.GetCreatorWardAndPortalCount(creatorId);
 
@@ -22,8 +22,6 @@ namespace Deadheim
 
         public static void RPC_PortalAndTotemCountClient(long sender, ZPackage pkg)
         {
-            if (!ZNet.instance.IsServer()) return;
-
             string counts = pkg.ReadString();
 
             Plugin.PlayerPortalCount = Convert.ToInt32(counts.Split(',')[0]);
@@ -35,11 +33,7 @@ namespace Deadheim
         {
             public static void Postfix()
             {
-                if (ZRoutedRpc.instance == null)
-                    return;
-
                 ZPackage pkg = new();
-
                 pkg.Write(Player.m_localPlayer.GetPlayerID());
                 ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "DeadheimPortalAndTotemCountServer", pkg);
             }
