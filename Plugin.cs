@@ -11,11 +11,11 @@ namespace Deadheim
 {
     [BepInPlugin(PluginGUID, PluginGUID, Version)]
     [BepInDependency(Jotunn.Main.ModGuid)]
-    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Patch)]
+    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     [BepInDependency("org.bepinex.plugins.groups", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "4.0.9";
+        public const string Version = "4.2.4";
         public const string PluginGUID = "Detalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;

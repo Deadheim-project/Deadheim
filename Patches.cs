@@ -17,10 +17,18 @@ namespace Deadheim
         public static class OnSpawned
         {
             [HarmonyPriority(Priority.Last)]
-            private static void Postfix()
+            private static void Postfix(ZNetScene __instance)
             {
-                SE_Stats effect = (SE_Stats)ObjectDB.instance.GetStatusEffect("SetEffect_FenringArmor");
-                effect.m_skillLevelModifier = 1;
+                GameObject bonemass = __instance.GetPrefab("Bonemass");
+                GameObject dragon = __instance.GetPrefab("Dragon");
+                GameObject goblinking = __instance.GetPrefab("GoblinKing");
+
+                foreach (GameObject gameObject in new List<GameObject> { bonemass, dragon, goblinking })
+                {
+                    BaseAI ai = gameObject.GetComponent<BaseAI>();
+                    ai.m_spawnMessage = "";
+                    ai.m_deathMessage = "";
+                }
             }
         }
 
@@ -36,33 +44,6 @@ namespace Deadheim
                 }
             }
         }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Game), "Update")]
-        private static void GameUpdate()
-        {
-            if (Player.m_localPlayer)
-            {
-                Vector3 playerPos = Player.m_localPlayer.transform.position;
-
-                ZNet.instance.SetPublicReferencePosition(true);
-
-                float playerDistanceFromCenter = Vector3.Distance(new Vector3(0, 0), playerPos);
-                if (playerDistanceFromCenter <= Plugin.SafeArea.Value)
-                {
-                    InventoryGui.instance.m_pvp.isOn = false;
-                    Player.m_localPlayer.SetPVP(false);
-                }
-                else
-                {
-                    InventoryGui.instance.m_pvp.isOn = true;
-                    Player.m_localPlayer.SetPVP(true);
-                }
-
-                InventoryGui.instance.m_pvp.interactable = false;
-            }
-        }
-
 
         [HarmonyPatch(typeof(Inventory), MethodType.Constructor, new Type[] { typeof(string), typeof(Sprite), typeof(int), typeof(int) })]
         public static class Inventory_Constructor_Patch
@@ -151,6 +132,17 @@ namespace Deadheim
             }
         }
 
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Game), "Update")]
+        private static void GameUpdate()
+        {
+            if (Player.m_localPlayer)
+            {
+                ZNet.instance.SetPublicReferencePosition(true);
+                InventoryGui.instance.m_pvp.interactable = false;
+            }
+        }
+
         [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         public static class PlayerUpdate
         {
@@ -217,7 +209,6 @@ namespace Deadheim
         {
             private static void Postfix(ref ZNet __instance)
             {
-
                 int maxPlayers = Plugin.maxPlayers;
                 if (maxPlayers >= 1)
                 {
@@ -259,7 +250,7 @@ namespace Deadheim
                 for (int i = itemsToKeep.Count - 1; i >= 0; i--)
                 {
                     ItemDrop.ItemData item = itemsToKeep[i];
-
+                    Debug.LogError(item.m_shared.m_name + " - DestroyBroken: "  + item.m_shared.m_destroyBroken);
                     if (item.m_equiped)
                         continue;
 

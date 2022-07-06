@@ -162,7 +162,7 @@
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Desktop\valheimRipped\denikson-BepInExPack_Valheim-5.4.1900\BepInExPack_Valheim\unstripped_corlib\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Valheim\unstripped_corlib\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CrashReportingModule">
       <HintPath>..\..\..\..\Desktop\valheimRipped\denikson-BepInExPack_Valheim-5.4.1900\BepInExPack_Valheim\unstripped_corlib\UnityEngine.CrashReportingModule.dll</HintPath>

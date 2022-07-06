@@ -63,30 +63,16 @@ namespace Deadheim
             GameObject boat1 = PrefabManager.Instance.GetPrefab("CargoShip");
             GameObject boat2 = PrefabManager.Instance.GetPrefab("BigCargoShip");
             GameObject boat3 = PrefabManager.Instance.GetPrefab("LittleBoat");
+            GameObject boat4 = PrefabManager.Instance.GetPrefab("WarShip");
+            GameObject boat5 = PrefabManager.Instance.GetPrefab("FishingBoat");
+            GameObject boat6 = PrefabManager.Instance.GetPrefab("TransporterShip");
+            GameObject karve = PrefabManager.Instance.GetPrefab("Karve");
+            Piece karveRecipe = karve.GetComponent<Piece>();
 
-
-            if (boat1)
+            foreach (GameObject gameObject in new List<GameObject> { boat1, boat2, boat3, boat4, boat5, boat6 })
             {
-                foreach (var x in boat1.GetComponent<Piece>().m_resources)
-                {
-                    x.m_recover = true;
-                }
-            }
-
-            if (boat2)
-            {
-                foreach (var x in boat2.GetComponent<Piece>().m_resources)
-                {
-                    x.m_recover = true;
-                }
-            }
-
-            if (boat3)
-            {
-                foreach (var x in boat3.GetComponent<Piece>().m_resources)
-                {
-                    x.m_recover = true;
-                }
+                Piece recipe = gameObject.GetComponent<Piece>();
+                recipe.m_craftingStation = karveRecipe.m_craftingStation;
             }
         }
 
