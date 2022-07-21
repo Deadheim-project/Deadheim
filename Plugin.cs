@@ -15,7 +15,7 @@ namespace Deadheim
     [BepInDependency("org.bepinex.plugins.groups", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "4.2.4";
+        public const string Version = "5.0.1";
         public const string PluginGUID = "Detalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;
@@ -44,6 +44,8 @@ namespace Deadheim
         public static ConfigEntry<int> SkillCap;
 
         public static ConfigEntry<string> dropTypes;
+
+        public static string PlayerName = "";
 
         public static bool IsAdmin = false;
         public static int PlayerWardCount = 999;

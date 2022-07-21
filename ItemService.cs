@@ -1,14 +1,11 @@
 ﻿using Jotunn.Managers;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace Deadheim
-{
-    internal class ItemService
+{ internal class ItemService
     {
-
         public static void ModifyItemsCost()
         {
             GameObject cartographyTable = PrefabManager.Instance.GetPrefab("piece_cartographytable");
@@ -78,16 +75,14 @@ namespace Deadheim
 
         public static void NerfRunicCape()
         {
-            GameObject prefab = ObjectDB.instance.GetItemPrefab("CapeRunic");
+            GameObject prefab = ObjectDB.instance.GetItemPrefab("rae_CapeHorseHide");
 
             if (!prefab) return;
 
             ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
 
             SE_Stats stats = (SE_Stats)itemDrop.m_itemData.m_shared.m_equipStatusEffect;
-            stats.m_speedModifier = Plugin.CapeRunicSpeed.Value;
-            stats.m_healthRegenMultiplier = Plugin.CapeRunicRegen.Value;
-            stats.m_staminaRegenMultiplier = Plugin.CapeRunicRegen.Value;
+            stats.m_mods = new();
         }
 
         public static void WolvesTameable()
@@ -131,6 +126,21 @@ namespace Deadheim
                 Destructible destructible = stub.GetComponent<Destructible>();
                 destructible.m_health = 1;
             }
+        }
+
+        public static void ChangeMontersFaction()
+        {
+            GameObject wendigo = PrefabManager.Instance.GetPrefab("BrownBear");
+            wendigo.GetComponent<Character>().m_faction = Character.Faction.ForestMonsters;
+            
+            GameObject voidling = PrefabManager.Instance.GetPrefab("Fox");
+            voidling.GetComponent<Character>().m_faction = Character.Faction.MountainMonsters;
+            
+            GameObject birchElder = PrefabManager.Instance.GetPrefab("Ibex");
+            birchElder.GetComponent<Character>().m_faction = Character.Faction.MountainMonsters;
+
+            GameObject yeti = PrefabManager.Instance.GetPrefab("Casuar");
+            yeti.GetComponent<Character>().m_faction = Character.Faction.PlainsMonsters;                      
         }
     }
 }

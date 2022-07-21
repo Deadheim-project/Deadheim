@@ -35,8 +35,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Boss.cs" />
     <Compile Include="Containers.cs" />
     <Compile Include="CraftingStations.cs" />
+    <Compile Include="EpicMMOApi.cs" />
     <Compile Include="ItemService.cs" />
     <Compile Include="CraftPatches.cs" />
     <Compile Include="Portal.cs" />

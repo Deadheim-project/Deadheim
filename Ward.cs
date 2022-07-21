@@ -168,8 +168,6 @@ namespace Deadheim.EnhancedWards
 
                 bool isTotem = piece.gameObject.name.Contains("guard_stone");
 
-                int areaInstances = (ZNetScene.m_instance.m_instances.Count);
-
                 bool isInsideArea = false;
 
                 Vector3 placementGhost = __instance.m_placementGhost.transform.position;
@@ -189,31 +187,6 @@ namespace Deadheim.EnhancedWards
                                 return false;
                             }
                         }
-                    }
-
-                    if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 5000)
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas Aesir's podem construir em locais com mais de 5000 instâncias", 0, null);
-                        return false;
-                    }
-
-                    if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 8000)
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 8000 instâncias.", 0, null);
-                        return false;
-                    }
-
-
-                    if (!Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 5000 && isInsideArea)
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Apenas Aesir's podem construir em locais com mais de 5000 instâncias", 0, null);
-                        return false;
-                    }
-
-                    if (Plugin.Vip.Value.Contains(Plugin.steamId) && areaInstances >= 8000 && isInsideArea)
-                    {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O limite é de 8000 instâncias.", 0, null);
-                        return false;
                     }
                 }
 

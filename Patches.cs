@@ -13,8 +13,33 @@ namespace Deadheim
     public class Patches : MonoBehaviour
     {
 
+        [HarmonyPatch(typeof(Player), "SetPlayerID")]
+        internal class SetPlayerID
+        {
+            private static void Postfix(long playerID, string name)
+            {
+                try
+                {
+                    if (!Player.m_localPlayer) return;
+                    Plugin.PlayerName = Player.m_localPlayer.m_nview.GetZDO().GetString("playerName");
+                }
+                catch
+                {
+
+                }
+            }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Player), "OnSpawned")]
+        private static void OnSpawnedPostfix()
+        {
+           Player.m_localPlayer.m_nview.GetZDO().Set("playerName", Plugin.PlayerName + " " + EpicMMOApi.GetLevel());
+        }
+
+
         [HarmonyPatch(typeof(ZNetScene), "Awake")]
-        public static class OnSpawned
+        public static class ZNetSceneAwake
         {
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(ZNetScene __instance)
@@ -29,6 +54,8 @@ namespace Deadheim
                     ai.m_spawnMessage = "";
                     ai.m_deathMessage = "";
                 }
+
+                ItemService.ChangeMontersFaction();
             }
         }
 
@@ -40,7 +67,6 @@ namespace Deadheim
                 if (!__instance.IsServer())
                 {
                     Plugin.steamId = SteamUser.GetSteamID().ToString();
-                    ItemService.NerfRunicCape();
                 }
             }
         }
@@ -239,6 +265,8 @@ namespace Deadheim
         {
             static bool Prefix(Player __instance, Inventory ___m_inventory, ZNetView ___m_nview, Skills ___m_skills)
             {
+                if (Plugin.IsAdmin) return false;
+
                 List<ItemDrop.ItemData> itemsToDrop = new List<ItemDrop.ItemData>();
                 List<ItemDrop.ItemData> itemsToKeep = Traverse.Create(___m_inventory).Field("m_inventory").GetValue<List<ItemDrop.ItemData>>();
 

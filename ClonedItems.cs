@@ -26,7 +26,7 @@ namespace Deadheim
         private static void AddClonedPieces()
         {
             AddAesirChest();
-            AddAdminWard();
+            AddAdminWards();
             PieceManager.OnPiecesRegistered -= AddClonedPieces;
         }
 
@@ -39,7 +39,38 @@ namespace Deadheim
             CreatureManager.OnVanillaCreaturesAvailable -= AddVanillaClonedCreatures;
         }
 
-        private static void AddAdminWard()
+        private static void AddAdminWards()
+        {
+            AddBigdminWard();
+            AddSmallAdminWard();
+        }
+
+        private static void AddSmallAdminWard()
+        {
+            var adminWard = PrefabManager.Instance.CreateClonedPrefab("AdminWardSmall", "guard_stone");
+            Piece piece = adminWard.GetComponent<Piece>();
+            piece.m_resources[0].m_resItem = PrefabManager.Instance.GetPrefab("SwordCheat").GetComponent<ItemDrop>();
+            piece.m_resources[0].m_recover = false;
+
+            piece.m_description = "Admin Ward small";
+            piece.m_name = "Admin Ward small";
+
+            PrivateArea area = piece.GetComponent<PrivateArea>();
+            area.m_radius = 40;
+            area.m_name = "AdminWardSmall";
+
+            var comp = adminWard.GetComponentInChildren<MeshRenderer>();
+
+            var materials = new List<Material>();
+            materials.Add(PrefabManager.Instance.GetPrefab("FreezeGland").GetComponentInChildren<MeshRenderer>().materials[0]);
+            materials.Add(PrefabManager.Instance.GetPrefab("FreezeGland").GetComponentInChildren<MeshRenderer>().materials[0]);
+
+            comp.materials = materials.ToArray();
+
+            PieceManager.Instance.RegisterPieceInPieceTable(adminWard, "Hammer", "Misc");
+        }
+
+        private static void AddBigdminWard()
         {
             var adminWard = PrefabManager.Instance.CreateClonedPrefab("AdminWard", "guard_stone");
             Piece piece = adminWard.GetComponent<Piece>();
@@ -52,7 +83,6 @@ namespace Deadheim
             PrivateArea area = piece.GetComponent<PrivateArea>();
             area.m_radius = 150;
             area.m_name = "AdminWard";
-
 
             var comp = adminWard.GetComponentInChildren<MeshRenderer>();
 
