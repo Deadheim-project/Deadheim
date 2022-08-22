@@ -127,20 +127,5 @@ namespace Deadheim
                 destructible.m_health = 1;
             }
         }
-
-        public static void ChangeMontersFaction()
-        {
-            GameObject wendigo = PrefabManager.Instance.GetPrefab("BrownBear");
-            wendigo.GetComponent<Character>().m_faction = Character.Faction.ForestMonsters;
-            
-            GameObject voidling = PrefabManager.Instance.GetPrefab("Fox");
-            voidling.GetComponent<Character>().m_faction = Character.Faction.MountainMonsters;
-            
-            GameObject birchElder = PrefabManager.Instance.GetPrefab("Ibex");
-            birchElder.GetComponent<Character>().m_faction = Character.Faction.MountainMonsters;
-
-            GameObject yeti = PrefabManager.Instance.GetPrefab("Casuar");
-            yeti.GetComponent<Character>().m_faction = Character.Faction.PlainsMonsters;                      
-        }
     }
 }

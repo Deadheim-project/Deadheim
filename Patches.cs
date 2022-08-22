@@ -54,8 +54,6 @@ namespace Deadheim
                     ai.m_spawnMessage = "";
                     ai.m_deathMessage = "";
                 }
-
-                ItemService.ChangeMontersFaction();
             }
         }
 

@@ -71,6 +71,14 @@
   <ItemGroup>
     <EmbeddedResource Include="assets\esqueletaoshield.png" />
     <EmbeddedResource Include="assets\esqueletaosword.png" />
+    <EmbeddedResource Include="assets\armorkit1.png" />
+    <EmbeddedResource Include="assets\armorkit2.png" />
+    <EmbeddedResource Include="assets\armorkit3.png" />
+    <EmbeddedResource Include="assets\armorkit4.png" />
+    <EmbeddedResource Include="assets\weaponkit1.png" />
+    <EmbeddedResource Include="assets\weaponkit2.png" />
+    <EmbeddedResource Include="assets\weaponkit3.png" />
+    <EmbeddedResource Include="assets\weaponkit4.png" />
     <Content Include="GroupsAPI.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
