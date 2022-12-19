@@ -3,9 +3,7 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using Jotunn.Managers;
 using Jotunn.Utils;
-using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Deadheim
 {
@@ -14,8 +12,8 @@ namespace Deadheim
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     [BepInDependency("org.bepinex.plugins.groups", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
-    {
-        public const string Version = "5.0.1";
+    {        
+        public const string Version = "6.0.0";
         public const string PluginGUID = "Detalhes.Deadheim";
         public static string steamId = "";
         public static ConfigEntry<string> Vip;
@@ -63,7 +61,6 @@ namespace Deadheim
             {
                 if (attr.InitialSynchronization)
                 {
-                    ItemService.SetBoatsToDrop();
                     ItemService.SetWardFirePlace();
                     ItemService.ModifyItemsCost();
                     ItemService.LoxTameable();

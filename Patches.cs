@@ -64,7 +64,8 @@ namespace Deadheim
             {
                 if (!__instance.IsServer())
                 {
-                    Plugin.steamId = SteamUser.GetSteamID().ToString();
+                    Plugin.steamId = PlayFabManager.m_customId;
+                    Debug.LogError("Meu ID: " + Plugin.steamId);
                 }
             }
         }
@@ -224,19 +225,6 @@ namespace Deadheim
                 if (maxPlayers >= 1)
                 {
                     cPlayersMax = maxPlayers;
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(ZNet), "Awake")]
-        public static class ZNetAwake
-        {
-            private static void Postfix(ref ZNet __instance)
-            {
-                int maxPlayers = Plugin.maxPlayers;
-                if (maxPlayers >= 1)
-                {
-                    __instance.m_serverPlayerLimit = maxPlayers;
                 }
             }
         }

@@ -55,24 +55,6 @@ namespace Deadheim
             fireplace.m_fuelItem = PrefabManager.Instance.GetPrefab("GreydwarfEye").GetComponent<ItemDrop>();
         }
 
-        public static void SetBoatsToDrop()
-        {
-            GameObject boat1 = PrefabManager.Instance.GetPrefab("CargoShip");
-            GameObject boat2 = PrefabManager.Instance.GetPrefab("BigCargoShip");
-            GameObject boat3 = PrefabManager.Instance.GetPrefab("LittleBoat");
-            GameObject boat4 = PrefabManager.Instance.GetPrefab("WarShip");
-            GameObject boat5 = PrefabManager.Instance.GetPrefab("FishingBoat");
-            GameObject boat6 = PrefabManager.Instance.GetPrefab("TransporterShip");
-            GameObject karve = PrefabManager.Instance.GetPrefab("Karve");
-            Piece karveRecipe = karve.GetComponent<Piece>();
-
-            foreach (GameObject gameObject in new List<GameObject> { boat1, boat2, boat3, boat4, boat5, boat6 })
-            {
-                Piece recipe = gameObject.GetComponent<Piece>();
-                recipe.m_craftingStation = karveRecipe.m_craftingStation;
-            }
-        }
-
         public static void NerfRunicCape()
         {
             GameObject prefab = ObjectDB.instance.GetItemPrefab("rae_CapeHorseHide");
