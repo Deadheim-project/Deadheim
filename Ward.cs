@@ -20,7 +20,7 @@ namespace Deadheim.EnhancedWards
                 try
                 {
                     if (___m_nview is null) return false;
-                    if (!PrivateArea.InsideFactionArea(__instance.transform.position, Character.Faction.Players)) return true;
+                    if (!CheckInPrivateArea(__instance.transform.position)) return true;
                     if (__instance.gameObject.name.Contains("guard_stone")) return false;
                     if (__instance.gameObject.name.Contains("AdminWard")) return false;
                     if (Vector3.Distance(new Vector3(0, 0), Player.m_localPlayer.transform.position) <= Plugin.SafeArea.Value) return false;
@@ -32,6 +32,21 @@ namespace Deadheim.EnhancedWards
                     return false;
                 }
             }
+        }
+
+        
+        public static bool CheckInPrivateArea(Vector3 point, bool flash = false)
+        {
+            foreach (PrivateArea allArea in PrivateArea.m_allAreas)
+            {
+                if (allArea.IsEnabled() && allArea.IsInside(point, 0.0f))
+                {
+                    if (flash)
+                        allArea.FlashShield(false);
+                    return true;
+                }
+            }
+            return false;
         }
 
         [HarmonyPatch(typeof(Door), nameof(Door.CanInteract))]
