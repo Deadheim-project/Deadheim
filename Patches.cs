@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Jotunn.Managers;
 using Steamworks;
 using System;
 using System.Collections.Generic;
@@ -184,7 +185,7 @@ namespace Deadheim
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(Minimap __instance)
             {
-                if (Plugin.IsAdmin) return;
+                if (SynchronizationManager.Instance.PlayerIsAdmin) return;
 
                 foreach (Minimap.PinData playerPin in __instance.m_playerPins)
                 {
@@ -251,7 +252,7 @@ namespace Deadheim
         {
             static bool Prefix(Player __instance, Inventory ___m_inventory, ZNetView ___m_nview, Skills ___m_skills)
             {
-                if (Plugin.IsAdmin) return false;
+                if (SynchronizationManager.Instance.PlayerIsAdmin) return false;
 
                 List<ItemDrop.ItemData> itemsToDrop = new List<ItemDrop.ItemData>();
                 List<ItemDrop.ItemData> itemsToKeep = Traverse.Create(___m_inventory).Field("m_inventory").GetValue<List<ItemDrop.ItemData>>();
@@ -265,7 +266,7 @@ namespace Deadheim
                 {
                     ItemDrop.ItemData item = itemsToKeep[i];
                     Debug.LogError(item.m_shared.m_name + " - DestroyBroken: "  + item.m_shared.m_destroyBroken);
-                    if (item.m_equiped)
+                    if (item.m_equipped)
                         continue;
 
                     if (item.m_shared.m_questItem)
@@ -306,7 +307,6 @@ namespace Deadheim
                 ___m_skills.LowerAllSkills(factor);
 
                 Player.m_localPlayer.ClearFood();
-                Game.instance.GetPlayerProfile().m_playerStats.m_deaths++;
                 Game.instance.GetPlayerProfile().SetDeathPoint(__instance.transform.position);
                 Game.instance.RequestRespawn(10f);
                 return false;
@@ -366,7 +366,8 @@ namespace Deadheim
             [HarmonyPriority(Priority.Last)]
             private static bool Prefix(Piece piece, Player __instance)
             {
-                if (Plugin.Vip.Value.Contains(Plugin.steamId)) return true;
+                bool isVip = Vip.Value.Contains(steamId);
+                if (isVip) return true;
 
                 if (piece.gameObject.name == "AesirChest")
                 {

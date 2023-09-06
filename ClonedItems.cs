@@ -269,7 +269,7 @@ namespace Deadheim
             CustomItem CI = new CustomItem("PortalToken", "Thunderstone");
             ItemDrop itemDrop = CI.ItemDrop;
             itemDrop.m_itemData.m_shared.m_name = "Portal Token";
-            itemDrop.m_itemData.m_shared.m_description = "Use to help deadheim keep going";
+            itemDrop.m_itemData.m_shared.m_description = "Me compre para o Detalhes poder manter seu vício.";
             itemDrop.m_itemData.m_shared.m_maxStackSize = 10;
             ItemManager.Instance.AddItem(CI);
         }

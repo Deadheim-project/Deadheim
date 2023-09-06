@@ -179,7 +179,7 @@ namespace Deadheim.EnhancedWards
             [HarmonyPriority(Priority.First)]
             private static bool Prefix(Piece piece, Player __instance)
             {
-                if (Plugin.IsAdmin) return true;
+                if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
 
                 bool isTotem = piece.gameObject.name.Contains("guard_stone");
 
@@ -209,7 +209,7 @@ namespace Deadheim.EnhancedWards
 
                 int wards = GetWardCount();
                 bool isVip = Plugin.Vip.Value.Contains(Plugin.steamId);
-
+                
                 if (isVip)
                 {
                     if (wards >= Plugin.WardLimitVip.Value)
@@ -234,7 +234,7 @@ namespace Deadheim.EnhancedWards
 
         private static int GetWardCount()
         {
-            if (Plugin.IsAdmin) return 0;
+            if (SynchronizationManager.Instance.PlayerIsAdmin) return 0;
             ZPackage pkg = new();
             pkg.Write(Player.m_localPlayer.GetPlayerID());
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "DeadheimPortalAndTotemCountServer", pkg);

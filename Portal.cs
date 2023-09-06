@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Jotunn.Managers;
 
 namespace Deadheim
 {
@@ -11,7 +12,7 @@ namespace Deadheim
             [HarmonyPriority(Priority.First)]
             private static bool Prefix(Piece piece, Player __instance)
             {
-                if (Plugin.IsAdmin) return true;
+                if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
 
                 if (!piece.gameObject.name.Contains("portal_wood")) return true;
 
@@ -41,7 +42,7 @@ namespace Deadheim
 
         private static int GetPortalCount()
         {
-            if (Plugin.IsAdmin) return 0;
+            if (SynchronizationManager.Instance.PlayerIsAdmin) return 0;
 
             ZPackage pkg = new();
             pkg.Write(Player.m_localPlayer.GetPlayerID());

@@ -1,28 +1,19 @@
 ﻿using HarmonyLib;
 
-namespace Deadheim.Boss
+namespace Deadheim
 {
+    [HarmonyPatch]
     public class Boss
     {
-        public static string eikhthyr = "$piece_offerbowl_eikthyr";
-        public static string elder = "$prop_eldersummoningbowl_name";
-        public static string bonemass = "$piece_offerbowl_bonemass";
-        public static string dragon = "$prop_dragonsummoningbowl_name";
-        public static string yagluth = "$piece_offerbowl_yagluth";
-
         [HarmonyPatch(typeof(OfferingBowl), "Interact")]
         public static class Interact
         {
             private static bool Prefix(OfferingBowl __instance, Humanoid user)
             {
-                if (__instance.m_name == yagluth)
-                {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Não é possível invocar esse boss nessa era.", 0, null);
+                if (Validate(__instance.m_bossPrefab.name)) return true;
 
-                    return false;
-                }
-
-                return true;
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "You don't know enough", 0, null);
+                return false;
             }
         }
 
@@ -31,12 +22,18 @@ namespace Deadheim.Boss
         {
             private static bool Prefix(OfferingBowl __instance, Humanoid user, ItemDrop.ItemData item)
             {
-                if (__instance.m_name == eikhthyr) __instance.m_bossItems = 20;
-                if (__instance.m_name == elder) __instance.m_bossItems = 30;
-                if (__instance.m_name == bonemass) __instance.m_bossItems = 50;
+                if (Validate(__instance.m_bossPrefab.name)) return true;
 
-                return true;
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "You don't know enough", 0, null);
+                return false;
             }
+        }
+
+        public static bool Validate(string bossName)
+        {
+            if (!Plugin.BlockedBosses.Value.Contains(bossName)) return true;
+
+            return false;
         }
     }
 }

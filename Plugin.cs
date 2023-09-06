@@ -23,6 +23,7 @@ namespace Deadheim
         public static ConfigEntry<int> WardRadius;
         public static ConfigEntry<string> StaffMessage;
         public static ConfigEntry<string> DungeonPrefabs;
+        public static ConfigEntry<string> BlockedBosses;
         public static ConfigEntry<float> SkillMultiplier;
         public static ConfigEntry<float> BoatWindSpeedmultiplier;
         public static ConfigEntry<float> BoatRudderSpeedmultiplier;
@@ -111,6 +112,10 @@ new ConfigDescription("StaffMessage", null,
             DungeonPrefabs = Config.Bind("Server config", "DungeonPrefabs", "dungeon_forestcrypt_door,dungeon_sunkencrypt_irongate",
 new ConfigDescription("DungeonPrefabs", null,
         new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
+            BlockedBosses = Config.Bind("Server config", "BlockedBosses", "batata banana",
+new ConfigDescription("BlockedBosses", null,
+new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WolvesAreTameable = Config.Bind("Server config", "WolvesAreTameable", false,
 new ConfigDescription("WolvesAreTameable", null,
