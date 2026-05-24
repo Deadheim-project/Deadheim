@@ -1,7 +1,36 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+# Build output
+bin/
+obj/
+Debug/
+Release/
 
-/obj
-/bin/Debug
-/Properties
+# IDE and editor state
+.vs/
+.idea/
+.vscode/
+*.suo
+*.user
+*.rsuser
+
+# Logs, local databases, and runtime saves
+*.log
+*.latest
+*.db
+*.db-log
+SaveDir_*.txt
+adminlist*.txt
+bannedlist*.txt
+permittedlist*.txt
+
+# Backups and temporary files
+*.bak
+*.tmp
+*.zip
+*(*
+ftp-dll-backup-*/
+server_*/*
+server_*
+
+# NuGet/package cache
+packages/
+**/packages/

@@ -1,0 +1,9 @@
+{
+  "name": "Deadheim_Reborn",
+  "version_number": "0.1.0",
+  "website_url": "https://github.com/Deadheim-project/Deadheim-Reborn",
+  "description": "Deadheim Reborn modpack for Valheim.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2202"
+  ]
+}

@@ -15,13 +15,36 @@ namespace Deadheim
             cartographyTable.GetComponent<Piece>().m_resources[2].m_amount = 100;
             cartographyTable.GetComponent<Piece>().m_resources[3].m_amount = 100;
             cartographyTable.GetComponent<Piece>().m_resources[4].m_amount = 100;
-
             GameObject portalwood = PrefabManager.Instance.GetPrefab("portal_wood");
             var portalwoodPiece = portalwood.GetComponent<Piece>();
-            portalwoodPiece.m_resources[0].m_amount = 1500;
-            portalwoodPiece.m_resources[1].m_amount = 1;
-            portalwoodPiece.m_resources[1].m_resItem = PrefabManager.Instance.GetPrefab("PortalToken").GetComponent<ItemDrop>();
-            portalwoodPiece.m_resources[2].m_amount = 225;
+
+            portalwoodPiece.m_resources = new Piece.Requirement[]
+            {
+                new Piece.Requirement
+                {
+                    m_resItem = PrefabManager.Instance.GetPrefab("PortalToken").GetComponent<ItemDrop>(),
+                    m_amount = 1,
+                    m_recover = true // Permite recuperar o token ao quebrar o portal
+                },
+                new Piece.Requirement
+                {
+                    m_resItem = PrefabManager.Instance.GetPrefab("FineWood").GetComponent<ItemDrop>(),
+                    m_amount = 100,
+                    m_recover = true
+                },
+                new Piece.Requirement
+                {
+                    m_resItem = PrefabManager.Instance.GetPrefab("GreydwarfEye").GetComponent<ItemDrop>(),
+                    m_amount = 30,
+                    m_recover = true
+                },
+                new Piece.Requirement
+                {
+                    m_resItem = PrefabManager.Instance.GetPrefab("SurtlingCore").GetComponent<ItemDrop>(),
+                    m_amount = 10,
+                    m_recover = true
+                }
+            };
         }
 
         public static void OnlyAdminPieces()

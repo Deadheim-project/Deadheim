@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>RaidSystem\obj\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>RaidSystem\obj\</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C2B4E6D8-1A3F-4E7B-9C0D-2E4F6A8B0C1E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>RaidSystem</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+    <FileAlignment>512</FileAlignment>
+    <LangVersion>9</LangVersion>
+    <RootNamespace>RaidSystem</RootNamespace>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- v2.0.0 source files -->
+  <ItemGroup>
+    <Compile Include="RaidSystem\dWebHook.cs" />
+    <Compile Include="RaidSystem\GUI.cs" />
+    <Compile Include="RaidSystem\GuildsIntegration.cs" />
+    <Compile Include="RaidSystem\MapDrawer.cs" />
+    <Compile Include="RaidSystem\Models.cs" />
+    <Compile Include="RaidSystem\RaidDoorManager.cs" />
+    <Compile Include="RaidSystem\DataStore.cs" />
+    <Compile Include="RaidSystem\CooldownManager.cs" />
+    <Compile Include="RaidSystem\ScoreManager.cs" />
+    <Compile Include="RaidSystem\Patches.cs" />
+    <Compile Include="RaidSystem\RPCManager.cs" />
+    <Compile Include="RaidSystem\RaidSystemPlugin.cs" />
+    <Compile Include="RaidSystem\Util.cs" />
+    <Compile Include="RaidSystem\WardSetup.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="RaidSystem\app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- BepInEx / Harmony -->
+    <Reference Include="0Harmony">
+      <HintPath>D:\BepInEx\core\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>D:\BepInEx\core\BepInEx.dll</HintPath>
+    </Reference>
+    <!-- ServerSync -->
+    <Reference Include="ServerSync, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\BepInEx\ServerSync.dll</HintPath>
+    </Reference>
+    <!-- Guilds dependency (needed for territory ownership) -->
+    <Reference Include="Guilds">
+      <HintPath>D:\BepInEx\Guilds.dll</HintPath>
+      <Private>false</Private>
+      <Aliases>GuildsMod</Aliases>
+    </Reference>
+    <!-- Valheim publicized assemblies -->
+    <Reference Include="assembly_guiutils_publicized">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies\assembly_guiutils_publicized.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+<Reference Include="assembly_utils_publicized">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies\assembly_utils_publicized.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_valheim_publicized, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <!-- UnityEngine -->
+    <Reference Include="UnityEngine">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+<Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.UI.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Remove="SoftReferenceableAssets_publicized" />
+    <Reference Remove="gui_framework_publicized" />
+    <Reference Remove="UnityEngine.ProfilerModule" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="HarmonyX">
+      <Version>2.9.0</Version>
+    </PackageReference>
+    <PackageReference Include="ILRepack.Lib.MSBuild.Task">
+      <Version>2.0.18.2</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="JotunnLib">
+      <Version>2.28.0</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="RaidSystem\ILRepack.targets" Condition="Exists('RaidSystem\ILRepack.targets')" />
+</Project>
+
+

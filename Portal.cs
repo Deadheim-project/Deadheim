@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
 using Jotunn.Managers;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Deadheim
 {
@@ -9,46 +11,80 @@ namespace Deadheim
         [HarmonyPatch(typeof(Player), "PlacePiece")]
         public static class NoBuild_Patch
         {
-            [HarmonyPriority(Priority.First)]
-            private static bool Prefix(Piece piece, Player __instance)
+            public static void UpdatePortalMaterials()
             {
-                if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
+                GameObject portalwood = PrefabManager.Instance.GetPrefab("portal_wood");
+                if (portalwood == null) return;
 
-                if (!piece.gameObject.name.Contains("portal_wood")) return true;
+                var portalwoodPiece = portalwood.GetComponent<Piece>();
 
-                int wards = GetPortalCount();
-                bool isVip = Plugin.Vip.Value.Contains(Plugin.steamId);
+                // Lista temporária para guardar os materiais que formos encontrando
+                List<Piece.Requirement> newRequirements = new List<Piece.Requirement>();
 
-                if (isVip)
+                // Quebra a string "Item:1,Item:2" em pedaços separados pela vírgula
+                string[] matEntries = Plugin.PortalMaterials.Value.Split(',');
+
+                foreach (string entry in matEntries)
                 {
-                    if (wards >= Plugin.PortalLimitVip.Value)
+                    // Quebra cada pedaço pelo ":" para separar o Nome da Quantidade
+                    string[] parts = entry.Split(':');
+
+                    if (parts.Length == 2)
                     {
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Você não pode mais colocar portais.", 0, null);
-                        return false;
+                        string prefabName = parts[0].Trim();
+
+                        // Tenta converter a quantidade para número
+                        if (int.TryParse(parts[1].Trim(), out int amount) && amount > 0)
+                        {
+                            // Busca o prefab no jogo
+                            GameObject prefab = PrefabManager.Instance.GetPrefab(prefabName);
+                            if (prefab != null)
+                            {
+                                ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
+                                if (itemDrop != null)
+                                {
+                                    newRequirements.Add(new Piece.Requirement
+                                    {
+                                        m_resItem = itemDrop,
+                                        m_amount = amount,
+                                        m_recover = true // Permite recuperar ao quebrar
+                                    });
+                                }
+                                else
+                                {
+                                    Jotunn.Logger.LogWarning($"[Deadheim] O prefab '{prefabName}' não é um item válido.");
+                                }
+                            }
+                            else
+                            {
+                                Jotunn.Logger.LogWarning($"[Deadheim] Prefab '{prefabName}' não encontrado no jogo.");
+                            }
+                        }
                     }
                 }
-                else if (wards >= Plugin.PortalLimit.Value)
+
+                // Se encontrou pelo menos 1 material válido, aplica no portal
+                if (newRequirements.Count > 0)
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Você não pode mais colocar portais.", 0, null);
-                    return false;
+                    portalwoodPiece.m_resources = newRequirements.ToArray();
+                    Jotunn.Logger.LogInfo("[Deadheim] Materiais do portal atualizados dinamicamente!");
                 }
+                else
+                {
+                    Jotunn.Logger.LogWarning("[Deadheim] Nenhum material válido na config. Mantendo os materiais originais.");
+                }
+            }
+
+            private static int GetPortalCount()
+            {
+                if (SynchronizationManager.Instance.PlayerIsAdmin) return 0;
 
                 ZPackage pkg = new();
                 pkg.Write(Player.m_localPlayer.GetPlayerID());
                 ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "DeadheimPortalAndTotemCountServer", pkg);
-                return true;
+
+                return Plugin.PlayerPortalCount;
             }
-        }
-
-        private static int GetPortalCount()
-        {
-            if (SynchronizationManager.Instance.PlayerIsAdmin) return 0;
-
-            ZPackage pkg = new();
-            pkg.Write(Player.m_localPlayer.GetPlayerID());
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "DeadheimPortalAndTotemCountServer", pkg);
-
-            return Plugin.PlayerPortalCount;
         }
     }
 }

@@ -1,0 +1,94 @@
+groups:
+  MeadowsLoot: [Boar, Neck, Greyling, Deer]
+  BlackForestLoot: [Greydwarf, Greydwarf_Elite, Skeleton, Ghost, Troll]
+  SwampLoot: [Draugr, Draugr_Elite, Blob, Leech, Wraith]
+  MountainLoot: [Wolf, Drake, StoneGolem, Fenring, Bat]
+  PlainsLoot: [Deathsquito, Lox, Goblin, GoblinBrute, GoblinShaman]
+  MistlandsLoot: [Seeker, SeekerBrute, SeekerBrood, Gjall, Tick]
+  AshlandsLoot: [Asksvin, Bonemaw, CharredWarrior, CharredMarksman, CharredWarlock, CharredTwitcher, FallenValkyrie, LavaBlob, Morgen, Volture, Skugg]
+  Bosses: [Eikthyr, TheElder, Bonemass, Moder, Yagluth, TheQueen, Fader]
+  PoisonMobs: [Greydwarf_Shaman, Blob, BlobElite, Leech]
+
+
+######### Global - Criaturas #########
+CreaturesGlobal:
+  size: 0
+  health: 6
+  health per star: 0.30
+  damage per star: 0.05
+  damage: 1.3
+  movement speed: 1
+  stars: 
+    1: [80, 10, 5, 3, 2]
+    2: [60, 20, 15, 3, 2]
+    3: [40, 30, 15, 10, 5]
+    4: [0, 0, 0, 0, 0, 0, 100]
+    5: [0, 0, 0, 0, 0, 0, 0, 100]
+    6: [0, 0, 0, 0, 0, 0, 0, 0, 100]
+    
+######### Global - Bosses #########
+BossDefaults:
+  health: 20
+  health per star: 0
+  damage: 2
+  damage per star: 0
+  attack speed: 0.8
+  movement speed: 1
+  damage taken:
+    Pierce: 1
+    Fire: 1
+
+######### Loot por Bioma (apenas loot varia) #########
+MeadowsLoot:
+  size: 0
+
+BlackForestLoot:
+  size: 0
+
+SwampLoot:
+  size: 0
+
+MountainLoot:
+  size: 0
+
+PlainsLoot:
+  size: 0
+
+MistlandsLoot:
+  size: 0
+
+AshlandsLoot:
+  size: 0
+
+Goblin:
+  amount: 0
+  plains:
+    override:
+      amount: 1
+
+Seeker:
+  amount: 0
+  mistlands:
+    override:
+      amount: 1
+
+Tick:
+  amount: 0
+  mistlands:
+    override:
+      amount: 1
+      
+Charred_Archer:
+  amount: 0
+  ashlands:
+    override:
+      amount: 1
+      
+Charred_Melee:
+  amount: 0
+  ashlands:
+    override:
+      amount: 1
+
+PoisonMobs:
+  damage: 1

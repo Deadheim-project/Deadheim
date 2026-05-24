@@ -22,7 +22,7 @@ namespace Deadheim
         private static void AddClonedItems()
         {
             AddPortalToken();
-            AddEsqueletaoItems();
+            AddSpawnerToken();
             AddItemKits();
             PrefabManager.OnPrefabsRegistered -= AddClonedItems;
         }
@@ -32,6 +32,7 @@ namespace Deadheim
         {
             AddAesirChest();
             AddAdminWards();
+            AddBuildableSpawners();
             PieceManager.OnPiecesRegistered -= AddClonedPieces;
         }
 
@@ -48,7 +49,6 @@ namespace Deadheim
         {
             AddBigdminWard();
             AddSmallAdminWard();
-            AddRaidWard();
         }
 
         private static void AddItemKits()
@@ -143,31 +143,6 @@ namespace Deadheim
             }
         }
 
-        private static void AddRaidWard()
-        {
-            var adminWard = PrefabManager.Instance.CreateClonedPrefab("RaidWard", "guard_stone");
-            Piece piece = adminWard.GetComponent<Piece>();
-            piece.m_resources[0].m_resItem = PrefabManager.Instance.GetPrefab("SwordCheat").GetComponent<ItemDrop>();
-            piece.m_resources[0].m_recover = false;
-
-            piece.m_description = "Raid Ward";
-            piece.m_name = "RaidWard";
-
-            PrivateArea area = piece.GetComponent<PrivateArea>();
-            area.m_radius = 80;
-            area.m_name = "RaidWard";
-
-            var comp = adminWard.GetComponentInChildren<MeshRenderer>();
-
-            var materials = new List<Material>();
-            materials.Add(PrefabManager.Instance.GetPrefab("Stone").GetComponentInChildren<MeshRenderer>().materials[0]);
-            materials.Add(PrefabManager.Instance.GetPrefab("Stone").GetComponentInChildren<MeshRenderer>().materials[0]);
-
-            comp.materials = materials.ToArray();
-
-            PieceManager.Instance.RegisterPieceInPieceTable(adminWard, "Hammer", "Misc");
-        }
-
         private static void AddSmallAdminWard()
         {
             var adminWard = PrefabManager.Instance.CreateClonedPrefab("AdminWardSmall", "guard_stone");
@@ -232,38 +207,6 @@ namespace Deadheim
             PieceManager.Instance.RegisterPieceInPieceTable(aesirChest, "Hammer", "Furniture");
         }
 
-        private static void AddEsqueletaoItems()
-        {
-            CustomItem skeletaoSword = new CustomItem("SkeletaoSword", "SwordBronze", new ItemConfig
-            {
-                Name = "Espadada do esqueletão.",
-                Description = "Espadada do esqueletão.",
-                Icons = new[] { Util.LoadSprite("esqueletaosword.png", 64, 64) },
-                RepairStation = "forge",
-                MinStationLevel = 1,
-                CraftingStation = "forge"
-            });
-
-            skeletaoSword.ItemDrop.m_itemData.m_shared.m_damages.m_slash = 56;
-            skeletaoSword.ItemPrefab.GetComponentInChildren<MeshRenderer>().materials = PrefabManager.Instance.GetPrefab("Tar").GetComponentInChildren<MeshRenderer>().materials;
-
-            CustomItem skeletaoShield = new CustomItem("SkeletaoShield", "ShieldBoneTower", new ItemConfig
-            {
-                Name = "Escudo do esqueletão.",
-                Description = "Escudo do esqueletão.",
-                Icons = new[] { Util.LoadSprite("esqueletaoshield.png", 64, 64) },
-                RepairStation = "forge",
-                MinStationLevel = 1,
-                CraftingStation = "forge"
-            });
-
-            skeletaoShield.ItemDrop.m_itemData.m_shared.m_blockPower = 49;
-            skeletaoShield.ItemPrefab.GetComponentInChildren<MeshRenderer>().materials = PrefabManager.Instance.GetPrefab("Tar").GetComponentInChildren<MeshRenderer>().materials;
-
-            ItemManager.Instance.AddItem(skeletaoSword);
-            ItemManager.Instance.AddItem(skeletaoShield);
-        }
-
         private static void AddPortalToken()
         {
             CustomItem CI = new CustomItem("PortalToken", "Thunderstone");
@@ -272,6 +215,81 @@ namespace Deadheim
             itemDrop.m_itemData.m_shared.m_description = "Me compre para o Detalhes poder manter seu vício.";
             itemDrop.m_itemData.m_shared.m_maxStackSize = 10;
             ItemManager.Instance.AddItem(CI);
+        }
+
+        private static void AddSpawnerToken()
+        {
+            CustomItem CI = new CustomItem("SpawnerToken", "Thunderstone");
+            ItemDrop itemDrop = CI.ItemDrop;
+            itemDrop.m_itemData.m_shared.m_name = "Spawner Token";
+            itemDrop.m_itemData.m_shared.m_description = "Token used to build protected vanilla spawners.";
+            itemDrop.m_itemData.m_shared.m_maxStackSize = 10;
+            ItemManager.Instance.AddItem(CI);
+        }
+
+        private static void AddBuildableSpawners()
+        {
+            AddBuildableSpawner("BuildableGreydwarfNestSpawner", "Spawner_GreydwarfNest", "Black Forest Spawner", "Indestructible Black Forest monster spawner.");
+            AddBuildableSpawner("BuildableDraugrPileSpawner", "Spawner_DraugrPile", "Swamp Spawner", "Indestructible Swamp monster spawner.");
+        }
+
+        private static void AddBuildableSpawner(string prefabName, string sourcePrefabName, string name, string description)
+        {
+            GameObject source = PrefabManager.Instance.GetPrefab(sourcePrefabName);
+            if (source == null)
+            {
+                Jotunn.Logger.LogWarning($"Could not create {name}. Missing vanilla prefab: {sourcePrefabName}");
+                return;
+            }
+
+            GameObject spawner = PrefabManager.Instance.CreateClonedPrefab(prefabName, sourcePrefabName);
+            Piece piece = spawner.GetComponent<Piece>() ?? spawner.AddComponent<Piece>();
+
+            piece.m_name = name;
+            piece.m_description = description;
+            piece.m_enabled = true;
+            piece.m_icon = GetSpawnerIcon(sourcePrefabName) ?? piece.m_icon;
+            piece.m_category = Piece.PieceCategory.Misc;
+            piece.m_groundPiece = true;
+            piece.m_groundOnly = true;
+            piece.m_clipGround = true;
+            piece.m_noInWater = true;
+            piece.m_canRotate = true;
+            piece.m_canBeRemoved = true;
+            piece.m_repairPiece = false;
+            piece.m_resources = new[]
+            {
+                new Piece.Requirement
+                {
+                    m_resItem = PrefabManager.Instance.GetPrefab("SpawnerToken").GetComponent<ItemDrop>(),
+                    m_amount = 1,
+                    m_recover = true
+                }
+            };
+
+            WearNTear wearNTear = spawner.GetComponent<WearNTear>();
+            if (wearNTear != null)
+            {
+                wearNTear.m_health = 999999f;
+                wearNTear.m_noRoofWear = true;
+                wearNTear.m_noSupportWear = true;
+            }
+
+            Destructible destructible = spawner.GetComponent<Destructible>();
+            if (destructible != null)
+                destructible.m_health = 999999f;
+
+            PieceManager.Instance.RegisterPieceInPieceTable(spawner, "Hammer", "Misc");
+        }
+
+        private static Sprite GetSpawnerIcon(string sourcePrefabName)
+        {
+            string iconItem = sourcePrefabName == "Spawner_GreydwarfNest" ? "GreydwarfEye" : "WitheredBone";
+            Sprite icon = PrefabManager.Instance.GetPrefab(iconItem)?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
+
+            if (icon != null) return icon;
+
+            return PrefabManager.Instance.GetPrefab("SpawnerToken")?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
         }
 
         private static void AddNomTameableWolf()

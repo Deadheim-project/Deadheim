@@ -1,11 +1,9 @@
 ﻿using HarmonyLib;
 using Jotunn.Managers;
-using Steamworks;
-using System;
+using Splatform;
 using System.Collections.Generic;
-using System.Linq;
+using System.Reflection;
 using UnityEngine;
-using UnityEngine.UI;
 using static Deadheim.Plugin;
 
 namespace Deadheim
@@ -22,113 +20,24 @@ namespace Deadheim
                 try
                 {
                     if (!Player.m_localPlayer) return;
+                    steamId = ((IUser)PlatformManager.DistributionPlatform.LocalUser).PlatformUserID.m_userID;
                     Plugin.PlayerName = Player.m_localPlayer.m_nview.GetZDO().GetString("playerName");
+
+                    Debug.Log("steamId: " + steamId);
                 }
                 catch
                 {
 
                 }
             }
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Player), "OnSpawned")]
-        private static void OnSpawnedPostfix()
-        {
-           Player.m_localPlayer.m_nview.GetZDO().Set("playerName", Plugin.PlayerName + " " + EpicMMOApi.GetLevel());
-        }
-
-
-        [HarmonyPatch(typeof(ZNetScene), "Awake")]
-        public static class ZNetSceneAwake
-        {
-            [HarmonyPriority(Priority.Last)]
-            private static void Postfix(ZNetScene __instance)
-            {
-                GameObject bonemass = __instance.GetPrefab("Bonemass");
-                GameObject dragon = __instance.GetPrefab("Dragon");
-                GameObject goblinking = __instance.GetPrefab("GoblinKing");
-
-                foreach (GameObject gameObject in new List<GameObject> { bonemass, dragon, goblinking })
-                {
-                    BaseAI ai = gameObject.GetComponent<BaseAI>();
-                    ai.m_spawnMessage = "";
-                    ai.m_deathMessage = "";
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(ZNet), "OnNewConnection")]
-        private static class ZNet__OnNewConnection
-        {
-            public static void Postfix(ZNet __instance, ZNetPeer peer)
-            {
-                if (!__instance.IsServer())
-                {
-                    Plugin.steamId = PlayFabManager.m_customId;
-                    Debug.LogError("Meu ID: " + Plugin.steamId);
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(Inventory), MethodType.Constructor, new Type[] { typeof(string), typeof(Sprite), typeof(int), typeof(int) })]
-        public static class Inventory_Constructor_Patch
-        {
-            public static void Prefix(string name, ref int w, ref int h)
-            {
-                if (h == 4 && w == 8 || name == "Inventory") h = 6;
-            }
-        }
-
-        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Show))]
-        public class InventoryGui_Show_Patch
-        {
-            private const float oneRowSize = 70.5f;
-            private const float containerOriginalY = -90.0f;
-            private const float containerHeight = -340.0f;
-            private static float lastValue = 0;
-
-            public static void Postfix(ref InventoryGui __instance)
-            {
-                RectTransform container = __instance.m_container;
-                RectTransform player = __instance.m_player;
-                GameObject playerGrid = InventoryGui.instance.m_playerGrid.gameObject;
-
-                int playerInventoryBackgroundSize = Math.Min(6, Math.Max(4, 8));
-                float containerNewY = containerOriginalY - oneRowSize * playerInventoryBackgroundSize;
-                player.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, playerInventoryBackgroundSize * oneRowSize);
-                container.offsetMax = new Vector2(610, containerNewY);
-                container.offsetMin = new Vector2(40, containerNewY + containerHeight);
-
-                if (!playerGrid.GetComponent<InventoryGrid>().m_scrollbar)
-                {
-                    GameObject playerGridScroll = GameObject.Instantiate(InventoryGui.instance.m_containerGrid.m_scrollbar.gameObject, playerGrid.transform.parent);
-                    playerGridScroll.name = "PlayerScroll";
-                    playerGrid.GetComponent<RectMask2D>().enabled = true;
-                    ScrollRect playerScrollRect = playerGrid.AddComponent<ScrollRect>();
-                    playerGrid.GetComponent<RectTransform>().offsetMax = new Vector2(800f, playerGrid.GetComponent<RectTransform>().offsetMax.y);
-                    playerGrid.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 1f);
-                    playerScrollRect.content = playerGrid.GetComponent<InventoryGrid>().m_gridRoot;
-                    playerScrollRect.viewport = __instance.m_player.GetComponentInChildren<RectTransform>();
-                    playerScrollRect.verticalScrollbar = playerGridScroll.GetComponent<Scrollbar>();
-                    playerGrid.GetComponent<InventoryGrid>().m_scrollbar = playerGridScroll.GetComponent<Scrollbar>();
-
-                    playerScrollRect.horizontal = false;
-                    playerScrollRect.movementType = ScrollRect.MovementType.Clamped;
-                    playerScrollRect.scrollSensitivity = oneRowSize;
-                    playerScrollRect.inertia = false;
-                    playerScrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
-                    Scrollbar playerScrollbar = playerGridScroll.GetComponent<Scrollbar>();
-                    lastValue = playerScrollbar.value;
-                }
-            }
-        }
+        }              
 
         [HarmonyPatch(typeof(Chat), "OnNewChatMessage")]
         internal class OnNewChatMessage
         {
-            private static bool Prefix(string user, string text)
+            private static bool Prefix(string text)
             {
+                if (text.ToLower().Contains("i have arrived")) return false;
                 if (text.ToLower().Contains("i have arrived")) return false;
                 return true;
             }
@@ -164,7 +73,6 @@ namespace Deadheim
         {
             if (Player.m_localPlayer)
             {
-                ZNet.instance.SetPublicReferencePosition(true);
                 InventoryGui.instance.m_pvp.interactable = false;
             }
         }
@@ -179,21 +87,21 @@ namespace Deadheim
             }
         }
 
-        [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePlayerPins))]
-        private class UpdatePlayerPins
+        [HarmonyPatch(typeof(ZNet), nameof(ZNet.GetOtherPublicPlayers))]
+        private class AdminGetOtherPublicPlayers
         {
             [HarmonyPriority(Priority.Last)]
-            private static void Postfix(Minimap __instance)
+            private static void Postfix(List<ZNet.PlayerInfo> playerList)
             {
-                if (SynchronizationManager.Instance.PlayerIsAdmin) return;
+                if (!SynchronizationManager.Instance.PlayerIsAdmin || ZNet.instance == null || playerList == null) return;
 
-                foreach (Minimap.PinData playerPin in __instance.m_playerPins)
+                string localName = Player.m_localPlayer?.m_nview?.GetZDO()?.GetString("playerName") ?? "";
+                foreach (ZNet.PlayerInfo player in ZNet.instance.GetPlayerList())
                 {
-                    var group = Groups.API.GroupPlayers();
-
-                    if (group.Exists(x => x.name == playerPin.m_name)) continue;
-
-                    __instance.RemovePin(playerPin);
+                    if (string.IsNullOrWhiteSpace(player.m_name)) continue;
+                    if (player.m_name == localName) continue;
+                    if (playerList.Exists(existing => existing.m_name == player.m_name)) continue;
+                    playerList.Add(player);
                 }
             }
         }
@@ -217,18 +125,6 @@ namespace Deadheim
             return false;
         }
 
-        [HarmonyPatch(typeof(SteamGameServer), "SetMaxPlayerCount")]
-        public static class ChangeSteamServerVariables
-        {
-            private static void Prefix(ref int cPlayersMax)
-            {
-                int maxPlayers = Plugin.maxPlayers;
-                if (maxPlayers >= 1)
-                {
-                    cPlayersMax = maxPlayers;
-                }
-            }
-        }
 
         [HarmonyPatch(typeof(CraftingStation), "Start")]
         public static class WorkbenchRangeIncrease
@@ -246,70 +142,70 @@ namespace Deadheim
             }
         }
 
-        [HarmonyPatch(typeof(Player), "OnDeath")]
-        [HarmonyPriority(Priority.First)]
-        static class OnDeath
+        public static void setDeathStat(HitData ___m_lastHit)
         {
-            static bool Prefix(Player __instance, Inventory ___m_inventory, ZNetView ___m_nview, Skills ___m_skills)
+            switch (___m_lastHit.m_hitType)
             {
-                if (SynchronizationManager.Instance.PlayerIsAdmin) return false;
-
-                List<ItemDrop.ItemData> itemsToDrop = new List<ItemDrop.ItemData>();
-                List<ItemDrop.ItemData> itemsToKeep = Traverse.Create(___m_inventory).Field("m_inventory").GetValue<List<ItemDrop.ItemData>>();
-
-                ___m_nview.GetZDO().Set("dead", true);
-                ___m_nview.InvokeRPC(ZNetView.Everybody, "OnDeath", new object[] { });
-                Traverse.Create(__instance).Method("CreateDeathEffects").GetValue();
-
-                var random = new System.Random();
-                for (int i = itemsToKeep.Count - 1; i >= 0; i--)
-                {
-                    ItemDrop.ItemData item = itemsToKeep[i];
-                    Debug.LogError(item.m_shared.m_name + " - DestroyBroken: "  + item.m_shared.m_destroyBroken);
-                    if (item.m_equipped)
-                        continue;
-
-                    if (item.m_shared.m_questItem)
-                        continue;
-
-                    if (random.Next(1, 100) <= Plugin.DropPercentagePerItem.Value && item.m_durability > 0 || item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Material)
-                    {
-                        itemsToDrop.Add(item);
-                        itemsToKeep.RemoveAt(i);
-                    }
-                }
-
-                Traverse.Create(___m_inventory).Method("Changed").GetValue();
-
-                if (itemsToDrop.Any())
-                {
-                    GameObject gameObject = Instantiate(__instance.m_tombstone, __instance.GetCenterPoint(), __instance.transform.rotation);
-                    gameObject.GetComponent<Container>().GetInventory().RemoveAll();
-
-                    int width = Traverse.Create(___m_inventory).Field("m_width").GetValue<int>();
-                    int height = Traverse.Create(___m_inventory).Field("m_height").GetValue<int>();
-                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Field("m_width").SetValue(width);
-                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Field("m_height").SetValue(height);
-                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Field("m_inventory").SetValue(itemsToDrop);
-                    Traverse.Create(gameObject.GetComponent<Container>().GetInventory()).Method("Changed").GetValue();
-
-                    TombStone component = gameObject.GetComponent<TombStone>();
-                    PlayerProfile playerProfile = Game.instance.GetPlayerProfile();
-                    component.Setup(playerProfile.GetName(), playerProfile.GetPlayerID());
-                    Minimap.instance.AddPin(__instance.transform.position, Minimap.PinType.Death, string.Format("$hud_mapday {0}", (object)EnvMan.instance.GetDay(ZNet.instance.GetTimeSeconds())), true, false);
-                }
-
-
-                float factor = SkillDeathFactor.Value;
-
-                if (factor > 0.1f) factor = 0.01f;
-
-                ___m_skills.LowerAllSkills(factor);
-
-                Player.m_localPlayer.ClearFood();
-                Game.instance.GetPlayerProfile().SetDeathPoint(__instance.transform.position);
-                Game.instance.RequestRespawn(10f);
-                return false;
+                case HitData.HitType.Undefined:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByUndefined, 1f);
+                    break;
+                case HitData.HitType.EnemyHit:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByEnemyHit, 1f);
+                    break;
+                case HitData.HitType.PlayerHit:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByPlayerHit, 1f);
+                    break;
+                case HitData.HitType.Fall:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByFall, 1f);
+                    break;
+                case HitData.HitType.Drowning:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByDrowning, 1f);
+                    break;
+                case HitData.HitType.Burning:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByBurning, 1f);
+                    break;
+                case HitData.HitType.Freezing:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByFreezing, 1f);
+                    break;
+                case HitData.HitType.Poisoned:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByPoisoned, 1f);
+                    break;
+                case HitData.HitType.Water:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByWater, 1f);
+                    break;
+                case HitData.HitType.Smoke:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathBySmoke, 1f);
+                    break;
+                case HitData.HitType.EdgeOfWorld:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByEdgeOfWorld, 1f);
+                    break;
+                case HitData.HitType.Impact:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByImpact, 1f);
+                    break;
+                case HitData.HitType.Cart:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByCart, 1f);
+                    break;
+                case HitData.HitType.Tree:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByTree, 1f);
+                    break;
+                case HitData.HitType.Self:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathBySelf, 1f);
+                    break;
+                case HitData.HitType.Structural:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByStructural, 1f);
+                    break;
+                case HitData.HitType.Turret:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByTurret, 1f);
+                    break;
+                case HitData.HitType.Boat:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByBoat, 1f);
+                    break;
+                case HitData.HitType.Stalagtite:
+                    Game.instance.IncrementPlayerStat(PlayerStatType.DeathByStalagtite, 1f);
+                    break;
+                default:
+                    ZLog.LogWarning("Not implemented death type " + ___m_lastHit.m_hitType.ToString());
+                    break;
             }
         }
 
@@ -330,33 +226,23 @@ namespace Deadheim
         [HarmonyPatch(typeof(TeleportWorld), nameof(TeleportWorld.Teleport))]
         public static class TeleportWorldAesir
         {
-            private static bool Prefix(TeleportWorld __instance)
+            private static bool Prefix(TeleportWorld __instance, Player player)
             {
+                // Garante que só estamos rodando a lógica para o jogador local no cliente dele
+                if (player != Player.m_localPlayer) return true;
+
+                // 1. Se o jogador for VIP (Aesir), permite o teleporte
                 if (Plugin.Vip.Value.Contains(Plugin.steamId)) return true;
 
-                if (!Plugin.VipPortalNames.Value.Contains(__instance.GetText())) return true;
+                // 2. Pega a tag do portal
+                string portalTag = __instance.GetText();
 
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Only Aesir's can access this portal.");
+                // Se a tag do portal NÃO estiver na lista VIP, permite o teleporte
+                if (!Plugin.VipPortalNames.Value.Contains(portalTag)) return true;
+
+                // 3. Jogador não é VIP tentando acessar portal VIP: Bloqueia!
+                player.Message(MessageHud.MessageType.Center, "Only Aesir can access this portal.");
                 return false;
-            }
-        }
-
-        [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.CanRepair))]
-        public static class CanRepair
-        {
-            private static void Postfix(InventoryGui __instance, ref bool __result, ItemDrop.ItemData item)
-            {
-
-                if (item.m_dropPrefab.name.Contains("SkeletaoSword") || item.m_dropPrefab.name.Contains("SkeletaoShield"))
-                {
-                    CraftingStation currentCraftingStation = Player.m_localPlayer.GetCurrentCraftingStation();
-
-                    if (currentCraftingStation.gameObject.name.Contains("forge"))
-                    {
-                        __result = true;
-                    }
-                }
-
             }
         }
 
@@ -377,6 +263,57 @@ namespace Deadheim
 
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Prevents a persistent NullReferenceException spam in ZNetScene.RemoveObjects.
+        /// When a null ZNetView entry exists in m_instances (e.g. from an orphaned or
+        /// unresolved prefab), the NRE unwinds the stack before the cleanup loop runs,
+        /// so the entry stays in the dictionary and the same error fires every frame.
+        /// This prefix purges any null entries before RemoveObjects iterates over them.
+        /// </summary>
+        [HarmonyPatch(typeof(ZNetScene), "RemoveObjects")]
+        public static class ZNetScene_RemoveObjects_NullGuard
+        {
+            private static readonly FieldInfo s_instances =
+                typeof(ZNetScene).GetField("m_instances", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            private static bool _dirty = true;   // assume dirty until proven clean
+
+            [HarmonyPrefix]
+            private static void Prefix(ZNetScene __instance)
+            {
+                if (!_dirty) return;
+
+                if (s_instances?.GetValue(__instance) is not Dictionary<ZDO, ZNetView> instances)
+                    return;
+
+                List<ZDO> nullKeys = null;
+                foreach (var kvp in instances)
+                {
+                    if (kvp.Value == null)
+                    {
+                        nullKeys ??= new List<ZDO>();
+                        nullKeys.Add(kvp.Key);
+                    }
+                }
+
+                if (nullKeys != null)
+                {
+                    foreach (var key in nullKeys)
+                        instances.Remove(key);
+                    Debug.LogWarning($"[Deadheim] Removed {nullKeys.Count} null ZNetView entries from ZNetScene.m_instances to stop NullReferenceException spam.");
+                }
+                else
+                {
+                    _dirty = false; // dictionary is clean — stop scanning every frame
+                }
+            }
+
+            // Reset the dirty flag when the player logs out so a fresh world load rescans.
+            [HarmonyPatch(typeof(Game), "Logout")]
+            [HarmonyPostfix]
+            private static void OnLogout() => _dirty = true;
         }
     }
 }

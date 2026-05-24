@@ -4,18 +4,19 @@ using HarmonyLib;
 using Jotunn.Managers;
 using Jotunn.Utils;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Deadheim
 {
     [BepInPlugin(PluginGUID, PluginGUID, Version)]
     [BepInDependency(Jotunn.Main.ModGuid)]
+    [BepInDependency("MarketplaceAndServerNPCs", BepInDependency.DependencyFlags.HardDependency)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
-    [BepInDependency("org.bepinex.plugins.groups", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {        
         public const string Version = "6.0.0";
         public const string PluginGUID = "Detalhes.Deadheim";
-        public static string steamId = "";
+        public static string steamId = "";  
         public static ConfigEntry<string> Vip;
         public static ConfigEntry<string> AdminList;
         public static ConfigEntry<string> OnlyAdminPieces;
@@ -23,26 +24,19 @@ namespace Deadheim
         public static ConfigEntry<int> WardRadius;
         public static ConfigEntry<string> StaffMessage;
         public static ConfigEntry<string> DungeonPrefabs;
-        public static ConfigEntry<string> BlockedBosses;
         public static ConfigEntry<float> SkillMultiplier;
         public static ConfigEntry<float> BoatWindSpeedmultiplier;
-        public static ConfigEntry<float> BoatRudderSpeedmultiplier;
-        public static ConfigEntry<float> CapeRunicSpeed;
-        public static ConfigEntry<float> CapeRunicRegen;
-        public static ConfigEntry<float> SkillDeathFactor;
         public static ConfigEntry<int> SafeArea;        
         public static ConfigEntry<int> WardLimit;       
         public static ConfigEntry<int> WardLimitVip;
-        public static ConfigEntry<int> PortalLimit;
-        public static ConfigEntry<int> PortalLimitVip;
-        public static ConfigEntry<int> DropPercentagePerItem;
+        public static ConfigEntry<string> MarketplaceTeleporterCosts;
+        public static ConfigEntry<string> MarketplaceTeleporterCostItem;
         public static ConfigEntry<int> WardChargeDurationInSec;  
         public static ConfigEntry<bool> ResetWorldDay;
         public static ConfigEntry<bool> WolvesAreTameable;
         public static ConfigEntry<bool> LoxTameable;
         public static ConfigEntry<int> SkillCap;
-
-        public static ConfigEntry<string> dropTypes;
+        public static ConfigEntry<string> PortalMaterials;
 
         public static string PlayerName = "";
 
@@ -55,6 +49,39 @@ namespace Deadheim
 
         public static bool hasSpawned = false;
         Harmony _harmony = new Harmony("Detalhes.deadheim");
+
+        private void Update()
+        {
+            Player localPlayer = Player.m_localPlayer;
+            bool flag = Player.m_localPlayer == null;
+            if (!flag)
+            {
+                bool flag2 = localPlayer.m_hovering;
+                if (flag2)
+                {
+                    Interactable componentInParent = localPlayer.m_hovering.GetComponentInParent<Interactable>();
+                    bool flag3 = componentInParent != null;
+                    if (flag3)
+                    {
+                        bool flag4 = componentInParent is Bed;
+                        if (flag4)
+                        {
+                            Bed bed = (Bed)componentInParent;
+                            bool flag5 = bed.IsMine();
+                            if (flag5)
+                            {
+                                bool keyDown = Input.GetKeyDown(KeyCode.P);
+                                if (keyDown)
+                                {
+                                    Retreat.SetHearthStonePosition();
+                                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Seu novo ponto de Retreat", 0, null);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         private void Awake()
         {
@@ -100,11 +127,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
            new ConfigDescription("VipList", null,
                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            SkillDeathFactor = Config.Bind("Server config", "SkillDeathFactor", 0.05f,
-new ConfigDescription("SkillDeathFactor", null,
-new AcceptableValueRange<float>(0f, 0.1f), null,
-        new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             StaffMessage = Config.Bind("Server config", "StaffMessage", "",
 new ConfigDescription("StaffMessage", null,
  new ConfigurationManagerAttributes { IsAdminOnly = true }));
@@ -112,10 +134,6 @@ new ConfigDescription("StaffMessage", null,
             DungeonPrefabs = Config.Bind("Server config", "DungeonPrefabs", "dungeon_forestcrypt_door,dungeon_sunkencrypt_irongate",
 new ConfigDescription("DungeonPrefabs", null,
         new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            BlockedBosses = Config.Bind("Server config", "BlockedBosses", "batata banana",
-new ConfigDescription("BlockedBosses", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WolvesAreTameable = Config.Bind("Server config", "WolvesAreTameable", false,
 new ConfigDescription("WolvesAreTameable", null,
@@ -133,12 +151,12 @@ new ConfigDescription("SafeArea", null,
     new ConfigDescription("WardChargeDurationInSec", null,
              new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            PortalLimit = Config.Bind("Server config", "PortalLimit", 2,
-new ConfigDescription("PortalLimit", null,
+            MarketplaceTeleporterCosts = Config.Bind("Server config", "MarketplaceTeleporterCosts", "agostinho:100,barqueiro:50",
+new ConfigDescription("Gold cost for Marketplace teleporter NPCs. Format: NPCName:Cost,NPCName:Cost", null,
  new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            PortalLimitVip = Config.Bind("Server config", "PortalLimitVip", 6,
-new ConfigDescription("PortalLimitVip", null,
+            MarketplaceTeleporterCostItem = Config.Bind("Server config", "MarketplaceTeleporterCostItem", "Coins",
+new ConfigDescription("Item prefab consumed when using Marketplace teleporter NPCs.", null,
  new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WardLimit = Config.Bind("Server config", "WardLimit", 3,
@@ -149,28 +167,12 @@ new ConfigDescription("PortalLimitVip", null,
     new ConfigDescription("WardLimitVip", null,
              new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            DropPercentagePerItem = Config.Bind("Server config", "DropPercentagePerItem", 5,
-new ConfigDescription("DropPercentagePerItem", null,
-         new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
             WardRadius = Config.Bind("Server config", "WardRadius", 150,
 new ConfigDescription("WardRadius", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             BoatWindSpeedmultiplier = Config.Bind("Server config", "boatWindSpeedmultiplier", 1f,
 new ConfigDescription("boatWindSpeedmultiplier", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            BoatRudderSpeedmultiplier = Config.Bind("Server config", "BoatRudderSpeedmultiplier", 1f,
-new ConfigDescription("BoatRudderSpeedmultiplier", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            CapeRunicRegen = Config.Bind("Server config", "CapeRunicRegen", 1.25f,
-new ConfigDescription("CapeRunicRegen", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            CapeRunicSpeed = Config.Bind("Server config", "CapeRunicSpeed", 0.05f,
-new ConfigDescription("CapeRunicSpeed", null,
 new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             SkillMultiplier = Config.Bind("Server config", "SkillMultiplier", 0.5f,
@@ -181,7 +183,12 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
             new ConfigDescription("ResetWorldDay", null,
                      new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
+            PortalMaterials = Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:100,GreydwarfEye:30,SurtlingCore:10",
+    new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount", null,
+    new ConfigurationManagerAttributes { IsAdminOnly = true }));
+
             _harmony.PatchAll();
+            Deadheim.MarketplaceTeleporterCosts.StartPatchRetry(this, _harmony);
             ClonedItems.LoadAssets();
         }        
     }

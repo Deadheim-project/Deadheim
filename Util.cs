@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
@@ -38,7 +39,7 @@ namespace Deadheim
             }
             return prefab;
         }
-
+            
         private static byte[] ReadEmbeddedFileBytes(string name)
         {
             using MemoryStream stream = new();
@@ -48,8 +49,26 @@ namespace Deadheim
 
         private static Texture2D LoadTexture(string name)
         {
-            Texture2D texture = new(0, 0);
-            texture.LoadImage(ReadEmbeddedFileBytes("assets." + name));
+            Texture2D texture = new Texture2D(2, 2);
+            byte[] imageBytes = ReadEmbeddedFileBytes("assets." + name);
+
+            if (imageBytes == null || imageBytes.Length == 0) return texture;
+
+            // This bypasses the .NET 4.8 compiler limit by looking up the method dynamically
+            MethodInfo loadImageMethod = typeof(ImageConversion).GetMethod(
+                "LoadImage",
+                new System.Type[] { typeof(Texture2D), typeof(byte[]) }
+            );
+
+            if (loadImageMethod != null)
+            {
+                loadImageMethod.Invoke(null, new object[] { texture, imageBytes });
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("[LoadTexture] Could not find LoadImage method via Reflection.");
+            }
+
             return texture;
         }
 
