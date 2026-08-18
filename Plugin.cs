@@ -29,8 +29,6 @@ namespace Deadheim
         public static ConfigEntry<int> SafeArea;        
         public static ConfigEntry<int> WardLimit;       
         public static ConfigEntry<int> WardLimitVip;
-        public static ConfigEntry<string> MarketplaceTeleporterCosts;
-        public static ConfigEntry<string> MarketplaceTeleporterCostItem;
         public static ConfigEntry<int> WardChargeDurationInSec;  
         public static ConfigEntry<bool> ResetWorldDay;
         public static ConfigEntry<bool> WolvesAreTameable;
@@ -151,13 +149,6 @@ new ConfigDescription("SafeArea", null,
     new ConfigDescription("WardChargeDurationInSec", null,
              new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            MarketplaceTeleporterCosts = Config.Bind("Server config", "MarketplaceTeleporterCosts", "agostinho:100,barqueiro:50",
-new ConfigDescription("Gold cost for Marketplace teleporter NPCs. Format: NPCName:Cost,NPCName:Cost", null,
- new ConfigurationManagerAttributes { IsAdminOnly = true }));
-
-            MarketplaceTeleporterCostItem = Config.Bind("Server config", "MarketplaceTeleporterCostItem", "Coins",
-new ConfigDescription("Item prefab consumed when using Marketplace teleporter NPCs.", null,
- new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             WardLimit = Config.Bind("Server config", "WardLimit", 3,
     new ConfigDescription("WardLimit", null,
@@ -188,7 +179,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
     new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             _harmony.PatchAll();
-            Deadheim.MarketplaceTeleporterCosts.StartPatchRetry(this, _harmony);
             ClonedItems.LoadAssets();
         }        
     }
