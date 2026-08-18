@@ -38,7 +38,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>D:\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>D:\denikson-BepInExPack_Valheim-5.4.2333\BepInExPack_Valheim\BepInEx\core\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="assembly_guiutils_publicized">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies\assembly_guiutils_publicized.dll</HintPath>
@@ -57,7 +57,7 @@
           <Private>false</Private>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>D:\BepInEx\core\BepInEx.dll</HintPath>
+      <HintPath>D:\denikson-BepInExPack_Valheim-5.4.2333\BepInExPack_Valheim\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="Jotunn, Version=2.28.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\Deadheim\packages\JotunnLib.2.28.0\lib\net462\Jotunn.dll</HintPath>
@@ -122,7 +122,6 @@
     <Compile Include="EpicMMOApi.cs" />
     <Compile Include="ItemService.cs" />
     <Compile Include="MassPickUp.cs" />
-    <Compile Include="MarketplaceTeleporterCosts.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Portal.cs" />
@@ -148,10 +147,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ILPack.targets" />
+    <!-- Fundido dentro do Deadheim.dll pelo ILPack.targets. Precisa estar na pasta
+         de saida para o ILRepack achar: e o unico caminho pelo qual o GroupsAPI
+         chega ao servidor, que nao o tem solto na pasta de plugins. -->
+    <None Include="GroupsAPI.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ILRepack.Lib.MSBuild.Task">
-      <Version>2.0.44.1</Version>
+    <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.44.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -162,9 +164,7 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\Deadheim\packages\JotunnLib.2.28.0\build\JotunnLib.props')" Text="$([System.String]::Format('$(ErrorText)', '..\Deadheim\packages\JotunnLib.2.28.0\build\JotunnLib.props'))" />
-    <Error Condition="!Exists('..\Deadheim\packages\ILRepackTask.1.0.8\build\net40\ILRepackTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Deadheim\packages\ILRepackTask.1.0.8\build\net40\ILRepackTask.targets'))" />
-    <Error Condition="!Exists('..\Deadheim\packages\ILRepack.Lib.MSBuild.Task.2.0.44.1\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\Deadheim\packages\ILRepack.Lib.MSBuild.Task.2.0.44.1\build\ILRepack.Lib.MSBuild.Task.targets'))" />
   </Target>
-  <Import Project="..\Deadheim\packages\ILRepack.Lib.MSBuild.Task.2.0.44.1\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('..\Deadheim\packages\ILRepack.Lib.MSBuild.Task.2.0.44.1\build\ILRepack.Lib.MSBuild.Task.targets')" />
+  <Import Project="ILPack.targets" />
 </Project>
 

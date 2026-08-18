@@ -10,7 +10,6 @@ namespace Deadheim
 {
     [BepInPlugin(PluginGUID, PluginGUID, Version)]
     [BepInDependency(Jotunn.Main.ModGuid)]
-    [BepInDependency("MarketplaceAndServerNPCs", BepInDependency.DependencyFlags.HardDependency)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {        

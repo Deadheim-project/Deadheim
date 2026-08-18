@@ -1,20 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Target Name="ILRepacker" AfterTargets="Build">
-    <ItemGroup>
-      <InputAssemblies Include="$(TargetPath)"/>
-      <InputAssemblies Include="$(OutputPath)GroupsAPI.dll"/>
-    </ItemGroup>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Forma canonica do ILRepack usada nos repositorios do blaxxun (ServerSync, Groups,
+    Jewelcrafting): PackageReference com versao flutuante no .csproj e este alvo aqui.
 
-    <ILRepack
-        Parallel="true"
-        DebugInfo="true"
-        Internalize="true"
-        InputAssemblies="@(InputAssemblies)"
-        OutputFile="$(TargetPath)"
-        TargetKind="SameAsPrimaryAssembly"
-        LibraryPath="$(OutputPath)"
-        AllowDuplicateTypes="JetBrains.Annotations.UsedImplicitlyAttribute"
-        />
-  </Target>
+    O que este projeto funde e o GroupsAPI.dll, que nao existe solto na pasta de plugins
+    do servidor: ele so chega la dentro do Deadheim.dll. Se a fusao nao rodar, o
+    binario sai com ~75 KB em vez de ~88 KB e quebra em runtime.
+
+    LibraryPath="$(OutputPath)" funciona porque tudo que a fusao precisa resolver esta na
+    saida: BepInEx e 0Harmony sao copy-local neste projeto, ao contrario das assemblies
+    do Valheim.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Target Name="ILRepacker" AfterTargets="Build">
+        <ItemGroup>
+            <InputAssemblies Include="$(TargetPath)" />
+            <InputAssemblies Include="$(OutputPath)\GroupsAPI.dll" />
+        </ItemGroup>
+        <ILRepack Parallel="true" DebugInfo="true" Internalize="true"
+                  InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)"
+                  TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)"
+                  AllowDuplicateTypes="JetBrains.Annotations.UsedImplicitlyAttribute" />
+    </Target>
 </Project>
