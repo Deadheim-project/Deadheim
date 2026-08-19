@@ -1,0 +1,11 @@
+# Servidores do FastLink. Este arquivo e instalado pelo Deadheim Launcher junto
+# com o mod base, para o servidor ja aparecer na lista do jogador sem ele ter de
+# digitar endereco nenhum.
+#
+# O FastLink atualiza a listagem em tempo real: da para editar com o jogo aberto,
+# desde que esteja no menu principal.
+
+<color=#ffb04a>Deadheim</color>:
+  address: loboda.dathost.net
+  port: 20486
+  password: secret
