@@ -22,7 +22,7 @@ namespace Deadheim
             {
                 new Piece.Requirement
                 {
-                    m_resItem = PrefabManager.Instance.GetPrefab("PortalToken").GetComponent<ItemDrop>(),
+                    m_resItem = ObjectDB.instance?.GetItemPrefab("PortalToken")?.GetComponent<ItemDrop>(),
                     m_amount = 1,
                     m_recover = true // Permite recuperar o token ao quebrar o portal
                 },

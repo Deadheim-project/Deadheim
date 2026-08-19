@@ -13,7 +13,7 @@ namespace Deadheim
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {        
-        public const string Version = "6.0.0";
+        public const string Version = "6.1.1";
         public const string PluginGUID = "Detalhes.Deadheim";
         public static string steamId = "";  
         public static ConfigEntry<string> Vip;
@@ -178,6 +178,7 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
     new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             _harmony.PatchAll();
+            DirectJoinFlow.Initialize(Logger);
             ClonedItems.LoadAssets();
         }        
     }

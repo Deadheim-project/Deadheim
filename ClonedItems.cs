@@ -5,6 +5,7 @@ using Jotunn.Managers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace Deadheim
@@ -12,21 +13,164 @@ namespace Deadheim
     [HarmonyPatch]
     public class ClonedItems
     {
+        private sealed class NativeItemDefinition
+        {
+            public string PrefabName;
+            public string Name;
+            public string Description;
+            public int MaxStack;
+            public string FirstMaterialPrefab;
+            public string SecondMaterialPrefab;
+            public string Icon;
+        }
+
+        private static readonly NativeItemDefinition[] NativeItems =
+        {
+            new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = "Me compre para o Detalhes poder manter seu vício.", MaxStack = 10 },
+            new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = "Token used to build protected vanilla spawners.", MaxStack = 10 },
+            new NativeItemDefinition { PrefabName = "ArmorKit1", Name = "Basic Armor Kit I", Description = "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Guck", Icon = "armorkit1.png" },
+            new NativeItemDefinition { PrefabName = "ArmorKit2", Name = "Good Armor Kit II", Description = "Kit de itens utilizados para fabricar armaduras de refinadas de qualidade pertencente a era do ferro.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Blueberries", Icon = "armorkit2.png" },
+            new NativeItemDefinition { PrefabName = "ArmorKit3", Name = "Great Armor Kit III", Description = "Kit de itens utilizados para fabricar armaduras reluzentes beirando a perfeição, sua qualidade pertence a era da prata.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Amber", Icon = "armorkit3.png" },
+            new NativeItemDefinition { PrefabName = "ArmorKit4", Name = "Superior Armor Kit IV", Description = "Kit de itens utilizados para fabricar armaduras de maior qualidade dentro os mortais beirando o divino pertencentes a era do linho.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Ruby", Icon = "armorkit4.png" },
+            new NativeItemDefinition { PrefabName = "WeaponKit1", Name = "Basic Weapon Kit I", Description = "Kit de itens utilizados para fabricar armas mais simples de qualidade duvidosa, muito utilizada na era do bronze.", MaxStack = 25, FirstMaterialPrefab = "FineWood", SecondMaterialPrefab = "Guck", Icon = "weaponkit1.png" },
+            new NativeItemDefinition { PrefabName = "WeaponKit2", Name = "Good Weapon Kit II", Description = "Kit de itens utilizados para fabricar armas maior refinaria, muito utilizada na era do ferro.", MaxStack = 25, FirstMaterialPrefab = "FineWood", SecondMaterialPrefab = "Blueberries", Icon = "weaponkit2.png" },
+            new NativeItemDefinition { PrefabName = "WeaponKit3", Name = "Great Weapon Kit III", Description = "Kit de itens utilizados para fabricar armas prateadas com brilhos que afligem os olhos, muito utilizada na era da prata.", MaxStack = 25, FirstMaterialPrefab = "FineWood", SecondMaterialPrefab = "Amber", Icon = "weaponkit3.png" },
+            new NativeItemDefinition { PrefabName = "WeaponKit4", Name = "Superior Weapon Kit IV", Description = "Kit de itens utilizados para fabricar armas negras, extremamente laminadas capazes de perfurar a grossa pele de um Lox utilizada por aqueles que chegaram na era do metal negro.", MaxStack = 25, FirstMaterialPrefab = "FineWood", SecondMaterialPrefab = "Ruby", Icon = "weaponkit4.png" }
+        };
+
+        private static readonly Dictionary<string, GameObject> RegisteredNativeItems = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+        private static readonly MethodInfo UpdateObjectDbRegisters = AccessTools.Method(typeof(ObjectDB), "UpdateRegisters");
+        private static readonly MethodInfo MemberwiseCloneMethod = AccessTools.Method(typeof(object), "MemberwiseClone");
+        private static readonly FieldInfo NamedPrefabs = AccessTools.Field(typeof(ZNetScene), "m_namedPrefabs");
+
         public static void LoadAssets()
         {
-            PrefabManager.OnPrefabsRegistered += AddClonedItems;
             PieceManager.OnPiecesRegistered += AddClonedPieces;
             CreatureManager.OnVanillaCreaturesAvailable += AddVanillaClonedCreatures;
         }
 
-        private static void AddClonedItems()
+        private static void RegisterNativeItems(ObjectDB objectDb)
         {
-            AddPortalToken();
-            AddSpawnerToken();
-            AddItemKits();
-            PrefabManager.OnPrefabsRegistered -= AddClonedItems;
+            if (objectDb == null || objectDb.m_items == null) return;
+            GameObject basePrefab = objectDb.GetItemPrefab("Thunderstone");
+            if (basePrefab == null)
+            {
+                Debug.LogError("[Deadheim] Não foi possível criar os itens: Thunderstone não existe no ObjectDB.");
+                return;
+            }
+
+            foreach (NativeItemDefinition definition in NativeItems)
+            {
+                GameObject existing = objectDb.m_items.FirstOrDefault(item => item != null && item.name == definition.PrefabName);
+                if (existing != null)
+                {
+                    RegisteredNativeItems[definition.PrefabName] = existing;
+                    continue;
+                }
+
+                try
+                {
+                    GameObject item = CreateNativeItem(objectDb, basePrefab, definition);
+                    objectDb.m_items.Add(item);
+                    RegisteredNativeItems[definition.PrefabName] = item;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[Deadheim] Falha ao criar o item nativo '{definition.PrefabName}': {ex}");
+                }
+            }
+
+            UpdateObjectDbRegisters?.Invoke(objectDb, null);
+
+            // Se o ZNetScene já terminou seu Awake, atualiza também o dicionário
+            // de rede. No fluxo normal ele ainda não existe e o prefixo abaixo
+            // inclui os prefabs antes de o próprio Valheim montar o dicionário.
+            if (ZNetScene.instance != null)
+                AddItemsToZNetScene(ZNetScene.instance, updateNamedDictionary: true);
         }
 
+        private static GameObject CreateNativeItem(ObjectDB objectDb, GameObject basePrefab, NativeItemDefinition definition)
+        {
+            GameObject item = UnityEngine.Object.Instantiate(basePrefab);
+            item.name = definition.PrefabName;
+            item.SetActive(false);
+            UnityEngine.Object.DontDestroyOnLoad(item);
+
+            ItemDrop itemDrop = item.GetComponent<ItemDrop>();
+            ItemDrop sourceDrop = basePrefab.GetComponent<ItemDrop>();
+            if (itemDrop == null || sourceDrop?.m_itemData?.m_shared == null)
+                throw new InvalidOperationException("O prefab base não possui dados válidos de ItemDrop.");
+
+            itemDrop.m_itemData = sourceDrop.m_itemData.Clone();
+            itemDrop.m_itemData.m_shared = (ItemDrop.ItemData.SharedData)MemberwiseCloneMethod.Invoke(
+                sourceDrop.m_itemData.m_shared, null);
+            itemDrop.m_itemData.m_shared.m_name = definition.Name;
+            itemDrop.m_itemData.m_shared.m_description = definition.Description;
+            itemDrop.m_itemData.m_shared.m_maxStackSize = definition.MaxStack;
+            if (!string.IsNullOrWhiteSpace(definition.Icon))
+                itemDrop.m_itemData.m_shared.m_icons = new[] { Util.LoadSprite(definition.Icon, 64, 64) };
+            itemDrop.m_itemData.m_dropPrefab = item;
+
+            ApplyMaterials(objectDb, item, definition.FirstMaterialPrefab, definition.SecondMaterialPrefab);
+            return item;
+        }
+
+        private static void ApplyMaterials(ObjectDB objectDb, GameObject item, string firstPrefab, string secondPrefab)
+        {
+            if (string.IsNullOrWhiteSpace(firstPrefab) || string.IsNullOrWhiteSpace(secondPrefab)) return;
+            Material first = GetFirstMaterial(objectDb, firstPrefab);
+            Material second = GetFirstMaterial(objectDb, secondPrefab);
+            Renderer[] renderers = item.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Material selected = i == 0 ? first : second;
+                if (selected != null) renderers[i].sharedMaterial = selected;
+            }
+        }
+
+        private static Material GetFirstMaterial(ObjectDB objectDb, string prefabName)
+        {
+            Renderer renderer = objectDb.GetItemPrefab(prefabName)?.GetComponentInChildren<Renderer>(true);
+            return renderer?.sharedMaterials?.FirstOrDefault(material => material != null);
+        }
+
+        private static void AddItemsToZNetScene(ZNetScene scene, bool updateNamedDictionary)
+        {
+            if (scene == null) return;
+            var named = updateNamedDictionary
+                ? NamedPrefabs?.GetValue(scene) as Dictionary<int, GameObject>
+                : null;
+
+            foreach (GameObject item in RegisteredNativeItems.Values)
+            {
+                if (item == null) continue;
+                List<GameObject> target = item.GetComponent<ZNetView>() != null ? scene.m_prefabs : scene.m_nonNetViewPrefabs;
+                if (!target.Contains(item)) target.Add(item);
+                if (named != null) named[item.name.GetStableHashCode()] = item;
+            }
+        }
+
+        [HarmonyPatch(typeof(ObjectDB), "Awake")]
+        private static class ObjectDbAwakePatch
+        {
+            private static void Postfix(ObjectDB __instance) => RegisterNativeItems(__instance);
+        }
+
+        [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.CopyOtherDB))]
+        private static class ObjectDbCopyPatch
+        {
+            private static void Postfix(ObjectDB __instance) => RegisterNativeItems(__instance);
+        }
+
+        [HarmonyPatch(typeof(ZNetScene), "Awake")]
+        private static class ZNetSceneAwakePatch
+        {
+            private static void Prefix(ZNetScene __instance)
+            {
+                RegisterNativeItems(ObjectDB.instance);
+                AddItemsToZNetScene(__instance, updateNamedDictionary: false);
+            }
+        }
 
         private static void AddClonedPieces()
         {
@@ -51,19 +195,6 @@ namespace Deadheim
             AddSmallAdminWard();
         }
 
-        private static void AddItemKits()
-        {
-            AddArmorKit("ArmorKit1", "piece_chest_wood", "Basic Armor Kit I", "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", "Wood", "Guck", "armorkit1.png");
-            AddArmorKit("ArmorKit2", "piece_chest_wood", "Good Armor Kit II", "Kit de itens utilizados para fabricar armaduras de refinadas de qualidade pertencente a era do ferro.", "Wood", "Blueberries", "armorkit2.png");
-            AddArmorKit("ArmorKit3", "piece_chest_wood", "Great  Armor Kit III", "Kit de itens utilizados para fabricar armaduras reluzentes beirando a perfeição, sua qualidade pertence a era da prata.", "Wood", "Amber", "armorkit3.png");
-            AddArmorKit("ArmorKit4", "piece_chest_wood", "Superior Armor Kit IV", "Kit de itens utilizados para fabricar armaduras de maior qualidade dentro os mortais beirando o divino pertencentes a era do linho.", "Wood", "Ruby", "armorkit4.png");
-            AddArmorKit("WeaponKit1", "piece_chest_wood", "Basic Weapon Kit I", "Kit de itens utilizados para fabricar armas mais simples de qualidade duvidosa, muito utilizada na era do bronze.", "FineWood", "Guck", "weaponkit1.png");
-            AddArmorKit("WeaponKit2", "piece_chest_wood", "Good Weapon Kit II", "Kit de itens utilizados para fabricar armas maior refinaria, muito utilizada na era do ferro.", "FineWood", "Blueberries", "weaponkit2.png");
-            AddArmorKit("WeaponKit3", "piece_chest_wood", "Great Weapon Kit III", "Kit de itens utilizados para fabricar armas prateadas com brilhos que afligem os olhos, muito utilizada na era da prata.", "FineWood", "Amber", "weaponkit3.png");
-            AddArmorKit("WeaponKit4", "piece_chest_wood", "Superior Weapon Kit IV", "Kit de itens utilizados para fabricar armas negras, extremamente laminadas capazes de perfurar a grossa pele de um Lox utilizada por aqueles que chegaram na era do metal negro.", "FineWood", "Ruby", "weaponkit4.png");
-
-        }
-
         static T CopyComponent<T>(T original, GameObject destination) where T : Component
         {
             System.Type type = original.GetType();
@@ -76,70 +207,26 @@ namespace Deadheim
             return copy as T;
         }
 
-        private static void AddArmorKit(string prefabName, string prefabToCopy, string name, string description, string firstShaderPrefabName, string secondShaderPrefabName, string icon)
-        {
-            ItemDrop resin = PrefabManager.Instance.GetPrefab("Resin").GetComponent<ItemDrop>();
-
-            GameObject clonedPrefab = PrefabManager.Instance.CreateClonedPrefab(prefabName, prefabToCopy);
-            UnityEngine.Object.Destroy(clonedPrefab.GetComponent<Piece>());
-            UnityEngine.Object.Destroy(clonedPrefab.GetComponent<Container>());
-            UnityEngine.Object.Destroy(clonedPrefab.GetComponent<WearNTear>());
-            UnityEngine.Object.Destroy(clonedPrefab.GetComponent<ZNetView>());
-
-            clonedPrefab.AddComponent<ZNetView>();
-
-            ItemDrop itemDrop = clonedPrefab.AddComponent<ItemDrop>();
-            itemDrop.m_floating = clonedPrefab.AddComponent<Floating>();
-            itemDrop.m_body = clonedPrefab.AddComponent<Rigidbody>();
-
-            itemDrop.m_itemData.m_shared = new ItemDrop.ItemData.SharedData();
-            itemDrop.m_itemData.m_shared.m_icons = new[] { Util.LoadSprite(icon, 64, 64) };
-            itemDrop.m_itemData.m_shared.m_name = name;
-            itemDrop.m_itemData.m_shared.m_description = description;
-            itemDrop.m_itemData.m_shared.m_maxStackSize = 25;
-            Vector3 newScale = clonedPrefab.transform.localScale;
-            newScale.x *= 0.3f;
-            newScale.y *= 0.3f;
-            newScale.z *= 0.3f;
-            clonedPrefab.transform.localScale = newScale;
-
-            var comps = clonedPrefab.GetComponentsInChildren<MeshRenderer>();
-            
-            foreach (MeshRenderer comp in comps)
-            {
-                var materials = new List<Material>();
-
-                if (comp == comps[0])
-                {
-                    materials.Add(PrefabManager.Instance.GetPrefab(firstShaderPrefabName).GetComponentInChildren<MeshRenderer>().materials[0]);
-                } else
-                {
-                    materials.Add(PrefabManager.Instance.GetPrefab(secondShaderPrefabName).GetComponentInChildren<MeshRenderer>().materials[0]);
-                }
-
-                comp.materials = materials.ToArray();
-            }
-
-            clonedPrefab.GetComponent<ItemDrop>().m_itemData.m_dropPrefab = clonedPrefab;
-
-            ItemManager.Instance.RegisterItemInObjectDB(clonedPrefab);                        
-        }
-
         [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.DropItem))]
         public static class DropItem
-        {//shitcode to fix the shit shit that saying that de prefab is null
+        {
             [HarmonyPriority(Priority.First)]
             private static void Prefix(ItemDrop __instance, ItemDrop.ItemData item)
             {
-                if (item.m_dropPrefab != null) return;
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals(" Basic Armor Kit I", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("ArmorKit1");                
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals("Good Armor Kit II", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("ArmorKit2");                
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals("Great  Armor Kit III", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("ArmorKit3");                
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals("Superior Armor Kit IV", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("ArmorKit4");                
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals("Basic Weapon Kit I", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("WeaponKit1");                
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals("Good Weapon Kit II", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("WeaponKit2");                
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals("Great Weapon Kit III", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("WeaponKit3");                
-                if (item !=null  && item.m_shared != null && item.m_shared.m_name.Equals("Superior Weapon Kit IV", StringComparison.CurrentCultureIgnoreCase)) item.m_dropPrefab = PrefabManager.Instance.GetPrefab("WeaponKit4");                
+                if (item == null || item.m_dropPrefab != null || item.m_shared == null) return;
+                string prefabName = null;
+                string itemName = item.m_shared.m_name;
+                if (string.Equals(itemName, "Basic Armor Kit I", StringComparison.OrdinalIgnoreCase)) prefabName = "ArmorKit1";
+                else if (string.Equals(itemName, "Good Armor Kit II", StringComparison.OrdinalIgnoreCase)) prefabName = "ArmorKit2";
+                else if (string.Equals(itemName, "Great Armor Kit III", StringComparison.OrdinalIgnoreCase)) prefabName = "ArmorKit3";
+                else if (string.Equals(itemName, "Superior Armor Kit IV", StringComparison.OrdinalIgnoreCase)) prefabName = "ArmorKit4";
+                else if (string.Equals(itemName, "Basic Weapon Kit I", StringComparison.OrdinalIgnoreCase)) prefabName = "WeaponKit1";
+                else if (string.Equals(itemName, "Good Weapon Kit II", StringComparison.OrdinalIgnoreCase)) prefabName = "WeaponKit2";
+                else if (string.Equals(itemName, "Great Weapon Kit III", StringComparison.OrdinalIgnoreCase)) prefabName = "WeaponKit3";
+                else if (string.Equals(itemName, "Superior Weapon Kit IV", StringComparison.OrdinalIgnoreCase)) prefabName = "WeaponKit4";
+
+                if (prefabName != null)
+                    item.m_dropPrefab = ObjectDB.instance?.GetItemPrefab(prefabName);
             }
         }
 
@@ -207,26 +294,6 @@ namespace Deadheim
             PieceManager.Instance.RegisterPieceInPieceTable(aesirChest, "Hammer", "Furniture");
         }
 
-        private static void AddPortalToken()
-        {
-            CustomItem CI = new CustomItem("PortalToken", "Thunderstone");
-            ItemDrop itemDrop = CI.ItemDrop;
-            itemDrop.m_itemData.m_shared.m_name = "Portal Token";
-            itemDrop.m_itemData.m_shared.m_description = "Me compre para o Detalhes poder manter seu vício.";
-            itemDrop.m_itemData.m_shared.m_maxStackSize = 10;
-            ItemManager.Instance.AddItem(CI);
-        }
-
-        private static void AddSpawnerToken()
-        {
-            CustomItem CI = new CustomItem("SpawnerToken", "Thunderstone");
-            ItemDrop itemDrop = CI.ItemDrop;
-            itemDrop.m_itemData.m_shared.m_name = "Spawner Token";
-            itemDrop.m_itemData.m_shared.m_description = "Token used to build protected vanilla spawners.";
-            itemDrop.m_itemData.m_shared.m_maxStackSize = 10;
-            ItemManager.Instance.AddItem(CI);
-        }
-
         private static void AddBuildableSpawners()
         {
             AddBuildableSpawner("BuildableGreydwarfNestSpawner", "Spawner_GreydwarfNest", "Black Forest Spawner", "Indestructible Black Forest monster spawner.");
@@ -261,7 +328,7 @@ namespace Deadheim
             {
                 new Piece.Requirement
                 {
-                    m_resItem = PrefabManager.Instance.GetPrefab("SpawnerToken").GetComponent<ItemDrop>(),
+                    m_resItem = ObjectDB.instance?.GetItemPrefab("SpawnerToken")?.GetComponent<ItemDrop>(),
                     m_amount = 1,
                     m_recover = true
                 }
@@ -289,7 +356,7 @@ namespace Deadheim
 
             if (icon != null) return icon;
 
-            return PrefabManager.Instance.GetPrefab("SpawnerToken")?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
+            return ObjectDB.instance?.GetItemPrefab("SpawnerToken")?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
         }
 
         private static void AddNomTameableWolf()

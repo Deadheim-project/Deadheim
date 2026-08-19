@@ -16,10 +16,12 @@
         <ItemGroup>
             <InputAssemblies Include="$(TargetPath)" />
             <InputAssemblies Include="$(OutputPath)\GroupsAPI.dll" />
+            <LibraryPaths Include="$(ProjectDir)$(OutputPath)" />
+            <LibraryPaths Include="C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed" />
+            <LibraryPaths Include="C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies" />
         </ItemGroup>
         <ILRepack Parallel="true" DebugInfo="true" Internalize="true"
                   InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)"
-                  TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)"
-                  AllowDuplicateTypes="JetBrains.Annotations.UsedImplicitlyAttribute" />
+                  TargetKind="SameAsPrimaryAssembly" LibraryPath="@(LibraryPaths)" />
     </Target>
 </Project>

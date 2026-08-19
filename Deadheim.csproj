@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\Deadheim\packages\JotunnLib.2.28.0\build\JotunnLib.props" Condition="Exists('..\Deadheim\packages\JotunnLib.2.28.0\build\JotunnLib.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -14,6 +13,8 @@
     <LangVersion>9.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <BepInExCorePath Condition="'$(BepInExCorePath)' == ''">$(APPDATA)\DeadheimLauncher\profiles\Default\game\BepInEx\core</BepInExCorePath>
+    <ILRepackTargetsFile>$(ProjectDir)ILPack.targets</ILRepackTargetsFile>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
   </PropertyGroup>
@@ -38,7 +39,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>D:\denikson-BepInExPack_Valheim-5.4.2333\BepInExPack_Valheim\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>$(BepInExCorePath)\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="assembly_guiutils_publicized">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies\assembly_guiutils_publicized.dll</HintPath>
@@ -57,10 +58,10 @@
           <Private>false</Private>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>D:\denikson-BepInExPack_Valheim-5.4.2333\BepInExPack_Valheim\BepInEx\core\BepInEx.dll</HintPath>
+      <HintPath>$(BepInExCorePath)\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="Jotunn, Version=2.28.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\Deadheim\packages\JotunnLib.2.28.0\lib\net462\Jotunn.dll</HintPath>
+      <HintPath>$(NuGetPackageRoot)jotunnlib\2.28.0\lib\net462\Jotunn.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\netstandard.dll</HintPath>
@@ -119,6 +120,7 @@
     <Compile Include="Containers.cs" />
     <Compile Include="CraftingStations.cs" />
     <Compile Include="CraftPatches.cs" />
+    <Compile Include="DirectJoinFlow.cs" />
     <Compile Include="EpicMMOApi.cs" />
     <Compile Include="ItemService.cs" />
     <Compile Include="MassPickUp.cs" />
@@ -153,6 +155,7 @@
     <None Include="GroupsAPI.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="JotunnLib" Version="2.28.0" />
     <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.44.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -163,7 +166,6 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\Deadheim\packages\JotunnLib.2.28.0\build\JotunnLib.props')" Text="$([System.String]::Format('$(ErrorText)', '..\Deadheim\packages\JotunnLib.2.28.0\build\JotunnLib.props'))" />
   </Target>
   <Import Project="ILPack.targets" />
 </Project>
