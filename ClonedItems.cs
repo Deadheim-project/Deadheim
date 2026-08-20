@@ -39,9 +39,11 @@ namespace Deadheim
         };
 
         private static readonly Dictionary<string, GameObject> RegisteredNativeItems = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+        private static readonly string[] NativeItemBasePrefabs = { "Thunderstone", "Coins", "Amber", "Wood" };
         private static readonly MethodInfo UpdateObjectDbRegisters = AccessTools.Method(typeof(ObjectDB), "UpdateRegisters");
         private static readonly MethodInfo MemberwiseCloneMethod = AccessTools.Method(typeof(object), "MemberwiseClone");
         private static readonly FieldInfo NamedPrefabs = AccessTools.Field(typeof(ZNetScene), "m_namedPrefabs");
+        private static bool ReportedObjectDbNotReady;
 
         public static void LoadAssets()
         {
@@ -52,12 +54,18 @@ namespace Deadheim
         private static void RegisterNativeItems(ObjectDB objectDb)
         {
             if (objectDb == null || objectDb.m_items == null) return;
-            GameObject basePrefab = objectDb.GetItemPrefab("Thunderstone");
+            GameObject basePrefab = FindNativeItemBasePrefab(objectDb);
             if (basePrefab == null)
             {
-                Debug.LogError("[Deadheim] Não foi possível criar os itens: Thunderstone não existe no ObjectDB.");
+                if (!ReportedObjectDbNotReady)
+                {
+                    Debug.LogWarning("[Deadheim] ObjectDB ainda não possui um item-base válido; registro dos itens adiado.");
+                    ReportedObjectDbNotReady = true;
+                }
                 return;
             }
+
+            ReportedObjectDbNotReady = false;
 
             foreach (NativeItemDefinition definition in NativeItems)
             {
@@ -87,6 +95,26 @@ namespace Deadheim
             // inclui os prefabs antes de o próprio Valheim montar o dicionário.
             if (ZNetScene.instance != null)
                 AddItemsToZNetScene(ZNetScene.instance, updateNamedDictionary: true);
+        }
+
+        private static GameObject FindNativeItemBasePrefab(ObjectDB objectDb)
+        {
+            // Durante a primeira inicialização do servidor, os registros internos do
+            // ObjectDB podem ainda não estar montados. A lista m_items, porém, já pode
+            // conter os prefabs; por isso ela é consultada antes de GetItemPrefab.
+            foreach (string prefabName in NativeItemBasePrefabs)
+            {
+                GameObject prefab = objectDb.m_items.FirstOrDefault(item =>
+                    item != null && string.Equals(item.name, prefabName, StringComparison.Ordinal));
+                if (prefab == null)
+                    prefab = objectDb.GetItemPrefab(prefabName);
+
+                ItemDrop itemDrop = prefab?.GetComponent<ItemDrop>();
+                if (itemDrop?.m_itemData?.m_shared != null)
+                    return prefab;
+            }
+
+            return null;
         }
 
         private static GameObject CreateNativeItem(ObjectDB objectDb, GameObject basePrefab, NativeItemDefinition definition)
