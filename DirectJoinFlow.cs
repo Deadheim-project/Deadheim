@@ -63,30 +63,41 @@ namespace Deadheim
             }
 
             _menuHandled = true;
-
-            // Só abre a criação para quem realmente não tem personagem nenhum.
-            // Ser incondicional aqui era a falha: o vínculo some por motivos que
-            // nada têm a ver com ser novato -- computador novo, perfil
-            // reinstalado, ou o endereço do +connect mudando (o vínculo guarda
-            // host:porta e compara texto exato, então uma troca de porta faz
-            // TODO mundo virar "primeiro acesso" de uma vez). O jogador de
-            // sempre caía na criação, digitava um nome novo, e o ServerCharacters
-            // recusava: "You are not allowed to create more than one character on
-            // this server." Ficava sem conseguir entrar, com o personagem antigo
-            // intacto no servidor e invisível para ele.
-            //
-            // Tendo personagem no disco, a tela de seleção fica de pé e a escolha
-            // é dele. Uma tela a mais para quem perdeu o vínculo é muito melhor
-            // que um beco sem saída.
-            if (SaveSystem.GetAllPlayerProfiles().Any())
-            {
-                _log.LogInfo("Sem vínculo para este servidor; deixando a seleção de personagem com o jogador.");
-                return;
-            }
-
             _awaitingNewCharacter = true;
-            _log.LogInfo("Primeiro acesso a este servidor; abrindo criação de personagem.");
+            _log.LogInfo("Sem vínculo para este servidor; abrindo criação de personagem (Cancelar volta para a seleção).");
             startup.OnCharacterNew();
+        }
+
+        /// <summary>
+        /// Cancelar a criação devolve o jogador para a lista de personagens, e a
+        /// partir daí o fluxo é o normal do jogo: escolher um e clicar em Iniciar
+        /// entra no servidor, porque o +connect deixou a entrada na fila e ela
+        /// continua lá.
+        ///
+        /// Existe porque a criação não é sempre o que a pessoa precisa. O vínculo
+        /// é um arquivo local, então some por motivos que nada têm a ver com ser
+        /// novato: computador novo, perfil reinstalado, ou o endereço do +connect
+        /// mudando (o vínculo guarda host:porta e compara texto exato, então uma
+        /// troca de porta faz TODO mundo virar "primeiro acesso" de uma vez).
+        /// Quem já jogava caía na criação, digitava um nome novo, e o
+        /// ServerCharacters recusava: "You are not allowed to create more than one
+        /// character on this server." Ficava sem conseguir entrar, com o
+        /// personagem antigo intacto no servidor e invisível para ele.
+        ///
+        /// Abrir a criação segue sendo o certo por padrão -- o primeiro acesso
+        /// deve gerar um personagem dedicado ao servidor, e não trazer um de
+        /// partida solo, que é o que o ServerCharacters avisa para não fazer. O
+        /// que faltava era a saída para quem não é novato.
+        ///
+        /// Sem zerar a espera aqui, o Postfix de OnNewCharacterDone continuaria
+        /// armado depois do cancelamento e dispararia um OnCharacterStart que o
+        /// jogador não pediu.
+        /// </summary>
+        internal static void OnNewCharacterCancelled()
+        {
+            if (!_awaitingNewCharacter) return;
+            _awaitingNewCharacter = false;
+            _log?.LogInfo("Criação cancelada; a seleção de personagem fica com o jogador.");
         }
 
         private static bool SelectExisting(FejdStartup startup, string filename)
@@ -151,6 +162,12 @@ namespace Deadheim
         private static class NewCharacterDonePatch
         {
             private static void Postfix(FejdStartup __instance) => OnNewCharacterDone(__instance);
+        }
+
+        [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.OnNewCharacterCancel))]
+        private static class NewCharacterCancelPatch
+        {
+            private static void Postfix() => OnNewCharacterCancelled();
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
