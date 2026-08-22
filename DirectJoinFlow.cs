@@ -63,6 +63,27 @@ namespace Deadheim
             }
 
             _menuHandled = true;
+
+            // Só abre a criação para quem realmente não tem personagem nenhum.
+            // Ser incondicional aqui era a falha: o vínculo some por motivos que
+            // nada têm a ver com ser novato -- computador novo, perfil
+            // reinstalado, ou o endereço do +connect mudando (o vínculo guarda
+            // host:porta e compara texto exato, então uma troca de porta faz
+            // TODO mundo virar "primeiro acesso" de uma vez). O jogador de
+            // sempre caía na criação, digitava um nome novo, e o ServerCharacters
+            // recusava: "You are not allowed to create more than one character on
+            // this server." Ficava sem conseguir entrar, com o personagem antigo
+            // intacto no servidor e invisível para ele.
+            //
+            // Tendo personagem no disco, a tela de seleção fica de pé e a escolha
+            // é dele. Uma tela a mais para quem perdeu o vínculo é muito melhor
+            // que um beco sem saída.
+            if (SaveSystem.GetAllPlayerProfiles().Any())
+            {
+                _log.LogInfo("Sem vínculo para este servidor; deixando a seleção de personagem com o jogador.");
+                return;
+            }
+
             _awaitingNewCharacter = true;
             _log.LogInfo("Primeiro acesso a este servidor; abrindo criação de personagem.");
             startup.OnCharacterNew();
