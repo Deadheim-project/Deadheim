@@ -278,6 +278,7 @@ namespace Deadheim
                 typeof(ZNetScene).GetField("m_instances", BindingFlags.Instance | BindingFlags.NonPublic);
             private static readonly FieldInfo s_tempRemoved =
                 typeof(ZNetScene).GetField("m_tempRemoved", BindingFlags.Instance | BindingFlags.NonPublic);
+            private static bool s_reportedInvalidInstances;
 
             [HarmonyPrefix]
             [HarmonyPriority(Priority.Last)]
@@ -295,15 +296,21 @@ namespace Deadheim
                 MarkLiveObjects(currentDistantObjects, earmark);
 
                 tempRemoved.Clear();
-                List<ZDO> invalidKeys = null;
+                int invalidCount = 0;
+                HashSet<string> invalidPrefabs = s_reportedInvalidInstances ? null : new HashSet<string>();
                 foreach (var kvp in instances)
                 {
                     ZNetView view = kvp.Value;
                     ZDO zdo = view == null ? null : view.GetZDO();
                     if (zdo == null)
                     {
-                        invalidKeys ??= new List<ZDO>();
-                        invalidKeys.Add(kvp.Key);
+                        invalidCount++;
+                        if (invalidPrefabs != null)
+                        {
+                            int prefabHash = kvp.Key.GetPrefab();
+                            GameObject prefab = __instance.GetPrefab(prefabHash);
+                            invalidPrefabs.Add(prefab == null ? $"hash:{prefabHash}" : prefab.name);
+                        }
                         continue;
                     }
 
@@ -311,11 +318,13 @@ namespace Deadheim
                         tempRemoved.Add(view);
                 }
 
-                if (invalidKeys != null)
+                if (invalidCount > 0 && !s_reportedInvalidInstances)
                 {
-                    foreach (ZDO key in invalidKeys)
-                        instances.Remove(key);
-                    Debug.LogWarning($"[Deadheim] Removed {invalidKeys.Count} invalid ZNetScene instance entries safely.");
+                    s_reportedInvalidInstances = true;
+                    Debug.LogWarning(
+                        $"[Deadheim] Ignoring {invalidCount} invalid ZNetScene instance entries safely " +
+                        $"(prefabs: {string.Join(", ", invalidPrefabs)})."
+                    );
                 }
 
                 for (int index = 0; index < tempRemoved.Count; index++)
