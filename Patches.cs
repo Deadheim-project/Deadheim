@@ -287,10 +287,12 @@ namespace Deadheim
                 List<ZDO> currentNearObjects,
                 List<ZDO> currentDistantObjects)
             {
-                if (!_dirty) return;
-
+                // These lists are rebuilt every frame and can briefly receive a stale
+                // ZDO during world startup, independently of m_instances being clean.
                 RemoveNullZdos(currentNearObjects);
                 RemoveNullZdos(currentDistantObjects);
+
+                if (!_dirty) return;
 
                 if (s_instances?.GetValue(__instance) is not Dictionary<ZDO, ZNetView> instances)
                     return;
