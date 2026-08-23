@@ -266,100 +266,91 @@ namespace Deadheim
         }
 
         /// <summary>
-        /// Prevents a persistent NullReferenceException spam in ZNetScene.RemoveObjects.
-        /// When a null ZNetView entry exists in m_instances (e.g. from an orphaned or
-        /// unresolved prefab), the NRE unwinds the stack before the cleanup loop runs,
-        /// so the entry stays in the dictionary and the same error fires every frame.
-        /// This prefix purges any null entries before RemoveObjects iterates over them.
+        /// Null-safe equivalent of the vanilla ZNetScene.RemoveObjects implementation.
+        /// A failed or unresolved prefab can leave a destroyed ZNetView, a view without
+        /// a ZDO, or a stale ZDO in the per-frame lists. Vanilla dereferences all three
+        /// unconditionally, so one bad entry aborts cleanup and repeats the NRE.
         /// </summary>
         [HarmonyPatch(typeof(ZNetScene), "RemoveObjects")]
         public static class ZNetScene_RemoveObjects_NullGuard
         {
             private static readonly FieldInfo s_instances =
                 typeof(ZNetScene).GetField("m_instances", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            private static bool _dirty = true;   // assume dirty until proven clean
-            private static bool _recoveringFromNullReference;
+            private static readonly FieldInfo s_tempRemoved =
+                typeof(ZNetScene).GetField("m_tempRemoved", BindingFlags.Instance | BindingFlags.NonPublic);
 
             [HarmonyPrefix]
-            private static void Prefix(
+            [HarmonyPriority(Priority.Last)]
+            private static bool Prefix(
                 ZNetScene __instance,
                 List<ZDO> currentNearObjects,
                 List<ZDO> currentDistantObjects)
             {
-                // These lists are rebuilt every frame and can briefly receive a stale
-                // ZDO during world startup, independently of m_instances being clean.
-                RemoveNullZdos(currentNearObjects);
-                RemoveNullZdos(currentDistantObjects);
+                if (s_instances?.GetValue(__instance) is not Dictionary<ZDO, ZNetView> instances ||
+                    s_tempRemoved?.GetValue(__instance) is not List<ZNetView> tempRemoved)
+                    return true;
 
-                if (!_dirty) return;
+                byte earmark = (byte)(Time.frameCount & byte.MaxValue);
+                MarkLiveObjects(currentNearObjects, earmark);
+                MarkLiveObjects(currentDistantObjects, earmark);
 
-                if (s_instances?.GetValue(__instance) is not Dictionary<ZDO, ZNetView> instances)
-                    return;
-
-                List<ZDO> nullKeys = null;
+                tempRemoved.Clear();
+                List<ZDO> invalidKeys = null;
                 foreach (var kvp in instances)
                 {
-                    if (kvp.Value == null || kvp.Value.GetZDO() == null)
+                    ZNetView view = kvp.Value;
+                    ZDO zdo = view == null ? null : view.GetZDO();
+                    if (zdo == null)
                     {
-                        nullKeys ??= new List<ZDO>();
-                        nullKeys.Add(kvp.Key);
+                        invalidKeys ??= new List<ZDO>();
+                        invalidKeys.Add(kvp.Key);
+                        continue;
                     }
+
+                    if (zdo.TempRemoveEarmark != earmark)
+                        tempRemoved.Add(view);
                 }
 
-                if (nullKeys != null)
+                if (invalidKeys != null)
                 {
-                    foreach (var key in nullKeys)
+                    foreach (ZDO key in invalidKeys)
                         instances.Remove(key);
-                    Debug.LogWarning($"[Deadheim] Removed {nullKeys.Count} null ZNetView entries from ZNetScene.m_instances to stop NullReferenceException spam.");
+                    Debug.LogWarning($"[Deadheim] Removed {invalidKeys.Count} invalid ZNetScene instance entries safely.");
                 }
-                _dirty = false;
+
+                for (int index = 0; index < tempRemoved.Count; index++)
+                {
+                    ZNetView view = tempRemoved[index];
+                    if (view == null) continue;
+
+                    ZDO zdo = view.GetZDO();
+                    if (zdo == null) continue;
+
+                    view.ResetZDO();
+                    UnityEngine.Object.Destroy(view.gameObject);
+                    if (!zdo.Persistent && zdo.IsOwner() && ZDOMan.instance != null)
+                        ZDOMan.instance.DestroyZDO(zdo);
+                    instances.Remove(zdo);
+                }
+
+                return false;
             }
 
-            private static void RemoveNullZdos(List<ZDO> objects)
+            private static void MarkLiveObjects(List<ZDO> objects, byte earmark)
             {
                 if (objects == null) return;
 
                 for (int index = objects.Count - 1; index >= 0; index--)
                 {
-                    if (objects[index] == null)
+                    ZDO zdo = objects[index];
+                    if (zdo == null)
+                    {
                         objects.RemoveAt(index);
+                        continue;
+                    }
+
+                    zdo.TempRemoveEarmark = earmark;
                 }
-            }
-
-            /// <summary>
-            /// A broken network object may be inserted after the initial scan.  Suppress
-            /// only the first NullReferenceException, request one fresh cleanup pass and
-            /// let a consecutive failure surface normally instead of hiding an unrelated
-            /// bug forever.
-            /// </summary>
-            [HarmonyFinalizer]
-            private static System.Exception Finalizer(System.Exception __exception)
-            {
-                if (__exception == null)
-                {
-                    _recoveringFromNullReference = false;
-                    return null;
-                }
-
-                if (__exception is System.NullReferenceException && !_recoveringFromNullReference)
-                {
-                    _dirty = true;
-                    _recoveringFromNullReference = true;
-                    Debug.LogWarning("[Deadheim] Deferred one ZNetScene.RemoveObjects call so invalid network objects can be cleaned safely.");
-                    return null;
-                }
-
-                return __exception;
-            }
-
-            // Reset the dirty flag when the player logs out so a fresh world load rescans.
-            [HarmonyPatch(typeof(Game), "Logout")]
-            [HarmonyPostfix]
-            private static void OnLogout()
-            {
-                _dirty = true;
-                _recoveringFromNullReference = false;
             }
         }
     }
