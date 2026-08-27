@@ -14,19 +14,7 @@ namespace Deadheim
             }
         }
 
-        [HarmonyPatch(typeof(PrivateArea), "Awake")]
-        public static class PrivateAreaAwake
-        {
-            public static void Postfix(ref PrivateArea __instance)
-            {
-                int radius = Plugin.WardRadius.Value;
-
-                if (__instance.m_name.Contains("AdminWard")) radius = 50;
-                if (__instance.m_name.Contains("RaidWard")) radius = 50;
-
-                __instance.m_areaMarker.m_radius = radius;
-                __instance.m_radius = radius;
-            }
-        }
+        // O patch de raio de PrivateArea saiu daqui: o raio agora vem do perfil
+        // em Wards/WardProfile.cs e e aplicado em WardPatches.AwakePatch.
     }
 }

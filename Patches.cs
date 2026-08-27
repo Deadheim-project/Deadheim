@@ -113,8 +113,6 @@ namespace Deadheim
             if (ZRoutedRpc.instance == null)
                 return;
 
-            ItemService.SetWardFirePlace();
-
             ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "Sync", new ZPackage());
         }
 

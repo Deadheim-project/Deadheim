@@ -71,13 +71,6 @@ namespace Deadheim
             }
         }
 
-        public static void SetWardFirePlace()
-        {
-            GameObject ward = PrefabManager.Instance.GetPrefab("guard_stone");
-            Fireplace fireplace = ward.AddComponent<Fireplace>();
-            fireplace.m_fuelItem = PrefabManager.Instance.GetPrefab("GreydwarfEye").GetComponent<ItemDrop>();
-        }
-
         public static void NerfRunicCape()
         {
             GameObject prefab = ObjectDB.instance.GetItemPrefab("rae_CapeHorseHide");

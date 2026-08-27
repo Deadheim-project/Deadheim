@@ -34,3 +34,6 @@ server_*
 # NuGet/package cache
 packages/
 **/packages/
+
+# Staging de empacotamento local
+dist-stage-*/

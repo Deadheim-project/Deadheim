@@ -11,6 +11,11 @@ namespace RaidSystem
         private static List<RaidZone> _cachedZones;
         private static string _cachedZoneString;
 
+        // As zonas ja tinham cache; os horarios globais nao. IsRaidDisabledThisTime esta no
+        // caminho de RPC_Damage e refazia split, HashSet e OrderBy a cada golpe levado.
+        private static List<int> _cachedGlobalHours;
+        private static string _cachedGlobalHoursString;
+
         public static List<RaidZone> GetRaidZones()
         {
             string cfg = RaidSystemPlugin.RaidEnabledPositions.Value;
@@ -41,6 +46,14 @@ namespace RaidSystem
                     System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out float prv)
                     ? prv : wr;
+                int tier = 1;
+                if (p.Length > 6 && int.TryParse(p[6].Trim(), out int tierValue))
+                    tier = Mathf.Max(1, tierValue);
+
+                int minToolTier = 0;
+                if (p.Length > 7 && int.TryParse(p[7].Trim(), out int toolValue))
+                    minToolTier = Mathf.Max(0, toolValue);
+
                 zones.Add(new RaidZone
                 {
                     Name = p[0].Trim(),
@@ -48,7 +61,9 @@ namespace RaidSystem
                     Z = z,
                     WardRadius = wr,
                     PvpRadius = pr,
-                    AllowedHoursUtc = p.Length > 5 ? ParseHours(p[5], false) : new List<int>()
+                    AllowedHoursUtc = p.Length > 5 ? ParseHours(p[5], false) : new List<int>(),
+                    Tier = tier,
+                    MinToolTier = minToolTier
                 });
             }
             return zones;
@@ -118,6 +133,30 @@ namespace RaidSystem
             return GetRaidZones().FirstOrDefault(z => z.IsInWardArea(pos));
         }
 
+        public static int GetTierAt(Vector3 pos) => GetRaidZoneAt(pos)?.Tier ?? 0;
+
+        /// <summary>Remove o sufixo "(Clone)" do nome de um GameObject instanciado.</summary>
+        public static string CleanPrefabName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return string.Empty;
+            int i = name.IndexOf("(Clone)", StringComparison.Ordinal);
+            return i >= 0 ? name.Substring(0, i) : name;
+        }
+
+        /// <summary>
+        /// playerId do personagem de um peer conectado, ou 0.
+        /// Existe para o servidor NAO confiar no playerId que o cliente manda no pacote:
+        /// sem isso um cliente se passa por membro da guild dominante e resgata o tributo dela.
+        /// </summary>
+        public static long ResolvePlayerId(long peerId)
+        {
+            if (ZNet.instance == null || ZDOMan.instance == null) return 0L;
+            ZNetPeer peer = ZNet.instance.GetPeer(peerId);
+            if (peer == null || peer.m_characterID.IsNone()) return 0L;
+            ZDO zdo = ZDOMan.instance.GetZDO(peer.m_characterID);
+            return zdo != null ? zdo.GetLong(ZDOVars.s_playerID, 0L) : 0L;
+        }
+
         public static TerritoryInfo GetTerritoryAt(Vector3 pos)
         {
             RaidZone zone = GetRaidZoneAt(pos);
@@ -163,15 +202,34 @@ namespace RaidSystem
                    || name.Contains("portao");
         }
 
+        /// <summary>
+        /// Ponto dentro do pvpRadius de alguma zona. So tem efeito com Force PvP In Zones ligado.
+        /// </summary>
+        public static bool IsInPvpZone(Vector3 position)
+        {
+            if (RaidSystemPlugin.ForcePvpInZones.Value != Toggle.On) return false;
+            if (string.IsNullOrWhiteSpace(RaidSystemPlugin.RaidEnabledPositions.Value)) return false;
+            return GetRaidZones().Any(z => z.IsInPvpArea(position));
+        }
+
         public static bool IsRaidEnabledHere(Vector3 position)
         {
             if (string.IsNullOrWhiteSpace(RaidSystemPlugin.RaidEnabledPositions.Value)) return false;
             return GetRaidZones().Any(z => z.IsInWardArea(position));
         }
 
+        private static List<int> GetGlobalHours()
+        {
+            string cfg = RaidSystemPlugin.RaidTimeToAllowUtc.Value;
+            if (_cachedGlobalHours != null && _cachedGlobalHoursString == cfg) return _cachedGlobalHours;
+            _cachedGlobalHoursString = cfg;
+            _cachedGlobalHours = ParseHours(cfg, true);
+            return _cachedGlobalHours;
+        }
+
         public static bool IsRaidDisabledThisTime()
         {
-            return !ParseHours(RaidSystemPlugin.RaidTimeToAllowUtc.Value, true).Contains(DateTime.UtcNow.Hour);
+            return !GetGlobalHours().Contains(DateTime.UtcNow.Hour);
         }
 
         public static bool IsRaidDisabledThisTime(Vector3 position)
@@ -221,18 +279,5 @@ namespace RaidSystem
             Debug.Log($"[RaidSystem] RaidWard respawned at X:{position.x:F0} Z:{position.z:F0}.");
         }
 
-        public static bool CheckInPrivateArea(Vector3 point, bool flash = false)
-        {
-            foreach (PrivateArea area in PrivateArea.m_allAreas)
-            {
-                if (area.m_piece.gameObject.name.Contains("dverger_guardstone")) continue;
-                if (area.IsEnabled() && area.IsInside(point, 0.0f))
-                {
-                    if (flash) area.FlashShield(false);
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 }

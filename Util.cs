@@ -13,7 +13,8 @@ namespace Deadheim
         public static string GetCreatorWardAndPortalCount(long creatorId)
         {
             int portalCount = GetCreatorPrefabCount("portal_wood".GetStableHashCode(), creatorId);
-            int wardCount = GetCreatorPrefabCount("guard_stone".GetStableHashCode(), creatorId);
+            // A contagem de wards mora em WardCore: e ela que sabe quais prefabs contam.
+            int wardCount = Wards.WardCore.CountWardsOf(creatorId);
 
             return $"{portalCount},{wardCount}";
         }

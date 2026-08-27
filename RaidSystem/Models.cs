@@ -41,6 +41,8 @@ namespace RaidSystem
         public float Z { get; set; }
         public string OwnerTeamId { get; set; }
         public long LastConquestTimestamp { get; set; }
+        public int PendingTribute { get; set; }
+        public long LastTributeUtc { get; set; }
     }
 
     [Serializable]
@@ -49,7 +51,6 @@ namespace RaidSystem
         public List<PlayerInfo> Players { get; set; } = new();
         public List<PlayerScore> Scores { get; set; } = new();
         public List<TerritoryInfo> Territories { get; set; } = new();
-        public Dictionary<string, long> Cooldowns { get; set; } = new();
     }
 
     public class RaidZone
@@ -60,6 +61,8 @@ namespace RaidSystem
         public float WardRadius { get; set; }
         public float PvpRadius { get; set; }
         public List<int> AllowedHoursUtc { get; set; } = new();
+        public int Tier { get; set; } = 1;
+        public int MinToolTier { get; set; } = 0;
 
         public Vector3 Position => new Vector3(X, 0f, Z);
         public bool IsInWardArea(Vector3 p) => Utils.DistanceXZ(p, Position) < WardRadius;

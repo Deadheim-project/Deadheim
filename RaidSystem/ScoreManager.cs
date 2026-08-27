@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,10 +7,26 @@ namespace RaidSystem
 {
     public static class ScoreManager
     {
-        public static void RecordKill(string pid, string nick, string team) => DataStore.Modify(d => GetOrCreate(d, pid, nick, team).Kills++);
-        public static void RecordDeath(string pid, string nick, string team) => DataStore.Modify(d => GetOrCreate(d, pid, nick, team).Deaths++);
         public static void RecordConquest(string pid, string nick, string team) => DataStore.Modify(d => GetOrCreate(d, pid, nick, team).Conquests++);
-        public static void RecordDefense(string pid, string nick, string team) => DataStore.Modify(d => GetOrCreate(d, pid, nick, team).Defenses++);
+
+        /// <summary>
+        /// Abate, morte e defesa de um mesmo PvP num Modify so. Separados eram tres
+        /// serializacoes do JSON inteiro e tres gravacoes em disco por kill.
+        /// </summary>
+        public static void RecordPvpOutcome(
+            string killerPid, string killerNick, string killerTeam,
+            string deadPid, string deadNick, string deadTeam,
+            bool defended)
+        {
+            DataStore.Modify(d =>
+            {
+                PlayerScore killer = GetOrCreate(d, killerPid, killerNick, killerTeam);
+                killer.Kills++;
+                if (defended) killer.Defenses++;
+
+                GetOrCreate(d, deadPid, deadNick, deadTeam).Deaths++;
+            });
+        }
 
         public static List<PlayerScore> GetTopPlayers(int count = 10) =>
             DataStore.Load().Scores.OrderByDescending(s => s.TotalPoints).Take(count).ToList();
@@ -21,13 +37,11 @@ namespace RaidSystem
                 .Select(g => (g.Key, g.Sum(s => s.TotalPoints), g.Count()))
                 .OrderByDescending(r => r.Item2).ToList();
 
-        public static PlayerScore GetPlayerScore(string pid) => DataStore.Load().Scores.FirstOrDefault(s => s.PlayerId == pid);
-
         public static string SerializeScores()
         {
             var sb = new StringBuilder();
             foreach (var s in DataStore.Load().Scores)
-                sb.Append(s.PlayerId).Append('\t').Append(s.Nick).Append('\t').Append(s.TeamId).Append('\t')
+                sb.Append(Clean(s.PlayerId)).Append('\t').Append(Clean(s.Nick)).Append('\t').Append(Clean(s.TeamId)).Append('\t')
                   .Append(s.Kills).Append('\t').Append(s.Deaths).Append('\t').Append(s.Conquests).Append('\t').Append(s.Defenses).Append('\n');
             return sb.ToString();
         }
@@ -61,6 +75,10 @@ namespace RaidSystem
             foreach (var (t, pts, m) in GetTeamRanking()) sb.AppendLine($"> {t} ({m} members): **{pts}** pts");
             return sb.ToString();
         }
+
+        /// <summary>Tab e newline sao os separadores do formato: nao podem vir dentro de um campo.</summary>
+        private static string Clean(string value)
+            => string.IsNullOrEmpty(value) ? string.Empty : value.Replace('\t', ' ').Replace('\n', ' ').Replace('\r', ' ');
 
         private static PlayerScore GetOrCreate(RaidData data, string pid, string nick, string team)
         {

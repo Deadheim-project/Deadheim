@@ -1,4 +1,4 @@
-extern alias GuildsMod;
+﻿extern alias GuildsMod;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,17 +22,41 @@ namespace RaidSystem
             return null;
         }
 
+        /// <summary>
+        /// Resolve a guild a partir de um Player.GetPlayerID().
+        ///
+        /// A versao anterior comparava com ZNet.PlayerInfo.m_characterID.UserID, que e o id
+        /// de rede do peer e nao o id do personagem: dominios diferentes, entao a comparacao
+        /// nunca casava e este metodo devolvia sempre null. Isso derrubava o registro de
+        /// jogador (RPC_UpdatePlayerData saia cedo) e a atribuicao de conquista.
+        ///
+        /// Player.GetPlayer compara justamente por GetPlayerID, que e o valor que recebemos.
+        /// </summary>
         public static string GetPlayerTeam(long playerID)
         {
-            if (IsActive && ZNet.instance != null)
+            if (!IsActive || playerID == 0L) return null;
+
+            Player player = Player.GetPlayer(playerID);
+            if (player != null)
+            {
+                Guild guild = API.GetPlayerGuild(player);
+                if (guild != null) return guild.Name;
+            }
+
+            // Fallback: personagem nao instanciado neste peer, mas conectado ao servidor.
+            if (ZNet.instance != null && ZDOMan.instance != null)
             {
                 foreach (var zpi in ZNet.instance.m_players)
-                    if (zpi.m_characterID.UserID == playerID)
-                    {
-                        Guild g = API.GetPlayerGuild(PlayerReference.fromPlayerInfo(zpi));
-                        if (g != null) return g.Name;
-                        break;
-                    }
+                {
+                    if (zpi.m_characterID.IsNone()) continue;
+
+                    ZDO zdo = ZDOMan.instance.GetZDO(zpi.m_characterID);
+                    if (zdo == null || zdo.GetLong(ZDOVars.s_playerID, 0L) != playerID) continue;
+
+                    Guild fallback = API.GetPlayerGuild(PlayerReference.fromPlayerInfo(zpi));
+                    if (fallback != null) return fallback.Name;
+                    break;
+                }
             }
             return null;
         }

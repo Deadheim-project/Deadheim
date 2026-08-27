@@ -10,7 +10,10 @@ namespace RaidSystem
     public class Patches
     {
         public static bool hasAwake;
-        private static (string pid, string nick, string teamId) _lastWardAttacker;
+        // Um slot por ward. Antes era um so para o mapa inteiro, entao duas guilds
+        // atacando wards diferentes ao mesmo tempo trocavam o credito da conquista.
+        private static readonly Dictionary<int, (string pid, string nick, string teamId)> _wardAttackers
+            = new Dictionary<int, (string, string, string)>();
         private static readonly HashSet<int> _handledWardDestructions = new HashSet<int>();
         private static readonly HashSet<int> _adminRemovingDoors = new HashSet<int>();
 
@@ -21,27 +24,59 @@ namespace RaidSystem
             return pieceObject != null && pieceObject.name.Contains("RaidWard");
         }
 
+        /// <summary>
+        /// Roda em quem for dono da ZDO do ward, nao necessariamente no servidor:
+        /// WearNTear.Damage faz InvokeRPC sem alvo, e isso vai para o dono da ZDO, que
+        /// costuma ser o cliente do proprio atacante. Por isso aqui nao ha checagem de
+        /// IsServer: quem detecta a destruicao apenas avisa o servidor, e o servidor
+        /// decide a conquista.
+        /// </summary>
         private static void HandleWardDestroyed(WearNTear wearNTear, string source)
         {
-            if (ZNet.instance == null || !ZNet.instance.IsServer()) return;
+            if (ZNet.instance == null || ZRoutedRpc.instance == null) return;
             if (!IsRaidWard(wearNTear)) return;
 
             Vector3 pos = ((Component)wearNTear).transform.position;
             if (!Util.IsRaidEnabledHere(pos)) return;
 
+            // Ids de objetos destruidos nunca voltam, entao o set so cresce. O servidor ja
+            // deduplica por posicao numa janela de 10s, entao podar aqui e seguro.
+            if (_handledWardDestructions.Count > 128) _handledWardDestructions.Clear();
+
             int instanceId = wearNTear.GetInstanceID();
             if (!_handledWardDestructions.Add(instanceId)) return;
 
             Quaternion rot = ((Component)wearNTear).transform.rotation;
-            Debug.Log($"[RaidSystem] RaidWard destroyed by {source} at X:{pos.x:F0} Z:{pos.z:F0}; scheduling respawn.");
+            Debug.Log($"[RaidSystem] RaidWard destroyed by {source} at X:{pos.x:F0} Z:{pos.z:F0}; reporting to server.");
 
-            if (_lastWardAttacker.pid != null && !string.IsNullOrEmpty(_lastWardAttacker.teamId))
-                RPCManager.HandleConquest(_lastWardAttacker.pid, _lastWardAttacker.nick, _lastWardAttacker.teamId, pos);
-            else
-                Debug.LogWarning("[RaidSystem] RaidWard destroyed without a valid guild attacker; respawning without conquest.");
+            _wardAttackers.TryGetValue(instanceId, out var attacker);
+            _wardAttackers.Remove(instanceId);
 
-            _lastWardAttacker = default;
-            Util.RespawnWard(pos, rot);
+            ZPackage pkg = new ZPackage();
+            pkg.Write(attacker.pid ?? string.Empty);
+            pkg.Write(attacker.nick ?? string.Empty);
+            pkg.Write(pos);
+            pkg.Write(rot);
+            ZRoutedRpc.instance.InvokeRoutedRPC(
+                ZRoutedRpc.instance.GetServerPeerID(), "RaidSystem_WardDestroyed", pkg);
+        }
+
+        /// <summary>Catapulta mais proxima do ponto de impacto, para atribuir o tiro sem dono.</summary>
+        private static long ResolveSiegeShooter(Vector3 point)
+        {
+            float best = RaidSystemPlugin.SiegeAttributionRadius.Value;
+            long shooter = 0L;
+            foreach (Catapult c in UnityEngine.Object.FindObjectsByType<Catapult>(FindObjectsSortMode.None))
+            {
+                if (c == null) continue;
+                float d = Vector3.Distance(c.transform.position, point);
+                if (d > best) continue;
+                ZDO zdo = c.GetComponent<ZNetView>()?.GetZDO();
+                long candidate = zdo != null ? zdo.GetLong("rs_shooter", 0L) : 0L;
+                if (candidate == 0L) continue;
+                best = d; shooter = candidate;
+            }
+            return shooter;
         }
 
         private static bool IsAdminSender(long sender)
@@ -115,22 +150,38 @@ namespace RaidSystem
             {
                 try
                 {
-                    if (___m_nview == null) return false;
+                    // return false aqui bloquearia o dano; sem nview o certo e deixar o vanilla decidir.
+                    if (___m_nview == null) return true;
                     Vector3 pos = ((Component)__instance).transform.position;
                     bool inRaidZone = Util.IsRaidEnabledHere(pos);
                     bool isWard = __instance.gameObject.name.Contains("RaidWard");
                     bool isDoorOrGate = Util.IsRaidDoorOrGate(__instance.gameObject);
 
-                    // Track last attacker for conquest detection
-                    if (isWard && ZNet.instance.IsServer())
+                    // Track attacker for conquest detection. Sem IsServer: isto roda no dono
+                    // da ZDO, que normalmente e o cliente do atacante, nao o servidor.
+                    if (isWard)
                     {
                         Player attacker = hit.GetAttacker() as Player;
                         if (attacker != null)
                         {
-                            _lastWardAttacker = (
+                            _wardAttackers[__instance.GetInstanceID()] = (
                                 attacker.GetPlayerID().ToString(),
                                 attacker.m_nview.GetZDO().GetString("playerName"),
                                 GuildsIntegration.GetPlayerTeam(attacker));
+                        }
+                        else if (hit.m_hitType == HitData.HitType.Catapult)
+                        {
+                            // Tiro de catapulta chega sem atacante; o operador vem do carimbo
+                            // que CatapultShootPatch deixou na ZDO da maquina mais proxima.
+                            long shooter = ResolveSiegeShooter(pos);
+                            if (shooter != 0L)
+                            {
+                                Player shooterPlayer = Player.GetPlayer(shooter);
+                                _wardAttackers[__instance.GetInstanceID()] = (
+                                    shooter.ToString(),
+                                    shooterPlayer != null ? shooterPlayer.GetPlayerName() : string.Empty,
+                                    GuildsIntegration.GetPlayerTeam(shooter));
+                            }
                         }
                     }
 
@@ -140,10 +191,32 @@ namespace RaidSystem
 
                     if (isDoorOrGate) return true;
 
-                    hit.ApplyModifier(1f - RaidSystemPlugin.WardReductionDamage.Value / 100f);
+                    bool siege = hit.m_hitType == HitData.HitType.Catapult;
+
+                    if (RaidSystemPlugin.LogWardHits.Value == Toggle.On)
+                        Debug.Log($"[RaidSystem] Ward hit: hitType={hit.m_hitType} toolTier={hit.m_toolTier} " +
+                                  $"dano={hit.GetTotalDamage():F1} siege={siege}");
+
+                    if (RaidSystemPlugin.SiegeOnly.Value == Toggle.On && !siege)
+                        return false;   // ward so cai por cerco
+
+                    RaidZone zone = Util.GetRaidZoneAt(pos);
+                    if (!siege && zone != null && hit.m_toolTier < zone.MinToolTier)
+                        return false;   // ferramenta fraca demais para este territorio
+
+                    float reduction = siege
+                        ? RaidSystemPlugin.WardReductionDamageSiege.Value
+                        : RaidSystemPlugin.WardReductionDamage.Value;
+
+                    hit.ApplyModifier(1f - reduction / 100f);
                     return true;
                 }
-                catch (Exception ex) { Debug.LogError(ex.Message + " - " + ex.StackTrace); return false; }
+                catch (Exception ex)
+                {
+                    // Falhar aqui com return false tornava a estrutura invulneravel em silencio.
+                    Debug.LogError("[RaidSystem] RPC_Damage patch failed: " + ex.Message + " - " + ex.StackTrace);
+                    return true;
+                }
             }
         }
 
@@ -214,7 +287,7 @@ namespace RaidSystem
             private static void Postfix()
             {
                 hasAwake = false;
-                _lastWardAttacker = default;
+                _wardAttackers.Clear();
                 _handledWardDestructions.Clear();
                 _adminRemovingDoors.Clear();
             }
@@ -248,8 +321,24 @@ namespace RaidSystem
         {
             [HarmonyPriority(800)]
             private static bool Prefix(Piece piece, Player __instance)
-                => SynchronizationManager.Instance.PlayerIsAdmin
-                   || !Util.IsRaidEnabledHere(((Component)__instance).transform.position);
+            {
+                if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
+
+                if (piece != null && piece.gameObject.name.Contains("RaidWard")
+                    && RaidSystemPlugin.WardOnlyAdminCanBuild.Value == Toggle.On)
+                {
+                    __instance.Message(MessageHud.MessageType.Center, "Somente admins podem colocar a Raid Ward.");
+                    return false;
+                }
+
+                if (Util.IsRaidEnabledHere(((Component)__instance).transform.position))
+                {
+                    __instance.Message(MessageHud.MessageType.Center, "Nao e possivel construir em area de raid.");
+                    return false;
+                }
+
+                return true;
+            }
         }
 
         [HarmonyPatch(typeof(Door), "Interact")]
@@ -279,6 +368,86 @@ namespace RaidSystem
             }
         }
 
+        /// <summary>
+        /// Liga o PvP dentro do pvpRadius de uma zona. O campo era lido da config e nunca
+        /// consultado; agora vale, mas so com Force PvP In Zones ligado (Off por padrao).
+        /// </summary>
+        [HarmonyPatch(typeof(Player), nameof(Player.IsPVPEnabled))]
+        public static class ForcePvpPatch
+        {
+            private static void Postfix(Player __instance, ref bool __result)
+            {
+                if (__result || __instance == null) return;
+                if (Util.IsInPvpZone(__instance.transform.position)) __result = true;
+            }
+        }
+
+        /// <summary>
+        /// Catapult.ShootProjectile faz Setup(null, ...): o projetil nao tem dono, entao um ward
+        /// derrubado por catapulta chegaria em RPC_Damage sem atacante e ninguem conquistaria.
+        /// Shoot() roda no cliente de quem operou, entao aqui sabemos quem foi.
+        /// </summary>
+        [HarmonyPatch(typeof(Catapult), "Shoot")]
+        public static class CatapultShootPatch
+        {
+            private static void Postfix(Catapult __instance)
+            {
+                Player lp = Player.m_localPlayer;
+                if (lp == null) return;
+                ZNetView nview = __instance.GetComponent<ZNetView>();
+                if (nview == null || !nview.IsValid() || !nview.IsOwner()) return;
+                nview.GetZDO().Set("rs_shooter", lp.GetPlayerID());
+            }
+        }
+
+        /// <summary>
+        /// RaidWard nao abre o menu de permissoes do guard_stone: interagir com ele resgata tributo.
+        /// O guard por nome de prefab e obrigatorio - sem ele isso valeria para toda ward do servidor.
+        /// </summary>
+        [HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.Interact))]
+        public static class RaidWardInteractPatch
+        {
+            private static bool Prefix(PrivateArea __instance, Humanoid human, bool hold, bool alt)
+            {
+                if (hold) return true;
+                if (Util.CleanPrefabName(__instance.gameObject.name) != "RaidWard") return true;
+
+                Player player = human as Player;
+                if (player == null) return true;
+
+                int free = player.GetInventory().GetEmptySlots();
+                if (free < RaidSystemPlugin.TributeRequiredFreeSlots.Value)
+                {
+                    player.Message(MessageHud.MessageType.Center,
+                        $"Libere pelo menos {RaidSystemPlugin.TributeRequiredFreeSlots.Value} espaços na mochila.");
+                    return false;
+                }
+
+                ZPackage pkg = new ZPackage();
+                pkg.Write(__instance.transform.position);
+                ZRoutedRpc.instance.InvokeRoutedRPC(
+                    ZRoutedRpc.instance.GetServerPeerID(), "RaidSystem_ClaimTribute", pkg);
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.GetHoverText))]
+        public static class RaidWardHoverPatch
+        {
+            private static void Postfix(PrivateArea __instance, ref string __result)
+            {
+                if (Util.CleanPrefabName(__instance.gameObject.name) != "RaidWard") return;
+
+                Vector3 pos = __instance.transform.position;
+                TerritoryInfo t = Util.GetTerritoryAt(pos);
+                string owner = string.IsNullOrEmpty(t?.OwnerTeamId) ? "sem dono" : t.OwnerTeamId;
+                int pending = t?.PendingTribute ?? 0;
+
+                __result = $"Raid Ward\nDomínio: {owner}\nTributo pendente: {pending}\n" +
+                           "[<color=yellow><b>$KEY_Use</b></color>] resgatar";
+            }
+        }
+
         [HarmonyPatch(typeof(Character), "ApplyDamage")]
         public static class ApplyDamagePatch
         {
@@ -299,14 +468,20 @@ namespace RaidSystem
                     if (string.IsNullOrEmpty(killerTeam) || string.IsNullOrEmpty(deadTeam)
                         || killerTeam == deadTeam) return;
 
-                    ScoreManager.RecordKill(
+                    // Points Per Defense existia na config mas nada registrava defesa.
+                    // Defesa = abate dentro de territorio que a guild do matador ja domina.
+                    string holder = Util.GetTerritoryOwner(((Component)__instance).transform.position);
+                    bool defended = !string.IsNullOrEmpty(holder)
+                                    && string.Equals(holder, killerTeam, StringComparison.OrdinalIgnoreCase);
+
+                    ScoreManager.RecordPvpOutcome(
                         killer.GetPlayerID().ToString(),
                         killer.m_nview.GetZDO().GetString("playerName"),
-                        killerTeam);
-                    ScoreManager.RecordDeath(
+                        killerTeam,
                         dead.GetPlayerID().ToString(),
                         dead.m_nview.GetZDO().GetString("playerName"),
-                        deadTeam);
+                        deadTeam,
+                        defended);
 
                     dWebHook.SendRaidMessage(
                         $"**[Abate]** **{killer.m_nview.GetZDO().GetString("playerName")}** [{killerTeam}] eliminou " +

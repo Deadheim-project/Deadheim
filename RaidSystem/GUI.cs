@@ -1,4 +1,4 @@
-using Jotunn.Managers;
+﻿using Jotunn.Managers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,6 +53,10 @@ namespace RaidSystem
             if (Player.m_localPlayer == null) return;
             if (GUIManager.Instance == null || !GUIManager.CustomGUIFront) return;
 
+            // LoadMenu roda a cada full sync, e sync acontece sempre que alguem mexe em guild.
+            // Sem preservar isto, o menu fechava na cara de quem estivesse com ele aberto.
+            bool wasActive = _menu != null && _menu.activeSelf;
+
             UnityEngine.Object.Destroy(_menu);
             foreach (var item in _menuItems.Values) UnityEngine.Object.Destroy(item);
             _menuItems.Clear();
@@ -69,6 +73,7 @@ namespace RaidSystem
             string teamName = GuildsIntegration.GetOwnGuildName();
             if (string.IsNullOrEmpty(teamName))
                 return;
+
 
             string playerName = info?.Nick ?? Player.m_localPlayer.m_nview.GetZDO().GetString("playerName");
 
@@ -135,6 +140,8 @@ namespace RaidSystem
             btnClose.SetActive(true);
             _menuItems["btnClose"] = btnClose;
             btnClose.GetComponent<Button>().onClick.AddListener(DestroyMenu);
+
+            _menu.SetActive(wasActive);
         }
 
         public static void UpdateScoreboard()

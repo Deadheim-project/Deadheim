@@ -49,6 +49,8 @@ namespace Deadheim
 
         private void Update()
         {
+            Wards.WardCore.Update();
+
             Player localPlayer = Player.m_localPlayer;
             bool flag = Player.m_localPlayer == null;
             if (!flag)
@@ -86,7 +88,6 @@ namespace Deadheim
             {
                 if (attr.InitialSynchronization)
                 {
-                    ItemService.SetWardFirePlace();
                     ItemService.ModifyItemsCost();
                     ItemService.LoxTameable();
                     ItemService.WolvesTameable();
@@ -102,6 +103,9 @@ namespace Deadheim
             };
 
             Config.SaveOnConfigSet = true;
+
+            Wards.WardProfiles.BindConfigs(Config);
+            Wards.WardProfiles.LoadAssets();
 
             OnlyAdminPieces = Config.Bind("Server config", "OnlyAdminPieces", "SHGateHouse,SHWallMusteringHall,SHTowerSquareTwoFloorCenter,SHTowerSquareTwoFloorCorner,SHTowerSquareTwoFloorJunction,SHWallOpenTwoFloorCapped,SHWallOpenTwoFloorWithNest,SHWallOpenTwoFloorWithNestCapped,SHWallOpenTwoFloor,SHEnclosedTower,SHBunkhouse,SHWell,SHOuterWallCovered,SHOuterWallOpenCapped,SHOuterWallOpen,SHOuterWallTowerSquareCenter,SHOuterWallTowerTransition,SHOuterWallTowerRound,SHOuterWallGate,SHWatchtower,SHTowerRoundWallEnd,SHOuterWallCoverdCapped,SHWallInnerArch,SHWallInnerPillar,SHWallInnerPlain,SHWallInnerPosh,SHHouseSmall,SHHouseMedium,SHHouseLarge,SHHayBarn,SHOldBarn,SHStorageBarn,SHMainHall",
 new ConfigDescription("OnlyAdminPieces", null,

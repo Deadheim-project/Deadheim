@@ -1,4 +1,5 @@
-using HarmonyLib;
+﻿using HarmonyLib;
+using Jotunn.Managers;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -71,26 +72,68 @@ namespace RaidSystem
             Debug.Log("[RaidSystem] RaidWard added to hammer using Jotunn PieceManager.");
         }
 
+        /// <summary>
+        /// O vanilla percorre m_namedPrefabs e estoura NullReference se algum valor foi
+        /// destruido. Antes este patch substituia o metodo inteiro e ainda lia m_prefabs,
+        /// que e outra colecao: o resultado devolvido nao era o mesmo do jogo. Agora so
+        /// limpa as entradas mortas e deixa o vanilla rodar.
+        /// </summary>
         [HarmonyPatch(typeof(ZNetScene), "GetPrefabNames")][HarmonyPrefix][HarmonyPriority(Priority.Last)]
-        private static bool ZNetScene_GetPrefabNames(ZNetScene __instance, ref List<string> __result)
+        private static void ZNetScene_GetPrefabNames(ZNetScene __instance)
         {
+            List<int> dead = null;
+            foreach (KeyValuePair<int, GameObject> entry in __instance.m_namedPrefabs)
+            {
+                if (entry.Value != null) continue;
+                (dead ??= new List<int>()).Add(entry.Key);
+            }
+
+            if (dead == null) return;
+            foreach (int key in dead) __instance.m_namedPrefabs.Remove(key);
             __instance.m_prefabs.RemoveAll(prefab => prefab == null);
-            __result = __instance.m_prefabs
-                .Where(prefab => prefab != null)
-                .Select(prefab => prefab.name)
-                .Where(name => !string.IsNullOrEmpty(name))
-                .ToList();
-            return false;
         }
 
         [HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")][HarmonyPrefix]
         private static void Player_UpdateKnownRecipesList()
         {
             CleanPieceTables();
+            ApplyAdminOnlyVisibility();
         }
+
+        /// <summary>
+        /// Tira a RaidWard do martelo de quem nao e admin. Barrar so no PlacePiece funciona,
+        /// mas deixa a peca visivel e o jogador gastando tempo com ela.
+        /// </summary>
+        private static void ApplyAdminOnlyVisibility()
+        {
+            if (RaidWardPrefab == null) return;
+            if (RaidSystemPlugin.WardOnlyAdminCanBuild.Value != Toggle.On) return;
+            if (SynchronizationManager.Instance == null) return;
+
+            bool isAdmin = SynchronizationManager.Instance.PlayerIsAdmin;
+
+            foreach (PieceTable table in Resources.FindObjectsOfTypeAll<PieceTable>())
+            {
+                if (table?.m_pieces == null) continue;
+
+                bool listed = table.m_pieces.Contains(RaidWardPrefab);
+                if (isAdmin && !listed) table.m_pieces.Add(RaidWardPrefab);
+                else if (!isAdmin && listed) table.m_pieces.Remove(RaidWardPrefab);
+            }
+        }
+
+        /// <summary>
+        /// FindObjectsOfTypeAll varre todos os objetos carregados e e caro. Isto roda a cada
+        /// UpdateKnownRecipesList, que dispara a cada mudanca de inventario, entao vai por
+        /// intervalo: pecas nulas so aparecem quando um prefab e registrado ou destruido.
+        /// </summary>
+        private static float _nextPieceTableClean;
 
         private static void CleanPieceTables()
         {
+            if (Time.time < _nextPieceTableClean) return;
+            _nextPieceTableClean = Time.time + 30f;
+
             foreach (PieceTable table in Resources.FindObjectsOfTypeAll<PieceTable>())
                 table?.m_pieces?.RemoveAll(piece => piece == null || !piece);
         }

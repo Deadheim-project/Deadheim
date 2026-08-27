@@ -1,13 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Mesma forma canonica usada em ILPack.targets do Deadheim.
+
+    O .csproj define <ILRepackTargetsFile> apontando para ca. Sem isso o alvo padrao do
+    pacote ILRepack tambem roda, e ele funde TODA dll da pasta de saida (79 assemblies,
+    incluindo Deadheim.dll e as do Unity), o que falha ao resolver o BepInEx.
+
+    Aqui a fusao e so o que precisa viajar dentro do RaidSystem.dll: ServerSync e
+    Newtonsoft.Json, que nao existem soltos na pasta de plugins do servidor.
+-->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Target Name="ILRepacker" AfterTargets="Build">
         <ItemGroup>
             <InputAssemblies Include="$(TargetPath)" />
-            <InputAssemblies Include="$(OutputPath)\ServerSync.dll" />
-            <InputAssemblies Include="$(OutputPath)\Newtonsoft.Json.dll" />
+            <InputAssemblies Include="$(OutputPath)ServerSync.dll" />
+            <InputAssemblies Include="$(OutputPath)Newtonsoft.Json.dll" />
+            <LibraryPaths Include="$(ProjectDir)$(OutputPath)" />
+            <LibraryPaths Include="C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed" />
+            <LibraryPaths Include="C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies" />
         </ItemGroup>
         <ILRepack Parallel="true" DebugInfo="true" Internalize="true"
             InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)"
-            TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath);C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed;$(VALHEIM_MANAGED)" />
+            TargetKind="SameAsPrimaryAssembly" LibraryPath="@(LibraryPaths)" />
     </Target>
 </Project>

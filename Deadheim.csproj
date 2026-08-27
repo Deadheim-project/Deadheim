@@ -7,6 +7,9 @@
     <ProjectGuid>{D361DAA4-9CE5-430E-A275-944805ECB71E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
+    <!-- Ver comentario em RaidSystem.csproj: sem isto o alvo padrao do pacote
+         ILRepack funde toda dll da pasta de saida junto com a nossa fusao. -->
+    <ILRepackTargetsFile>$(ProjectDir)ILPack.targets</ILRepackTargetsFile>
     <RootNamespace>Deadheim</RootNamespace>
     <AssemblyName>Deadheim</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
@@ -132,7 +135,10 @@
     <Compile Include="RPC.cs" />
     <Compile Include="Smelters.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="Ward.cs" />
+    <Compile Include="Wards\WardBridge.cs" />
+    <Compile Include="Wards\WardProfile.cs" />
+    <Compile Include="Wards\WardCore.cs" />
+    <Compile Include="Wards\WardPatches.cs" />
     <Compile Include="World.cs" />
   </ItemGroup>
   <ItemGroup>

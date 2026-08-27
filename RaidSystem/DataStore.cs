@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
@@ -42,10 +42,12 @@ namespace RaidSystem
                         Directory.CreateDirectory(RaidSystemPlugin.FileDirectory);
                     var wrapper = RaidDataWrapper.FromRaidData(_cache);
                     string json = JsonConvert.SerializeObject(wrapper, Formatting.Indented);
+                    // File.Replace troca o arquivo numa operacao so. O Delete + Move de antes
+                    // deixava uma janela em que o arquivo nao existia: morrer ali perdia os dados.
                     string tmp = FilePath + ".tmp";
                     File.WriteAllText(tmp, json);
-                    if (File.Exists(FilePath)) File.Delete(FilePath);
-                    File.Move(tmp, FilePath);
+                    if (File.Exists(FilePath)) File.Replace(tmp, FilePath, null);
+                    else File.Move(tmp, FilePath);
                 }
                 catch (Exception ex) { Debug.LogError($"[RaidSystem] Save error: {ex.Message}"); }
             }
@@ -55,8 +57,6 @@ namespace RaidSystem
         {
             lock (_lock) { if (_cache == null) Load(); action(_cache); Save(); }
         }
-
-        public static void Invalidate() { lock (_lock) { _cache = null; } }
 
         public static string Serialize()
         {
@@ -79,9 +79,6 @@ namespace RaidSystem
         public PlayerInfo[] players;
         public PlayerScore[] scores;
         public TerritoryInfo[] territories;
-        public CooldownEntry[] cooldowns;
-
-        [Serializable] public class CooldownEntry { public string key; public long timestamp; }
 
         public RaidData ToRaidData()
         {
@@ -89,17 +86,12 @@ namespace RaidSystem
             if (players != null) d.Players.AddRange(players);
             if (scores != null) d.Scores.AddRange(scores);
             if (territories != null) d.Territories.AddRange(territories);
-            if (cooldowns != null) foreach (var c in cooldowns) d.Cooldowns[c.key] = c.timestamp;
             return d;
         }
 
         public static RaidDataWrapper FromRaidData(RaidData d)
         {
-            var w = new RaidDataWrapper { players = d.Players.ToArray(), scores = d.Scores.ToArray(), territories = d.Territories.ToArray() };
-            var cd = new List<CooldownEntry>();
-            foreach (var kvp in d.Cooldowns) cd.Add(new CooldownEntry { key = kvp.Key, timestamp = kvp.Value });
-            w.cooldowns = cd.ToArray();
-            return w;
+            return new RaidDataWrapper { players = d.Players.ToArray(), scores = d.Scores.ToArray(), territories = d.Territories.ToArray() };
         }
     }
 }
