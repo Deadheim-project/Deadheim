@@ -60,6 +60,7 @@
     <Compile Include="RaidSystem\Patches.cs" />
     <Compile Include="RaidSystem\RPCManager.cs" />
     <Compile Include="RaidSystem\RaidSystemPlugin.cs" />
+    <Compile Include="RaidSystem\ShieldDomeHeadlessGuard.cs" />
     <Compile Include="RaidSystem\Util.cs" />
     <Compile Include="RaidSystem\WardSetup.cs" />
   </ItemGroup>
