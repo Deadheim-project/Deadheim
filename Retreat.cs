@@ -30,7 +30,7 @@ namespace Deadheim
 			{
 				new Terminal.ConsoleCommand("retreat", "go back home", (Terminal.ConsoleEvent)(args =>
 				{
-                    if (!Plugin.Vip.Value.Contains(Plugin.steamId))
+                    if (!VipList.VipListApi.IsLocalPlayerVip())
                     {
                        args.Context.AddString("Only Aesir can use this command");
                        return;

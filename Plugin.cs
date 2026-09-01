@@ -10,13 +10,13 @@ namespace Deadheim
 {
     [BepInPlugin(PluginGUID, PluginGUID, Version)]
     [BepInDependency(Jotunn.Main.ModGuid)]
+    [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {        
-        public const string Version = "6.1.6";
+        public const string Version = "6.1.7";
         public const string PluginGUID = "Detalhes.Deadheim";
         public static string steamId = "";  
-        public static ConfigEntry<string> Vip;
         public static ConfigEntry<string> AdminList;
         public static ConfigEntry<string> OnlyAdminPieces;
         public static ConfigEntry<string> VipPortalNames;
@@ -123,10 +123,6 @@ new ConfigurationManagerAttributes { IsAdminOnly = true }));
            new ConfigDescription("AdminList", null,
                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-
-            Vip = Config.Bind("Server config", "Vip", "76561198053330247",
-           new ConfigDescription("VipList", null,
-                    new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             StaffMessage = Config.Bind("Server config", "StaffMessage", "",
 new ConfigDescription("StaffMessage", null,

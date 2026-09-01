@@ -257,8 +257,7 @@ namespace Deadheim.Wards
 
         public static int GetWardLimit()
         {
-            bool isVip = !string.IsNullOrEmpty(Plugin.steamId)
-                         && Plugin.Vip.Value.Contains(Plugin.steamId);
+            bool isVip = VipList.VipListApi.IsLocalPlayerVip();
             return isVip ? Plugin.WardLimitVip.Value : Plugin.WardLimit.Value;
         }
 

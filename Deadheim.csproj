@@ -142,6 +142,13 @@
     <Compile Include="World.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="VipList.csproj">
+      <Project>{A7A5CA41-7FAE-45AF-8C31-65BFA6C1725D}</Project>
+      <Name>VipList</Name>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="assets\armorkit1.png" />
     <EmbeddedResource Include="assets\armorkit2.png" />
     <EmbeddedResource Include="assets\armorkit3.png" />

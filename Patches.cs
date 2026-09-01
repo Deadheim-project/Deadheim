@@ -230,7 +230,7 @@ namespace Deadheim
                 if (player != Player.m_localPlayer) return true;
 
                 // 1. Se o jogador for VIP (Aesir), permite o teleporte
-                if (Plugin.Vip.Value.Contains(Plugin.steamId)) return true;
+                if (VipList.VipListApi.IsLocalPlayerVip()) return true;
 
                 // 2. Pega a tag do portal
                 string portalTag = __instance.GetText();
@@ -250,7 +250,7 @@ namespace Deadheim
             [HarmonyPriority(Priority.Last)]
             private static bool Prefix(Piece piece, Player __instance)
             {
-                bool isVip = Vip.Value.Contains(steamId);
+                bool isVip = VipList.VipListApi.IsLocalPlayerVip();
                 if (isVip) return true;
 
                 if (piece.gameObject.name == "AesirChest")
