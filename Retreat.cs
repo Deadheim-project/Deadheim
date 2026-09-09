@@ -36,7 +36,10 @@ namespace Deadheim
                        return;
                     }
 
-                    if (!Player.m_localPlayer.IsTeleportable())
+                    // allowAllItems e' novo no Valheim 1.0. false mantem a regra de sempre --
+                    // minerio e outros itens marcados continuam impedindo o teleporte; true
+                    // ignoraria essa restricao, que nao e' o que este comando fazia.
+                    if (!Player.m_localPlayer.IsTeleportable(false))
                     {
                         args.Context.AddString("Can't teleport");
                         return;
