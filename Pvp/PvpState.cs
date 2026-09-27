@@ -49,6 +49,7 @@ namespace Deadheim.Pvp
         private static double _huntedUntil;
         private static float _combatUntil;
         private static float _aggressorUntil;
+        private static float _pveCombatUntil;
         private static int _pkCount;
 
         private static ZDOID _lastPvpAttacker = ZDOID.None;
@@ -65,6 +66,18 @@ namespace Deadheim.Pvp
         public static bool IsHuntPending => _huntPendingUntil > Now;
         public static bool InCombat => Time.time < _combatUntil;
         public static bool IsAggressor => Time.time < _aggressorUntil;
+        public static bool InPveCombat => Time.time < _pveCombatUntil;
+        public static float PveCombatRemaining => Mathf.Max(0f, _pveCombatUntil - Time.time);
+
+        /// <summary>Combate que bloqueia teleporte: PvP sempre; PvE se CombatFromPve.</summary>
+        public static bool InEscapeCombat
+            => InCombat || (PvpConfig.CombatFromPve != null && PvpConfig.CombatFromPve.Value && InPveCombat);
+
+        public static float EscapeCombatRemaining
+            => Mathf.Max(CombatRemaining, PvpConfig.CombatFromPve != null && PvpConfig.CombatFromPve.Value ? PveCombatRemaining : 0f);
+
+        public static void MarkPveCombat()
+            => _pveCombatUntil = Time.time + Mathf.Max(0f, PvpConfig.CombatTagSeconds.Value);
         public static int PkCount => _pkCount;
 
         public static double ImmuneRemaining => Math.Max(0d, _immuneUntil - Now);
@@ -81,6 +94,7 @@ namespace Deadheim.Pvp
             _huntedUntil = 0d;
             _combatUntil = 0f;
             _aggressorUntil = 0f;
+            _pveCombatUntil = 0f;
             _pkCount = 0;
             _lastPvpAttacker = ZDOID.None;
             _lastPvpHitTime = -9999f;
@@ -192,7 +206,11 @@ namespace Deadheim.Pvp
         public static void ClearAggressor() => _aggressorUntil = 0f;
 
         /// <summary>Morreu: a luta acabou (senao deslogar logo depois de renascer contaria como fuga).</summary>
-        public static void ClearCombat() => _combatUntil = 0f;
+        public static void ClearCombat()
+        {
+            _combatUntil = 0f;
+            _pveCombatUntil = 0f;
+        }
 
         public static void ForgetAttacker()
         {

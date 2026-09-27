@@ -81,7 +81,7 @@ namespace Deadheim.Pvp
             {
                 if (player.InNumShipVolumes > 0 || player.IsAttachedToShip() || player.GetStandingOnShip() != null)
                     return ShipIsMoving(player);
-                if (player.IsRiding()) return true;
+                if (player.IsRiding()) return MountIsMoving(player);
 
                 foreach (Vagon vagon in Vagon.m_instances)
                 {
@@ -116,6 +116,15 @@ namespace Deadheim.Pvp
                     }
             if (ship == null || ship.m_body == null) return false;
             return ship.m_body.linearVelocity.magnitude >= minimum;
+        }
+
+        /// <summary>Montaria parada nao e abrigo (MountSafeMinSpeed), igual barco parado.</summary>
+        private static bool MountIsMoving(Player player)
+        {
+            float minimum = PvpConfig.MountSafeMinSpeed.Value;
+            if (minimum <= 0f) return true;
+            Character mount = (player.m_doodadController as Sadle)?.GetCharacter();
+            return mount != null && mount.GetVelocity().magnitude >= minimum;
         }
 
         // ---------------------------------------------------------------- ilha inicial

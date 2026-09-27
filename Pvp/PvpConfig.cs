@@ -37,6 +37,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<int> StartIslandRadius;
         public static ConfigEntry<string> StartIslandBiomes;
         public static ConfigEntry<float> ShipSafeMinSpeed;
+        public static ConfigEntry<float> MountSafeMinSpeed;
         public static ConfigEntry<string> SafeZones;
         public static ConfigEntry<string> ArenaZones;
         public static ConfigEntry<bool> TransportsSafe;
@@ -66,6 +67,8 @@ namespace Deadheim.Pvp
 
         // ------------------------------------------------------------------- fuga
         public static ConfigEntry<bool> CombatBlocksTeleport;
+        public static ConfigEntry<bool> CombatStatusIcon;
+        public static ConfigEntry<bool> CombatFromPve;
         public static ConfigEntry<string> CombatLogout;
 
         // ------------------------------------------------------------------ saque
@@ -140,10 +143,13 @@ namespace Deadheim.Pvp
             TransportsSafe = Bind(config, zones, "TransportsSafe", true,
                 "Quem esta num barco, carroca ou montaria fica em zona segura.");
             TransportsInvulnerable = Bind(config, zones, "TransportsInvulnerable", true,
-                "Barcos e carrocas nao tomam dano de jogador.");
+                "Barcos, carrocas e montarias com sela nao tomam dano de jogador.");
             ShipSafeMinSpeed = Bind(config, zones, "ShipSafeMinSpeed", 1f,
                 "O barco so protege quem esta nele se estiver andando acima desta velocidade (m/s). " +
                 "Barco parado ou encalhado nao e abrigo. 0 = protege parado tambem.");
+            MountSafeMinSpeed = Bind(config, zones, "MountSafeMinSpeed", 1f,
+                "A montaria so protege quem esta montado se estiver andando acima desta velocidade (m/s). " +
+                "Montaria parada ao lado de uma luta nao e abrigo. 0 = protege parada tambem.");
             ArenaNoSkillLoss = Bind(config, zones, "ArenaNoSkillLoss", true,
                 "Morrer na arena nao tira skill.");
             ArenaFriendlyFire = Bind(config, zones, "ArenaFriendlyFire", true,
@@ -191,6 +197,11 @@ namespace Deadheim.Pvp
             const string escape = "PvP - Fuga";
             CombatBlocksTeleport = Bind(config, escape, "CombatBlocksTeleport", true,
                 "Em combate nenhum teleporte longo funciona: portal, NPC teleportador, pedra de retorno, retreat.");
+            CombatStatusIcon = Bind(config, escape, "CombatStatusIcon", true,
+                "Mostra o status \"Em combate\" com contagem na barra de efeitos (o que o mod Combat fazia).");
+            CombatFromPve = Bind(config, escape, "CombatFromPve", false,
+                "Dano de/em monstro tambem conta como combate, mas so para bloquear teleporte, retreat e pedra " +
+                "(zona segura continua valendo contra jogador). O mod Combat antigo fazia isso por padrao.");
             CombatLogout = Bind(config, escape, "CombatLogout", "Death",
                 "Deslogar em combate. Off = nada; Rank = conta morte para quem saiu e abate para quem bateu; " +
                 "Death = alem disso, ao voltar o jogador morre onde saiu (perde skill e a tumba fica la).");

@@ -108,6 +108,7 @@ namespace PvpTestDriver
                 Step("castelo-defensor", SoloCastleDefender),
                 Step("tumba", SoloTombstone),
                 Step("transporte", SoloTransport),
+                Step("montaria", SoloMount),
                 Step("ward-natureza", SoloWardNature),
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
@@ -337,6 +338,9 @@ namespace PvpTestDriver
             yield return ExpectDamage("dummy-bate/dano-x0.5", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
             yield return Wait(0.5f);
             Check("dummy-bate/em-combate", PvpState.InCombat && (PvpState.Current & PvpFlags.Combat) != 0, $"flags={PvpState.Current}");
+            StatusEffect icon = Me.GetSEMan().GetStatusEffect(PvpHud.CombatStatusHash);
+            Check("dummy-bate/icone-em-combate", icon != null && icon.GetRemaningTime() > 0f,
+                icon != null ? $"restante={icon.GetRemaningTime():0.0}s" : "sem icone");
         }
 
         /// <summary>
@@ -389,6 +393,30 @@ namespace PvpTestDriver
             while (Time.time < until && (Me.IsTeleporting() || Utils.DistanceXZ(Me.transform.position, far) > 3f)) yield return Wait(0.5f);
             Check("fuga/teleporte-livre-fora-de-combate", went && Utils.DistanceXZ(Me.transform.position, far) < 3f,
                 $"teleportou={went} distancia={Utils.DistanceXZ(Me.transform.position, far):0.0}");
+            Check("fuga/icone-some-fora-de-combate", Me.GetSEMan().GetStatusEffect(PvpHud.CombatStatusHash) == null);
+
+            // CombatFromPve: apanhar de monstro tambem prende o teleporte (o mod Combat fazia isso).
+            yield return MoveTo(_openA);
+            SetServerConfig("CombatFromPve", "true");
+            yield return WaitFor(() => PvpConfig.CombatFromPve.Value, 20f);
+            Check("fuga/combate-pve-ligado-pelo-cfg", PvpConfig.CombatFromPve.Value);
+            GameObject boar = Instantiate(ZNetScene.instance.GetPrefab("Boar"), Ground(_openA + Vector3.forward * 4f), Quaternion.identity);
+            yield return Wait(1f);
+            HitData bite = new HitData { m_hitType = HitData.HitType.EnemyHit, m_point = Me.GetCenterPoint() };
+            bite.m_damage.m_pierce = 1f;
+            bite.SetAttacker(boar.GetComponent<Character>());
+            Me.m_nview.InvokeRPC("RPC_Damage", bite);
+            yield return Wait(0.6f);
+            before = Me.transform.position;
+            went = Me.TeleportTo(far, Me.transform.rotation, true);
+            yield return Wait(1f);
+            Check("fuga/combate-pve-bloqueia-teleporte", !went && PvpHud.Compose(Me).Contains("(PvE)"), PvpHud.Compose(Me));
+            Check("fuga/combate-pve-nao-tira-pvp-da-zona", (PvpState.Current & PvpFlags.Combat) == 0, $"flags={PvpState.Current}");
+            ZNetScene.instance.Destroy(boar);
+            SetServerConfig("CombatFromPve", "false");
+            yield return WaitFor(() => !PvpConfig.CombatFromPve.Value, 20f);
+            Check("fuga/combate-pve-desligado-de-novo", !PvpConfig.CombatFromPve.Value);
+            yield return Wait(CombatWait);
             yield return MoveTo(_openA);
         }
 
@@ -1007,6 +1035,51 @@ namespace PvpTestDriver
                 "ShipSafeMinSpeed=" + PvpConfig.ShipSafeMinSpeed.Value);
             yield return MoveTo(_openA);
             ZNetScene.instance.Destroy(ship);
+        }
+
+        /// <summary>
+        /// Montaria com sela e transporte: nao toma dano de jogador. A estamina da sela vem do
+        /// cfg [Montarias] (o antigo SaddleStaminaControl).
+        /// </summary>
+        private IEnumerator SoloMount()
+        {
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            yield return Wait(CombatWait);
+            // Asksvin: o Lox perde a doma quando LoxTameable=false (padrao do Deadheim).
+            GameObject go = Instantiate(ZNetScene.instance.GetPrefab("Asksvin"), Ground(_openA + Vector3.forward * 8f), Quaternion.identity);
+            Character lox = go.GetComponent<Character>();
+            Tameable tame = go.GetComponent<Tameable>();
+            if (lox == null || tame == null)
+            {
+                Check("montaria/criatura-domavel", false, $"character={lox != null} tameable={tame != null}");
+                if (go != null) ZNetScene.instance.Destroy(go);
+                yield break;
+            }
+            lox.SetTamed(true);
+            yield return Wait(0.5f);
+            lox.m_nview.GetZDO().Set(ZDOVars.s_haveSaddleHash, true);
+            tame.SetSaddle(true);
+            yield return Wait(0.5f);
+
+            Sadle saddle = go.GetComponentInChildren<Sadle>(true);
+            Check("montaria/estamina-da-sela-do-cfg", saddle != null && Mathf.Approximately(saddle.m_maxStamina, Deadheim.Montarias.MaxStamina.Value)
+                                                      && Mathf.Approximately(saddle.m_runStaminaDrain, Deadheim.Montarias.RunStaminaDrain.Value),
+                saddle != null ? $"max={saddle.m_maxStamina} corrida={saddle.m_runStaminaDrain}" : "sem sela");
+
+            float before = lox.GetHealth();
+            lox.m_nview.InvokeRPC("RPC_Damage", HitFrom(Me, lox, 50f));
+            yield return Wait(0.6f);
+            Check("montaria/com-sela-nao-toma-dano-de-jogador", Mathf.Approximately(before, lox.GetHealth()), $"antes={before} depois={lox.GetHealth()}");
+
+            lox.m_nview.GetZDO().Set(ZDOVars.s_haveSaddleHash, false);
+            tame.SetSaddle(false);
+            yield return Wait(0.5f);
+            before = lox.GetHealth();
+            lox.m_nview.InvokeRPC("RPC_Damage", HitFrom(Me, lox, 50f));
+            yield return Wait(0.6f);
+            Check("montaria/sem-sela-toma-dano", lox.GetHealth() < before, $"antes={before} depois={lox.GetHealth()}");
+            ZNetScene.instance.Destroy(go);
         }
 
         private HitData ChopHit(Component target)

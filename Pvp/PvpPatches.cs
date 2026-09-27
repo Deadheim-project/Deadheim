@@ -40,7 +40,9 @@ namespace Deadheim.Pvp
                 {
                     if (!PvpConfig.Active || hit == null) return true;
                     if (!(__instance is Player victim) || !victim.m_nview.IsValid() || !victim.m_nview.IsOwner()) return true;
-                    if (!(hit.GetAttacker() is Player attacker) || attacker == victim) return true;
+                    Character source = hit.GetAttacker();
+                    if (source != null && !(source is Player) && victim == Player.m_localPlayer) PvpState.MarkPveCombat();
+                    if (!(source is Player attacker) || attacker == victim) return true;
 
                     PvpRules.Verdict verdict = PvpRules.Check(attacker, victim);
                     if (verdict != PvpRules.Verdict.Allow) return false;
@@ -108,8 +110,12 @@ namespace Deadheim.Pvp
                 {
                     if (!PvpConfig.Active || hit == null) return true;
                     Player local = Player.m_localPlayer;
-                    if (local == null || !(__instance is Player victim) || victim == local) return true;
-                    if (hit.GetAttacker() != local) return true;
+                    if (local == null || hit.GetAttacker() != local || __instance == local) return true;
+                    if (!(__instance is Player victim))
+                    {
+                        PvpState.MarkPveCombat();
+                        return true;
+                    }
 
                     PvpRules.Verdict verdict = PvpRules.Check(local, victim);
                     if (verdict != PvpRules.Verdict.Allow)
@@ -126,6 +132,23 @@ namespace Deadheim.Pvp
                     Debug.LogError("[Deadheim PvP] Checagem do atacante falhou: " + ex);
                     return true;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Montaria com sela (Lox, Asksvin) e transporte como barco e carroca: nao toma dano de
+        /// jogador. Roda no dono da montaria, que e quem aplica o dano.
+        /// </summary>
+        [HarmonyPatch(typeof(Character), "RPC_Damage")]
+        private static class MountDamagePatch
+        {
+            [HarmonyPriority(Priority.High)]
+            private static bool Prefix(Character __instance, HitData hit)
+            {
+                if (!PvpConfig.Active || !PvpConfig.TransportsInvulnerable.Value || hit == null) return true;
+                if (__instance is Player || !(hit.GetAttacker() is Player)) return true;
+                Tameable tameable = __instance.GetComponent<Tameable>();
+                return tameable == null || !__instance.IsTamed() || !tameable.HaveSaddle();
             }
         }
 
@@ -378,8 +401,8 @@ namespace Deadheim.Pvp
                 string refusal = null;
                 if (PvpState.IsHunted && !PvpConfig.HuntedCanUsePortals.Value)
                     refusal = "Cacado nao pode teleportar.";
-                else if (PvpState.InCombat && PvpConfig.CombatBlocksTeleport.Value)
-                    refusal = $"Em combate! Teleporte liberado em {Mathf.CeilToInt(PvpState.CombatRemaining)}s.";
+                else if (PvpState.InEscapeCombat && PvpConfig.CombatBlocksTeleport.Value)
+                    refusal = $"Em combate! Teleporte liberado em {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
                 if (refusal == null) return true;
 
                 Refuse(__instance, refusal);

@@ -10,7 +10,9 @@ que o servidor ja tem, em vez de duplicar:
   x2 se desfazem restaurando o `.fch` do PC.
 - **RaidSystem**: e a guerra de castelos. As zonas dele (`Raid Zones`) sao os castelos do
   PvP, e ele recebe do Deadheim cada morte por jogador ja classificada para o Ranking de Guerra.
-- Substitui o **TombstoneLock** (tumba por jogador).
+- Substitui o **TombstoneLock** (tumba por jogador), o **Combat** (Detalhes.Combat: status
+  "Em combate" e teleporte bloqueado) e o **SaddleStaminaControl** (estamina da sela, agora em
+  `[Montarias]` no mesmo cfg).
 
 Config: secoes `PvP*` do `BepInEx/config/Detalhes.Deadheim.cfg`. Vale a do servidor
 (ServerSync); o cliente recebe ao conectar. **Salvar o cfg com o servidor ligado ja vale**: o
@@ -69,9 +71,11 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Guilda ou party | Guilda do mod **Guilds** e grupo do mod **Groups** | `NoFriendlyFireGuild`, `NoFriendlyFireGroup` |
 | Morto por jogador | Fica **imune a PvP**: nao da nem leva dano de jogador; PvE normal | `ImmunityMinutes` (10) |
 | Ilha inicial safe zone | A terra ligada ao templo inicial (ate o raio), opcionalmente so em certos biomas. Calculada do gerador do mundo, igual em cliente e servidor; o log do servidor mostra os biomas que ela cobre | `StartIslandMode` (Island/Radius/Off), `StartIslandRadius`, `StartIslandBiomes` |
-| Transportes safe zone | Barco andando, carroca sendo puxada e montaria protegem quem esta neles; barco parado ou encalhado nao e abrigo. Barco e carroca nao tomam dano de jogador | `TransportsSafe`, `TransportsInvulnerable`, `ShipSafeMinSpeed` |
+| Transportes safe zone | Barco andando, carroca sendo puxada e montaria andando protegem quem esta neles; barco ou montaria parados nao sao abrigo. Barco, carroca e montaria com sela nao tomam dano de jogador | `TransportsSafe`, `TransportsInvulnerable`, `ShipSafeMinSpeed`, `MountSafeMinSpeed` |
+| Montarias | Estamina da sela (Lox, Asksvin) configuravel, valendo na hora para as selas ja carregadas; 0 = valor do jogo. Lembrete: com `LoxTameable = false` o Lox nem e domavel | `[Montarias] MaxStamina`, `RunStaminaDrain`, `SwimStaminaDrain`, `StaminaRegen`, `StaminaRegenHungry` |
 | Combate | Dar ou levar dano PvP deixa "em combate": zona segura nao protege e retreat nao funciona | `CombatTagSeconds` (30) |
 | Retreat cooldown e combate | `/retreat` com recarga, bloqueado em combate e cacado (a pedra do Hearthstone tambem) | `RetreatCooldownMinutes` (30) |
+| Combate | Status "Em combate" com contagem na barra de efeitos. Opcional: apanhar de/bater em monstro tambem conta, so para teleporte (zona segura continua valendo contra jogador) | `CombatStatusIcon`, `CombatFromPve`, `CombatTagSeconds` |
 | Fuga de combate | Em combate nenhum teleporte longo funciona (portal, NPC teleportador, pedra, retreat). Deslogar em combate conta morte para quem saiu e abate para quem bateu; com `Death`, ao voltar ele morre onde saiu | `CombatBlocksTeleport`, `CombatLogout` (Off/Rank/Death) |
 | PK dobro de perda de skill | Quem mata jogador vira PK; PK que morre perde skill x2 e deixa de ser PK. Matar PK, cacado, agressor, na arena ou no castelo nao gera PK | `PkMinutes`, `PkSkillLossMultiplier`, `PkClearsOnDeath` |
 | Legitima defesa | Quem bate primeiro em alguem sem marca vira AGRESSOR (nome e HUD). Matar um agressor nao gera PK | `AggressorRule`, `AggressorSeconds` |

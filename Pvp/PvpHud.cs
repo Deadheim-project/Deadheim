@@ -46,8 +46,45 @@ namespace Deadheim.Pvp
             if (Time.time < _nextRefresh) return;
             _nextRefresh = Time.time + 0.25f;
 
+            UpdateCombatIcon(player);
             if (!EnsureText()) return;
             _text.text = Compose(player);
+        }
+
+        // ------------------------------------------------------- icone "Em combate"
+
+        /// <summary>Status "Em combate" na barra de efeitos, como o mod Combat fazia.</summary>
+        public static readonly int CombatStatusHash = "DH_Combat".GetStableHashCode();
+
+        public static void RegisterStatusEffect()
+        {
+            ObjectDB db = ObjectDB.instance;
+            if (db == null || db.m_StatusEffects == null) return;
+            if (db.m_StatusEffects.Exists(e => e != null && e.NameHash() == CombatStatusHash)) return;
+
+            SE_Stats effect = ScriptableObject.CreateInstance<SE_Stats>();
+            effect.name = "DH_Combat";
+            effect.m_name = "Em combate";
+            effect.m_tooltip = "Sem teleporte, retreat nem pedra de retorno ate a luta esfriar.";
+            GameObject sword = db.GetItemPrefab("SwordBronze");
+            effect.m_icon = sword != null ? sword.GetComponent<ItemDrop>()?.m_itemData.GetIcon() : null;
+            db.m_StatusEffects.Add(effect);
+        }
+
+        private static void UpdateCombatIcon(Player player)
+        {
+            SEMan seman = player != null ? player.GetSEMan() : null;
+            if (seman == null) return;
+            StatusEffect current = seman.GetStatusEffect(CombatStatusHash);
+            float remaining = PvpState.EscapeCombatRemaining;
+            if (remaining <= 0f || !PvpConfig.CombatStatusIcon.Value)
+            {
+                if (current != null) seman.RemoveStatusEffect(CombatStatusHash, true);
+                return;
+            }
+            if (current == null) current = seman.AddStatusEffect(CombatStatusHash, resetTime: true);
+            // A contagem da barra e m_ttl - m_time: acompanha o relogio de combate do modulo.
+            if (current != null) current.m_ttl = current.m_time + remaining;
         }
 
         private static bool EnsureText()
@@ -94,6 +131,8 @@ namespace Deadheim.Pvp
                 parts.Add("<color=#ff8c00>Desafio em " + PvpClient.FormatDuration(PvpState.HuntPendingRemaining) + "</color>");
             if ((flags & PvpFlags.Combat) != 0)
                 parts.Add("<color=#ffb347>Em combate " + Mathf.CeilToInt(PvpState.CombatRemaining) + "s</color>");
+            else if (PvpState.InEscapeCombat)
+                parts.Add("<color=#ffb347>Em combate (PvE) " + Mathf.CeilToInt(PvpState.EscapeCombatRemaining) + "s</color>");
 
             StringBuilder text = new StringBuilder();
             for (int i = 0; i < parts.Count; i++)

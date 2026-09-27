@@ -29,6 +29,7 @@ namespace Deadheim.Pvp
             PvpConfig.CoinsWeightless.SettingChanged += (_, __) => ApplyItemTweaks();
             PvpConfig.CoinsMaxStack.SettingChanged += (_, __) => ApplyItemTweaks();
             PvpConfig.Enabled.SettingChanged += (_, __) => ApplyItemTweaks();
+            Vanilla.Prefabs.PiecesReady += PvpHud.RegisterStatusEffect;
         }
 
         public static void Update()
@@ -55,7 +56,7 @@ namespace Deadheim.Pvp
         {
             if (!PvpConfig.Active) return null;
             if (PvpState.IsHunted) return "Cacado nao pode teleportar.";
-            if (PvpState.InCombat) return $"Em combate! Aguarde {Mathf.CeilToInt(PvpState.CombatRemaining)}s.";
+            if (PvpState.InEscapeCombat) return $"Em combate! Aguarde {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
             return null;
         }
 

@@ -198,6 +198,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
     new ConfigDescription("Quantidade de cada material da mesa de cartografia.")));
 
             Pvp.PvpModule.Init(Config);
+            Montarias.Bind(Config);
 
             _harmony.PatchAll();
             DirectJoinFlow.Initialize(Logger);
