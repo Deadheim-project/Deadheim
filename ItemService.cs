@@ -54,32 +54,6 @@ namespace Deadheim
             stats.m_mods = new();
         }
 
-        public static void WolvesTameable()
-        {
-            if (Plugin.WolvesAreTameable.Value) return;
-
-            GameObject prefab = Prefabs.Get("Wolf");
-            if (!prefab) return;
-
-            Tameable tameable = prefab.GetComponent<Tameable>();
-            Procreation procreation = prefab.GetComponent<Procreation>();
-            UnityEngine.Object.Destroy(tameable);
-            UnityEngine.Object.Destroy(procreation);
-        }
-
-        public static void LoxTameable()
-        {
-            if (Plugin.LoxTameable.Value) return;
-
-            GameObject prefab = Prefabs.Get("Lox");
-            if (!prefab) return;
-
-            Tameable tameable = prefab.GetComponent<Tameable>();
-            Procreation procreation = prefab.GetComponent<Procreation>();
-            UnityEngine.Object.Destroy(tameable);
-            UnityEngine.Object.Destroy(procreation);
-        }
-
         public static void StubNoLife()
         {
             List<GameObject> stubList = new();

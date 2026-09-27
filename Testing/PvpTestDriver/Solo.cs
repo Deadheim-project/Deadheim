@@ -1046,8 +1046,8 @@ namespace PvpTestDriver
             ClearAllProtection();
             yield return MoveTo(_openA);
             yield return Wait(CombatWait);
-            // Asksvin: o Lox perde a doma quando LoxTameable=false (padrao do Deadheim).
-            GameObject go = Instantiate(ZNetScene.instance.GetPrefab("Asksvin"), Ground(_openA + Vector3.forward * 8f), Quaternion.identity);
+            // Lox: domavel de novo (o Deadheim nao tira mais a doma dele nem a do lobo).
+            GameObject go = Instantiate(ZNetScene.instance.GetPrefab("Lox"), Ground(_openA + Vector3.forward * 8f), Quaternion.identity);
             Character lox = go.GetComponent<Character>();
             Tameable tame = go.GetComponent<Tameable>();
             if (lox == null || tame == null)

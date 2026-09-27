@@ -43,8 +43,6 @@ namespace Deadheim
         public static ConfigEntry<int> WardLimitVip;
         public static ConfigEntry<int> WardChargeDurationInSec;  
         public static ConfigEntry<bool> ResetWorldDay;
-        public static ConfigEntry<bool> WolvesAreTameable;
-        public static ConfigEntry<bool> LoxTameable;
         public static ConfigEntry<int> SkillCap;
         public static ConfigEntry<string> PortalMaterials;
         public static ConfigEntry<int> CartographyTableAmount;
@@ -86,8 +84,6 @@ namespace Deadheim
             _serverConfigApplied = true;
 
             ItemService.ModifyItemsCost();
-            ItemService.LoxTameable();
-            ItemService.WolvesTameable();
             ItemService.StubNoLife();
             ItemService.OnlyAdminPieces();
             Pvp.PvpModule.ApplyItemTweaks();
@@ -158,12 +154,6 @@ new ConfigDescription("StaffMessage")));
 
             DungeonPrefabs = Synced(Config.Bind("Server config", "DungeonPrefabs", "dungeon_forestcrypt_door,dungeon_sunkencrypt_irongate",
 new ConfigDescription("DungeonPrefabs")));
-
-            WolvesAreTameable = Synced(Config.Bind("Server config", "WolvesAreTameable", false,
-new ConfigDescription("WolvesAreTameable")));
-
-            LoxTameable = Synced(Config.Bind("Server config", "LoxTameable", false,
-new ConfigDescription("LoxTameable")));
 
             SafeArea = Synced(Config.Bind("Server config", "SafeArea", 1500,
 new ConfigDescription("SafeArea")));
