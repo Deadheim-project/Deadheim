@@ -1,4 +1,4 @@
-﻿using Jotunn.Managers;
+﻿using Deadheim.Vanilla;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +17,6 @@ namespace RaidSystem
         {
             if (_menu == null || (_menu != null && !_menu.activeSelf))
             {
-                if (GUIManager.Instance == null) { Debug.LogError("[RaidSystem] GUIManager null"); return; }
-                if (!GUIManager.CustomGUIFront) { Debug.LogError("[RaidSystem] CustomGUI null"); return; }
 
                 if (string.IsNullOrEmpty(GuildsIntegration.GetOwnGuildName()))
                 {
@@ -51,7 +49,6 @@ namespace RaidSystem
         public static void LoadMenu()
         {
             if (Player.m_localPlayer == null) return;
-            if (GUIManager.Instance == null || !GUIManager.CustomGUIFront) return;
 
             // LoadMenu roda a cada full sync, e sync acontece sempre que alguem mexe em guild.
             // Sem preservar isto, o menu fechava na cara de quem estivesse com ele aberto.
@@ -61,8 +58,8 @@ namespace RaidSystem
             foreach (var item in _menuItems.Values) UnityEngine.Object.Destroy(item);
             _menuItems.Clear();
 
-            _menu = GUIManager.Instance.CreateWoodpanel(
-                parent: GUIManager.CustomGUIFront.transform,
+            _menu = Ui.CreateWoodpanel(
+                parent: Ui.Front.transform,
                 anchorMin: new Vector2(0.5f, 0.5f),
                 anchorMax: new Vector2(0.5f, 0.5f),
                 position: new Vector2(0, 0),
@@ -78,12 +75,12 @@ namespace RaidSystem
             string playerName = info?.Nick ?? Player.m_localPlayer.m_nview.GetZDO().GetString("playerName");
 
             // Scrollview for team members
-            GameObject scrollView = GUIManager.Instance.CreateScrollView(
+            GameObject scrollView = Ui.CreateScrollView(
                 parent: _menu.transform,
                 showHorizontalScrollbar: false,
                 showVerticalScrollbar: true,
                 handleSize: 8f,
-                handleColors: GUIManager.Instance.ValheimScrollbarHandleColorBlock,
+                handleColors: Ui.ValheimScrollbarHandleColorBlock,
                 handleDistanceToBorder: 50f,
                 slidingAreaBackgroundColor: new Color(0.157f, 0.102f, 0.063f, 1f),
                 width: 400f, height: 380f);
@@ -103,7 +100,7 @@ namespace RaidSystem
                 $"Territories: {ownCount}/{territories.Count}", _menu, new Vector2(370, 617), 18, 350, 40);
 
             // Description input + Update button
-            GameObject descInput = GUIManager.Instance.CreateInputField(
+            GameObject descInput = Ui.CreateInputField(
                 placeholderText: info?.Description ?? "",
                 parent: _menu.transform,
                 anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
@@ -112,7 +109,7 @@ namespace RaidSystem
                 fontSize: 18, width: 270f, height: 33f);
             _menuItems["descInput"] = descInput;
 
-            GameObject btnUpdate = GUIManager.Instance.CreateButton(
+            GameObject btnUpdate = Ui.CreateButton(
                 text: "Update", parent: _menu.transform,
                 anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
                 position: new Vector2(360, 555), width: 90, height: 35f);
@@ -133,7 +130,7 @@ namespace RaidSystem
             if (sr != null) sr.verticalNormalizedPosition = 1f;
 
             // Close button
-            GameObject btnClose = GUIManager.Instance.CreateButton(
+            GameObject btnClose = Ui.CreateButton(
                 text: "Close", parent: _menu.transform,
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f),
                 position: new Vector2(0, -300f), width: 170, height: 45f);
@@ -152,13 +149,12 @@ namespace RaidSystem
 
         private static void LoadScoreboard()
         {
-            if (GUIManager.Instance == null || !GUIManager.CustomGUIFront) return;
 
             bool wasActive = _scoreboard != null && _scoreboard.activeSelf;
             UnityEngine.Object.Destroy(_scoreboard);
 
-            _scoreboard = GUIManager.Instance.CreateWoodpanel(
-                parent: GUIManager.CustomGUIFront.transform,
+            _scoreboard = Ui.CreateWoodpanel(
+                parent: Ui.Front.transform,
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f),
                 position: new Vector2(400, 0), width: 500, height: 600, draggable: true);
 
@@ -183,7 +179,7 @@ namespace RaidSystem
                 y -= 25;
             }
 
-            GameObject btnClose = GUIManager.Instance.CreateButton(
+            GameObject btnClose = Ui.CreateButton(
                 text: "Close", parent: _scoreboard.transform,
                 anchorMin: new Vector2(0.5f, 0.5f), anchorMax: new Vector2(0.5f, 0.5f),
                 position: new Vector2(0, -270f), width: 150, height: 40f);
@@ -201,24 +197,24 @@ namespace RaidSystem
             var members = GuildsIntegration.GetTeamMemberNicks(teamName);
             foreach (string nick in members)
             {
-                GUIManager.Instance.CreateText(
+                Ui.CreateText(
                     text: nick,
                     parent: content,
                     anchorMin: new Vector2(0.5f, 1f), anchorMax: new Vector2(0.5f, 1f),
                     position: new Vector2(0f, 0f),
-                    font: GUIManager.Instance.AveriaSerifBold,
-                    fontSize: 20, color: GUIManager.Instance.ValheimOrange,
+                    font: Ui.AveriaSerifBold,
+                    fontSize: 20, color: Ui.ValheimOrange,
                     outline: true, outlineColor: Color.black,
                     width: 300f, height: 25f, addContentSizeFitter: false);
             }
         }
 
         private static GameObject MakeText(string text, GameObject parent, Vector2 pos, int size, float w, float h)
-            => GUIManager.Instance.CreateText(
+            => Ui.CreateText(
                 text: text, parent: parent.transform,
                 anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
-                position: pos, font: GUIManager.Instance.AveriaSerifBold,
-                fontSize: size, color: GUIManager.Instance.ValheimOrange,
+                position: pos, font: Ui.AveriaSerifBold,
+                fontSize: size, color: Ui.ValheimOrange,
                 outline: true, outlineColor: Color.black,
                 width: w, height: h, addContentSizeFitter: false);
     }

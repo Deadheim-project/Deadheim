@@ -1,5 +1,5 @@
-using BepInEx.Configuration;
-using Jotunn.Managers;
+﻿using BepInEx.Configuration;
+using Deadheim.Vanilla;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -149,17 +149,17 @@ namespace Deadheim.Wards
 
         public static void LoadAssets()
         {
-            PrefabManager.OnPrefabsRegistered += CreatePlayerWardPrefab;
-            PieceManager.OnPiecesRegistered += RegisterPlayerWardPiece;
+            Prefabs.ZNetSceneReady += CreatePlayerWardPrefab;
+            Prefabs.PiecesReady += RegisterPlayerWardPiece;
         }
 
         private static void CreatePlayerWardPrefab()
         {
-            PrefabManager.OnPrefabsRegistered -= CreatePlayerWardPrefab;
+            Prefabs.ZNetSceneReady -= CreatePlayerWardPrefab;
 
             if (!PlayerWardEnabled.Value || _playerWardPrefab != null) return;
 
-            _playerWardPrefab = PrefabManager.Instance.CreateClonedPrefab(PlayerWard, VanillaWard);
+            _playerWardPrefab = Prefabs.Clone(PlayerWard, VanillaWard);
             if (_playerWardPrefab == null)
             {
                 Debug.LogError("[Wards] guard_stone nao encontrado para clonar o " + PlayerWard + ".");
@@ -191,9 +191,9 @@ namespace Deadheim.Wards
             if (_registeredInHammer || !PlayerWardEnabled.Value) return;
             if (_playerWardPrefab == null) return;
 
-            PieceManager.Instance.RegisterPieceInPieceTable(_playerWardPrefab, "Hammer", "Misc");
+            Pieces.AddToHammer(_playerWardPrefab, "Misc");
             _registeredInHammer = true;
-            PieceManager.OnPiecesRegistered -= RegisterPlayerWardPiece;
+            Prefabs.PiecesReady -= RegisterPlayerWardPiece;
             Debug.Log("[Wards] " + PlayerWard + " adicionado ao martelo.");
         }
 
@@ -207,7 +207,7 @@ namespace Deadheim.Wards
                 if (!int.TryParse(parts[1].Trim(), out int amount) || amount <= 0) continue;
 
                 string itemName = parts[0].Trim();
-                GameObject prefab = PrefabManager.Instance.GetPrefab(itemName);
+                GameObject prefab = Prefabs.Get(itemName);
                 ItemDrop item = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
                 if (item == null)
                 {

@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using Jotunn.Managers;
+using Deadheim.Vanilla;
 using UnityEngine;
 
 namespace Deadheim.Wards
@@ -189,7 +189,7 @@ namespace Deadheim.Wards
 
         private static string FuelItemName()
         {
-            GameObject prefab = PrefabManager.Instance.GetPrefab(WardProfiles.FuelItem.Value);
+            GameObject prefab = Prefabs.Get(WardProfiles.FuelItem.Value);
             ItemDrop drop = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
             return drop != null ? drop.m_itemData.m_shared.m_name : null;
         }

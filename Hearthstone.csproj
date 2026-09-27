@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BaseIntermediateOutputPath>Hearthstone\obj\</BaseIntermediateOutputPath>
@@ -11,10 +11,12 @@
     <ProjectGuid>{EDE91957-0B15-491A-ADC1-9C12D15C58D6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>Hearthstone</AssemblyName>
+    <ILRepackTargetsFile>$(ProjectDir)Hearthstone\ILRepack.targets</ILRepackTargetsFile>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <ApplicationVersion>1.0.0.0</ApplicationVersion>
     <FileAlignment>512</FileAlignment>
-    <LangVersion>9.0</LangVersion>
+    <!-- ConfigSync.cs vem verbatim do ServerSync e usa namespace de arquivo (C# 10). -->
+    <LangVersion>latest</LangVersion>
     <RootNamespace>Hearthstone</RootNamespace>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
@@ -42,6 +44,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <!-- ServerSync compilado do fonte, nao a DLL de 2024: aquela le ZRoutedRpc.Everybody
+         com ldsfld, e no Valheim 1.0 esse campo virou const. Ler um literal por ldsfld
+         estoura MissingFieldException na primeira sincronizacao de config: quebra que
+         nenhuma compilacao pega, so aparece com um cliente conectado. -->
+    <Compile Include="ThirdParty\ConfigSync.cs" />
     <Compile Include="Hearthstone\Hearthstone.cs" />
     <Compile Include="Hearthstone\Patches.cs" />
   </ItemGroup>
@@ -55,10 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ILRepack.Lib.MSBuild.Task">
-      <Version>2.0.18.2</Version>
-    </PackageReference>
-    <PackageReference Include="JotunnLib">
-      <Version>2.3.0</Version>
+      <Version>2.0.44.1</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -98,18 +102,34 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>D:\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
+    <!-- Harmony por HintPath explicito: csproj legado nao consome
+         os assets de PackageReference (mesmo padrao do Deadheim/RaidSystem). -->
+    <Reference Include="0Harmony">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="ItemManager, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>D:\BepInEx\ItemManager.dll</HintPath>
     </Reference>
-    <Reference Include="ServerSync, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\BepInEx\ServerSync.dll</HintPath>
-    </Reference>
+    <!-- ServerSync nao entra mais como DLL pre-compilada: ver ThirdParty\ConfigSync.cs. -->
     <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(ValheimManaged)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Vinha de carona pelo Jotunn: o ServerSync (TMP_Text na janela de erro de versao) precisa dele. -->
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ValheimManaged)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
@@ -125,7 +145,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Hearthstone\ItemManager.dll" />
-    <Content Include="Hearthstone\ServerSync.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="Hearthstone\ILRepack.targets" Condition="Exists('Hearthstone\ILRepack.targets')" />

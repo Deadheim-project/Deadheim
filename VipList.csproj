@@ -33,9 +33,21 @@
     <Reference Include="BepInEx">
       <HintPath>$(BepInExCorePath)\BepInEx.dll</HintPath>
     </Reference>
-    <Reference Include="Jotunn, Version=2.30.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>$(NuGetPackageRoot)jotunnlib\2.30.0\lib\net462\Jotunn.dll</HintPath>
+    <!-- ServerSync (ThirdParty\ConfigSync.cs) precisa destes: Harmony, o jogo e compressao. -->
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCorePath)\0Harmony.dll</HintPath>
+      <Private>false</Private>
     </Reference>
+    <Reference Include="assembly_valheim_publicized">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(ValheimPublicized)\assembly_valheim_publicized.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.IO.Compression" />
     <Reference Include="Splatform">
       <HintPath>$(ValheimManaged)\Splatform.dll</HintPath>
       <Private>false</Private>
@@ -48,12 +60,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ThirdParty\ConfigSync.cs" />
     <Compile Include="VipList\VipListApi.cs" />
     <Compile Include="VipList\VipListPlugin.cs" />
     <Compile Include="VipList\Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="JotunnLib" Version="2.30.0" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

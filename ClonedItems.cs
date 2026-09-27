@@ -1,7 +1,5 @@
 ﻿using HarmonyLib;
-using Jotunn.Configs;
-using Jotunn.Entities;
-using Jotunn.Managers;
+using Deadheim.Vanilla;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,8 +45,8 @@ namespace Deadheim
 
         public static void LoadAssets()
         {
-            PieceManager.OnPiecesRegistered += AddClonedPieces;
-            CreatureManager.OnVanillaCreaturesAvailable += AddVanillaClonedCreatures;
+            Prefabs.PiecesReady += AddClonedPieces;
+            Prefabs.ZNetSceneReady += AddVanillaClonedCreatures;
         }
 
         private static void RegisterNativeItems(ObjectDB objectDb)
@@ -205,7 +203,7 @@ namespace Deadheim
             AddAesirChest();
             AddAdminWards();
             AddBuildableSpawners();
-            PieceManager.OnPiecesRegistered -= AddClonedPieces;
+            Prefabs.PiecesReady -= AddClonedPieces;
         }
 
         private static void AddVanillaClonedCreatures()
@@ -214,7 +212,7 @@ namespace Deadheim
             AddNomTameableWolf();
             AddPorcoLox();
             AddSkeletao();
-            CreatureManager.OnVanillaCreaturesAvailable -= AddVanillaClonedCreatures;
+            Prefabs.ZNetSceneReady -= AddVanillaClonedCreatures;
         }
 
         private static void AddAdminWards()
@@ -260,9 +258,9 @@ namespace Deadheim
 
         private static void AddSmallAdminWard()
         {
-            var adminWard = PrefabManager.Instance.CreateClonedPrefab("AdminWardSmall", "guard_stone");
+            var adminWard = Prefabs.Clone("AdminWardSmall", "guard_stone");
             Piece piece = adminWard.GetComponent<Piece>();
-            piece.m_resources[0].m_resItem = PrefabManager.Instance.GetPrefab("SwordCheat").GetComponent<ItemDrop>();
+            piece.m_resources[0].m_resItem = Prefabs.Get("SwordCheat").GetComponent<ItemDrop>();
             piece.m_resources[0].m_recover = false;
 
             piece.m_description = "Admin Ward small";
@@ -275,19 +273,19 @@ namespace Deadheim
             var comp = adminWard.GetComponentInChildren<MeshRenderer>();
 
             var materials = new List<Material>();
-            materials.Add(PrefabManager.Instance.GetPrefab("FreezeGland").GetComponentInChildren<MeshRenderer>().materials[0]);
-            materials.Add(PrefabManager.Instance.GetPrefab("FreezeGland").GetComponentInChildren<MeshRenderer>().materials[0]);
+            materials.Add(Prefabs.Get("FreezeGland").GetComponentInChildren<MeshRenderer>().materials[0]);
+            materials.Add(Prefabs.Get("FreezeGland").GetComponentInChildren<MeshRenderer>().materials[0]);
 
             comp.materials = materials.ToArray();
 
-            PieceManager.Instance.RegisterPieceInPieceTable(adminWard, "Hammer", "Misc");
+            Pieces.AddToHammer(adminWard, "Misc");
         }
 
         private static void AddBigdminWard()
         {
-            var adminWard = PrefabManager.Instance.CreateClonedPrefab("AdminWard", "guard_stone");
+            var adminWard = Prefabs.Clone("AdminWard", "guard_stone");
             Piece piece = adminWard.GetComponent<Piece>();
-            piece.m_resources[0].m_resItem = PrefabManager.Instance.GetPrefab("SwordCheat").GetComponent<ItemDrop>();
+            piece.m_resources[0].m_resItem = Prefabs.Get("SwordCheat").GetComponent<ItemDrop>();
             piece.m_resources[0].m_recover = false;
 
             piece.m_description = "Admin Ward";
@@ -300,26 +298,26 @@ namespace Deadheim
             var comp = adminWard.GetComponentInChildren<MeshRenderer>();
 
             var materials = new List<Material>();
-            materials.Add(PrefabManager.Instance.GetPrefab("Tar").GetComponentInChildren<MeshRenderer>().materials[0]);
-            materials.Add(PrefabManager.Instance.GetPrefab("SurtlingCore").GetComponentInChildren<MeshRenderer>().materials[0]);
+            materials.Add(Prefabs.Get("Tar").GetComponentInChildren<MeshRenderer>().materials[0]);
+            materials.Add(Prefabs.Get("SurtlingCore").GetComponentInChildren<MeshRenderer>().materials[0]);
 
             comp.materials = materials.ToArray();
 
-            PieceManager.Instance.RegisterPieceInPieceTable(adminWard, "Hammer", "Misc");
+            Pieces.AddToHammer(adminWard, "Misc");
         }
 
 
         private static void AddAesirChest()
         {
-            var aesirChest = PrefabManager.Instance.CreateClonedPrefab("AesirChest", "piece_chest_private");
+            var aesirChest = Prefabs.Clone("AesirChest", "piece_chest_private");
             Piece piece = aesirChest.GetComponent<Piece>();
-            piece.m_resources[0].m_resItem = PrefabManager.Instance.GetPrefab("Bronze").GetComponent<ItemDrop>();
-            piece.m_resources[1].m_resItem = PrefabManager.Instance.GetPrefab("Wood").GetComponent<ItemDrop>();
+            piece.m_resources[0].m_resItem = Prefabs.Get("Bronze").GetComponent<ItemDrop>();
+            piece.m_resources[1].m_resItem = Prefabs.Get("Wood").GetComponent<ItemDrop>();
 
             piece.m_description = "Aesir Chest";
             piece.m_name = "Aesir Chest";
 
-            PieceManager.Instance.RegisterPieceInPieceTable(aesirChest, "Hammer", "Furniture");
+            Pieces.AddToHammer(aesirChest, "Furniture");
         }
 
         private static void AddBuildableSpawners()
@@ -330,14 +328,14 @@ namespace Deadheim
 
         private static void AddBuildableSpawner(string prefabName, string sourcePrefabName, string name, string description)
         {
-            GameObject source = PrefabManager.Instance.GetPrefab(sourcePrefabName);
+            GameObject source = Prefabs.Get(sourcePrefabName);
             if (source == null)
             {
-                Jotunn.Logger.LogWarning($"Could not create {name}. Missing vanilla prefab: {sourcePrefabName}");
+                Debug.LogWarning($"Could not create {name}. Missing vanilla prefab: {sourcePrefabName}");
                 return;
             }
 
-            GameObject spawner = PrefabManager.Instance.CreateClonedPrefab(prefabName, sourcePrefabName);
+            GameObject spawner = Prefabs.Clone(prefabName, sourcePrefabName);
             Piece piece = spawner.GetComponent<Piece>() ?? spawner.AddComponent<Piece>();
 
             piece.m_name = name;
@@ -374,13 +372,13 @@ namespace Deadheim
             if (destructible != null)
                 destructible.m_health = 999999f;
 
-            PieceManager.Instance.RegisterPieceInPieceTable(spawner, "Hammer", "Misc");
+            Pieces.AddToHammer(spawner, "Misc");
         }
 
         private static Sprite GetSpawnerIcon(string sourcePrefabName)
         {
             string iconItem = sourcePrefabName == "Spawner_GreydwarfNest" ? "GreydwarfEye" : "WitheredBone";
-            Sprite icon = PrefabManager.Instance.GetPrefab(iconItem)?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
+            Sprite icon = Prefabs.Get(iconItem)?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
 
             if (icon != null) return icon;
 
@@ -389,34 +387,27 @@ namespace Deadheim
 
         private static void AddNomTameableWolf()
         {
-            var batzao = new CustomCreature("LoboNaoDomavel", "Wolf",
-                new Jotunn.Configs.CreatureConfig
-                {
+            GameObject wolf = Creatures.Clone("LoboNaoDomavel", "Wolf");
+            if (!wolf) return;
 
-                });
-
-            var humanoid = batzao.Prefab.GetComponent<Humanoid>();
+            var humanoid = wolf.GetComponent<Humanoid>();
             humanoid.m_name = "Lobo nao domavel";
-            CreatureManager.Instance.AddCreature(batzao);
 
-            UnityEngine.Object.Destroy(batzao.Prefab.GetComponent<Tameable>());
-            UnityEngine.Object.Destroy(batzao.Prefab.GetComponent<Procreation>());
+            UnityEngine.Object.Destroy(wolf.GetComponent<Tameable>());
+            UnityEngine.Object.Destroy(wolf.GetComponent<Procreation>());
         }
 
         private static void AddSkeletao()
         {
-            var skeletao = new CustomCreature("Skeletao", "Skeleton",
-            new Jotunn.Configs.CreatureConfig
-            {
-                Faction = Character.Faction.Undead
-            });
+            GameObject skeletao = Creatures.Clone("Skeletao", "Skeleton", Character.Faction.Undead);
+            if (!skeletao) return;
 
-            var humanoid = skeletao.Prefab.GetComponent<Humanoid>();
+            var humanoid = skeletao.GetComponent<Humanoid>();
 
             humanoid.m_name = "Esqueletão";
             humanoid.m_boss = true;
             humanoid.m_health = 500;
-            var renderers = skeletao.Prefab.GetComponentsInChildren<SkinnedMeshRenderer>();
+            var renderers = skeletao.GetComponentsInChildren<SkinnedMeshRenderer>();
 
             foreach (var renderer in renderers)
             {
@@ -424,53 +415,46 @@ namespace Deadheim
                 renderer.sharedMaterial.color = Color.black;
             }
 
-            Vector3 newScale = skeletao.Prefab.transform.localScale;
+            Vector3 newScale = skeletao.transform.localScale;
             newScale.x *= 1.3f;
             newScale.y *= 1.3f;
             newScale.z *= 1.3f;
-            skeletao.Prefab.transform.localScale = newScale;
+            skeletao.transform.localScale = newScale;
 
-            CreatureManager.Instance.AddCreature(skeletao);
-
-            UnityEngine.Object.Destroy(skeletao.Prefab.GetComponent<Tameable>());
-            UnityEngine.Object.Destroy(skeletao.Prefab.GetComponent<Procreation>());
+            UnityEngine.Object.Destroy(skeletao.GetComponent<Tameable>());
+            UnityEngine.Object.Destroy(skeletao.GetComponent<Procreation>());
         }
 
         private static void AddPorcoLox()
         {
-            var porcoLox = new CustomCreature("PorcoLox", "Lox",
-            new Jotunn.Configs.CreatureConfig
-            {
-                Faction = Character.Faction.ForestMonsters
-            });
+            GameObject porcoLox = Creatures.Clone("PorcoLox", "Lox", Character.Faction.ForestMonsters);
+            if (!porcoLox) return;
 
-            var humanoid = porcoLox.Prefab.GetComponent<Humanoid>();
+            var humanoid = porcoLox.GetComponent<Humanoid>();
 
-            var ragdoll = PrefabManager.Instance.CreateClonedPrefab("PorcoLoxRagDoll", "lox_ragdoll");
+            var ragdoll = Prefabs.Clone("PorcoLoxRagDoll", "lox_ragdoll");
 
             humanoid.m_name = "PorcoLox";
             humanoid.m_boss = true;
             humanoid.m_health = 300;
 
-            ColorRenderers(porcoLox.Prefab, Color.black);
+            ColorRenderers(porcoLox, Color.black);
 
-            Vector3 newScale = porcoLox.Prefab.transform.localScale;
+            Vector3 newScale = porcoLox.transform.localScale;
             newScale.x *= 0.5f;
             newScale.y *= 0.5f;
             newScale.z *= 0.5f;
             ragdoll.transform.localScale = newScale;
             int idx = humanoid.m_deathEffects.m_effectPrefabs.ToList().FindIndex(x => x.m_prefab.name == "lox_ragdoll");
 
-            porcoLox.Prefab.GetComponent<Humanoid>().m_deathEffects.m_effectPrefabs.ToList()[idx].m_prefab = ragdoll;
+            porcoLox.GetComponent<Humanoid>().m_deathEffects.m_effectPrefabs.ToList()[idx].m_prefab = ragdoll;
 
             ColorRenderers(ragdoll, Color.black);
 
-            porcoLox.Prefab.transform.localScale = newScale;
+            porcoLox.transform.localScale = newScale;
 
-            CreatureManager.Instance.AddCreature(porcoLox);
-
-            UnityEngine.Object.Destroy(porcoLox.Prefab.GetComponent<Tameable>());
-            UnityEngine.Object.Destroy(porcoLox.Prefab.GetComponent<Procreation>());
+            UnityEngine.Object.Destroy(porcoLox.GetComponent<Tameable>());
+            UnityEngine.Object.Destroy(porcoLox.GetComponent<Procreation>());
         }
 
         public static void ColorRenderers(GameObject gameObject, Color color)
@@ -487,37 +471,28 @@ namespace Deadheim
 
         private static void AddBatzao()
         {
-            var batzao = new CustomCreature("Morcegao", "Bat",
-                new Jotunn.Configs.CreatureConfig
+            GameObject batzao = Creatures.Clone("Morcegao", "Bat", Character.Faction.Undead,
+                new Creatures.Drop
                 {
-                    DropConfigs = new[]
-                    {
-                        new DropConfig
-                        {
-                            Item = "Coins",
-                            Chance = 100,
-                            MinAmount = 50,
-                            MaxAmount = 100,
-                            OnePerPlayer = false,
-                            LevelMultiplier = false
-                        }
-                    },
-                    Faction = Character.Faction.Undead
+                    Item = "Coins",
+                    Chance = 100,
+                    MinAmount = 50,
+                    MaxAmount = 100,
+                    OnePerPlayer = false,
+                    LevelMultiplier = false
                 });
+            if (!batzao) return;
 
-            Vector3 newScale = batzao.Prefab.transform.localScale;
+            Vector3 newScale = batzao.transform.localScale;
             newScale.x *= 3;
             newScale.y *= 3;
             newScale.z *= 3;
-            batzao.Prefab.transform.localScale = newScale;
+            batzao.transform.localScale = newScale;
 
-            var humanoid = batzao.Prefab.GetComponent<Humanoid>();
+            var humanoid = batzao.GetComponent<Humanoid>();
             humanoid.m_name = "Morcegão";
             humanoid.m_health = 500;
             humanoid.m_boss = true;
-
-
-            CreatureManager.Instance.AddCreature(batzao);
         }
     }
 }

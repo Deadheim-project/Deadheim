@@ -1,5 +1,5 @@
-using HarmonyLib;
-using Jotunn.Managers;
+﻿using HarmonyLib;
+using Deadheim.Vanilla;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -312,7 +312,7 @@ namespace RaidSystem
         {
             [HarmonyPriority(0)]
             private static bool Prefix(Piece piece)
-                => SynchronizationManager.Instance.PlayerIsAdmin
+                => Admin.LocalPlayerIsAdmin()
                    || !Util.IsRaidEnabledHere(((Component)piece).transform.position);
         }
 
@@ -322,7 +322,7 @@ namespace RaidSystem
             [HarmonyPriority(800)]
             private static bool Prefix(Piece piece, Player __instance)
             {
-                if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
+                if (Admin.LocalPlayerIsAdmin()) return true;
 
                 if (piece != null && piece.gameObject.name.Contains("RaidWard")
                     && RaidSystemPlugin.WardOnlyAdminCanBuild.Value == Toggle.On)

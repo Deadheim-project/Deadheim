@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Jotunn.Managers;
+using Deadheim.Vanilla;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,7 +13,7 @@ namespace Deadheim
         {
             public static void UpdatePortalMaterials()
             {
-                GameObject portalwood = PrefabManager.Instance.GetPrefab("portal_wood");
+                GameObject portalwood = Prefabs.Get("portal_wood");
                 if (portalwood == null) return;
 
                 var portalwoodPiece = portalwood.GetComponent<Piece>();
@@ -37,7 +37,7 @@ namespace Deadheim
                         if (int.TryParse(parts[1].Trim(), out int amount) && amount > 0)
                         {
                             // Busca o prefab no jogo
-                            GameObject prefab = PrefabManager.Instance.GetPrefab(prefabName);
+                            GameObject prefab = Prefabs.Get(prefabName);
                             if (prefab != null)
                             {
                                 ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
@@ -52,12 +52,12 @@ namespace Deadheim
                                 }
                                 else
                                 {
-                                    Jotunn.Logger.LogWarning($"[Deadheim] O prefab '{prefabName}' não é um item válido.");
+                                    Debug.LogWarning($"[Deadheim] O prefab '{prefabName}' não é um item válido.");
                                 }
                             }
                             else
                             {
-                                Jotunn.Logger.LogWarning($"[Deadheim] Prefab '{prefabName}' não encontrado no jogo.");
+                                Debug.LogWarning($"[Deadheim] Prefab '{prefabName}' não encontrado no jogo.");
                             }
                         }
                     }
@@ -67,17 +67,17 @@ namespace Deadheim
                 if (newRequirements.Count > 0)
                 {
                     portalwoodPiece.m_resources = newRequirements.ToArray();
-                    Jotunn.Logger.LogInfo("[Deadheim] Materiais do portal atualizados dinamicamente!");
+                    Debug.Log("[Deadheim] Materiais do portal atualizados dinamicamente!");
                 }
                 else
                 {
-                    Jotunn.Logger.LogWarning("[Deadheim] Nenhum material válido na config. Mantendo os materiais originais.");
+                    Debug.LogWarning("[Deadheim] Nenhum material válido na config. Mantendo os materiais originais.");
                 }
             }
 
             private static int GetPortalCount()
             {
-                if (SynchronizationManager.Instance.PlayerIsAdmin) return 0;
+                if (Admin.LocalPlayerIsAdmin()) return 0;
 
                 ZPackage pkg = new();
                 pkg.Write(Player.m_localPlayer.GetPlayerID());

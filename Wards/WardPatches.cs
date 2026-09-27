@@ -1,5 +1,5 @@
-using HarmonyLib;
-using Jotunn.Managers;
+﻿using HarmonyLib;
+using Deadheim.Vanilla;
 using System;
 using System.Linq;
 using System.Text;
@@ -219,7 +219,7 @@ namespace Deadheim.Wards
 
                     WardProfile profile = WardProfiles.For(piece.gameObject);
                     if (profile == null || !profile.CountsToLimit) return true;
-                    if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
+                    if (Admin.LocalPlayerIsAdmin()) return true;
 
                     Vector3 pos = __instance.m_placementGhost != null
                         ? __instance.m_placementGhost.transform.position
@@ -272,7 +272,7 @@ namespace Deadheim.Wards
                 try
                 {
                     if (!WardProfiles.ProtectTerrain.Value) return true;
-                    if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
+                    if (Admin.LocalPlayerIsAdmin()) return true;
 
                     if (!WardCore.IsBlocked(__instance.transform.position, Player.m_localPlayer,
                             "Terreno protegido por um ward.")) return true;
@@ -298,7 +298,7 @@ namespace Deadheim.Wards
                 try
                 {
                     if (!WardProfiles.ProtectPortals.Value) return true;
-                    if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
+                    if (Admin.LocalPlayerIsAdmin()) return true;
 
                     return !WardCore.IsBlocked(__instance.transform.position, Player.m_localPlayer,
                         "Portal protegido por um ward.");
@@ -321,7 +321,7 @@ namespace Deadheim.Wards
                 try
                 {
                     if (!WardProfiles.ProtectPlants.Value) return true;
-                    if (SynchronizationManager.Instance.PlayerIsAdmin) return true;
+                    if (Admin.LocalPlayerIsAdmin()) return true;
 
                     return !WardCore.IsBlocked(__instance.transform.position, character as Player,
                         "Plantacao protegida por um ward.");

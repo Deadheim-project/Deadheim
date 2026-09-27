@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Jotunn.Managers;
+using Deadheim.Vanilla;
 using Splatform;
 using System.Collections.Generic;
 using System.Reflection;
@@ -93,7 +93,7 @@ namespace Deadheim
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(List<ZNet.PlayerInfo> playerList)
             {
-                if (!SynchronizationManager.Instance.PlayerIsAdmin || ZNet.instance == null || playerList == null) return;
+                if (!Admin.LocalPlayerIsAdmin() || ZNet.instance == null || playerList == null) return;
 
                 string localName = Player.m_localPlayer?.m_nview?.GetZDO()?.GetString("playerName") ?? "";
                 foreach (ZNet.PlayerInfo player in ZNet.instance.GetPlayerList())

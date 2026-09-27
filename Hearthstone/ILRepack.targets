@@ -4,8 +4,7 @@
         <ItemGroup>
             <InputAssemblies Include="$(TargetPath)" />
             <InputAssemblies Include="$(OutputPath)\ItemManager.dll" />
-            <InputAssemblies Include="$(OutputPath)\ServerSync.dll" />
         </ItemGroup>
-        <ILRepack Parallel="true" DebugInfo="true" Internalize="true" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath);C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed;$(VALHEIM_MANAGED)" />
+        <ILRepack Parallel="true" DebugInfo="true" Internalize="true" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath);$(ValheimManaged);$(ValheimPublicized)" />
     </Target>
 </Project>

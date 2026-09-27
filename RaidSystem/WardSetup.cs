@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Jotunn.Managers;
+using Deadheim.Vanilla;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -14,16 +14,16 @@ namespace RaidSystem
 
         public static void LoadAssets()
         {
-            Jotunn.Managers.PrefabManager.OnPrefabsRegistered += AddRaidWardPrefab;
-            Jotunn.Managers.PieceManager.OnPiecesRegistered += RegisterRaidWardPiece;
+            Prefabs.ZNetSceneReady += AddRaidWardPrefab;
+            Prefabs.PiecesReady += RegisterRaidWardPiece;
         }
 
         private static void AddRaidWardPrefab()
         {
             if (RaidWardPrefab != null) return;
 
-            GameObject originalWard = Jotunn.Managers.PrefabManager.Instance.GetPrefab("guard_stone");
-            RaidWardPrefab = Jotunn.Managers.PrefabManager.Instance.CreateClonedPrefab("RaidWard", "guard_stone");
+            GameObject originalWard = Prefabs.Get("guard_stone");
+            RaidWardPrefab = Prefabs.Clone("RaidWard", "guard_stone");
             if (RaidWardPrefab == null)
             {
                 Debug.LogError("[RaidSystem] guard_stone not found for RaidWard clone!");
@@ -56,7 +56,7 @@ namespace RaidSystem
             AddGlow(RaidWardPrefab);
             RemoveServerUnsafeVisualComponents(RaidWardPrefab);
 
-            Jotunn.Managers.PrefabManager.OnPrefabsRegistered -= AddRaidWardPrefab;
+            Prefabs.ZNetSceneReady -= AddRaidWardPrefab;
             Debug.Log($"[RaidSystem] RaidWard created: scale={scale}, HP={RaidSystemPlugin.HitPoints.Value}");
         }
 
@@ -66,10 +66,10 @@ namespace RaidSystem
             if (RaidWardPrefab == null) AddRaidWardPrefab();
             if (RaidWardPrefab == null) return;
 
-            Jotunn.Managers.PieceManager.Instance.RegisterPieceInPieceTable(RaidWardPrefab, "Hammer", "Misc");
+            Pieces.AddToHammer(RaidWardPrefab, "Misc");
             _registeredInHammer = true;
-            Jotunn.Managers.PieceManager.OnPiecesRegistered -= RegisterRaidWardPiece;
-            Debug.Log("[RaidSystem] RaidWard added to hammer using Jotunn PieceManager.");
+            Prefabs.PiecesReady -= RegisterRaidWardPiece;
+            Debug.Log("[RaidSystem] RaidWard added to hammer.");
         }
 
         /// <summary>
@@ -108,9 +108,9 @@ namespace RaidSystem
         {
             if (RaidWardPrefab == null) return;
             if (RaidSystemPlugin.WardOnlyAdminCanBuild.Value != Toggle.On) return;
-            if (SynchronizationManager.Instance == null) return;
+            if (ZNet.instance == null) return;
 
-            bool isAdmin = SynchronizationManager.Instance.PlayerIsAdmin;
+            bool isAdmin = Admin.LocalPlayerIsAdmin();
 
             foreach (PieceTable table in Resources.FindObjectsOfTypeAll<PieceTable>())
             {
@@ -200,7 +200,7 @@ namespace RaidSystem
 
         private static ItemDrop GetItemDrop(string name)
         {
-            GameObject prefab = Jotunn.Managers.PrefabManager.Instance.GetPrefab(name);
+            GameObject prefab = Prefabs.Get(name);
             return prefab != null ? prefab.GetComponent<ItemDrop>() : null;
         }
     }

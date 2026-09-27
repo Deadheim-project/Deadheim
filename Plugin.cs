@@ -1,21 +1,32 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
-using Jotunn.Managers;
-using Jotunn.Utils;
+using ServerSync;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Deadheim
 {
     [BepInPlugin(PluginGUID, PluginGUID, Version)]
-    [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
-    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
-    {        
+    {
         public const string Version = "6.1.7";
         public const string PluginGUID = "Detalhes.Deadheim";
+
+        // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
+        // IsAdminOnly do Jotunn: o servidor recusa quem nao tem o mod ou tem uma
+        // versao abaixo de 6.1, e as configs de servidor valem as do servidor.
+        private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
+        {
+            DisplayName = PluginGUID,
+            CurrentVersion = Version,
+            MinimumRequiredVersion = "6.1.0",
+            ModRequired = true,
+            IsLocked = true
+        };
+
+        private bool _serverConfigApplied;
         public static string steamId = "";  
         public static ConfigEntry<string> AdminList;
         public static ConfigEntry<string> OnlyAdminPieces;
@@ -47,8 +58,43 @@ namespace Deadheim
         public static bool hasSpawned = false;
         Harmony _harmony = new Harmony("Detalhes.deadheim");
 
+        private static ConfigEntry<T> Synced<T>(ConfigEntry<T> entry)
+        {
+            ServerConfigSync.AddConfigEntry(entry).SynchronizedConfig = true;
+            return entry;
+        }
+
+        /// <summary>
+        /// Roda uma vez por conexao, quando os valores do servidor ja estao aplicados.
+        /// O SourceOfTruthChanged do ServerSync dispara ANTES de aplicar os valores,
+        /// entao ele deixaria isto rodar com a config local; InitialSyncDone so vira
+        /// true depois. No servidor o InitialSyncDone tambem e true, mas ele continua
+        /// fonte da verdade: por isso a segunda condicao -- e so cliente, como era no Jotunn.
+        /// </summary>
+        private void ApplyServerConfigOnce()
+        {
+            bool received = ServerConfigSync.InitialSyncDone && !ServerConfigSync.IsSourceOfTruth;
+            if (!received)
+            {
+                _serverConfigApplied = false;
+                return;
+            }
+            if (_serverConfigApplied) return;
+            _serverConfigApplied = true;
+
+            ItemService.ModifyItemsCost();
+            ItemService.LoxTameable();
+            ItemService.WolvesTameable();
+            ItemService.StubNoLife();
+            ItemService.OnlyAdminPieces();
+
+            IsAdmin = AdminList.Value.Contains(Plugin.steamId);
+            Logger.LogInfo("Config do servidor recebida e aplicada.");
+        }
+
         private void Update()
         {
+            ApplyServerConfigOnce();
             Wards.WardCore.Update();
 
             Player localPlayer = Player.m_localPlayer;
@@ -84,98 +130,63 @@ namespace Deadheim
 
         private void Awake()
         {
-            SynchronizationManager.OnConfigurationSynchronized += (obj, attr) =>
-            {
-                if (attr.InitialSynchronization)
-                {
-                    ItemService.ModifyItemsCost();
-                    ItemService.LoxTameable();
-                    ItemService.WolvesTameable();
-                    ItemService.StubNoLife();
-                    ItemService.OnlyAdminPieces();
-
-                    IsAdmin = AdminList.Value.Contains(Plugin.steamId);
-                }
-                else
-                {
-                    Jotunn.Logger.LogMessage("Config sync event received");    
-                }
-            };
-
             Config.SaveOnConfigSet = true;
 
             Wards.WardProfiles.BindConfigs(Config);
             Wards.WardProfiles.LoadAssets();
 
-            OnlyAdminPieces = Config.Bind("Server config", "OnlyAdminPieces", "SHGateHouse,SHWallMusteringHall,SHTowerSquareTwoFloorCenter,SHTowerSquareTwoFloorCorner,SHTowerSquareTwoFloorJunction,SHWallOpenTwoFloorCapped,SHWallOpenTwoFloorWithNest,SHWallOpenTwoFloorWithNestCapped,SHWallOpenTwoFloor,SHEnclosedTower,SHBunkhouse,SHWell,SHOuterWallCovered,SHOuterWallOpenCapped,SHOuterWallOpen,SHOuterWallTowerSquareCenter,SHOuterWallTowerTransition,SHOuterWallTowerRound,SHOuterWallGate,SHWatchtower,SHTowerRoundWallEnd,SHOuterWallCoverdCapped,SHWallInnerArch,SHWallInnerPillar,SHWallInnerPlain,SHWallInnerPosh,SHHouseSmall,SHHouseMedium,SHHouseLarge,SHHayBarn,SHOldBarn,SHStorageBarn,SHMainHall",
-new ConfigDescription("OnlyAdminPieces", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            OnlyAdminPieces = Synced(Config.Bind("Server config", "OnlyAdminPieces", "SHGateHouse,SHWallMusteringHall,SHTowerSquareTwoFloorCenter,SHTowerSquareTwoFloorCorner,SHTowerSquareTwoFloorJunction,SHWallOpenTwoFloorCapped,SHWallOpenTwoFloorWithNest,SHWallOpenTwoFloorWithNestCapped,SHWallOpenTwoFloor,SHEnclosedTower,SHBunkhouse,SHWell,SHOuterWallCovered,SHOuterWallOpenCapped,SHOuterWallOpen,SHOuterWallTowerSquareCenter,SHOuterWallTowerTransition,SHOuterWallTowerRound,SHOuterWallGate,SHWatchtower,SHTowerRoundWallEnd,SHOuterWallCoverdCapped,SHWallInnerArch,SHWallInnerPillar,SHWallInnerPlain,SHWallInnerPosh,SHHouseSmall,SHHouseMedium,SHHouseLarge,SHHayBarn,SHOldBarn,SHStorageBarn,SHMainHall",
+new ConfigDescription("OnlyAdminPieces")));
 
-            VipPortalNames = Config.Bind("Server config", "VipPortalNames", "cavalinho,eguinha",
-new ConfigDescription("VipPortalNames", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            VipPortalNames = Synced(Config.Bind("Server config", "VipPortalNames", "cavalinho,eguinha",
+new ConfigDescription("VipPortalNames")));
 
-            SkillCap = Config.Bind("Server config", "SkillCap", 100,
-new ConfigDescription("SkillCap", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SkillCap = Synced(Config.Bind("Server config", "SkillCap", 100,
+new ConfigDescription("SkillCap")));
 
-            AdminList = Config.Bind("Server config", "AdminList", "76561198053330247 76561197961128381 76561198111650012 76561197993642177 76561198993982965",
-           new ConfigDescription("AdminList", null,
-                    new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            AdminList = Synced(Config.Bind("Server config", "AdminList", "76561198053330247 76561197961128381 76561198111650012 76561197993642177 76561198993982965",
+           new ConfigDescription("AdminList")));
 
 
-            StaffMessage = Config.Bind("Server config", "StaffMessage", "",
-new ConfigDescription("StaffMessage", null,
- new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            StaffMessage = Synced(Config.Bind("Server config", "StaffMessage", "",
+new ConfigDescription("StaffMessage")));
 
-            DungeonPrefabs = Config.Bind("Server config", "DungeonPrefabs", "dungeon_forestcrypt_door,dungeon_sunkencrypt_irongate",
-new ConfigDescription("DungeonPrefabs", null,
-        new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            DungeonPrefabs = Synced(Config.Bind("Server config", "DungeonPrefabs", "dungeon_forestcrypt_door,dungeon_sunkencrypt_irongate",
+new ConfigDescription("DungeonPrefabs")));
 
-            WolvesAreTameable = Config.Bind("Server config", "WolvesAreTameable", false,
-new ConfigDescription("WolvesAreTameable", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            WolvesAreTameable = Synced(Config.Bind("Server config", "WolvesAreTameable", false,
+new ConfigDescription("WolvesAreTameable")));
 
-            LoxTameable = Config.Bind("Server config", "LoxTameable", false,
-new ConfigDescription("LoxTameable", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            LoxTameable = Synced(Config.Bind("Server config", "LoxTameable", false,
+new ConfigDescription("LoxTameable")));
 
-            SafeArea = Config.Bind("Server config", "SafeArea", 1500,
-new ConfigDescription("SafeArea", null,
-         new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SafeArea = Synced(Config.Bind("Server config", "SafeArea", 1500,
+new ConfigDescription("SafeArea")));
 
-            WardChargeDurationInSec = Config.Bind("Server config", "WardChargeDurationInSec", 86400,
-    new ConfigDescription("WardChargeDurationInSec", null,
-             new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            WardChargeDurationInSec = Synced(Config.Bind("Server config", "WardChargeDurationInSec", 86400,
+    new ConfigDescription("WardChargeDurationInSec")));
 
 
-            WardLimit = Config.Bind("Server config", "WardLimit", 3,
-    new ConfigDescription("WardLimit", null,
-             new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            WardLimit = Synced(Config.Bind("Server config", "WardLimit", 3,
+    new ConfigDescription("WardLimit")));
 
-            WardLimitVip = Config.Bind("Server config", "WardLimitVip", 5,
-    new ConfigDescription("WardLimitVip", null,
-             new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            WardLimitVip = Synced(Config.Bind("Server config", "WardLimitVip", 5,
+    new ConfigDescription("WardLimitVip")));
 
-            WardRadius = Config.Bind("Server config", "WardRadius", 150,
-new ConfigDescription("WardRadius", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            WardRadius = Synced(Config.Bind("Server config", "WardRadius", 150,
+new ConfigDescription("WardRadius")));
 
-            BoatWindSpeedmultiplier = Config.Bind("Server config", "boatWindSpeedmultiplier", 1f,
-new ConfigDescription("boatWindSpeedmultiplier", null,
-new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            BoatWindSpeedmultiplier = Synced(Config.Bind("Server config", "boatWindSpeedmultiplier", 1f,
+new ConfigDescription("boatWindSpeedmultiplier")));
 
-            SkillMultiplier = Config.Bind("Server config", "SkillMultiplier", 0.5f,
-            new ConfigDescription("SkillMultiplier", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SkillMultiplier = Synced(Config.Bind("Server config", "SkillMultiplier", 0.5f,
+            new ConfigDescription("SkillMultiplier")));
 
-            ResetWorldDay = Config.Bind("Server config", "ResetWorldDay", false,
-            new ConfigDescription("ResetWorldDay", null,
-                     new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            ResetWorldDay = Synced(Config.Bind("Server config", "ResetWorldDay", false,
+            new ConfigDescription("ResetWorldDay")));
 
-            PortalMaterials = Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:100,GreydwarfEye:30,SurtlingCore:10",
-    new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount", null,
-    new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:100,GreydwarfEye:30,SurtlingCore:10",
+    new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
 
             _harmony.PatchAll();
             DirectJoinFlow.Initialize(Logger);

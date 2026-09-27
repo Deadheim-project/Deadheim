@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using System;
 using UnityEngine;
-using Jotunn.Managers;
 
 namespace Hearthstone
     {
@@ -16,7 +15,7 @@ namespace Hearthstone
                     // Usando IndexOf ignorando maiúsculas para não ter erro de digitação no nome do item
                     if (item.m_shared.m_name != null && item.m_shared.m_name.IndexOf("hearthstone", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        if (!__instance.IsTeleportable() && !Hearthstone.allowTeleportWithoutRestriction.Value)
+                        if (!__instance.IsTeleportable(allowAllItems: false) && !Hearthstone.allowTeleportWithoutRestriction.Value)
                         {
                             __instance.Message(MessageHud.MessageType.Center, "You can't teleport carrying those items");
                             __result = false; // Diz pro jogo que falhou em consumir

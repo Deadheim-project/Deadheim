@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
     Forma canonica do ILRepack usada nos repositorios do blaxxun (ServerSync, Groups,
     Jewelcrafting): PackageReference com versao flutuante no .csproj e este alvo aqui.
@@ -17,8 +17,8 @@
             <InputAssemblies Include="$(TargetPath)" />
             <InputAssemblies Include="$(OutputPath)\GroupsAPI.dll" />
             <LibraryPaths Include="$(ProjectDir)$(OutputPath)" />
-            <LibraryPaths Include="C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed" />
-            <LibraryPaths Include="C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\publicized_assemblies" />
+            <LibraryPaths Include="$(ValheimManaged)" />
+            <LibraryPaths Include="$(ValheimPublicized)" />
         </ItemGroup>
         <ILRepack Parallel="true" DebugInfo="true" Internalize="true"
                   InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)"
