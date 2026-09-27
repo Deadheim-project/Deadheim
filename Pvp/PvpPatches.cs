@@ -120,29 +120,32 @@ namespace Deadheim.Pvp
                     if (__instance != Player.m_localPlayer || !__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()) return;
 
                     Vector3 pos = __instance.transform.position;
-                    long victimId = __instance.GetPlayerID();
 
                     PvpRules.DeathCause cause = PvpRules.ClassifyDeath(__instance, __instance.m_lastHit, out ZDOID killer, out long killerId);
                     bool byPlayer = cause != PvpRules.DeathCause.Pve;
 
                     bool arena = PvpZones.IsArena(pos);
-                    bool victimDefending = byPlayer && !arena && PvpRules.InOwnTerritory(victimId, pos);
-                    bool killerDefending = byPlayer && !arena && killerId != 0L && PvpRules.IsDefending(killerId, victimId, pos);
+                    // Castelo so conta em morte por jogador: um mob dentro do castelo e PvE comum.
+                    string castle = byPlayer && !arena ? PvpBridge.Castle(pos) : null;
+                    bool killerDefendingCastle = castle != null
+                                                 && PvpRules.IsDefendingCastle(Player.GetPlayer(killerId), __instance, pos);
                     bool wasPk = PvpState.IsPk;
 
                     if (arena && PvpConfig.ArenaNoSkillLoss.Value) _pendingSkillMultiplier = 0f;
-                    else if (victimDefending && PvpConfig.DefenseNoSkillLoss.Value) _pendingSkillMultiplier = 0f;
+                    else if (castle != null && PvpConfig.CastleNoSkillLoss.Value) _pendingSkillMultiplier = 0f;
                     else if (wasPk) _pendingSkillMultiplier = Mathf.Max(0f, PvpConfig.PkSkillLossMultiplier.Value);
 
-                    if (byPlayer && !arena && PvpConfig.ImmunityMinutes.Value > 0f)
+                    bool warZone = arena || (castle != null && PvpConfig.CastleIgnoresImmunity.Value);
+                    if (byPlayer && !warZone && PvpConfig.ImmunityMinutes.Value > 0f)
                         PvpState.GrantImmunity(__instance, PvpConfig.ImmunityMinutes.Value * 60d);
                     if (wasPk && PvpConfig.PkClearsOnDeath.Value) PvpState.ClearPk();
 
                     PvpState.ForgetAttacker();
-                    PvpClient.SendDeath(killer, arena, killerDefending, victimDefending, pos);
+                    PvpClient.SendDeath(killer, arena, castle, killerDefendingCastle, pos);
 
                     Debug.Log($"[Deadheim PvP] Morri: causa={cause} matador={killerId} ultimoGolpe={__instance.m_lastHit?.m_hitType} " +
-                              $"arena={arena} defendendo={victimDefending} PK={wasPk} multiplicadorSkill={_pendingSkillMultiplier}");
+                              $"arena={arena} castelo={castle ?? "-"} defesaDoMatador={killerDefendingCastle} PK={wasPk} " +
+                              $"multiplicadorSkill={_pendingSkillMultiplier}");
                 }
                 catch (Exception ex)
                 {
@@ -198,7 +201,7 @@ namespace Deadheim.Pvp
             }
         }
 
-        /// <summary>Nome sobre a cabeca: cla e marcas de PK, cacado e imune.</summary>
+        /// <summary>Nome sobre a cabeca: marcas de PK, cacado, imune e seguro. A guilda e o Guilds que mostra.</summary>
         [HarmonyPatch(typeof(Player), nameof(Player.GetHoverName))]
         private static class HoverNamePatch
         {
@@ -206,15 +209,13 @@ namespace Deadheim.Pvp
             {
                 if (!PvpConfig.Active || __instance == null || __instance == Player.m_localPlayer) return;
 
-                string clan = Clans.ClanOf(__instance.GetPlayerID());
                 PvpFlags flags = PvpState.FlagsOf(__instance);
-                string prefix = string.IsNullOrEmpty(clan) ? string.Empty : "<color=#7fd4ff>[" + clan + "]</color> ";
                 string suffix = string.Empty;
                 if ((flags & PvpFlags.Hunted) != 0) suffix += " <color=#ff8c00>[CACADO]</color>";
                 if ((flags & PvpFlags.Pk) != 0) suffix += " <color=#ff3030>[PK]</color>";
                 if ((flags & PvpFlags.Immune) != 0) suffix += " <color=#7fd4ff>[IMUNE]</color>";
                 else if ((flags & PvpFlags.Protected) != 0) suffix += " <color=#7CFC00>[SEGURO]</color>";
-                __result = prefix + __result + suffix;
+                __result += suffix;
             }
         }
 
@@ -233,7 +234,7 @@ namespace Deadheim.Pvp
                 long owner = __instance.GetOwner();
                 long me = player.GetPlayerID();
                 if (owner == 0L || owner == me) return true;
-                if (PvpConfig.TombstoneClanAccess.Value && Clans.SameClan(owner, me)) return true;
+                if (PvpConfig.TombstoneGuildAccess.Value && PvpGuilds.SameGuild(Player.GetPlayer(owner), player)) return true;
 
                 player.Message(MessageHud.MessageType.Center, "Esta tumba pertence a " + __instance.GetOwnerName() + ".");
                 __result = false;
@@ -249,7 +250,7 @@ namespace Deadheim.Pvp
                 if (!PvpConfig.Active || !PvpConfig.TombstoneOwnerOnly.Value) return;
                 Player player = Player.m_localPlayer;
                 if (player == null || __instance.GetOwner() == player.GetPlayerID()) return;
-                if (PvpConfig.TombstoneClanAccess.Value && Clans.SameClan(__instance.GetOwner(), player.GetPlayerID())) return;
+                if (PvpConfig.TombstoneGuildAccess.Value && PvpGuilds.SameGuild(Player.GetPlayer(__instance.GetOwner()), player)) return;
                 __result += "\n<color=#ff5050>Trancada: so o dono abre</color>";
             }
         }

@@ -28,6 +28,41 @@ namespace RaidSystem
             });
         }
 
+        /// <summary>
+        /// Morte por jogador vinda do Deadheim (servidor). Substitui o antigo postfix de
+        /// Character.ApplyDamage, que so contava quando a morte era processada no servidor:
+        /// a de jogador e processada no cliente da vitima, entao no servidor dedicado nenhum
+        /// abate entrava no ranking. Aqui a guild dos dois e resolvida no servidor.
+        /// </summary>
+        public static void OnPvpKill(long killerId, string killerName, long victimId, string victimName,
+            UnityEngine.Vector3 position, bool arena, string castle)
+        {
+            if (ZNet.instance == null || !ZNet.instance.IsServer() || arena) return;
+
+            string killerTeam = GuildsIntegration.GetPlayerTeam(killerId);
+            string deadTeam = GuildsIntegration.GetPlayerTeam(victimId);
+            if (string.IsNullOrEmpty(killerTeam) || string.IsNullOrEmpty(deadTeam)
+                || string.Equals(killerTeam, deadTeam, StringComparison.OrdinalIgnoreCase))
+            {
+                UnityEngine.Debug.Log($"[RaidSystem] Abate de {killerName} em {victimName} fora do Ranking de Guerra " +
+                                      $"(guilds: {killerTeam ?? "-"} x {deadTeam ?? "-"}).");
+                return;
+            }
+
+            // Defesa = abate dentro de territorio que a guild do matador ja domina.
+            string holder = Util.GetTerritoryOwner(position);
+            bool defended = !string.IsNullOrEmpty(holder)
+                            && string.Equals(holder, killerTeam, StringComparison.OrdinalIgnoreCase);
+
+            RecordPvpOutcome(killerId.ToString(), killerName, killerTeam, victimId.ToString(), victimName, deadTeam, defended);
+            UnityEngine.Debug.Log($"[RaidSystem] Abate registrado: {killerName} [{killerTeam}] -> {victimName} [{deadTeam}] " +
+                                  $"defesa={defended} castelo={castle ?? "-"}.");
+
+            dWebHook.SendRaidMessage(
+                $"**[Abate]** **{killerName}** [{killerTeam}] eliminou **{victimName}** [{deadTeam}]" +
+                (string.IsNullOrEmpty(castle) ? "" : $" em **{castle}**") + ".\n" + FormatLeaderboardForWebhook());
+        }
+
         public static List<PlayerScore> GetTopPlayers(int count = 10) =>
             DataStore.Load().Scores.OrderByDescending(s => s.TotalPoints).Take(count).ToList();
 

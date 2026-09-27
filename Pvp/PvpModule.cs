@@ -21,7 +21,10 @@ namespace Deadheim.Pvp
         public static void Init(ConfigFile config)
         {
             PvpConfig.Bind(config);
-            Clans.RegisterWardBridge();
+            // Acesso de guilda aos wards pelo Guilds mesmo sem o RaidSystem. Com ele instalado,
+            // o RaidSystem registra o proprio resolvedor depois e prevalece (e o mesmo Guilds).
+            if (Wards.WardBridge.GuildOfPlayer == null)
+                Wards.WardBridge.GuildOfPlayer = PvpGuilds.GuildOf;
             Prefabs.PiecesReady += ApplyItemTweaks;
             PvpConfig.CoinsWeightless.SettingChanged += (_, __) => ApplyItemTweaks();
             PvpConfig.CoinsMaxStack.SettingChanged += (_, __) => ApplyItemTweaks();
@@ -122,7 +125,6 @@ namespace Deadheim.Pvp
                 PvpState.ResetSession();
                 PvpHud.ResetSession();
                 PvpRankPanel.Close();
-                Clans.ClearClient();
             }
         }
     }

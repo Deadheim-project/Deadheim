@@ -26,13 +26,15 @@ param(
     [string]$ServerDir = 'C:\Program Files (x86)\Steam\steamapps\common\Valheim dedicated server',
     [string]$ClientDir = 'C:\Program Files (x86)\Steam\steamapps\common\Valheim',
     [string]$BepInExCore = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\core'),
+    # O RaidSystem exige o Guilds; vem do perfil do launcher, o mesmo que os jogadores usam.
+    [string]$GuildsDll = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\plugins\guilds\Guilds.dll'),
     [int]$TimeoutMinutes = 25,
     [switch]$NewWorld,
     # Um cliente so, com o segundo jogador simulado pelo driver: cabe numa maquina onde
     # dois clientes + servidor estouram a memoria.
     [switch]$Solo,
     # So estes passos do roteiro solo, separados por virgula (o setup sempre roda).
-    [string]$Steps = '',
+    [string[]]$Steps = @(),
     [switch]$KeepRunning
 )
 
@@ -41,8 +43,14 @@ $repo = Split-Path -Parent $PSScriptRoot
 $deadheimDll = Join-Path $repo 'bin\Release\Deadheim.dll'
 $vipDll = Join-Path $repo 'bin\Release\VipList.dll'
 $driverDll = Join-Path $PSScriptRoot 'PvpTestDriver\bin\Release\PvpTestDriver.dll'
+$raidDll = Join-Path $repo 'bin\Release\RaidSystem.dll'
 
-foreach ($f in @($deadheimDll, $vipDll, $driverDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
+# Castelo de teste: zona do RaidSystem a este deslocamento do templo, com dono "Lobos".
+# O PvpTestDriver (Solo.cs, CastleOffset) procura terra dentro dela com o mesmo numero.
+$castleOffset = 53
+$castleRadius = 30
+
+foreach ($f in @($deadheimDll, $vipDll, $driverDll, $raidDll, $GuildsDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
     if (-not (Test-Path $f)) { throw "Nao encontrei $f" }
 }
 
@@ -103,6 +111,24 @@ ChallengeSurviveReward = Coins:1000
 # Debug.Log dos mods so aparece no -logFile. E nele que se espera.
 $serverLog = "$Root\server-unity.log"
 
+function Write-RaidSystem([int]$tx, [int]$tz) {
+    $cx = $tx - $castleOffset
+    $cz = $tz - $castleOffset
+    $cfg = @"
+[2 - Raid Rules]
+Raid Hours (UTC) = 0-24
+Raid Zones = CasteloTeste,$cx,$cz,$castleRadius,$castleRadius,*,1,0
+"@
+    Set-Content -Path "$Root\server\BepInEx\config\Detalhes.RaidSystem.cfg" -Value $cfg -Encoding UTF8
+
+    # Territorio ja dominado, como se a guilda Lobos tivesse conquistado o castelo.
+    New-Item -ItemType Directory -Force "$Root\server\BepInEx\config\RaidSystem" | Out-Null
+    $data = @"
+{"players":[],"scores":[],"territories":[{"Name":"CasteloTeste","X":$cx,"Y":0,"Z":$cz,"OwnerTeamId":"Lobos","LastConquestTimestamp":0,"PendingTribute":0,"LastTributeUtc":0}]}
+"@
+    Set-Content -Path "$Root\server\BepInEx\config\RaidSystem\RaidData.json" -Value $data -Encoding UTF8
+}
+
 function Start-Server {
     if (Test-Path $serverLog) { Remove-Item $serverLog -Force }
     $env:SteamAppId = '892970'
@@ -154,10 +180,10 @@ $prefsBackup = "$Root\valheim-prefs.reg"
 try {
     # ------------------------------------------------------------ servidor: mundo e templo
     Write-Step "Montando arvores BepInEx em $Root"
-    New-BepInExTree "$Root\server" @($deadheimDll, $vipDll)
-    New-BepInExTree "$Root\clientA" @($deadheimDll, $vipDll, $driverDll)
-    New-BepInExTree "$Root\clientB" @($deadheimDll, $vipDll, $driverDll)
-    New-BepInExTree "$Root\clientS" @($deadheimDll, $vipDll, $driverDll)
+    New-BepInExTree "$Root\server" @($deadheimDll, $vipDll, $raidDll, $GuildsDll)
+    New-BepInExTree "$Root\clientA" @($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll)
+    New-BepInExTree "$Root\clientB" @($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll)
+    New-BepInExTree "$Root\clientS" @($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll)
     foreach ($d in @("$Root\sync", "$Root\chars-A", "$Root\chars-B", "$Root\chars-S")) {
         if (Test-Path $d) { Remove-Item -Recurse -Force $d }
         New-Item -ItemType Directory -Force $d | Out-Null
@@ -179,9 +205,14 @@ try {
     # -------------------------------------------------------------- servidor: config de teste
     Get-ChildItem "$Root\server\BepInEx\config" -Filter 'Deadheim' -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
     Write-ServerConfig 'Radius' "ArenaTeste,$tx,$tz,15"
+    Write-RaidSystem ([int]$tx) ([int]$tz)
     Write-Step "Servidor (2a subida, config de teste; arena no templo $tx,$tz)"
     Start-Server | Out-Null
     if (-not (Wait-Log $serverLog 'Templo inicial em x=' 300)) { throw 'O servidor nao subiu de novo.' }
+    # O templo aparece antes de o servidor aceitar conexao: quando o mundo nao foi salvo, ele
+    # ainda regera as locations (~1 min) e so depois abre o socket. Cliente antes disso toma
+    # ErrorConnectFailed e fica parado no menu, porque o +connect so tenta uma vez.
+    if (-not (Wait-Log $serverLog 'Opened Steam server' 300)) { throw 'O servidor nao abriu conexoes.' }
     Start-Sleep -Seconds 5
 
     # ----------------------------------------------------------------------- clientes
@@ -194,7 +225,7 @@ try {
         $argLine = "--doorstop-enabled true --doorstop-target-assembly `"$dir\BepInEx\core\BepInEx.Preloader.dll`" " +
                 "+connect 127.0.0.1:$Port -password $Password " +
                 "-dhtest-role $role -dhtest-sync `"$Root\sync`" -dhtest-save `"$Root\chars-$role`" " +
-                $(if ($Steps) { "-dhtest-steps $Steps " } else { '' }) +
+                $(if ($Steps) { "-dhtest-steps $($Steps -join ',') " } else { '' }) +
                 "-screen-fullscreen 0 -screen-width 960 -screen-height 540 -logFile `"$Root\client$role-unity.log`""
         Write-Step "Cliente $role"
         $client = Start-Process -FilePath "$ClientDir\valheim.exe" -ArgumentList $argLine -WorkingDirectory $ClientDir -PassThru

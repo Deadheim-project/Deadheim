@@ -22,46 +22,14 @@ namespace Deadheim.Pvp
     }
 
     [Serializable]
-    internal sealed class PvpClanRecord
-    {
-        public string name;
-        public long leader;
-        public List<long> members = new List<long>();
-        public List<string> names = new List<string>();
-
-        public string NameOf(long playerId)
-        {
-            int index = members.IndexOf(playerId);
-            return index >= 0 && index < names.Count ? names[index] : playerId.ToString();
-        }
-
-        public void SetName(long playerId, string playerName)
-        {
-            int index = members.IndexOf(playerId);
-            if (index < 0) return;
-            while (names.Count < members.Count) names.Add(string.Empty);
-            names[index] = playerName;
-        }
-
-        public void Remove(long playerId)
-        {
-            int index = members.IndexOf(playerId);
-            if (index < 0) return;
-            members.RemoveAt(index);
-            if (index < names.Count) names.RemoveAt(index);
-        }
-    }
-
-    [Serializable]
     internal sealed class PvpStoreData
     {
         public int version = 1;
         public List<PvpPlayerRecord> players = new List<PvpPlayerRecord>();
-        public List<PvpClanRecord> clans = new List<PvpClanRecord>();
     }
 
     /// <summary>
-    /// Estado persistente do PvP no servidor: K/D, PK, cooldown de desafio e clas. Um JSON
+    /// Estado persistente do PvP no servidor: K/D, PK e cooldown de desafio. Um JSON
     /// por mundo em BepInEx/config/Deadheim, salvo junto com o mundo e a cada minuto se mudou.
     /// </summary>
     internal static class PvpStore
@@ -111,14 +79,8 @@ namespace Deadheim.Pvp
 
             if (_data == null) _data = new PvpStoreData();
             if (_data.players == null) _data.players = new List<PvpPlayerRecord>();
-            if (_data.clans == null) _data.clans = new List<PvpClanRecord>();
-            foreach (PvpClanRecord clan in _data.clans)
-            {
-                if (clan.members == null) clan.members = new List<long>();
-                if (clan.names == null) clan.names = new List<string>();
-            }
             _dirty = false;
-            Debug.Log($"[Deadheim PvP] Estado carregado de {path}: {_data.players.Count} jogador(es), {_data.clans.Count} cla(s).");
+            Debug.Log($"[Deadheim PvP] Estado carregado de {path}: {_data.players.Count} jogador(es).");
         }
 
         public static void Save()

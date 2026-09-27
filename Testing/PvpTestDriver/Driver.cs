@@ -149,9 +149,7 @@ namespace PvpTestDriver
                 Step("safe-zone", SafeZone),
                 Step("combat-tag", CombatTag),
                 Step("attacker-in-safe", AttackerInSafe),
-                Step("clan", Clan),
                 Step("territory", Territory),
-                Step("defense-kill", DefenseKill),
                 Step("immunity", Immunity),
                 Step("pk", Pk),
                 Step("arena", Arena),
@@ -503,61 +501,6 @@ namespace PvpTestDriver
             if (!IsA) yield return ExpectDamage("atacante-seguro/bloqueado", 0f);
         }
 
-        private IEnumerator Clan()
-        {
-            if (IsA) yield return MoveTo(_openA);
-            yield return Wait(CombatWait);
-            if (IsA)
-            {
-                Command("cla criar Lobos");
-                yield return Wait(2f);
-                Command("cla convidar Bravo");
-                yield return Wait(1f);
-            }
-            yield return Both("cla-convite");
-            if (!IsA)
-            {
-                yield return Wait(1f);
-                Command("cla aceitar");
-                yield return Wait(2f);
-                Check("cla/entrei", Clans.OwnClan == "Lobos", "cla=" + Clans.OwnClan);
-                DamageTaken = 0f;
-            }
-            yield return Both("cla-entrou");
-            if (IsA)
-            {
-                yield return Wait(3f);
-                Check("cla/mesmo-cla", Other != null && Clans.SameClan(Me.GetPlayerID(), Other.GetPlayerID()));
-                string hover = Other != null ? Other.GetHoverName() : "";
-                Check("cla/tag-no-nome", hover.Contains("[Lobos]"), hover);
-                List<ZNet.PlayerInfo> onMap = new List<ZNet.PlayerInfo>();
-                ZNet.instance.GetOtherPublicPlayers(onMap);
-                ZNet.PlayerInfo mate = onMap.FirstOrDefault(p => p.m_name == _otherName);
-                Check("cla/colega-no-mapa", mate.m_name == _otherName && Other != null
-                        && Utils.DistanceXZ(mate.m_position, Other.transform.position) < 15f,
-                    $"entradas={onMap.Count} pos={mate.m_position}");
-                Strike(Hit);
-            }
-            yield return Both("cla-golpe");
-            if (!IsA)
-            {
-                yield return ExpectDamage("cla/sem-fogo-amigo", 0f);
-                Command("cla sair");
-                yield return Wait(2f);
-                Check("cla/sai", string.IsNullOrEmpty(Clans.OwnClan), "cla=" + Clans.OwnClan);
-                DamageTaken = 0f;
-            }
-            yield return Both("cla-saiu");
-            if (IsA)
-            {
-                yield return Wait(1f);
-                Check("cla/nao-mais-aliado", Other != null && !Clans.SameClan(Me.GetPlayerID(), Other.GetPlayerID()));
-                Strike(Hit);
-            }
-            yield return Both("cla-golpe2");
-            if (!IsA) yield return ExpectDamage("cla/fora-do-cla-leva-dano", Hit * PvpConfig.DamageMultiplier.Value);
-        }
-
         private PrivateArea SpawnWard(Vector3 at, Player owner, Player permitted)
         {
             GameObject prefab = ZNetScene.instance.GetPrefab("guard_stone");
@@ -631,46 +574,13 @@ namespace PvpTestDriver
             if (!IsA)
                 yield return ExpectDamage("defesa/reducao-no-proprio-ward",
                     Hit * PvpConfig.DamageMultiplier.Value * PvpConfig.WardDefenseMultiplier.Value);
+            yield return Both("territorio-fim");
+            if (_myWard != null) ZNetScene.instance.Destroy(_myWard.gameObject);
+            _myWard = null;
         }
 
         private int _coinsBefore;
         private float _swordsBefore;
-
-        private IEnumerator DefenseKill()
-        {
-            // B invade o ward de A e morre la: A defendeu o territorio.
-            yield return Wait(CombatWait);
-            yield return MoveTo(IsA ? _wardA + Vector3.right * 2f : _wardA - Vector3.right * 2f);
-            if (IsA) _coinsBefore = CountItem(Me, "Coins");
-            else
-            {
-                _swordsBefore = Swords(Me);
-                ArmHardDeath();
-            }
-            yield return Both("defesa-kill-pronto");
-            Player dead = Me;
-            if (IsA)
-            {
-                yield return WaitOther();
-                Strike(1000f);
-                yield return Wait(4f);
-                int coins = CountItem(Me, "Coins");
-                Heightmap.Biome biome = WorldGenerator.instance.GetBiome(_wardA);
-                int expected = PvpConfig.DefenseRewardFor(biome);
-                Check("defesa-kill/recompensa-por-bioma", coins - _coinsBefore == expected, $"bioma={biome} ganhou={coins - _coinsBefore} esperado={expected}");
-                Check("defesa-kill/defensor-nao-vira-pk", !PvpState.IsPk);
-            }
-            else
-            {
-                yield return WaitRespawn(dead);
-                float expected = _swordsBefore * (1f - _deathFactor);
-                Check("defesa-kill/invasor-perde-skill-normal", Mathf.Abs(Swords(Me) - expected) < 0.05f, $"antes={_swordsBefore} depois={Swords(Me)} esperado={expected}");
-                Check("defesa-kill/imune-apos-morte-pvp", PvpState.IsImmune && !Me.IsPVPEnabled(), $"flags={PvpState.Current}");
-            }
-            yield return Both("defesa-kill-fim");
-            if (_myWard != null) ZNetScene.instance.Destroy(_myWard.gameObject);
-            _myWard = null;
-        }
 
         private IEnumerator Immunity()
         {
@@ -935,11 +845,11 @@ namespace PvpTestDriver
             yield return Wait(2f);
             List<string> lines = Chat.instance.m_chatBuffer.Skip(Math.Max(0, before - 1)).ToList();
             string dump = string.Join(" / ", lines);
-            // A: matou B no ward e no aberto (2), morreu para B uma vez (1). B: 1 abate, 2 mortes.
-            // Arena nao conta. Desafio conta: A +1 abate, B +1 morte.
+            // A: matou B no PK e no desafio (2), morreu para B uma vez (1). B: 1 abate, 2 mortes.
+            // Arena nao conta.
             string mine = lines.LastOrDefault(l => l.StartsWith("Voce:")) ?? "";
-            if (IsA) Check("rank/alfa", mine.Contains("K 3  D 1"), mine);
-            else Check("rank/bravo", mine.Contains("K 1  D 3"), mine);
+            if (IsA) Check("rank/alfa", mine.Contains("K 2  D 1"), mine);
+            else Check("rank/bravo", mine.Contains("K 1  D 2"), mine);
             Check("rank/lista", lines.Any(l => l.Contains("Alfa")) && lines.Any(l => l.Contains("Bravo")), dump);
         }
 

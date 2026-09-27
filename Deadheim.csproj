@@ -162,11 +162,12 @@
     <Compile Include="Wards\WardPatches.cs" />
     <Compile Include="World.cs" />
     <!-- Modulo de PvP: regras de dano, zonas, cla, desafio, ranking. Tudo no Deadheim.dll. -->
-    <Compile Include="Pvp\Clans.cs" />
+    <Compile Include="Pvp\PvpBridge.cs" />
     <Compile Include="Pvp\PvpChallenge.cs" />
     <Compile Include="Pvp\PvpClient.cs" />
     <Compile Include="Pvp\PvpCommands.cs" />
     <Compile Include="Pvp\PvpConfig.cs" />
+    <Compile Include="Pvp\PvpGuilds.cs" />
     <Compile Include="Pvp\PvpHud.cs" />
     <Compile Include="Pvp\PvpModule.cs" />
     <Compile Include="Pvp\PvpNet.cs" />

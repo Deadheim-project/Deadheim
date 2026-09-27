@@ -36,12 +36,6 @@ namespace Deadheim.Pvp
                 case PvpNet.OpReward:
                     GiveReward(pkg.ReadString(), pkg.ReadInt(), pkg.ReadString());
                     break;
-                case PvpNet.OpClanDirectory:
-                    Clans.ApplyDirectory(pkg);
-                    break;
-                case PvpNet.OpClanPositions:
-                    Clans.ApplyPositions(pkg);
-                    break;
                 case PvpNet.OpRankResult:
                 {
                     int count = pkg.ReadInt();
@@ -108,13 +102,13 @@ namespace Deadheim.Pvp
 
         public static void SendHello() => PvpNet.SendToServer(PvpNet.Package(PvpNet.OpHello));
 
-        public static void SendDeath(ZDOID killer, bool arena, bool killerDefending, bool victimDefending, Vector3 position)
+        public static void SendDeath(ZDOID killer, bool arena, string castle, bool killerDefendingCastle, Vector3 position)
         {
             ZPackage pkg = PvpNet.Package(PvpNet.OpDeath);
             pkg.Write(killer);
             pkg.Write(arena);
-            pkg.Write(killerDefending);
-            pkg.Write(victimDefending);
+            pkg.Write(castle ?? string.Empty);
+            pkg.Write(killerDefendingCastle);
             pkg.Write(position);
             PvpNet.SendToServer(pkg);
         }
@@ -127,14 +121,6 @@ namespace Deadheim.Pvp
         }
 
         public static void SendRankRequest() => PvpNet.SendToServer(PvpNet.Package(PvpNet.OpRank));
-
-        public static void SendClan(string action, string arg)
-        {
-            ZPackage pkg = PvpNet.Package(PvpNet.OpClan);
-            pkg.Write(action ?? string.Empty);
-            pkg.Write(arg ?? string.Empty);
-            PvpNet.SendToServer(pkg);
-        }
 
         // ------------------------------------------------------------------ formato
 

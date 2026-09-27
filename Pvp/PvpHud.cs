@@ -71,7 +71,7 @@ namespace Deadheim.Pvp
             PvpFlags flags = PvpState.Current;
             List<string> parts = new List<string>();
 
-            if ((flags & PvpFlags.Arena) != 0)
+            if ((flags & (PvpFlags.Arena | PvpFlags.Castle)) != 0)
                 parts.Add("<color=#ff8c00>" + PvpState.ZoneLabel + "</color>");
             else if ((flags & PvpFlags.Hunted) != 0)
                 parts.Add("<color=#ff5050>CACADO " + PvpClient.FormatDuration(PvpState.HuntedRemaining) + "</color>");
@@ -90,9 +90,6 @@ namespace Deadheim.Pvp
                 parts.Add("<color=#ff8c00>Desafio em " + PvpClient.FormatDuration(PvpState.HuntPendingRemaining) + "</color>");
             if ((flags & PvpFlags.Combat) != 0)
                 parts.Add("<color=#ffb347>Em combate " + Mathf.CeilToInt(PvpState.CombatRemaining) + "s</color>");
-
-            string clan = Clans.OwnClan;
-            if (!string.IsNullOrEmpty(clan)) parts.Add("<color=#7fd4ff>[" + clan + "]</color>");
 
             StringBuilder text = new StringBuilder();
             for (int i = 0; i < parts.Count; i++)

@@ -12,16 +12,18 @@ namespace RaidSystem
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency("org.bepinex.plugins.guilds", BepInDependency.DependencyFlags.HardDependency)]
+    // 7.0.0 traz o PvpBridge: castelos e abates classificados vem do modulo de PvP.
+    [BepInDependency("Detalhes.Deadheim", "7.0.0")]
     public class RaidSystemPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "Detalhes.RaidSystem";
         public const string PluginName = "RaidSystem";
-        public const string PluginVersion = "2.0.0";
+        public const string PluginVersion = "2.1.0";
         public const string DefaultWebhookUrl = "";
         public static RaidSystemPlugin Instance { get; private set; }
         private Harmony _harmony;
 
-        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.0.0" };
+        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.1.0" };
 
         public static readonly string ModPath = Path.GetDirectoryName(typeof(RaidSystemPlugin).Assembly.Location);
         public static readonly string FileDirectory = Path.Combine(Paths.ConfigPath, "RaidSystem");
@@ -77,7 +79,7 @@ namespace RaidSystem
             BindConfigs();
             WriteDefaultConfigExample();
             WardSetup.LoadAssets();
-            RegisterWardBridge();
+            RegisterDeadheimBridges();
             _harmony = new Harmony(PluginGUID); _harmony.PatchAll();
             Logger.LogInfo($"RaidSystem v{PluginVersion} loaded.");
         }
@@ -98,14 +100,17 @@ namespace RaidSystem
         private void OnDestroy() => _harmony?.UnpatchSelf();
 
         /// <summary>
-        /// Entrega ao modulo de wards do Deadheim as duas coisas que so o RaidSystem sabe:
-        /// onde valem as regras de raid, e a qual guild um jogador pertence.
+        /// Entrega ao Deadheim o que so o RaidSystem sabe: onde valem as regras de raid e
+        /// quem domina cada castelo (wards e PvP), a qual guild um jogador pertence (wards),
+        /// e recebe de volta cada morte por jogador ja classificada (Ranking de Guerra).
         /// </summary>
-        private static void RegisterWardBridge()
+        private static void RegisterDeadheimBridges()
         {
+            Deadheim.Pvp.PvpBridge.CastleAt = Util.GetZoneNameAt;
+            Deadheim.Pvp.PvpBridge.CastleOwner = Util.GetTerritoryOwner;
+            Deadheim.Pvp.PvpBridge.PlayerKilled += ScoreManager.OnPvpKill;
+
             Deadheim.Wards.WardBridge.IsExternallyGoverned = Util.IsRaidEnabledHere;
-            // O Guilds so responde por quem esta online: o acesso volta a seguir o carimbo.
-            Deadheim.Wards.WardBridge.LiveGuildLookup = false;
             Deadheim.Wards.WardBridge.GuildOfPlayer = playerId =>
             {
                 Player lp = Player.m_localPlayer;

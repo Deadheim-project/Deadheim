@@ -65,6 +65,11 @@ namespace PvpTestDriver
     public partial class Driver
     {
         private const long DummyId = 424242L;
+        private const string CastleName = "CasteloTeste";
+        private const string CastleOwner = "Lobos";
+        private const float CastleOffset = 53f;
+
+        private Vector3 _castle;
         private const string DummyName = "Dummy";
 
         private Player _dummy;
@@ -86,16 +91,16 @@ namespace PvpTestDriver
                 Step("zona-segura", SoloSafeZone),
                 Step("atacante-protegido", SoloAttackerProtected),
                 Step("combate", SoloCombatTag),
-                Step("cla", SoloClan),
+                Step("guilda", SoloGuild),
                 Step("territorio", SoloTerritory),
-                Step("defesa-morte", SoloDefenseDeath),
+                Step("castelo-invasor", SoloCastleInvader),
                 Step("imunidade", SoloImmunity),
                 Step("pk", SoloPk),
                 Step("arena", SoloArena),
                 Step("desafio", SoloChallenge),
                 Step("desafio-sobrevive", SoloChallengeSurvive),
                 Step("morte-pve-x-pvp", SoloDeathCause),
-                Step("defesa-do-dummy", SoloDummyDefends),
+                Step("castelo-defensor", SoloCastleDefender),
                 Step("tumba", SoloTombstone),
                 Step("transporte", SoloTransport),
                 Step("ward-natureza", SoloWardNature),
@@ -241,8 +246,21 @@ namespace PvpTestDriver
             }
         }
 
-        private static Dictionary<long, string> ClanDirectory
-            => (Dictionary<long, string>)typeof(Clans).GetField("_directory", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        // O boneco nao entra numa guilda de verdade: o teste diz a guilda de cada um.
+        private readonly Dictionary<long, string> _guilds = new Dictionary<long, string>();
+
+        private void SetGuild(long playerId, string guild)
+        {
+            if (guild == null) _guilds.Remove(playerId);
+            else _guilds[playerId] = guild;
+            PvpGuilds.TestOverride = p => p != null && _guilds.TryGetValue(p.GetPlayerID(), out string g) ? g : null;
+        }
+
+        private void ClearGuilds()
+        {
+            _guilds.Clear();
+            PvpGuilds.TestOverride = null;
+        }
 
         private IEnumerator DummyKillsMe(string what)
         {
@@ -265,8 +283,11 @@ namespace PvpTestDriver
             _wardA = FindLand(_temple, 50f, 80f, _openA, _temple);
             _wardB = FindLand(_temple, 50f, 80f, _openA, _wardA, _temple);
             _ship = _openA + Vector3.forward * 8f;
+            // Mesmo deslocamento que o run-pvp-test.ps1 usa para escrever a zona do RaidSystem.
+            _castle = FindLand(new Vector3(_temple.x - CastleOffset, 0f, _temple.z - CastleOffset), 0f, 20f);
             _deathFactor = Me.GetSkills().m_DeathLowerFactor * Game.m_skillReductionRate;
-            Log($"posicoes: templo={_temple} seguro={_safe} aberto={_openA} wardA={_wardA} wardB={_wardB} fatorMorte={_deathFactor}");
+            Log($"posicoes: templo={_temple} seguro={_safe} aberto={_openA} wardA={_wardA} wardB={_wardB} castelo={_castle} fatorMorte={_deathFactor}");
+            Check("setup/raidsystem-ligado", PvpBridge.CastleAt != null && PvpBridge.CastleOwner != null);
             Log("ilha: " + PvpZones.DescribeIsland());
 
             Check("setup/arredor-do-templo-seguro", PvpZones.IsSafeArea(_safe), PvpZones.SafeAreaName(_safe));
@@ -361,32 +382,29 @@ namespace PvpTestDriver
             yield return ExpectDamage("combate/bloqueado-depois", 0f, 0.5f);
         }
 
-        private IEnumerator SoloClan()
+        private IEnumerator SoloGuild()
         {
             yield return MoveTo(_openA);
             yield return Wait(CombatWait);
-            Command("cla criar Lobos");
-            yield return Wait(2f);
-            Check("cla/criado", Clans.OwnClan == "Lobos", "cla=" + Clans.OwnClan);
+            ClearGuilds();
+            Check("guilda/mod-guilds-carregado", PvpGuilds.IsAvailable);
+            Check("guilda/sem-guilda-de-verdade", PvpGuilds.GuildOf(Me) == null, "guilda=" + PvpGuilds.GuildOf(Me));
 
-            ClanDirectory[DummyId] = "Lobos";
-            Check("cla/mesmo-cla", Clans.SameClan(Me.GetPlayerID(), DummyId));
-            Check("cla/tag-no-nome", _dummy.GetHoverName().Contains("[Lobos]"), _dummy.GetHoverName());
+            SetGuild(Me.GetPlayerID(), "Lobos");
+            SetGuild(DummyId, "Lobos");
+            Check("guilda/mesma-guilda", PvpGuilds.SameGuild(Me, _dummy));
             Heal();
             DummyStrikesMe(Hit);
-            yield return ExpectDamage("cla/sem-fogo-amigo", 0f, 0.5f);
+            yield return ExpectDamage("guilda/sem-fogo-amigo", 0f, 0.5f);
             float before = _dummy.GetHealth();
             IStrikeDummy(Hit);
-            yield return ExpectDummyDamage("cla/sem-fogo-amigo-2", before, 0f);
+            yield return ExpectDummyDamage("guilda/sem-fogo-amigo-2", before, 0f);
 
-            ClanDirectory.Remove(DummyId);
+            SetGuild(DummyId, "Corvos");
             Heal();
             DummyStrikesMe(Hit);
-            yield return ExpectDamage("cla/fora-do-cla-leva-dano", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
-
-            Command("cla sair");
-            yield return Wait(2f);
-            Check("cla/saiu", string.IsNullOrEmpty(Clans.OwnClan), "cla=" + Clans.OwnClan);
+            yield return ExpectDamage("guilda/outra-guilda-leva-dano", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+            ClearGuilds();
         }
 
         private IEnumerator SoloTerritory()
@@ -411,21 +429,59 @@ namespace PvpTestDriver
                 Hit * PvpConfig.DamageMultiplier.Value * PvpConfig.WardDefenseMultiplier.Value, 0.5f);
         }
 
-        private IEnumerator SoloDefenseDeath()
+        /// <summary>
+        /// Castelo do RaidSystem, eu invasor (Corvos) e o Dummy da guilda dona (Lobos). La a
+        /// imunidade nao vale; morrer la nao tira skill nem da imunidade; o Dummy defendeu, entao
+        /// o servidor paga a recompensa do bioma e nao o marca como PK.
+        /// </summary>
+        private IEnumerator SoloCastleInvader()
         {
-            // Morro dentro do meu territorio para o invasor: defesa de castelo, sem perda de skill.
+            ClearAllProtection();
+            yield return MoveTo(_castle);
+            MoveDummy(_castle + Vector3.right * 2f);
+            yield return Wait(1.5f);
+            Vector3 pos = Me.transform.position;
+            Check("castelo/zona", PvpBridge.Castle(pos) == CastleName && PvpBridge.Owner(pos) == CastleOwner,
+                $"castelo={PvpBridge.Castle(pos)} dono={PvpBridge.Owner(pos)}");
+
+            SetGuild(Me.GetPlayerID(), "Corvos");
+            SetGuild(DummyId, CastleOwner);
+            PvpState.GrantImmunity(Me, 120d);
+            yield return Wait(1f);
+            Check("castelo/imunidade-nao-vale", Me.IsPVPEnabled() && (PvpState.Current & PvpFlags.Castle) != 0
+                                                 && (PvpState.Current & PvpFlags.Immune) == 0, $"flags={PvpState.Current}");
+            Check("castelo/hud", PvpHud.Compose(Me).Contains("Castelo"), PvpHud.Compose(Me));
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("castelo/imune-leva-dano", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+
+            PvpState.ClearImmunity(Me);
             SetSwords(Me, 50f);
             ArmHardDeath();
-            yield return DummyKillsMe("defesa");
-            Check("defesa-morte/sem-perda-de-skill", Mathf.Abs(Swords(Me) - 50f) < 0.05f, "skill=" + Swords(Me));
-            // Renasce no templo, que no teste e arena (la a imunidade nao vale): confere o estado.
-            Check("defesa-morte/imune", PvpState.IsImmune, $"imune={PvpState.IsImmune} flags={PvpState.Current}");
-            if (_myWard != null) ZNetScene.instance.Destroy(_myWard.gameObject);
-            _myWard = null;
+            MarkServerLog();
+            yield return DummyKillsMe("castelo: invasor");
+            Check("castelo-invasor/sem-perda-de-skill", Mathf.Abs(Swords(Me) - 50f) < 0.05f, "skill=" + Swords(Me));
+            Check("castelo-invasor/sem-imunidade", !PvpState.IsImmune, $"flags={PvpState.Current}");
+            yield return Wait(1f);
+
+            string log = ServerLogSinceMark();
+            int expected = PvpConfig.CastleRewardFor(WorldGenerator.instance.GetBiome(_castle));
+            Check("castelo-invasor/defensor-ganha-recompensa", log.Contains($"Recompensa de defesa: {DummyName} +{expected} "), Tail(log));
+            Check("castelo-invasor/defensor-nao-vira-pk", !log.Contains($"{DummyName} ({DummyId}) agora e PK"), Tail(log));
+            Check("castelo-invasor/raidsystem-recebeu-o-abate", log.Contains($"[RaidSystem] Abate de {DummyName} em {_myName}")
+                                                                || log.Contains($"[RaidSystem] Abate registrado: {DummyName}"), Tail(log));
+            ClearGuilds();
         }
 
         private IEnumerator SoloImmunity()
         {
+            // Morte por jogador em campo aberto: e ela que da a imunidade testada abaixo.
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+            yield return DummyKillsMe("imunidade");
+            Check("imunidade/concedida-pela-morte-pvp", PvpState.IsImmune, $"flags={PvpState.Current}");
             yield return MoveTo(_openA);
             MoveDummy(_openB);
             yield return Wait(1f);
@@ -471,13 +527,12 @@ namespace PvpTestDriver
             DummyStrikesMe(Hit);
             yield return ExpectDamage("arena/imunidade-ignorada", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
 
-            ClanDirectory[DummyId] = "Lobos";
-            ClanDirectory[Me.GetPlayerID()] = "Lobos";
+            SetGuild(DummyId, "Lobos");
+            SetGuild(Me.GetPlayerID(), "Lobos");
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("arena/fogo-amigo-liberado", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
-            ClanDirectory.Remove(DummyId);
-            ClanDirectory.Remove(Me.GetPlayerID());
+            ClearGuilds();
 
             PvpState.ClearImmunity(Me);
             SetSwords(Me, 50f);
@@ -550,34 +605,30 @@ namespace PvpTestDriver
         }
 
         /// <summary>
-        /// Eu invado o territorio do Dummy e ele me mata la dentro: ele defendeu. O servidor
-        /// tem que dar a recompensa do bioma a ele e nao marca-lo como PK; eu perco skill
-        /// normalmente (invasor) e fico imune.
+        /// Castelo, agora eu da guilda dona e o Dummy invasor. Morro sem perder skill (vale para
+        /// todos no castelo), ele nao vira PK e nao ha recompensa: quem matou nao defendia.
         /// </summary>
-        private IEnumerator SoloDummyDefends()
+        private IEnumerator SoloCastleDefender()
         {
             ClearAllProtection();
-            yield return MoveTo(_wardB + Vector3.right * 2f);
-            MoveDummy(_wardB - Vector3.right * 2f);
-            PrivateArea ward = SpawnWard(_wardB, _dummy, null);
+            yield return MoveTo(_castle);
+            MoveDummy(_castle + Vector3.right * 2f);
+            SetGuild(Me.GetPlayerID(), CastleOwner);
+            SetGuild(DummyId, "Corvos");
             yield return Wait(1.5f);
-            Check("defesa-do-dummy/ele-defende", PvpRules.IsDefending(DummyId, Me.GetPlayerID(), Me.transform.position));
 
             SetSwords(Me, 50f);
             ArmHardDeath();
             MarkServerLog();
-            yield return DummyKillsMe("invadi o territorio do dummy");
-            Check("defesa-do-dummy/invasor-perde-skill-normal", Mathf.Abs(Swords(Me) - 50f * (1f - _deathFactor)) < 0.05f, "skill=" + Swords(Me));
-            Check("defesa-do-dummy/invasor-fica-imune", PvpState.IsImmune, $"flags={PvpState.Current}");
+            yield return DummyKillsMe("castelo: defensor");
+            Check("castelo-defensor/sem-perda-de-skill", Mathf.Abs(Swords(Me) - 50f) < 0.05f, "skill=" + Swords(Me));
+            Check("castelo-defensor/sem-imunidade", !PvpState.IsImmune, $"flags={PvpState.Current}");
             yield return Wait(1f);
 
             string log = ServerLogSinceMark();
-            Heightmap.Biome biome = WorldGenerator.instance.GetBiome(_wardB);
-            int expected = PvpConfig.DefenseRewardFor(biome);
-            Check("defesa-do-dummy/recompensa-por-bioma", log.Contains($"Recompensa de defesa: {DummyName} +{expected} "), $"bioma={biome} esperado={expected} log={Tail(log)}");
-            Check("defesa-do-dummy/defensor-nao-vira-pk", !log.Contains($"{DummyName} ({DummyId}) agora e PK"), Tail(log));
-            PvpState.ClearImmunity(Me);
-            ZNetScene.instance.Destroy(ward.gameObject);
+            Check("castelo-defensor/invasor-sem-recompensa", !log.Contains("Recompensa de defesa"), Tail(log));
+            Check("castelo-defensor/invasor-nao-vira-pk", !log.Contains($"{DummyName} ({DummyId}) agora e PK"), Tail(log));
+            ClearGuilds();
         }
 
         /// <summary>Morte por jogador x por PvE: e dela que dependem imunidade, PK, ranking e defesa.</summary>
@@ -732,11 +783,12 @@ namespace PvpTestDriver
             Command("rank");
             yield return Wait(2f);
             List<string> lines = Chat.instance.m_chatBuffer.Skip(Math.Max(0, before - 1)).ToList();
-            // O Dummy me matou fora da arena 5 vezes (defesa minha, PK, desafio, queda logo depois
-            // do golpe e defesa dele). A arena e as mortes de PvE (queda sozinha, javali) nao contam.
+            // O Dummy me matou fora da arena 6 vezes (castelo como invasor, imunidade, PK, desafio,
+            // queda logo depois do golpe, castelo como defensor). Arena e PvE (queda sozinha, javali)
+            // nao contam.
             string mine = lines.LastOrDefault(l => l.StartsWith("Voce:")) ?? "";
-            Check("rank/minha-linha", mine.Contains("K 0  D 5"), mine);
-            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 5  D 0")), string.Join(" / ", lines));
+            Check("rank/minha-linha", mine.Contains("K 0  D 6"), mine);
+            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 6  D 0")), string.Join(" / ", lines));
         }
     }
 }

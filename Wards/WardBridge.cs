@@ -21,14 +21,6 @@ namespace Deadheim.Wards
         /// </summary>
         public static Func<long, string> GuildOfPlayer;
 
-        /// <summary>
-        /// true quando GuildOfPlayer responde por qualquer jogador, online ou nao (o cla do
-        /// Deadheim, que tem o diretorio inteiro). Ai o acesso segue o cla ATUAL do dono do
-        /// ward; com false vale a guild carimbada na ZDO quando o ward nasceu, que e o que
-        /// o Guilds via RaidSystem consegue garantir.
-        /// </summary>
-        public static bool LiveGuildLookup;
-
         public static bool Governed(Vector3 point)
         {
             Func<Vector3, bool> check = IsExternallyGoverned;

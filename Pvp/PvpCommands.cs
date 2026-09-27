@@ -23,15 +23,6 @@ namespace Deadheim.Pvp
                 new Terminal.ConsoleCommand("rank", "ranking PvP (abates/mortes)",
                     args => RequireOnline(args.Context, PvpClient.SendRankRequest));
 
-                Terminal.ConsoleEvent clan = args => RequireOnline(args.Context, () =>
-                {
-                    string action = args.Length > 1 ? args[1] : "info";
-                    string rest = args.Length > 2 ? string.Join(" ", args.Args, 2, args.Length - 2) : string.Empty;
-                    PvpClient.SendClan(action, rest);
-                });
-                new Terminal.ConsoleCommand("cla", "criar <nome> | convidar <jogador> | aceitar | sair | expulsar | lider | desfazer", clan);
-                new Terminal.ConsoleCommand("clan", "alias de /cla", clan);
-
                 new Terminal.ConsoleCommand("pvpadmin", "(admin) zona | imune <min> | limpar | pk <min>", AdminCommand);
             }
         }
@@ -42,7 +33,7 @@ namespace Deadheim.Pvp
             private static void Postfix(Chat __instance)
             {
                 int index = Math.Max(0, __instance.m_chatBuffer.Count - 5);
-                __instance.m_chatBuffer.Insert(index, "/pvp estado | /cla | /desafio | /rank");
+                __instance.m_chatBuffer.Insert(index, "/pvp estado | /desafio | /rank");
                 __instance.UpdateChat();
             }
         }
@@ -76,7 +67,13 @@ namespace Deadheim.Pvp
             text.AppendLine($"Dano PvP x{PvpConfig.DamageMultiplier.Value:0.##}; no seu territorio x{PvpConfig.DamageMultiplier.Value * PvpConfig.WardDefenseMultiplier.Value:0.##}.");
             if (PvpClient.ChallengeCooldownRemaining > 0d)
                 text.AppendLine("Proximo desafio em " + PvpClient.FormatDuration(PvpClient.ChallengeCooldownRemaining) + ".");
-            text.AppendLine("/cla - seu cla (sem fogo amigo, wards e mapa compartilhados)");
+            string guild = PvpGuilds.GuildOf(player);
+            text.AppendLine(guild != null
+                ? $"Guilda: {guild} (sem fogo amigo entre membros)"
+                : "Sem guilda: entre numa pelo mod Guilds para ter aliados sem fogo amigo.");
+            string castle = PvpBridge.Castle(player.transform.position);
+            if (castle != null)
+                text.AppendLine($"Castelo {castle}, dono: {PvpBridge.Owner(player.transform.position) ?? "ninguem"}.");
             text.AppendLine("/desafio - vira CACADO por " + PvpConfig.ChallengeDurationMinutes.Value.ToString("0") + " min, com recompensa");
             text.Append("/rank - ranking K/D");
             foreach (string line in text.ToString().Split('\n')) context?.AddString(line.TrimEnd('\r'));
@@ -104,6 +101,7 @@ namespace Deadheim.Pvp
                     Vector3 pos = player.transform.position;
                     context.AddString($"Voce: x={pos.x:F0} z={pos.z:F0} bioma={WorldGenerator.instance?.GetBiome(pos)} " +
                                       $"segura={PvpZones.SafeAreaName(pos) ?? "-"} arena={PvpZones.ArenaName(pos) ?? "-"} " +
+                                      $"castelo={PvpBridge.Castle(pos) ?? "-"}/{PvpBridge.Owner(pos) ?? "-"} guilda={PvpGuilds.GuildOf(player) ?? "-"} " +
                                       $"transporte={PvpZones.IsOnTransport(player)} territorio={PvpRules.InOwnTerritory(player.GetPlayerID(), pos)}");
                     context.AddString($"Bandeiras: {PvpState.Current} pvp={player.IsPVPEnabled()}");
                     break;

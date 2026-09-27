@@ -19,14 +19,11 @@ namespace Deadheim.Pvp
         public const string OpDeath = "death";
         public const string OpChallenge = "challenge";
         public const string OpRank = "rank";
-        public const string OpClan = "clan";
 
         // Servidor -> cliente
         public const string OpState = "state";
         public const string OpMessage = "msg";
         public const string OpReward = "reward";
-        public const string OpClanDirectory = "clandir";
-        public const string OpClanPositions = "clanpos";
         public const string OpRankResult = "rankres";
 
         private static bool _registered;

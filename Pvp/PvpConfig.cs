@@ -17,7 +17,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> ForcePvp;
         public static ConfigEntry<float> DamageMultiplier;
         public static ConfigEntry<float> WardDefenseMultiplier;
-        public static ConfigEntry<bool> NoFriendlyFireClan;
+        public static ConfigEntry<bool> NoFriendlyFireGuild;
         public static ConfigEntry<bool> NoFriendlyFireTerritory;
         public static ConfigEntry<float> ImmunityMinutes;
         public static ConfigEntry<float> CombatTagSeconds;
@@ -40,11 +40,12 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> ArenaFriendlyFire;
         public static ConfigEntry<bool> ArenaCountsLeaderboard;
 
-        // ----------------------------------------------------------------- castelo
-        public static ConfigEntry<bool> DefenseNoSkillLoss;
-        public static ConfigEntry<string> DefenseRewardItem;
-        public static ConfigEntry<string> DefenseRewardByBiome;
-        public static ConfigEntry<float> DefenseRewardCooldownMinutes;
+        // ------------------------------------------------------- castelo (RaidSystem)
+        public static ConfigEntry<bool> CastleNoSkillLoss;
+        public static ConfigEntry<bool> CastleIgnoresImmunity;
+        public static ConfigEntry<string> CastleRewardItem;
+        public static ConfigEntry<string> CastleRewardByBiome;
+        public static ConfigEntry<float> CastleRewardCooldownMinutes;
 
         // ----------------------------------------------------------------- desafio
         public static ConfigEntry<bool> ChallengeEnabled;
@@ -55,14 +56,9 @@ namespace Deadheim.Pvp
         public static ConfigEntry<string> ChallengeKillReward;
         public static ConfigEntry<bool> HuntedCanUsePortals;
 
-        // --------------------------------------------------------------------- cla
-        public static ConfigEntry<bool> ClanEnabled;
-        public static ConfigEntry<int> ClanMaxMembers;
-        public static ConfigEntry<bool> ClanShowOnMap;
-
         // ------------------------------------------------------------------- tumba
         public static ConfigEntry<bool> TombstoneOwnerOnly;
-        public static ConfigEntry<bool> TombstoneClanAccess;
+        public static ConfigEntry<bool> TombstoneGuildAccess;
 
         // ----------------------------------------------------------------- retreat
         public static ConfigEntry<float> RetreatCooldownMinutes;
@@ -86,8 +82,8 @@ namespace Deadheim.Pvp
                 "Multiplicador do dano de jogador em jogador. 0.5 = metade do dano normal.");
             WardDefenseMultiplier = Bind(config, general, "WardDefenseMultiplier", 0.5f,
                 "Multiplicador extra do dano PvP recebido dentro de um ward abastecido onde voce tem permissao (seu territorio).");
-            NoFriendlyFireClan = Bind(config, general, "NoFriendlyFireClan", true,
-                "Membros do mesmo cla nao se ferem.");
+            NoFriendlyFireGuild = Bind(config, general, "NoFriendlyFireGuild", true,
+                "Membros da mesma guilda (mod Guilds) nao se ferem.");
             NoFriendlyFireTerritory = Bind(config, general, "NoFriendlyFireTerritory", true,
                 "Donos do mesmo territorio (quem tem permissao no mesmo ward) nao se ferem dentro dele.");
             ImmunityMinutes = Bind(config, general, "ImmunityMinutes", 10f,
@@ -101,7 +97,7 @@ namespace Deadheim.Pvp
 
             const string pk = "PvP - PK";
             PkMinutes = Bind(config, pk, "PkMinutes", 30f,
-                "Minutos que quem mata outro jogador fica marcado como PK. Nao vale para arena, defesa de territorio, alvo PK ou alvo cacado.");
+                "Minutos que quem mata outro jogador fica marcado como PK. Nao vale para arena, castelo, alvo PK ou alvo cacado.");
             PkSkillLossMultiplier = Bind(config, pk, "PkSkillLossMultiplier", 2f,
                 "Multiplicador da perda de skill de quem morre marcado como PK.");
             PkClearsOnDeath = Bind(config, pk, "PkClearsOnDeath", true,
@@ -123,19 +119,22 @@ namespace Deadheim.Pvp
             ArenaNoSkillLoss = Bind(config, zones, "ArenaNoSkillLoss", true,
                 "Morrer na arena nao tira skill.");
             ArenaFriendlyFire = Bind(config, zones, "ArenaFriendlyFire", true,
-                "Na arena, membros do mesmo cla podem lutar entre si.");
+                "Na arena, membros da mesma guilda podem lutar entre si.");
             ArenaCountsLeaderboard = Bind(config, zones, "ArenaCountsLeaderboard", false,
                 "Abates na arena contam para o ranking K/D.");
 
-            const string castle = "PvP - Defesa de Castelo";
-            DefenseNoSkillLoss = Bind(config, castle, "DefenseNoSkillLoss", true,
-                "Quem morre para jogador dentro do proprio territorio (ward onde tem permissao) nao perde skill.");
-            DefenseRewardItem = Bind(config, castle, "DefenseRewardItem", "Coins",
-                "Item da recompensa por matar invasor dentro do seu territorio.");
-            DefenseRewardByBiome = Bind(config, castle, "DefenseRewardByBiome",
+            // Castelo e zona de guerra do RaidSystem (Raid Zones). Sem o RaidSystem, nao ha castelo.
+            const string castle = "PvP - Castelo";
+            CastleNoSkillLoss = Bind(config, castle, "CastleNoSkillLoss", true,
+                "Quem morre para jogador dentro de um castelo do RaidSystem nao perde skill, atacante ou defensor.");
+            CastleIgnoresImmunity = Bind(config, castle, "CastleIgnoresImmunity", true,
+                "No castelo a imunidade pos-morte nao vale, e morrer la nao a concede: e zona de guerra.");
+            CastleRewardItem = Bind(config, castle, "CastleRewardItem", "Coins",
+                "Item da recompensa de quem, sendo da guilda dona do castelo, mata invasor la dentro.");
+            CastleRewardByBiome = Bind(config, castle, "CastleRewardByBiome",
                 "Meadows:25,BlackForest:50,Swamp:75,Mountain:100,Plains:150,Mistlands:200,AshLands:250,DeepNorth:250,Ocean:50",
-                "Quantidade da recompensa de defesa por bioma. Bioma:Quantidade,...");
-            DefenseRewardCooldownMinutes = Bind(config, castle, "DefenseRewardCooldownMinutes", 30f,
+                "Quantidade da recompensa de defesa por bioma do castelo. Bioma:Quantidade,...");
+            CastleRewardCooldownMinutes = Bind(config, castle, "CastleRewardCooldownMinutes", 30f,
                 "Minutos ate o mesmo invasor render recompensa de novo para o mesmo defensor.");
 
             const string challenge = "PvP - Desafio";
@@ -154,19 +153,11 @@ namespace Deadheim.Pvp
             HuntedCanUsePortals = Bind(config, challenge, "HuntedCanUsePortals", false,
                 "O cacado pode usar portal.");
 
-            const string clan = "PvP - Cla";
-            ClanEnabled = Bind(config, clan, "ClanEnabled", true,
-                "Sistema de cla embutido (/cla). Sem fogo amigo, acesso aos wards do cla e membros no mapa.");
-            ClanMaxMembers = Bind(config, clan, "ClanMaxMembers", 10,
-                "Maximo de membros por cla.");
-            ClanShowOnMap = Bind(config, clan, "ClanShowOnMap", true,
-                "Membros do cla aparecem no mapa uns dos outros.");
-
             const string tomb = "PvP - Tumba";
             TombstoneOwnerOnly = Bind(config, tomb, "TombstoneOwnerOnly", true,
                 "So o dono abre a propria tumba (admins tambem).");
-            TombstoneClanAccess = Bind(config, tomb, "TombstoneClanAccess", false,
-                "Membros do cla do dono tambem abrem a tumba.");
+            TombstoneGuildAccess = Bind(config, tomb, "TombstoneGuildAccess", false,
+                "Membros da guilda do dono tambem abrem a tumba (o dono precisa estar por perto).");
 
             RetreatCooldownMinutes = Bind(config, "PvP - Retreat", "RetreatCooldownMinutes", 30f,
                 "Minutos entre dois usos do /retreat. Em combate ou cacado o retreat nao funciona.");
@@ -215,11 +206,11 @@ namespace Deadheim.Pvp
             return reward;
         }
 
-        /// <summary>Recompensa de defesa para o bioma, lida de DefenseRewardByBiome.</summary>
-        public static int DefenseRewardFor(Heightmap.Biome biome)
+        /// <summary>Recompensa de defesa de castelo para o bioma, lida de CastleRewardByBiome.</summary>
+        public static int CastleRewardFor(Heightmap.Biome biome)
         {
             string name = biome.ToString();
-            foreach (string entry in DefenseRewardByBiome.Value.Split(','))
+            foreach (string entry in CastleRewardByBiome.Value.Split(','))
             {
                 string[] parts = entry.Split(':');
                 if (parts.Length != 2) continue;

@@ -21,6 +21,7 @@ namespace Deadheim.Pvp
         Combat = 16,
         HuntPending = 32,
         Arena = 64,
+        Castle = 128,
     }
 
     internal static class PvpState
@@ -137,6 +138,9 @@ namespace Deadheim.Pvp
 
             Vector3 pos = player.transform.position;
             bool arena = PvpZones.IsArena(pos);
+            string castle = PvpBridge.Castle(pos);
+            // Castelo do RaidSystem e zona de guerra: la a imunidade nao segura ninguem.
+            bool warZone = arena || (castle != null && PvpConfig.CastleIgnoresImmunity.Value);
             bool hunted = IsHunted;
             bool immune = IsImmune;
             bool combat = InCombat;
@@ -151,6 +155,11 @@ namespace Deadheim.Pvp
             {
                 pvp = true;
                 label = "Arena: " + PvpZones.ArenaName(pos);
+            }
+            else if (warZone)
+            {
+                pvp = true;
+                label = "Castelo: " + castle;
             }
             else if (hunted)
             {
@@ -174,13 +183,14 @@ namespace Deadheim.Pvp
             }
 
             PvpFlags flags = PvpFlags.None;
-            if (immune && !arena) flags |= PvpFlags.Immune;
+            if (immune && !warZone) flags |= PvpFlags.Immune;
             if (IsPk) flags |= PvpFlags.Pk;
             if (hunted) flags |= PvpFlags.Hunted;
             if (IsHuntPending) flags |= PvpFlags.HuntPending;
-            if (protectedZone && !arena) flags |= PvpFlags.Protected;
+            if (protectedZone && !warZone) flags |= PvpFlags.Protected;
             if (combat) flags |= PvpFlags.Combat;
             if (arena) flags |= PvpFlags.Arena;
+            if (castle != null) flags |= PvpFlags.Castle;
 
             // Estado antes da bandeira: o aviso de troca (PvpHud.OnPvpChanged) le o motivo daqui.
             Current = flags;

@@ -447,49 +447,5 @@ namespace RaidSystem
                            "[<color=yellow><b>$KEY_Use</b></color>] resgatar";
             }
         }
-
-        [HarmonyPatch(typeof(Character), "ApplyDamage")]
-        public static class ApplyDamagePatch
-        {
-            public static void Postfix(Character __instance, HitData hit)
-            {
-                try
-                {
-                    if (__instance.GetHealth() > 0f
-                        || hit.GetAttacker() == null
-                        || !hit.GetAttacker().IsPlayer()
-                        || !__instance.IsPlayer()) return;
-                    if (!ZNet.instance.IsServer()) return;
-
-                    Player killer = (Player)hit.GetAttacker();
-                    Player dead = (Player)__instance;
-                    string killerTeam = GuildsIntegration.GetPlayerTeam(killer);
-                    string deadTeam = GuildsIntegration.GetPlayerTeam(dead);
-                    if (string.IsNullOrEmpty(killerTeam) || string.IsNullOrEmpty(deadTeam)
-                        || killerTeam == deadTeam) return;
-
-                    // Points Per Defense existia na config mas nada registrava defesa.
-                    // Defesa = abate dentro de territorio que a guild do matador ja domina.
-                    string holder = Util.GetTerritoryOwner(((Component)__instance).transform.position);
-                    bool defended = !string.IsNullOrEmpty(holder)
-                                    && string.Equals(holder, killerTeam, StringComparison.OrdinalIgnoreCase);
-
-                    ScoreManager.RecordPvpOutcome(
-                        killer.GetPlayerID().ToString(),
-                        killer.m_nview.GetZDO().GetString("playerName"),
-                        killerTeam,
-                        dead.GetPlayerID().ToString(),
-                        dead.m_nview.GetZDO().GetString("playerName"),
-                        deadTeam,
-                        defended);
-
-                    dWebHook.SendRaidMessage(
-                        $"**[Abate]** **{killer.m_nview.GetZDO().GetString("playerName")}** [{killerTeam}] eliminou " +
-                        $"**{dead.m_nview.GetZDO().GetString("playerName")}** [{deadTeam}].\n" +
-                        ScoreManager.FormatLeaderboardForWebhook());
-                }
-                catch (Exception ex) { Debug.Log("ApplyDamage error: " + ex.Message); }
-            }
-        }
     }
 }

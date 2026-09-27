@@ -1,4 +1,5 @@
 using Deadheim.Wards;
+using System;
 using UnityEngine;
 
 namespace Deadheim.Pvp
@@ -92,9 +93,8 @@ namespace Deadheim.Pvp
             // Na arena o fogo amigo e liberado: e onde o cla treina entre si.
             if (PvpConfig.ArenaFriendlyFire.Value && PvpZones.IsArena(where)) return false;
 
-            long idA = a.GetPlayerID(), idB = b.GetPlayerID();
-            if (PvpConfig.NoFriendlyFireClan.Value && Clans.SameClan(idA, idB)) return true;
-            if (PvpConfig.NoFriendlyFireTerritory.Value && SharesTerritory(idA, idB, where)) return true;
+            if (PvpConfig.NoFriendlyFireGuild.Value && PvpGuilds.SameGuild(a, b)) return true;
+            if (PvpConfig.NoFriendlyFireTerritory.Value && SharesTerritory(a.GetPlayerID(), b.GetPlayerID(), where)) return true;
             return false;
         }
 
@@ -127,17 +127,18 @@ namespace Deadheim.Pvp
             return false;
         }
 
-        /// <summary>O ponto e territorio do defensor e o invasor nao tem permissao ali.</summary>
-        public static bool IsDefending(long defender, long intruder, Vector3 where)
+        /// <summary>
+        /// Defesa de castelo: o matador e da guilda que domina o castelo onde a vitima morreu,
+        /// e a vitima nao e. So o cliente da vitima tem os dois jogadores carregados para ler a
+        /// guilda pelo Guilds; o servidor so paga a recompensa.
+        /// </summary>
+        public static bool IsDefendingCastle(Player killer, Player victim, Vector3 where)
         {
-            if (defender == 0L || intruder == 0L) return false;
-            foreach (PrivateArea area in PrivateArea.m_allAreas)
-            {
-                if (area == null || WardProfiles.For(area) == null) continue;
-                if (!area.IsInside(where, 0f) || !IsActive(area)) continue;
-                if (WardCore.IsPermittedIn(area, defender) && !WardCore.IsPermittedIn(area, intruder)) return true;
-            }
-            return false;
+            if (killer == null || victim == null) return false;
+            string owner = PvpBridge.Owner(where);
+            if (owner == null || PvpBridge.Castle(where) == null) return false;
+            return string.Equals(PvpGuilds.GuildOf(killer), owner, StringComparison.OrdinalIgnoreCase)
+                   && !string.Equals(PvpGuilds.GuildOf(victim), owner, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

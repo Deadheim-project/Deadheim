@@ -44,7 +44,6 @@ namespace Deadheim.Pvp
                 case PvpNet.OpDeath: OnDeath(peer, pkg); break;
                 case PvpNet.OpChallenge: PvpChallenge.OnCommand(peer, pkg.ReadString()); break;
                 case PvpNet.OpRank: SendRank(peer); break;
-                case PvpNet.OpClan: Clans.OnCommand(peer, pkg.ReadString(), pkg.ReadString()); break;
                 default:
                     Debug.LogWarning($"[Deadheim PvP] Operacao desconhecida '{op}' de {peer.Name}.");
                     break;
@@ -57,7 +56,6 @@ namespace Deadheim.Pvp
         {
             PvpStore.Player(peer.PlayerId, peer.Name);
             SendState(peer);
-            Clans.SendDirectory(peer.PeerId);
             Debug.Log($"[Deadheim PvP] {peer.Name} ({peer.PlayerId}) sincronizado.");
         }
 
@@ -85,8 +83,9 @@ namespace Deadheim.Pvp
         {
             ZDOID killerZdo = pkg.ReadZDOID();
             bool arena = pkg.ReadBool();
-            bool killerDefending = pkg.ReadBool();
-            bool victimDefending = pkg.ReadBool();
+            string castle = pkg.ReadString();
+            if (string.IsNullOrEmpty(castle)) castle = null;
+            bool killerDefendingCastle = pkg.ReadBool() && castle != null;
             Vector3 position = pkg.ReadVector3();
 
             long killerId = 0L;
@@ -104,7 +103,7 @@ namespace Deadheim.Pvp
             bool victimWasHunted = PvpChallenge.IsHunted(victim.PlayerId);
 
             Debug.Log($"[Deadheim PvP] Morte: {victim.Name} por {(killerId != 0L ? killerName : "PvE")} " +
-                      $"arena={arena} defesaDoMatador={killerDefending} defesaDaVitima={victimDefending} " +
+                      $"arena={arena} castelo={castle ?? "-"} defesaDoCastelo={killerDefendingCastle} " +
                       $"vitimaPK={victimWasPk} vitimaCacada={victimWasHunted} pos=({position.x:F0},{position.z:F0})");
 
             PvpChallenge.OnDeath(victim, killerId, killerName);
@@ -126,7 +125,8 @@ namespace Deadheim.Pvp
                     PvpStore.MarkDirty();
                 }
 
-                bool pk = !arena && !killerDefending && !victimWasPk && !victimWasHunted
+                // Arena e castelo sao lugar de lutar: matar ali nao faz de ninguem PK.
+                bool pk = !arena && castle == null && !victimWasPk && !victimWasHunted
                           && PvpConfig.PkMinutes.Value > 0f;
                 if (pk)
                 {
@@ -142,11 +142,26 @@ namespace Deadheim.Pvp
                     }
                 }
 
-                if (killerDefending && !arena) GiveDefenseReward(killerId, killerName, victim, position);
+                if (killerDefendingCastle) GiveCastleReward(killerId, killerName, victim, castle, position);
+
+                PvpBridge.RaiseKilled(new PvpKill
+                {
+                    KillerId = killerId,
+                    KillerName = killerName,
+                    VictimId = victim.PlayerId,
+                    VictimName = victim.Name,
+                    Position = position,
+                    Arena = arena,
+                    Castle = castle,
+                    KillerDefendingCastle = killerDefendingCastle,
+                });
 
                 if (PvpConfig.KillFeed.Value)
                 {
-                    string where = arena ? " na arena" : killerDefending ? " defendendo o territorio" : string.Empty;
+                    string where = arena ? " na arena"
+                        : killerDefendingCastle ? $" defendendo o castelo {castle}"
+                        : castle != null ? $" no castelo {castle}"
+                        : string.Empty;
                     string tag = pk ? " <color=#ff5050>[PK]</color>" : string.Empty;
                     PvpNet.Broadcast($"<color=#ffb347>{killerName}</color>{tag} matou <color=#ffb347>{victim.Name}</color>{where}.");
                 }
@@ -155,16 +170,16 @@ namespace Deadheim.Pvp
             SendState(victim);
         }
 
-        private static void GiveDefenseReward(long killerId, string killerName, PvpPeer victim, Vector3 position)
+        private static void GiveCastleReward(long killerId, string killerName, PvpPeer victim, string castle, Vector3 position)
         {
             if (WorldGenerator.instance == null) return;
             Heightmap.Biome biome = WorldGenerator.instance.GetBiome(position);
-            int amount = PvpConfig.DefenseRewardFor(biome);
-            string item = PvpConfig.DefenseRewardItem.Value;
+            int amount = PvpConfig.CastleRewardFor(biome);
+            string item = PvpConfig.CastleRewardItem.Value;
             if (amount <= 0 || string.IsNullOrEmpty(item)) return;
 
             string key = killerId + ":" + victim.PlayerId;
-            double cooldown = PvpConfig.DefenseRewardCooldownMinutes.Value * 60d;
+            double cooldown = PvpConfig.CastleRewardCooldownMinutes.Value * 60d;
             if (_defenseRewardAt.TryGetValue(key, out double last) && Now - last < cooldown)
             {
                 if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer peer))
@@ -174,8 +189,8 @@ namespace Deadheim.Pvp
             _defenseRewardAt[key] = Now;
 
             if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer))
-                SendReward(killerPeer.PeerId, item, amount, $"Defesa do territorio ({biome})");
-            Debug.Log($"[Deadheim PvP] Recompensa de defesa: {killerName} +{amount} {item} ({biome}).");
+                SendReward(killerPeer.PeerId, item, amount, $"Defesa do castelo {castle} ({biome})");
+            Debug.Log($"[Deadheim PvP] Recompensa de defesa: {killerName} +{amount} {item} ({biome}, castelo {castle}).");
         }
 
         public static void SendReward(long peerId, string prefab, int amount, string reason)
@@ -238,7 +253,6 @@ namespace Deadheim.Pvp
             ReportStartZoneOnce();
             RetryPendingHellos();
             PvpChallenge.Tick();
-            Clans.ServerTick();
             PvpStore.Tick();
         }
 
