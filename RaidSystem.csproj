@@ -53,6 +53,7 @@
          estoura MissingFieldException na primeira sincronizacao de config: quebra que
          nenhuma compilacao pega, so aparece com um cliente conectado. -->
     <Compile Include="ThirdParty\ConfigSync.cs" />
+    <Compile Include="Shared\ConfigWatcher.cs" />
     <!-- Substitui o Jotunn: RaidWard, martelo, admin e o menu. -->
     <Compile Include="Shared\Vanilla.cs" />
     <Compile Include="RaidSystem\dWebHook.cs" />

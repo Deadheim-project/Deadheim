@@ -74,7 +74,8 @@ namespace Deadheim.Pvp
             if ((flags & (PvpFlags.Arena | PvpFlags.Castle)) != 0)
                 parts.Add("<color=#ff8c00>" + PvpState.ZoneLabel + "</color>");
             else if ((flags & PvpFlags.Hunted) != 0)
-                parts.Add("<color=#ff5050>CACADO " + PvpClient.FormatDuration(PvpState.HuntedRemaining) + "</color>");
+                parts.Add("<color=#ff5050>CACADO " + PvpClient.FormatDuration(PvpState.HuntedRemaining)
+                          + (PvpClient.HuntPaused ? " (pausado)" : string.Empty) + "</color>");
             else if ((flags & PvpFlags.Immune) != 0)
                 parts.Add("<color=#7fd4ff>IMUNE A PvP " + PvpClient.FormatDuration(PvpState.ImmuneRemaining) + "</color>");
             else if ((flags & PvpFlags.Protected) != 0)
@@ -85,7 +86,10 @@ namespace Deadheim.Pvp
                 parts.Add("<color=#c0c0c0>PvP desligado</color>");
 
             if ((flags & PvpFlags.Pk) != 0)
-                parts.Add("<color=#ff3030>PK " + PvpClient.FormatDuration(PvpState.PkRemaining) + "</color>");
+                parts.Add("<color=#ff3030>PK " + PvpClient.FormatDuration(PvpState.PkRemaining)
+                          + (PvpState.PkCount > 1 ? $" (x{PvpState.PkCount})" : string.Empty) + "</color>");
+            if ((flags & PvpFlags.Aggressor) != 0)
+                parts.Add("<color=#ff7a3d>AGRESSOR</color>");
             if ((flags & PvpFlags.HuntPending) != 0)
                 parts.Add("<color=#ff8c00>Desafio em " + PvpClient.FormatDuration(PvpState.HuntPendingRemaining) + "</color>");
             if ((flags & PvpFlags.Combat) != 0)

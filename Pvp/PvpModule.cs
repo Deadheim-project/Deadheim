@@ -34,6 +34,7 @@ namespace Deadheim.Pvp
         public static void Update()
         {
             PvpServer.Update();
+            PvpClient.Update();
 
             Player player = Player.m_localPlayer;
             if (player == null || !PvpConfig.Active) return;
@@ -123,6 +124,7 @@ namespace Deadheim.Pvp
             private static void Prefix()
             {
                 PvpState.ResetSession();
+                PvpClient.ResetSession();
                 PvpHud.ResetSession();
                 PvpRankPanel.Close();
             }

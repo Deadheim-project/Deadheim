@@ -94,6 +94,7 @@ namespace Deadheim.Pvp
             if (PvpConfig.ArenaFriendlyFire.Value && PvpZones.IsArena(where)) return false;
 
             if (PvpConfig.NoFriendlyFireGuild.Value && PvpGuilds.SameGuild(a, b)) return true;
+            if (PvpConfig.NoFriendlyFireGroup.Value && PvpGroups.SameGroup(a, b)) return true;
             if (PvpConfig.NoFriendlyFireTerritory.Value && SharesTerritory(a.GetPlayerID(), b.GetPlayerID(), where)) return true;
             return false;
         }
@@ -156,7 +157,11 @@ namespace Deadheim.Pvp
         public static float DamageMultiplier(Player victim)
         {
             float multiplier = Mathf.Max(0f, PvpConfig.DamageMultiplier.Value);
-            if (victim != null && InOwnTerritory(victim.GetPlayerID(), victim.transform.position))
+            if (victim == null) return multiplier;
+            // Cacado escondido no proprio ward nao ganha a defesa extra (senao e intocavel).
+            bool hunted = (PvpState.FlagsOf(victim) & PvpFlags.Hunted) != 0;
+            if (hunted && PvpConfig.HuntedNoWardDefense.Value) return multiplier;
+            if (InOwnTerritory(victim.GetPlayerID(), victim.transform.position))
                 multiplier *= Mathf.Max(0f, PvpConfig.WardDefenseMultiplier.Value);
             return multiplier;
         }

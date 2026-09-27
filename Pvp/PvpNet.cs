@@ -25,6 +25,7 @@ namespace Deadheim.Pvp
         public const string OpMessage = "msg";
         public const string OpReward = "reward";
         public const string OpRankResult = "rankres";
+        public const string OpPunish = "punish";
 
         private static bool _registered;
 

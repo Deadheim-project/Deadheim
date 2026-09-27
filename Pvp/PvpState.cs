@@ -22,11 +22,19 @@ namespace Deadheim.Pvp
         HuntPending = 32,
         Arena = 64,
         Castle = 128,
+        /// <summary>Bateu primeiro em alguem sem marca: mata-lo nao gera PK (legitima defesa).</summary>
+        Aggressor = 256,
+        /// <summary>Dentro de um ward onde tem permissao: o servidor pausa o desafio.</summary>
+        InOwnWard = 512,
     }
 
     internal static class PvpState
     {
         public static readonly int ZdoFlags = "dh_pvpFlags".GetStableHashCode();
+        /// <summary>Quantos abates deram PK a este jogador (contador de PK), para o nome sobre a cabeca.</summary>
+        public static readonly int ZdoPkCount = "dh_pkCount".GetStableHashCode();
+        /// <summary>playerID de quem bateu por ultimo: o servidor le ao deslogar em combate.</summary>
+        public static readonly int ZdoLastAttacker = "dh_lastPvpAttacker".GetStableHashCode();
 
         private const string KeyImmuneUntil = "dh_pvpImmuneUntil";
 
@@ -40,6 +48,8 @@ namespace Deadheim.Pvp
         private static double _huntPendingUntil;
         private static double _huntedUntil;
         private static float _combatUntil;
+        private static float _aggressorUntil;
+        private static int _pkCount;
 
         private static ZDOID _lastPvpAttacker = ZDOID.None;
         private static float _lastPvpHitTime = -9999f;
@@ -54,6 +64,8 @@ namespace Deadheim.Pvp
         public static bool IsHunted => _huntedUntil > Now;
         public static bool IsHuntPending => _huntPendingUntil > Now;
         public static bool InCombat => Time.time < _combatUntil;
+        public static bool IsAggressor => Time.time < _aggressorUntil;
+        public static int PkCount => _pkCount;
 
         public static double ImmuneRemaining => Math.Max(0d, _immuneUntil - Now);
         public static double PkRemaining => Math.Max(0d, _pkUntil - Now);
@@ -68,6 +80,8 @@ namespace Deadheim.Pvp
             _huntPendingUntil = 0d;
             _huntedUntil = 0d;
             _combatUntil = 0f;
+            _aggressorUntil = 0f;
+            _pkCount = 0;
             _lastPvpAttacker = ZDOID.None;
             _lastPvpHitTime = -9999f;
             _dotCreditUntil = -9999f;
@@ -103,6 +117,36 @@ namespace Deadheim.Pvp
             _huntedUntil = huntedRemaining > 0d ? now + huntedRemaining : 0d;
         }
 
+        public static void ApplyPkCount(Player player, int count)
+        {
+            _pkCount = Math.Max(0, count);
+            ZDO zdo = player != null && player.m_nview != null && player.m_nview.IsValid() ? player.m_nview.GetZDO() : null;
+            if (zdo != null && zdo.GetInt(ZdoPkCount, 0) != _pkCount) zdo.Set(ZdoPkCount, _pkCount);
+        }
+
+        public static int PkCountOf(Player player)
+        {
+            if (player == null) return 0;
+            if (player == Player.m_localPlayer) return _pkCount;
+            ZNetView nview = player.m_nview;
+            return nview != null && nview.IsValid() ? nview.GetZDO().GetInt(ZdoPkCount, 0) : 0;
+        }
+
+        /// <summary>
+        /// Golpe dado pelo jogador local em <paramref name="victim"/>. Quem ataca alguem sem marca
+        /// (nao agressor, nao PK, nao cacado) fora de arena e castelo vira agressor. Revidar em
+        /// quem ja e agressor e defesa e nao marca.
+        /// </summary>
+        public static void MarkAttack(Player victim)
+        {
+            MarkCombat();
+            if (PvpConfig.AggressorRule == null || !PvpConfig.AggressorRule.Value || victim == null) return;
+            PvpFlags target = FlagsOf(victim);
+            if ((target & (PvpFlags.Aggressor | PvpFlags.Pk | PvpFlags.Hunted | PvpFlags.Arena | PvpFlags.Castle)) != 0) return;
+            if ((Current & (PvpFlags.Arena | PvpFlags.Castle)) != 0) return;
+            _aggressorUntil = Time.time + Mathf.Max(0f, PvpConfig.AggressorSeconds.Value);
+        }
+
         public static void ClearPk() => _pkUntil = 0d;
 
         public static void MarkCombat()
@@ -113,6 +157,12 @@ namespace Deadheim.Pvp
             _lastPvpAttacker = attacker;
             _lastPvpHitTime = Time.time;
             MarkCombat();
+
+            // O servidor precisa saber quem bateu se o jogador deslogar em combate.
+            Player local = Player.m_localPlayer;
+            if (local != null && local.m_nview != null && local.m_nview.IsValid()
+                && PvpRules.IsPlayerZdo(attacker, out long attackerId))
+                local.m_nview.GetZDO().Set(ZdoLastAttacker, attackerId);
         }
 
         /// <summary>
@@ -138,6 +188,11 @@ namespace Deadheim.Pvp
             bool recent = Time.time - _lastPvpHitTime <= window || Time.time <= _dotCreditUntil;
             return recent ? _lastPvpAttacker : ZDOID.None;
         }
+
+        public static void ClearAggressor() => _aggressorUntil = 0f;
+
+        /// <summary>Morreu: a luta acabou (senao deslogar logo depois de renascer contaria como fuga).</summary>
+        public static void ClearCombat() => _combatUntil = 0f;
 
         public static void ForgetAttacker()
         {
@@ -212,6 +267,8 @@ namespace Deadheim.Pvp
             if (combat) flags |= PvpFlags.Combat;
             if (arena) flags |= PvpFlags.Arena;
             if (castle != null) flags |= PvpFlags.Castle;
+            if (IsAggressor) flags |= PvpFlags.Aggressor;
+            if (PvpRules.InOwnTerritory(player.GetPlayerID(), pos)) flags |= PvpFlags.InOwnWard;
 
             // Estado antes da bandeira: o aviso de troca (PvpHud.OnPvpChanged) le o motivo daqui.
             Current = flags;

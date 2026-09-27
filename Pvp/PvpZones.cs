@@ -70,7 +70,7 @@ namespace Deadheim.Pvp
         }
 
         /// <summary>
-        /// Barco (dentro do volume do navio, de pe no convés ou no leme), montaria ou
+        /// Barco andando (dentro do volume do navio, de pe no convés ou no leme), montaria ou
         /// puxando carroca. So faz sentido para o jogador local: e ele quem decide a
         /// propria bandeira de PvP.
         /// </summary>
@@ -79,9 +79,9 @@ namespace Deadheim.Pvp
             if (player == null) return false;
             try
             {
-                if (player.InNumShipVolumes > 0) return true;
-                if (player.IsAttachedToShip() || player.IsRiding()) return true;
-                if (player.GetStandingOnShip() != null) return true;
+                if (player.InNumShipVolumes > 0 || player.IsAttachedToShip() || player.GetStandingOnShip() != null)
+                    return ShipIsMoving(player);
+                if (player.IsRiding()) return true;
 
                 foreach (Vagon vagon in Vagon.m_instances)
                 {
@@ -95,6 +95,27 @@ namespace Deadheim.Pvp
                 Debug.LogWarning("[Deadheim PvP] Checagem de transporte falhou: " + ex.Message);
             }
             return false;
+        }
+
+        /// <summary>
+        /// Barco parado ou encalhado nao e abrigo (ShipSafeMinSpeed): senao qualquer barco na
+        /// praia, ate de inimigo, viraria bunker ao lado de uma base.
+        /// </summary>
+        private static bool ShipIsMoving(Player player)
+        {
+            float minimum = PvpConfig.ShipSafeMinSpeed.Value;
+            if (minimum <= 0f) return true;
+
+            Ship ship = player.GetStandingOnShip() ?? player.GetControlledShip();
+            if (ship == null)
+                foreach (Ship candidate in Ship.s_currentShips)
+                    if (candidate != null && candidate.m_players.Contains(player))
+                    {
+                        ship = candidate;
+                        break;
+                    }
+            if (ship == null || ship.m_body == null) return false;
+            return ship.m_body.linearVelocity.magnitude >= minimum;
         }
 
         // ---------------------------------------------------------------- ilha inicial
@@ -180,13 +201,15 @@ namespace Deadheim.Pvp
             int size = _islandHalf * 2 + 1;
             float water = ZoneSystem.instance != null ? ZoneSystem.instance.m_waterLevel : 30f;
 
+            HashSet<Heightmap.Biome> allowed = AllowedBiomes();
             bool[] land = new bool[size * size];
             for (int z = 0; z < size; z++)
             for (int x = 0; x < size; x++)
             {
                 float wx = center.x + (x - _islandHalf) * Cell;
                 float wz = center.y + (z - _islandHalf) * Cell;
-                land[z * size + x] = WorldGenerator.instance.GetHeight(wx, wz) > water - 1f;
+                land[z * size + x] = WorldGenerator.instance.GetHeight(wx, wz) > water - 1f
+                                     && (allowed == null || allowed.Contains(WorldGenerator.instance.GetBiome(wx, wz)));
             }
 
             bool[] bridged = Dilate(land, size);
@@ -235,6 +258,21 @@ namespace Deadheim.Pvp
             foreach (KeyValuePair<Heightmap.Biome, int> entry in sorted)
                 parts.Add($"{entry.Key} {entry.Value * 100f / Mathf.Max(1, _islandCells):0}%");
             _islandBiomes = string.Join(", ", parts);
+        }
+
+        /// <summary>StartIslandBiomes: null = qualquer bioma.</summary>
+        private static HashSet<Heightmap.Biome> AllowedBiomes()
+        {
+            string raw = PvpConfig.StartIslandBiomes.Value;
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            HashSet<Heightmap.Biome> result = new HashSet<Heightmap.Biome>();
+            foreach (string name in raw.Split(','))
+            {
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                try { result.Add((Heightmap.Biome)Enum.Parse(typeof(Heightmap.Biome), name.Trim(), true)); }
+                catch (Exception) { Debug.LogWarning($"[Deadheim PvP] StartIslandBiomes: bioma desconhecido '{name.Trim()}'."); }
+            }
+            return result.Count > 0 ? result : null;
         }
 
         private static bool[] Dilate(bool[] source, int size)

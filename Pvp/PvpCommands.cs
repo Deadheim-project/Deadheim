@@ -71,6 +71,13 @@ namespace Deadheim.Pvp
             text.AppendLine(guild != null
                 ? $"Guilda: {guild} (sem fogo amigo entre membros)"
                 : "Sem guilda: entre numa pelo mod Guilds para ter aliados sem fogo amigo.");
+            if (PvpGroups.IsAvailable)
+                text.AppendLine("Grupo (Groups): quem esta no seu grupo tambem e aliado, sem fogo amigo.");
+            text.AppendLine(PvpState.PkCount > 0
+                ? $"Contador de PK: {PvpState.PkCount} abate(s) que deram PK."
+                : "Contador de PK: 0.");
+            if (PvpState.IsAggressor)
+                text.AppendLine("Voce e AGRESSOR: bateu primeiro. Quem te matar agora nao vira PK.");
             string castle = PvpBridge.Castle(player.transform.position);
             if (castle != null)
                 text.AppendLine($"Castelo {castle}, dono: {PvpBridge.Owner(player.transform.position) ?? "ninguem"}.");

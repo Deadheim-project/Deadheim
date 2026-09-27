@@ -18,6 +18,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<float> DamageMultiplier;
         public static ConfigEntry<float> WardDefenseMultiplier;
         public static ConfigEntry<bool> NoFriendlyFireGuild;
+        public static ConfigEntry<bool> NoFriendlyFireGroup;
         public static ConfigEntry<bool> NoFriendlyFireTerritory;
         public static ConfigEntry<float> ImmunityMinutes;
         public static ConfigEntry<float> CombatTagSeconds;
@@ -28,10 +29,14 @@ namespace Deadheim.Pvp
         public static ConfigEntry<float> PkMinutes;
         public static ConfigEntry<float> PkSkillLossMultiplier;
         public static ConfigEntry<bool> PkClearsOnDeath;
+        public static ConfigEntry<bool> AggressorRule;
+        public static ConfigEntry<float> AggressorSeconds;
 
         // ------------------------------------------------------------------ zonas
         public static ConfigEntry<string> StartIslandMode;
         public static ConfigEntry<int> StartIslandRadius;
+        public static ConfigEntry<string> StartIslandBiomes;
+        public static ConfigEntry<float> ShipSafeMinSpeed;
         public static ConfigEntry<string> SafeZones;
         public static ConfigEntry<string> ArenaZones;
         public static ConfigEntry<bool> TransportsSafe;
@@ -55,6 +60,16 @@ namespace Deadheim.Pvp
         public static ConfigEntry<string> ChallengeSurviveReward;
         public static ConfigEntry<string> ChallengeKillReward;
         public static ConfigEntry<bool> HuntedCanUsePortals;
+        public static ConfigEntry<bool> ChallengePausesInOwnWard;
+        public static ConfigEntry<bool> HuntedNoWardDefense;
+        public static ConfigEntry<int> ChallengeMinPlayers;
+
+        // ------------------------------------------------------------------- fuga
+        public static ConfigEntry<bool> CombatBlocksTeleport;
+        public static ConfigEntry<string> CombatLogout;
+
+        // ------------------------------------------------------------------ saque
+        public static ConfigEntry<float> PvpCoinDropPercent;
 
         // ------------------------------------------------------------------- tumba
         public static ConfigEntry<bool> TombstoneOwnerOnly;
@@ -84,6 +99,8 @@ namespace Deadheim.Pvp
                 "Multiplicador extra do dano PvP recebido dentro de um ward abastecido onde voce tem permissao (seu territorio).");
             NoFriendlyFireGuild = Bind(config, general, "NoFriendlyFireGuild", true,
                 "Membros da mesma guilda (mod Guilds) nao se ferem.");
+            NoFriendlyFireGroup = Bind(config, general, "NoFriendlyFireGroup", true,
+                "Membros do mesmo grupo (mod Groups, a party) nao se ferem.");
             NoFriendlyFireTerritory = Bind(config, general, "NoFriendlyFireTerritory", true,
                 "Donos do mesmo territorio (quem tem permissao no mesmo ward) nao se ferem dentro dele.");
             ImmunityMinutes = Bind(config, general, "ImmunityMinutes", 10f,
@@ -97,17 +114,25 @@ namespace Deadheim.Pvp
 
             const string pk = "PvP - PK";
             PkMinutes = Bind(config, pk, "PkMinutes", 30f,
-                "Minutos que quem mata outro jogador fica marcado como PK. Nao vale para arena, castelo, alvo PK ou alvo cacado.");
+                "Minutos que quem mata outro jogador fica marcado como PK. Nao vale para arena, castelo, alvo PK, alvo cacado ou alvo agressor (AggressorRule).");
             PkSkillLossMultiplier = Bind(config, pk, "PkSkillLossMultiplier", 2f,
                 "Multiplicador da perda de skill de quem morre marcado como PK.");
             PkClearsOnDeath = Bind(config, pk, "PkClearsOnDeath", true,
                 "A marca de PK some quando o PK morre.");
+            AggressorRule = Bind(config, pk, "AggressorRule", true,
+                "Legitima defesa: quem bate primeiro em um jogador sem marca vira AGRESSOR. Matar um agressor " +
+                "(inclusive quem te atacou) nao faz de ninguem PK.");
+            AggressorSeconds = Bind(config, pk, "AggressorSeconds", 60f,
+                "Segundos que a marca de agressor dura depois do ultimo golpe dado.");
 
             const string zones = "PvP - Zonas";
             StartIslandMode = Bind(config, zones, "StartIslandMode", "Island",
                 "Zona segura inicial. Island = a massa de terra ligada ao templo inicial (limitada pelo raio); Radius = circulo em volta do templo; Off = sem zona inicial.");
             StartIslandRadius = Bind(config, zones, "StartIslandRadius", 1500,
                 "Raio maximo em metros da zona segura inicial, medido do templo inicial.");
+            StartIslandBiomes = Bind(config, zones, "StartIslandBiomes", "",
+                "Biomas que a zona segura inicial pode cobrir, separados por virgula (ex.: Meadows). " +
+                "Vazio = qualquer bioma ligado ao templo (no mundo de teste: Campina e Floresta Negra).");
             SafeZones = Bind(config, zones, "SafeZones", "",
                 "Zonas seguras extras: Nome,x,z,raio|Nome2,x,z,raio");
             ArenaZones = Bind(config, zones, "ArenaZones", "",
@@ -116,6 +141,9 @@ namespace Deadheim.Pvp
                 "Quem esta num barco, carroca ou montaria fica em zona segura.");
             TransportsInvulnerable = Bind(config, zones, "TransportsInvulnerable", true,
                 "Barcos e carrocas nao tomam dano de jogador.");
+            ShipSafeMinSpeed = Bind(config, zones, "ShipSafeMinSpeed", 1f,
+                "O barco so protege quem esta nele se estiver andando acima desta velocidade (m/s). " +
+                "Barco parado ou encalhado nao e abrigo. 0 = protege parado tambem.");
             ArenaNoSkillLoss = Bind(config, zones, "ArenaNoSkillLoss", true,
                 "Morrer na arena nao tira skill.");
             ArenaFriendlyFire = Bind(config, zones, "ArenaFriendlyFire", true,
@@ -151,7 +179,25 @@ namespace Deadheim.Pvp
             ChallengeKillReward = Bind(config, challenge, "ChallengeKillReward", "Coins:500",
                 "Recompensa de quem mata o cacado. Item:Quantidade");
             HuntedCanUsePortals = Bind(config, challenge, "HuntedCanUsePortals", false,
-                "O cacado pode usar portal.");
+                "O cacado pode usar portal, NPC teleportador e pedra de retorno.");
+            ChallengePausesInOwnWard = Bind(config, challenge, "ChallengePausesInOwnWard", true,
+                "O tempo do desafio para enquanto o cacado esta dentro de um ward onde ele tem permissao " +
+                "(paredes invulneraveis nao podem valer a recompensa).");
+            HuntedNoWardDefense = Bind(config, challenge, "HuntedNoWardDefense", true,
+                "O cacado nao tem a reducao de dano do proprio ward (WardDefenseMultiplier).");
+            ChallengeMinPlayers = Bind(config, challenge, "ChallengeMinPlayers", 3,
+                "Jogadores online (contando o cacado) para aceitar o desafio. Abaixo disso o tempo do desafio para.");
+
+            const string escape = "PvP - Fuga";
+            CombatBlocksTeleport = Bind(config, escape, "CombatBlocksTeleport", true,
+                "Em combate nenhum teleporte longo funciona: portal, NPC teleportador, pedra de retorno, retreat.");
+            CombatLogout = Bind(config, escape, "CombatLogout", "Death",
+                "Deslogar em combate. Off = nada; Rank = conta morte para quem saiu e abate para quem bateu; " +
+                "Death = alem disso, ao voltar o jogador morre onde saiu (perde skill e a tumba fica la).");
+
+            PvpCoinDropPercent = Bind(config, "PvP - Saque", "PvpCoinDropPercent", 10f,
+                "Porcentagem das moedas que quem morre para jogador deixa no chao, fora da tumba, para quem matou " +
+                "pegar. 0 = desligado. Nao vale na arena.");
 
             const string tomb = "PvP - Tumba";
             TombstoneOwnerOnly = Bind(config, tomb, "TombstoneOwnerOnly", true,
@@ -177,6 +223,7 @@ namespace Deadheim.Pvp
             ArenaZones.SettingChanged += (_, __) => PvpZones.Invalidate();
             StartIslandMode.SettingChanged += (_, __) => PvpZones.Invalidate();
             StartIslandRadius.SettingChanged += (_, __) => PvpZones.Invalidate();
+            StartIslandBiomes.SettingChanged += (_, __) => PvpZones.Invalidate();
         }
 
         private static ConfigEntry<T> Bind<T>(ConfigFile config, string section, string key, T value, string description)

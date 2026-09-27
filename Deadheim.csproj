@@ -150,6 +150,7 @@
     <Compile Include="Shared\Vanilla.cs" />
     <!-- ServerSync do fonte: sincroniza a config de servidor e confere a versao do cliente. -->
     <Compile Include="ThirdParty\ConfigSync.cs" />
+    <Compile Include="Shared\ConfigWatcher.cs" />
     <Compile Include="Portal.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Retreat.cs" />
@@ -167,6 +168,7 @@
     <Compile Include="Pvp\PvpClient.cs" />
     <Compile Include="Pvp\PvpCommands.cs" />
     <Compile Include="Pvp\PvpConfig.cs" />
+    <Compile Include="Pvp\PvpGroups.cs" />
     <Compile Include="Pvp\PvpGuilds.cs" />
     <Compile Include="Pvp\PvpHud.cs" />
     <Compile Include="Pvp\PvpModule.cs" />

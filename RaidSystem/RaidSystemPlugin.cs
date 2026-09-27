@@ -81,6 +81,8 @@ namespace RaidSystem
             WardSetup.LoadAssets();
             RegisterDeadheimBridges();
             _harmony = new Harmony(PluginGUID); _harmony.PatchAll();
+            // Salvar o cfg com o servidor ligado ja vale: recarrega e o ServerSync repassa.
+            Deadheim.Shared.ConfigWatcher.Watch(Config, PluginName);
             Logger.LogInfo($"RaidSystem v{PluginVersion} loaded.");
         }
 

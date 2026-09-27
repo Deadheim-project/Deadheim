@@ -55,6 +55,8 @@ namespace Hearthstone
 			item.Crafting.Add(CraftingTable.Workbench, 1);
 
 			this.harmony.PatchAll();
+			// Salvar o cfg com o servidor ligado ja vale: recarrega e o ServerSync repassa.
+			Deadheim.Shared.ConfigWatcher.Watch(base.Config, "Hearthstone");
 		}
 
 		private void Update()

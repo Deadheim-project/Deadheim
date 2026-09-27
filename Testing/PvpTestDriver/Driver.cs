@@ -353,6 +353,8 @@ namespace PvpTestDriver
         {
             PvpState.ClearImmunity(Me);
             PvpState.ClearPk();
+            PvpState.ClearAggressor();
+            SetDummy(true, PvpFlags.None);
         }
 
         private static IEnumerator Wait(float seconds)

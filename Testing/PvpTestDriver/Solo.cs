@@ -92,15 +92,19 @@ namespace PvpTestDriver
                 Step("zona-segura", SoloSafeZone),
                 Step("atacante-protegido", SoloAttackerProtected),
                 Step("combate", SoloCombatTag),
+                Step("fuga", SoloEscape),
                 Step("guilda", SoloGuild),
+                Step("grupo", SoloGroup),
                 Step("territorio", SoloTerritory),
                 Step("castelo-invasor", SoloCastleInvader),
                 Step("imunidade", SoloImmunity),
                 Step("pk", SoloPk),
+                Step("agressor", SoloAggressor),
                 Step("arena", SoloArena),
                 Step("desafio", SoloChallenge),
                 Step("desafio-sobrevive", SoloChallengeSurvive),
                 Step("morte-pve-x-pvp", SoloDeathCause),
+                Step("saque", SoloLoot),
                 Step("castelo-defensor", SoloCastleDefender),
                 Step("tumba", SoloTombstone),
                 Step("transporte", SoloTransport),
@@ -291,6 +295,8 @@ namespace PvpTestDriver
                 $"janelaSemPerda={Me.m_hardDeathCooldown}s");
             Check("setup/raidsystem-ligado", PvpBridge.CastleAt != null && PvpBridge.CastleOwner != null);
             Log("ilha: " + PvpZones.DescribeIsland());
+            Log("plugins: " + string.Join(", ", BepInEx.Bootstrap.Chainloader.PluginInfos.Values
+                .Select(i => i.Metadata.Name + " " + i.Metadata.Version)));
 
             Check("setup/arredor-do-templo-seguro", PvpZones.IsSafeArea(_safe), PvpZones.SafeAreaName(_safe));
             Check("setup/aberto-nao-seguro", !PvpZones.IsSafeArea(_openA) && !PvpZones.IsArena(_openA));
@@ -358,6 +364,129 @@ namespace PvpTestDriver
             DummyStrikesMe(raw);
             yield return ExpectDamage("armadura/corte-depois-da-armadura", expected, 0.5f);
             Me.UnequipAllItems();
+        }
+
+        /// <summary>Teleporte longo (portal, NPC, pedra, retreat) nao funciona em combate.</summary>
+        private IEnumerator SoloEscape()
+        {
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return Wait(0.5f);
+            Vector3 before = Me.transform.position;
+            Vector3 far = Ground(_openA + Vector3.forward * 25f);
+            bool went = Me.TeleportTo(far, Me.transform.rotation, true);
+            yield return Wait(1f);
+            Check("fuga/teleporte-bloqueado-em-combate", !went && Utils.DistanceXZ(Me.transform.position, before) < 3f,
+                $"teleportou={went} andou={Utils.DistanceXZ(Me.transform.position, before):0.0}");
+
+            yield return Wait(CombatWait);
+            went = Me.TeleportTo(far, Me.transform.rotation, true);
+            float until = Time.time + 20f;
+            while (Time.time < until && (Me.IsTeleporting() || Utils.DistanceXZ(Me.transform.position, far) > 3f)) yield return Wait(0.5f);
+            Check("fuga/teleporte-livre-fora-de-combate", went && Utils.DistanceXZ(Me.transform.position, far) < 3f,
+                $"teleportou={went} distancia={Utils.DistanceXZ(Me.transform.position, far):0.0}");
+            yield return MoveTo(_openA);
+        }
+
+        /// <summary>Party do mod Groups: mesmo grupo e aliado, sem fogo amigo.</summary>
+        private IEnumerator SoloGroup()
+        {
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+            if (AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "Groups"))
+                Check("grupo/mod-groups-carregado", PvpGroups.IsAvailable);
+            else
+                Log("SKIP grupo/mod-groups-carregado: o Groups nao esta neste teste");
+
+            PvpGroups.TestOverride = id => id == DummyId;
+            Check("grupo/mesmo-grupo", PvpGroups.SameGroup(Me, _dummy));
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("grupo/sem-fogo-amigo", 0f, 0.5f);
+
+            PvpGroups.TestOverride = null;
+            yield return Wait(CombatWait);
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("grupo/fora-do-grupo-leva-dano", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+        }
+
+        /// <summary>
+        /// Legitima defesa: eu bato primeiro (viro AGRESSOR) e o Dummy me mata. Ele nao vira PK,
+        /// mas o abate conta no ranking.
+        /// </summary>
+        private IEnumerator SoloAggressor()
+        {
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+
+            // Pelo caminho do atacante (Character.Damage): e onde a marca nasce.
+            _dummy.Damage(HitFrom(Me, _dummy, Hit));
+            yield return Wait(0.6f);
+            Check("agressor/marcado", PvpState.IsAggressor && (PvpState.Current & PvpFlags.Aggressor) != 0, $"flags={PvpState.Current}");
+            Check("agressor/hud", PvpHud.Compose(Me).Contains("AGRESSOR"), PvpHud.Compose(Me));
+
+            MarkServerLog();
+            yield return DummyKillsMe("agressor");
+            yield return Wait(1f);
+            string log = ServerLogSinceMark();
+            Check("agressor/legitima-defesa-sem-pk", log.Contains("legitima defesa") && !log.Contains($"{DummyName} ({DummyId}) agora e PK"), Tail(log));
+            Check("agressor/marca-some-ao-morrer", !PvpState.IsAggressor, $"flags={PvpState.Current}");
+            PvpState.ClearImmunity(Me);
+        }
+
+        /// <summary>Saque: quem morre para jogador deixa PvpCoinDropPercent das moedas no chao, fora da tumba.</summary>
+        private IEnumerator SoloLoot()
+        {
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+
+            GameObject coinsPrefab = ObjectDB.instance.GetItemPrefab("Coins");
+            string coinName = coinsPrefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+            Inventory inventory = Me.GetInventory();
+            inventory.RemoveItem(coinName, inventory.CountItems(coinName));
+            inventory.AddItem(coinsPrefab, 1000);
+            int expected = Mathf.FloorToInt(1000 * PvpConfig.PvpCoinDropPercent.Value / 100f);
+            Vector3 deathAt = Me.transform.position;
+
+            MarkServerLog();
+            yield return DummyKillsMe("saque");
+            yield return Wait(1.5f);
+            List<ItemDrop> coins = ItemDrop.s_instances.Where(d => d != null && d.m_itemData.m_shared.m_name == coinName
+                                                                   && Utils.DistanceXZ(d.transform.position, deathAt) < 8f).ToList();
+            int onGround = coins.Sum(d => d.m_itemData.m_stack);
+            Check("saque/moedas-no-chao", onGround == expected, $"no-chao={onGround} esperado={expected}");
+            string log = ServerLogSinceMark();
+            Check("saque/servidor-sabe", log.Contains($"moedasNoChao={expected}"), Tail(log));
+            foreach (ItemDrop drop in coins) ZNetScene.instance.Destroy(drop.gameObject);
+            PvpState.ClearImmunity(Me);
+        }
+
+        /// <summary>Muda uma linha do cfg do servidor, com ele ligado (recarga automatica).</summary>
+        private void SetServerConfig(string key, string value)
+        {
+            string path = Path.Combine(Path.GetDirectoryName(_sync.TrimEnd('\\', '/')), "server", "BepInEx", "config", "Detalhes.Deadheim.cfg");
+            string text = File.ReadAllText(path);
+            string changed = System.Text.RegularExpressions.Regex.Replace(text,
+                "(?m)^" + System.Text.RegularExpressions.Regex.Escape(key) + " = .*$", key + " = " + value);
+            File.WriteAllText(path, changed);
+            Log($"cfg do servidor: {key} = {value} (mudou={changed != text})");
+        }
+
+        private static IEnumerator WaitFor(Func<bool> condition, float timeout)
+        {
+            float until = Time.time + timeout;
+            while (Time.time < until && !condition()) yield return new WaitForSeconds(0.5f);
         }
 
         private IEnumerator SoloSafeZone()
@@ -532,6 +661,9 @@ namespace PvpTestDriver
             yield return Wait(1f);
             Check("pk/marcado", (PvpState.Current & PvpFlags.Pk) != 0, $"flags={PvpState.Current}");
             Check("pk/hud", PvpHud.Compose(Me).Contains("PK"), PvpHud.Compose(Me));
+            PvpState.ApplyPkCount(Me, 3);
+            Check("pk/contador-no-hud", PvpHud.Compose(Me).Contains("x3"), PvpHud.Compose(Me));
+            Check("pk/contador-na-zdo", Me.m_nview.GetZDO().GetInt(PvpState.ZdoPkCount, 0) == 3);
             SetSwords(Me, 50f);
             float before = Swords(Me);
             // Acabou de morrer: o vanilla estaria na janela sem perda de skill. PK perde assim mesmo.
@@ -609,6 +741,27 @@ namespace PvpTestDriver
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("desafio/leva-dano-na-zona-segura", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+
+            Vector3 here = Me.transform.position;
+            bool went = Me.TeleportTo(Ground(_openA), Me.transform.rotation, true);
+            yield return Wait(1f);
+            Check("desafio/cacado-nao-teleporta", !went && Utils.DistanceXZ(Me.transform.position, here) < 3f,
+                $"teleportou={went} andou={Utils.DistanceXZ(Me.transform.position, here):0.0}");
+
+            MarkServerLog();
+            yield return MoveTo(_wardA + Vector3.right * 2f);
+            MoveDummy(_wardA - Vector3.right * 2f);
+            yield return Wait(3f);
+            Check("desafio/pausado-no-proprio-ward", PvpClient.HuntPaused && PvpHud.Compose(Me).Contains("pausado"), PvpHud.Compose(Me));
+            string pause = ServerLogSinceMark();
+            Check("desafio/servidor-pausou", pause.Contains("pausado (dentro do proprio ward)"), Tail(pause));
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("desafio/cacado-sem-defesa-do-ward", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(3f);
+            Check("desafio/retomado-fora-do-ward", !PvpClient.HuntPaused && PvpState.IsHunted, PvpHud.Compose(Me));
 
             yield return DummyKillsMe("desafio");
             yield return Wait(2f);
@@ -790,6 +943,18 @@ namespace PvpTestDriver
             Check("ward-natureza/arvore-dentro-protegida", Mathf.Approximately(insideBefore, insideAfter), $"antes={insideBefore} depois={insideAfter}");
             Check("ward-natureza/arvore-fora-cai", outsideAfter < outsideBefore, $"antes={outsideBefore} depois={outsideAfter}");
 
+            // Veio de minerio no ward alheio: livre (ProtectNatureOres=false), senao ward tranca minerio.
+            GameObject vein = Instantiate(ZNetScene.instance.GetPrefab("MineRock_Tin"), Ground(_wardB + Vector3.back * 3f), Quaternion.identity);
+            yield return Wait(0.5f);
+            HitData pick = ChopHit(vein.transform);
+            pick.m_damage.m_chop = 0f;
+            pick.m_damage.m_pickaxe = 20f;
+            Check("ward-natureza/estanho-e-veio", Deadheim.Wards.WardPatches.IsOreVein(vein));
+            Check("ward-natureza/arvore-nao-e-veio", !Deadheim.Wards.WardPatches.IsOreVein(inside.gameObject));
+            Check("ward-natureza/veio-livre-no-ward", !Deadheim.Wards.WardPatches.NatureBlocked(vein.transform.position, pick, vein));
+            Check("ward-natureza/arvore-trancada-no-ward", Deadheim.Wards.WardPatches.NatureBlocked(inside.transform.position, ChopHit(inside), inside.gameObject));
+            ZNetScene.instance.Destroy(vein);
+
             ZNetScene.instance.Destroy(inside.gameObject);
             ZNetScene.instance.Destroy(outside.gameObject);
             ZNetScene.instance.Destroy(ward.gameObject);
@@ -818,11 +983,28 @@ namespace PvpTestDriver
             Me.m_body.position = deck;
             Me.m_body.linearVelocity = Vector3.zero;
             yield return Wait(1.5f);
+            Check("transporte/barco-parado-nao-protege", !PvpZones.IsOnTransport(Me) && (PvpState.Current & PvpFlags.Protected) == 0,
+                $"volumes={Me.InNumShipVolumes} flags={PvpState.Current}");
+
+            // Recarga do cfg com o servidor ligado: o arquivo muda, o servidor rele e o
+            // ServerSync entrega o valor novo aqui, sem reiniciar nada.
+            MarkServerLog();
+            SetServerConfig("ShipSafeMinSpeed", "0");
+            yield return WaitFor(() => Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 0f), 20f);
+            Check("config/recarga-chega-no-cliente", Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 0f),
+                "ShipSafeMinSpeed=" + PvpConfig.ShipSafeMinSpeed.Value);
+            string reload = ServerLogSinceMark();
+            Check("config/servidor-recarregou", reload.Contains("Config recarregada de Detalhes.Deadheim.cfg"), Tail(reload));
+            yield return Wait(1f);
             Check("transporte/no-barco-protegido", PvpZones.IsOnTransport(Me) && (PvpState.Current & PvpFlags.Protected) != 0,
                 $"volumes={Me.InNumShipVolumes} flags={PvpState.Current}");
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("transporte/barco-bloqueia-dano", 0f, 0.5f);
+            SetServerConfig("ShipSafeMinSpeed", "1");
+            yield return WaitFor(() => Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 1f), 20f);
+            Check("config/recarga-volta", Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 1f),
+                "ShipSafeMinSpeed=" + PvpConfig.ShipSafeMinSpeed.Value);
             yield return MoveTo(_openA);
             ZNetScene.instance.Destroy(ship);
         }
@@ -845,12 +1027,13 @@ namespace PvpTestDriver
             Command("rank");
             yield return Wait(2f);
             List<string> lines = Chat.instance.m_chatBuffer.Skip(Math.Max(0, before - 1)).ToList();
-            // O Dummy me matou fora da arena 7 vezes (castelo como invasor, imunidade, PK, desafio,
-            // queda logo depois do golpe, veneno, castelo como defensor). Arena e PvE (queda
-            // sozinha, javali) nao contam.
+            // O Dummy me matou fora da arena 9 vezes (castelo como invasor, imunidade, PK, agressor,
+            // desafio, queda logo depois do golpe, veneno, saque, castelo como defensor). Arena e
+            // PvE (queda sozinha, javali) nao contam.
             string mine = lines.LastOrDefault(l => l.StartsWith("Voce:")) ?? "";
-            Check("rank/minha-linha", mine.Contains("K 0  D 7"), mine);
-            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 7  D 0")), string.Join(" / ", lines));
+            Check("rank/minha-linha", mine.Contains("K 0  D 9"), mine);
+            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 9  D 0")), string.Join(" / ", lines));
+            Check("rank/contador-de-pk", lines.Any(l => l.Contains(DummyName) && l.Contains("PK ")), string.Join(" / ", lines));
         }
     }
 }

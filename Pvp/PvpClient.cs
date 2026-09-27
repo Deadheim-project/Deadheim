@@ -10,6 +10,10 @@ namespace Deadheim.Pvp
         public static double ChallengeCooldown { get; private set; }
         private static double _challengeCooldownAt;
 
+        /// <summary>O servidor parou o relogio do desafio (cacado no proprio ward ou pouca gente online).</summary>
+        public static bool HuntPaused { get; private set; }
+        private static bool _punishPending;
+
         public static double ChallengeCooldownRemaining
             => Math.Max(0d, ChallengeCooldown - (PvpState.Now - _challengeCooldownAt));
 
@@ -24,9 +28,15 @@ namespace Deadheim.Pvp
                     double hunted = pkg.ReadDouble();
                     ChallengeCooldown = pkg.ReadDouble();
                     _challengeCooldownAt = PvpState.Now;
+                    int pkCount = pkg.ReadInt();
+                    HuntPaused = pkg.ReadBool();
                     PvpState.ApplyServerTimers(pk, pending, hunted);
+                    PvpState.ApplyPkCount(Player.m_localPlayer, pkCount);
                     break;
                 }
+                case PvpNet.OpPunish:
+                    _punishPending = true;
+                    break;
                 case PvpNet.OpMessage:
                 {
                     bool center = pkg.ReadBool();
@@ -98,11 +108,37 @@ namespace Deadheim.Pvp
             ShowMessage($"<color=#ffd700>+{amount} {itemName}</color> - {reason}", true);
         }
 
+        /// <summary>
+        /// Deslogou em combate (CombatLogout=Death): morre assim que o personagem estiver de pe
+        /// no mundo, onde saiu. Morte sem atacante: PvE, com a perda de skill normal e a tumba ali.
+        /// </summary>
+        public static void Update()
+        {
+            if (!_punishPending) return;
+            Player player = Player.m_localPlayer;
+            if (player == null || player.IsDead() || player.InCutscene() || player.IsTeleporting()
+                || !player.m_nview.IsValid() || !player.m_nview.IsOwner()) return;
+            _punishPending = false;
+
+            ShowMessage("<color=#ff5050>Voce deslogou em combate e morreu onde saiu.</color>", true);
+            HitData hit = new HitData { m_hitType = HitData.HitType.Undefined, m_point = player.GetCenterPoint() };
+            hit.m_damage.m_damage = 1e7f;
+            player.m_nview.InvokeRPC("RPC_Damage", hit);
+            Debug.Log("[Deadheim PvP] Morte por deslogar em combate aplicada.");
+        }
+
+        public static void ResetSession()
+        {
+            HuntPaused = false;
+            _punishPending = false;
+        }
+
         // -------------------------------------------------------------------- envio
 
         public static void SendHello() => PvpNet.SendToServer(PvpNet.Package(PvpNet.OpHello));
 
-        public static void SendDeath(ZDOID killer, bool arena, string castle, bool killerDefendingCastle, Vector3 position)
+        public static void SendDeath(ZDOID killer, bool arena, string castle, bool killerDefendingCastle, Vector3 position,
+                                     bool victimWasAggressor, int coinsDropped)
         {
             ZPackage pkg = PvpNet.Package(PvpNet.OpDeath);
             pkg.Write(killer);
@@ -110,6 +146,8 @@ namespace Deadheim.Pvp
             pkg.Write(castle ?? string.Empty);
             pkg.Write(killerDefendingCastle);
             pkg.Write(position);
+            pkg.Write(victimWasAggressor);
+            pkg.Write(coinsDropped);
             PvpNet.SendToServer(pkg);
         }
 

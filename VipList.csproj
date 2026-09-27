@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ThirdParty\ConfigSync.cs" />
+    <Compile Include="Shared\ConfigWatcher.cs" />
     <Compile Include="VipList\VipListApi.cs" />
     <Compile Include="VipList\VipListPlugin.cs" />
     <Compile Include="VipList\Properties\AssemblyInfo.cs" />

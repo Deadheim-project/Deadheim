@@ -15,11 +15,17 @@ namespace Deadheim.Wards
         public bool GuildAccess;
         public bool Protects;
 
-        /// <summary>Raio fixo, ou -1 para seguir Plugin.WardRadius.</summary>
+        /// <summary>Raio fixo, ou -1 para seguir o cfg (RadiusConfig, ou Plugin.WardRadius).</summary>
         public float Radius = -1f;
 
+        /// <summary>Config que da o raio deste tipo de ward; null = Plugin.WardRadius.</summary>
+        public Func<int> RadiusConfig;
+
         public float ResolveRadius()
-            => Radius > 0f ? Radius : Plugin.WardRadius.Value;
+        {
+            if (Radius > 0f) return Radius;
+            return RadiusConfig != null ? RadiusConfig() : Plugin.WardRadius.Value;
+        }
     }
 
     /// <summary>
@@ -52,6 +58,8 @@ namespace Deadheim.Wards
             {
                 PrefabName = PlayerWard,
                 Fuel = true, CountsToLimit = true, GuildAccess = true, Protects = true,
+                // Sem isto o Awake aplicava o WardRadius (150) e o PlayerWardRadius nao valia.
+                RadiusConfig = () => PlayerWardRadius.Value,
             },
             new WardProfile
             {
@@ -75,6 +83,9 @@ namespace Deadheim.Wards
         public static ConfigEntry<bool> ProtectPortals;
         public static ConfigEntry<bool> ProtectPlants;
         public static ConfigEntry<bool> ProtectNature;
+        public static ConfigEntry<float> ProtectNatureRadius;
+        public static ConfigEntry<bool> ProtectNatureOres;
+        public static ConfigEntry<string> NatureOreDrops;
 
         private static GameObject _playerWardPrefab;
         private static bool _registeredInHammer;
@@ -88,32 +99,63 @@ namespace Deadheim.Wards
         {
             const string section = "Wards";
 
-            PlayerWardEnabled = config.Bind(section, "PlayerWardEnabled", true,
-                "Habilita o ward de protecao proprio (DeadheimWard), separado do guard_stone.");
-            PlayerWardRadius = config.Bind(section, "PlayerWardRadius", 32,
-                "Raio do DeadheimWard em metros.");
-            PlayerWardCost = config.Bind(section, "PlayerWardCost", "Stone:100,SurtlingCore:5",
-                "Custo do DeadheimWard no formato Item:Quantidade,Item:Quantidade.");
-            DamagePercent = config.Bind(section, "DamagePercent", 0f,
+            // Tudo sincronizado (ServerSync): e o servidor que decide o que o ward protege.
+            PlayerWardEnabled = Plugin.Synced(config.Bind(section, "PlayerWardEnabled", true,
+                "Habilita o ward de protecao proprio (DeadheimWard), separado do guard_stone."));
+            PlayerWardRadius = Plugin.Synced(config.Bind(section, "PlayerWardRadius", 32,
+                "Raio do DeadheimWard em metros."));
+            PlayerWardCost = Plugin.Synced(config.Bind(section, "PlayerWardCost", "Stone:100,SurtlingCore:5",
+                "Custo do DeadheimWard no formato Item:Quantidade,Item:Quantidade."));
+            DamagePercent = Plugin.Synced(config.Bind(section, "DamagePercent", 0f,
                 new ConfigDescription(
                     "Percentual de dano que o ward e tudo que ele cobre recebem. 0 = invulneravel, 100 = dano normal.",
-                    new AcceptableValueRange<float>(0f, 100f)));
-            Spacing = config.Bind(section, "Spacing", 3f,
-                "Distancia minima de um ward alheio, em multiplos do raio. 0 desliga a checagem.");
-            FuelItem = config.Bind(section, "FuelItem", "GreydwarfEye",
-                "Prefab do item usado para abastecer o ward.");
-            MaxCharges = config.Bind(section, "MaxCharges", 10,
-                "Maximo de cargas de combustivel que um ward guarda.");
-            GuildAccessEnabled = config.Bind(section, "GuildAccess", true,
-                "Membros da guild do dono tem acesso automatico ao ward.");
-            ProtectTerrain = config.Bind(section, "ProtectTerrain", true,
-                "Bloqueia picareta, hoe e cultivador dentro do ward.");
-            ProtectPortals = config.Bind(section, "ProtectPortals", true,
-                "Bloqueia renomear portais dentro do ward.");
-            ProtectPlants = config.Bind(section, "ProtectPlants", true,
-                "Bloqueia colher e destruir plantacao dentro do ward.");
-            ProtectNature = config.Bind(section, "ProtectNature", true,
-                "Bloqueia quebrar pedra, minerio, arvore, tronco e toco dentro do ward de outro jogador.");
+                    new AcceptableValueRange<float>(0f, 100f))));
+            Spacing = Plugin.Synced(config.Bind(section, "Spacing", 3f,
+                "Distancia minima de um ward alheio, em multiplos do raio. 0 desliga a checagem."));
+            FuelItem = Plugin.Synced(config.Bind(section, "FuelItem", "GreydwarfEye",
+                "Prefab do item usado para abastecer o ward."));
+            MaxCharges = Plugin.Synced(config.Bind(section, "MaxCharges", 10,
+                "Maximo de cargas de combustivel que um ward guarda."));
+            GuildAccessEnabled = Plugin.Synced(config.Bind(section, "GuildAccess", true,
+                "Membros da guild do dono tem acesso automatico ao ward."));
+            ProtectTerrain = Plugin.Synced(config.Bind(section, "ProtectTerrain", true,
+                "Bloqueia picareta, hoe e cultivador dentro do ward."));
+            ProtectPortals = Plugin.Synced(config.Bind(section, "ProtectPortals", true,
+                "Bloqueia renomear portais dentro do ward."));
+            ProtectPlants = Plugin.Synced(config.Bind(section, "ProtectPlants", true,
+                "Bloqueia colher e destruir plantacao dentro do ward."));
+            ProtectNature = Plugin.Synced(config.Bind(section, "ProtectNature", true,
+                "Bloqueia quebrar pedra, arvore, tronco e toco dentro do ward de outro jogador."));
+            ProtectNatureRadius = Plugin.Synced(config.Bind(section, "ProtectNatureRadius", 0f,
+                "Pedra e arvore so ficam protegidas ate esta distancia do ward, em metros. 0 = o ward inteiro. " +
+                "Serve para proteger a base (arvore caindo, pedra no caminho) sem trancar o raio todo."));
+            ProtectNatureOres = Plugin.Synced(config.Bind(section, "ProtectNatureOres", false,
+                "Protege tambem os veios de minerio (os que soltam um item de NatureOreDrops). Desligado: " +
+                "ward nao tranca minerio, senao uma guilda fecharia os veios do mapa com wards."));
+            NatureOreDrops = Plugin.Synced(config.Bind(section, "NatureOreDrops",
+                "CopperOre,TinOre,IronScrap,SilverOre,Obsidian,BlackMarble,FlametalOre,FlametalOreNew,CopperScrap,BronzeScrap,Grausten,SoftTissue",
+                "Itens que definem um veio de minerio para ProtectNatureOres."));
+
+            // O WardRadius e ligado depois, em Plugin.Awake, que assina o mesmo ApplyRadii.
+            PlayerWardRadius.SettingChanged += (_, __) => ApplyRadii();
+            PlayerWardCost.SettingChanged += (_, __) =>
+            {
+                Piece piece = _playerWardPrefab != null ? _playerWardPrefab.GetComponent<Piece>() : null;
+                if (piece != null) ApplyRequirements(piece);
+            };
+        }
+
+        /// <summary>Raio novo no cfg vale tambem para os wards ja construidos.</summary>
+        public static void ApplyRadii()
+        {
+            foreach (PrivateArea area in PrivateArea.m_allAreas)
+            {
+                WardProfile profile = For(area);
+                if (profile == null) continue;
+                float radius = profile.ResolveRadius();
+                area.m_radius = radius;
+                if (area.m_areaMarker != null) area.m_areaMarker.m_radius = radius;
+            }
         }
 
         // ------------------------------------------------------------- identificacao

@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using Deadheim.Vanilla;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -352,7 +353,7 @@ namespace Deadheim.Wards
                     }
 
                     // Pedra pequena, toco, arbusto: Destructible que nao e peca construida.
-                    return !NatureBlocked(__instance.transform.position, hit);
+                    return !NatureBlocked(__instance.transform.position, hit, __instance.gameObject);
                 }
                 catch (Exception ex)
                 {
@@ -369,26 +370,71 @@ namespace Deadheim.Wards
         /// bate (IDestructible.Damage), antes do RPC: o golpe nem sai. Usa o ponto do golpe,
         /// nao o centro do objeto, porque rocha grande (MineRock5) passa da borda do ward.
         /// </summary>
-        private static bool NatureBlocked(Vector3 fallback, HitData hit)
+        internal static bool NatureBlocked(Vector3 fallback, HitData hit, GameObject target = null)
         {
             if (!WardProfiles.ProtectNature.Value || hit == null) return false;
             if (!(hit.GetAttacker() is Player attacker) || attacker != Player.m_localPlayer) return false;
             if (Admin.LocalPlayerIsAdmin()) return false;
+            // Veio de minerio fica livre (ProtectNatureOres=false): senao uma guilda fecharia
+            // os veios do mapa com wards de 150 m que ninguem derruba fora do castelo.
+            if (!WardProfiles.ProtectNatureOres.Value && IsOreVein(target)) return false;
 
             Vector3 point = hit.m_point != Vector3.zero ? hit.m_point : fallback;
-            return WardCore.IsBlocked(point, attacker, "Pedras e arvores protegidas por um ward.");
+            PrivateArea ward = WardCore.GetProtectingWard(point, attacker);
+            if (ward == null) return false;
+            float limit = WardProfiles.ProtectNatureRadius.Value;
+            if (limit > 0f && Utils.DistanceXZ(point, ward.transform.position) > limit) return false;
+
+            ward.FlashShield(false);
+            attacker.Message(MessageHud.MessageType.Center, "Pedras e arvores protegidas por um ward.");
+            return true;
+        }
+
+        private static string _oreDropsRaw;
+        private static HashSet<string> _oreDrops = new HashSet<string>();
+
+        /// <summary>Solta algum item de NatureOreDrops? (MineRock, MineRock5 ou DropOnDestroyed)</summary>
+        internal static bool IsOreVein(GameObject target)
+        {
+            if (target == null) return false;
+            string raw = WardProfiles.NatureOreDrops.Value ?? string.Empty;
+            if (raw != _oreDropsRaw)
+            {
+                _oreDropsRaw = raw;
+                _oreDrops = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string name in raw.Split(','))
+                    if (name.Trim().Length > 0) _oreDrops.Add(name.Trim());
+            }
+            if (_oreDrops.Count == 0) return false;
+
+            MineRock rock = target.GetComponent<MineRock>();
+            if (rock != null && Drops(rock.m_dropItems)) return true;
+            MineRock5 vein = target.GetComponent<MineRock5>();
+            if (vein != null && Drops(vein.m_dropItems)) return true;
+            DropOnDestroyed drop = target.GetComponent<DropOnDestroyed>();
+            return drop != null && Drops(drop.m_dropWhenDestroyed);
+        }
+
+        private static bool Drops(DropTable table)
+        {
+            if (table?.m_drops == null) return false;
+            foreach (DropTable.DropData data in table.m_drops)
+                if (data.m_item != null && _oreDrops.Contains(data.m_item.name)) return true;
+            return false;
         }
 
         [HarmonyPatch(typeof(MineRock), "Damage")]
         public static class MineRockPatch
         {
-            private static bool Prefix(MineRock __instance, HitData hit) => !NatureBlocked(__instance.transform.position, hit);
+            private static bool Prefix(MineRock __instance, HitData hit)
+                => !NatureBlocked(__instance.transform.position, hit, __instance.gameObject);
         }
 
         [HarmonyPatch(typeof(MineRock5), "Damage")]
         public static class MineRock5Patch
         {
-            private static bool Prefix(MineRock5 __instance, HitData hit) => !NatureBlocked(__instance.transform.position, hit);
+            private static bool Prefix(MineRock5 __instance, HitData hit)
+                => !NatureBlocked(__instance.transform.position, hit, __instance.gameObject);
         }
 
         [HarmonyPatch(typeof(TreeBase), "Damage")]

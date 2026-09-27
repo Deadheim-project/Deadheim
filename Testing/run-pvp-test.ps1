@@ -28,6 +28,10 @@ param(
     [string]$BepInExCore = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\core'),
     # O RaidSystem exige o Guilds; vem do perfil do launcher, o mesmo que os jogadores usam.
     [string]$GuildsDll = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\plugins\guilds\Guilds.dll'),
+    # Terceiros do pacote PvP, do perfil do launcher (o que ele baixou do Hexium). O que nao
+    # estiver la fica de fora do teste, com aviso.
+    [string]$PackPlugins = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\plugins'),
+    [string[]]$PackMods = @('Groups.dll', 'ServerCharacters.dll', 'CreatureLevelControl.dll', 'AzuAnticheat.dll'),
     [int]$TimeoutMinutes = 25,
     [switch]$NewWorld,
     # Um cliente so, com o segundo jogador simulado pelo driver: cabe numa maquina onde
@@ -44,6 +48,14 @@ $deadheimDll = Join-Path $repo 'bin\Release\Deadheim.dll'
 $vipDll = Join-Path $repo 'bin\Release\VipList.dll'
 $driverDll = Join-Path $PSScriptRoot 'PvpTestDriver\bin\Release\PvpTestDriver.dll'
 $raidDll = Join-Path $repo 'bin\Release\RaidSystem.dll'
+
+# Terceiros do pacote PvP achados no perfil do launcher.
+$packDlls = @()
+foreach ($name in $PackMods) {
+    $found = Get-ChildItem -Path $PackPlugins -Recurse -Filter $name -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { $packDlls += $found.FullName } else { Write-Warning "$name nao esta em $PackPlugins; fica fora do teste." }
+}
+$antiCheat = $packDlls | Where-Object { (Split-Path $_ -Leaf) -eq 'AzuAnticheat.dll' }
 
 # Castelo de teste: zona do RaidSystem a este deslocamento do templo, com dono "Lobos".
 # O PvpTestDriver (Solo.cs, CastleOffset) procura terra dentro dela com o mesmo numero.
@@ -103,6 +115,13 @@ ChallengeDurationMinutes = 1
 ChallengeCooldownMinutes = 0.1
 ChallengeKillReward = Coins:500
 ChallengeSurviveReward = Coins:1000
+# Solo: so um jogador online de verdade (o Dummy nao e peer).
+ChallengeMinPlayers = 1
+ChallengePausesInOwnWard = true
+HuntedNoWardDefense = true
+
+[PvP - Saque]
+PvpCoinDropPercent = 10
 "@
     Set-Content -Path "$Root\server\BepInEx\config\Detalhes.Deadheim.cfg" -Value $cfg -Encoding UTF8
 }
@@ -180,10 +199,18 @@ $prefsBackup = "$Root\valheim-prefs.reg"
 try {
     # ------------------------------------------------------------ servidor: mundo e templo
     Write-Step "Montando arvores BepInEx em $Root"
-    New-BepInExTree "$Root\server" @($deadheimDll, $vipDll, $raidDll, $GuildsDll)
-    New-BepInExTree "$Root\clientA" @($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll)
-    New-BepInExTree "$Root\clientB" @($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll)
-    New-BepInExTree "$Root\clientS" @($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll)
+    New-BepInExTree "$Root\server" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll) + $packDlls)
+    New-BepInExTree "$Root\clientA" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\clientB" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\clientS" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll) + $packDlls)
+    if ($antiCheat) {
+        # AzuAntiCheat: a whitelist do servidor e o espelho das pastas de plugin do cliente.
+        $whitelist = "$Root\server\BepInEx\config\AzuAntiCheat_Whitelist"
+        New-Item -ItemType Directory -Force $whitelist | Out-Null
+        Copy-Item -Recurse "$Root\clientS\BepInEx\plugins\*" $whitelist
+        Write-Step "AzuAntiCheat: whitelist com $((Get-ChildItem -Recurse -File $whitelist).Count) arquivos"
+    }
+    Write-Step "Terceiros do pacote no teste: $(( @($GuildsDll) + $packDlls | ForEach-Object { Split-Path $_ -Leaf }) -join ', ')" 
     foreach ($d in @("$Root\sync", "$Root\chars-A", "$Root\chars-B", "$Root\chars-S")) {
         if (Test-Path $d) { Remove-Item -Recurse -Force $d }
         New-Item -ItemType Directory -Force $d | Out-Null

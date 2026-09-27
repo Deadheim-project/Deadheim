@@ -46,6 +46,8 @@ namespace VipList
             ServerConfigSync.AddConfigEntry(vipIds).SynchronizedConfig = true;
 
             VipListApi.Initialize(vipIds);
+            // Salvar o cfg com o servidor ligado ja vale: recarrega e o ServerSync repassa.
+            Deadheim.Shared.ConfigWatcher.Watch(Config, "VipList");
             Logger.LogInfo($"VipList API ready with {VipListApi.Count} VIP(s).");
         }
     }

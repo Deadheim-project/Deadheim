@@ -47,6 +47,7 @@ namespace Deadheim
         public static ConfigEntry<bool> LoxTameable;
         public static ConfigEntry<int> SkillCap;
         public static ConfigEntry<string> PortalMaterials;
+        public static ConfigEntry<int> CartographyTableAmount;
 
         public static string PlayerName = "";
 
@@ -179,6 +180,7 @@ new ConfigDescription("SafeArea")));
 
             WardRadius = Synced(Config.Bind("Server config", "WardRadius", 150,
 new ConfigDescription("WardRadius")));
+            WardRadius.SettingChanged += (_, __) => Wards.WardProfiles.ApplyRadii();
 
             BoatWindSpeedmultiplier = Synced(Config.Bind("Server config", "boatWindSpeedmultiplier", 1f,
 new ConfigDescription("boatWindSpeedmultiplier")));
@@ -192,11 +194,19 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:100,GreydwarfEye:30,SurtlingCore:10",
     new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
 
+            CartographyTableAmount = Synced(Config.Bind("Server config", "CartographyTableAmount", 100,
+    new ConfigDescription("Quantidade de cada material da mesa de cartografia.")));
+
             Pvp.PvpModule.Init(Config);
 
             _harmony.PatchAll();
             DirectJoinFlow.Initialize(Logger);
             ClonedItems.LoadAssets();
+
+            // Salvar o cfg com o servidor ligado ja vale: o arquivo e relido, o ServerSync
+            // repassa aos clientes, e la o que e aplicado uma vez (custos, itens) roda de novo.
+            Config.SettingChanged += (_, __) => _serverConfigApplied = false;
+            Shared.ConfigWatcher.Watch(Config, "Deadheim");
         }        
     }
 }

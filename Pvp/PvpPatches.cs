@@ -118,7 +118,7 @@ namespace Deadheim.Pvp
                         return false;
                     }
 
-                    PvpState.MarkCombat();
+                    PvpState.MarkAttack(victim);
                     return true;
                 }
                 catch (Exception ex)
@@ -195,17 +195,51 @@ namespace Deadheim.Pvp
                         PvpState.GrantImmunity(__instance, PvpConfig.ImmunityMinutes.Value * 60d);
                     if (wasPk && PvpConfig.PkClearsOnDeath.Value) PvpState.ClearPk();
 
+                    bool wasAggressor = PvpState.IsAggressor;
+                    // Antes do vanilla criar a tumba: a parte das moedas que fica para quem matou.
+                    int coinsDropped = byPlayer && !arena ? DropCoins(__instance, pos) : 0;
+
                     PvpState.ForgetAttacker();
-                    PvpClient.SendDeath(killer, arena, castle, killerDefendingCastle, pos);
+                    PvpState.ClearAggressor();
+                    PvpState.ClearCombat();
+                    PvpClient.SendDeath(killer, arena, castle, killerDefendingCastle, pos, wasAggressor, coinsDropped);
 
                     Debug.Log($"[Deadheim PvP] Morri: causa={cause} matador={killerId} ultimoGolpe={__instance.m_lastHit?.m_hitType} " +
                               $"arena={arena} castelo={castle ?? "-"} defesaDoMatador={killerDefendingCastle} PK={wasPk} " +
-                              $"multiplicadorSkill={_pendingSkillMultiplier}");
+                              $"agressor={wasAggressor} moedasNoChao={coinsDropped} multiplicadorSkill={_pendingSkillMultiplier}");
                 }
                 catch (Exception ex)
                 {
                     Debug.LogError("[Deadheim PvP] Tratamento da morte falhou: " + ex);
                 }
+            }
+
+            /// <summary>
+            /// PvpCoinDropPercent das moedas vao para o chao, fora da tumba (que so o dono abre):
+            /// e o saque de quem matou.
+            /// </summary>
+            private static int DropCoins(Player player, Vector3 pos)
+            {
+                float percent = Mathf.Clamp(PvpConfig.PvpCoinDropPercent.Value, 0f, 100f);
+                if (percent <= 0f) return 0;
+                GameObject prefab = ObjectDB.instance != null ? ObjectDB.instance.GetItemPrefab("Coins") : null;
+                ItemDrop coins = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
+                Inventory inventory = player.GetInventory();
+                if (coins == null || inventory == null) return 0;
+
+                string name = coins.m_itemData.m_shared.m_name;
+                int amount = Mathf.FloorToInt(inventory.CountItems(name) * percent / 100f);
+                if (amount <= 0) return 0;
+                inventory.RemoveItem(name, amount);
+
+                int maxStack = Mathf.Max(1, coins.m_itemData.m_shared.m_maxStackSize);
+                for (int left = amount; left > 0; left -= maxStack)
+                {
+                    Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.4f;
+                    ItemDrop drop = UnityEngine.Object.Instantiate(prefab, at, Quaternion.identity).GetComponent<ItemDrop>();
+                    if (drop != null) drop.SetStack(Mathf.Min(left, maxStack));
+                }
+                return amount;
             }
 
             private static void Postfix(Player __instance)
@@ -277,7 +311,9 @@ namespace Deadheim.Pvp
                 PvpFlags flags = PvpState.FlagsOf(__instance);
                 string suffix = string.Empty;
                 if ((flags & PvpFlags.Hunted) != 0) suffix += " <color=#ff8c00>[CACADO]</color>";
-                if ((flags & PvpFlags.Pk) != 0) suffix += " <color=#ff3030>[PK]</color>";
+                int pkCount = PvpState.PkCountOf(__instance);
+                if ((flags & PvpFlags.Pk) != 0) suffix += pkCount > 1 ? $" <color=#ff3030>[PK x{pkCount}]</color>" : " <color=#ff3030>[PK]</color>";
+                if ((flags & PvpFlags.Aggressor) != 0) suffix += " <color=#ff7a3d>[AGRESSOR]</color>";
                 if ((flags & PvpFlags.Immune) != 0) suffix += " <color=#7fd4ff>[IMUNE]</color>";
                 else if ((flags & PvpFlags.Protected) != 0) suffix += " <color=#7CFC00>[SEGURO]</color>";
                 __result += suffix;
@@ -320,19 +356,44 @@ namespace Deadheim.Pvp
             }
         }
 
-        // ------------------------------------------------------------------ portal
+        // ------------------------------------------------------------------ teleporte
 
-        [HarmonyPatch(typeof(TeleportWorld), nameof(TeleportWorld.Teleport))]
-        private static class HuntedPortalPatch
+        private static bool _teleportByAdmin;
+
+        /// <summary>
+        /// Teleporte longo (portal, NPC teleportador, pedra de retorno, retreat) e fuga: o
+        /// cacado nao usa (HuntedCanUsePortals) e ninguem usa em combate (CombatBlocksTeleport).
+        /// Um lugar so, em vez de um patch por mod que teleporta. Porta de masmorra e
+        /// distantTeleport=false e passa.
+        /// </summary>
+        [HarmonyPatch(typeof(Player), nameof(Player.TeleportTo))]
+        private static class TeleportEscapePatch
         {
             [HarmonyPriority(Priority.High)]
-            private static bool Prefix(Player player)
+            private static bool Prefix(Player __instance, bool distantTeleport, ref bool __result)
             {
-                if (!PvpConfig.Active || player != Player.m_localPlayer) return true;
-                if (!PvpState.IsHunted || PvpConfig.HuntedCanUsePortals.Value) return true;
-                Refuse(player, "Cacado nao usa portal.");
+                if (!PvpConfig.Active || !distantTeleport || __instance != Player.m_localPlayer) return true;
+                if (_teleportByAdmin || Admin.LocalPlayerIsAdmin()) return true;
+
+                string refusal = null;
+                if (PvpState.IsHunted && !PvpConfig.HuntedCanUsePortals.Value)
+                    refusal = "Cacado nao pode teleportar.";
+                else if (PvpState.InCombat && PvpConfig.CombatBlocksTeleport.Value)
+                    refusal = $"Em combate! Teleporte liberado em {Mathf.CeilToInt(PvpState.CombatRemaining)}s.";
+                if (refusal == null) return true;
+
+                Refuse(__instance, refusal);
+                __result = false;
                 return false;
             }
+        }
+
+        /// <summary>Admin puxando alguem (RPC_TeleportTo) nao e fuga.</summary>
+        [HarmonyPatch(typeof(Character), "RPC_TeleportTo")]
+        private static class AdminTeleportPatch
+        {
+            private static void Prefix() => _teleportByAdmin = true;
+            private static void Finalizer() => _teleportByAdmin = false;
         }
 
         // ----------------------------------------------------- pedra do retorno (Hearthstone)

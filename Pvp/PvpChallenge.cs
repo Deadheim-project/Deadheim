@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,6 +18,8 @@ namespace Deadheim.Pvp
             public string Name;
             public double PendingUntil;
             public double HuntedUntil;
+            public bool Paused;
+            public double LastTick;
             public bool Active => HuntedUntil > 0d;
         }
 
@@ -36,6 +39,11 @@ namespace Deadheim.Pvp
 
         public static bool IsHunted(long playerId)
             => _hunts.TryGetValue(playerId, out Hunt hunt) && hunt.Active;
+
+        public static bool IsPaused(long playerId)
+            => _hunts.TryGetValue(playerId, out Hunt hunt) && hunt.Active && hunt.Paused;
+
+        private static int OnlinePlayers => ZNet.instance != null ? ZNet.instance.GetNrOfPlayers() : 0;
 
         public static void Remaining(long playerId, out double pending, out double hunted)
         {
@@ -77,6 +85,13 @@ namespace Deadheim.Pvp
             if (_hunts.TryGetValue(peer.PlayerId, out Hunt existing))
             {
                 PvpNet.Message(peer.PeerId, existing.Active ? "Voce ja esta sendo cacado." : "Seu desafio ja vai comecar.");
+                return;
+            }
+
+            int minimum = PvpConfig.ChallengeMinPlayers.Value;
+            if (OnlinePlayers < minimum)
+            {
+                PvpNet.Message(peer.PeerId, $"O desafio precisa de pelo menos {minimum} jogadores online (agora: {OnlinePlayers}).");
                 return;
             }
 
@@ -164,6 +179,43 @@ namespace Deadheim.Pvp
             }
         }
 
+        /// <summary>
+        /// O relogio do cacado so anda quando da para cacar: fora do proprio ward (paredes
+        /// invulneraveis) e com gente online suficiente. Parado, o fim do desafio anda junto.
+        /// </summary>
+        private static void UpdatePause(Hunt hunt, PvpPeer peer)
+        {
+            double elapsed = Math.Max(0d, Now - hunt.LastTick);
+            hunt.LastTick = Now;
+
+            string reason = null;
+            if (PvpConfig.ChallengePausesInOwnWard.Value && (FlagsOf(peer) & PvpFlags.InOwnWard) != 0)
+                reason = "dentro do proprio ward";
+            else if (OnlinePlayers < PvpConfig.ChallengeMinPlayers.Value)
+                reason = $"menos de {PvpConfig.ChallengeMinPlayers.Value} jogadores online";
+
+            bool paused = reason != null;
+            if (paused) hunt.HuntedUntil += elapsed;
+            bool changed = paused != hunt.Paused;
+            if (changed)
+            {
+                hunt.Paused = paused;
+                PvpNet.Message(peer.PeerId, paused
+                    ? $"<color=#ff8c00>Desafio pausado:</color> {reason}. O tempo so conta fora dele."
+                    : "<color=#ff8c00>Desafio retomado.</color>");
+                Debug.Log($"[Deadheim PvP] Desafio de {hunt.Name} {(paused ? "pausado (" + reason + ")" : "retomado")}.");
+            }
+            // Parado, o cliente precisa do fim novo a cada segundo, senao acha que acabou; e na
+            // troca, para o HUD sair do "pausado".
+            if (paused || changed) PvpServer.SendState(peer);
+        }
+
+        private static PvpFlags FlagsOf(PvpPeer peer)
+        {
+            ZDO zdo = peer.CharacterId.IsNone() || ZDOMan.instance == null ? null : ZDOMan.instance.GetZDO(peer.CharacterId);
+            return zdo != null ? (PvpFlags)zdo.GetInt(PvpState.ZdoFlags, 0) : PvpFlags.None;
+        }
+
         public static void Tick()
         {
             if (_hunts.Count == 0) return;
@@ -177,8 +229,11 @@ namespace Deadheim.Pvp
                     continue;
                 }
 
+                if (hunt.Active) UpdatePause(hunt, peer);
+
                 if (!hunt.Active && Now >= hunt.PendingUntil)
                 {
+                    hunt.LastTick = Now;
                     hunt.HuntedUntil = Now + PvpConfig.ChallengeDurationMinutes.Value * 60d;
                     PvpServer.SendState(peer);
                     PvpNet.Broadcast($"<color=#ff8c00>DESAFIO:</color> <color=#ffb347>{hunt.Name}</color> agora esta <color=#ff5050>CACADO</color>! " +

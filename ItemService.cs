@@ -9,42 +9,13 @@ namespace Deadheim
         public static void ModifyItemsCost()
         {
             GameObject cartographyTable = Prefabs.Get("piece_cartographytable");
+            if (cartographyTable != null)
+                foreach (Piece.Requirement requirement in cartographyTable.GetComponent<Piece>().m_resources)
+                    requirement.m_amount = Plugin.CartographyTableAmount.Value;
 
-            cartographyTable.GetComponent<Piece>().m_resources[0].m_amount = 100;
-            cartographyTable.GetComponent<Piece>().m_resources[1].m_amount = 100;
-            cartographyTable.GetComponent<Piece>().m_resources[2].m_amount = 100;
-            cartographyTable.GetComponent<Piece>().m_resources[3].m_amount = 100;
-            cartographyTable.GetComponent<Piece>().m_resources[4].m_amount = 100;
-            GameObject portalwood = Prefabs.Get("portal_wood");
-            var portalwoodPiece = portalwood.GetComponent<Piece>();
-
-            portalwoodPiece.m_resources = new Piece.Requirement[]
-            {
-                new Piece.Requirement
-                {
-                    m_resItem = ObjectDB.instance?.GetItemPrefab("PortalToken")?.GetComponent<ItemDrop>(),
-                    m_amount = 1,
-                    m_recover = true // Permite recuperar o token ao quebrar o portal
-                },
-                new Piece.Requirement
-                {
-                    m_resItem = Prefabs.Get("FineWood").GetComponent<ItemDrop>(),
-                    m_amount = 100,
-                    m_recover = true
-                },
-                new Piece.Requirement
-                {
-                    m_resItem = Prefabs.Get("GreydwarfEye").GetComponent<ItemDrop>(),
-                    m_amount = 30,
-                    m_recover = true
-                },
-                new Piece.Requirement
-                {
-                    m_resItem = Prefabs.Get("SurtlingCore").GetComponent<ItemDrop>(),
-                    m_amount = 10,
-                    m_recover = true
-                }
-            };
+            // O custo do portal vem do cfg (PortalMaterials); antes era fixo aqui e a config
+            // nao tinha efeito nenhum.
+            Portal.NoBuild_Patch.UpdatePortalMaterials();
         }
 
         public static void OnlyAdminPieces()

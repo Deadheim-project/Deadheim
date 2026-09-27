@@ -17,6 +17,10 @@ namespace Deadheim.Pvp
         public double pkUntil;
         /// <summary>Segundos UTC a partir de quando pode aceitar outro desafio.</summary>
         public double challengeReadyAt;
+        /// <summary>Contador de PK: abates que deram PK (matar sem ser em defesa, arena ou castelo).</summary>
+        public int pkKills;
+        /// <summary>Deslogou em combate com CombatLogout=Death: morre ao voltar.</summary>
+        public bool combatLogPending;
 
         public float Ratio => deaths <= 0 ? kills : (float)kills / deaths;
     }
