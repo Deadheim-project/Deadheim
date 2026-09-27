@@ -13,7 +13,7 @@ namespace Hearthstone
 	public class Hearthstone : BaseUnityPlugin
 	{
 		public const string PluginGUID = "Detalhes.Hearthstone";
-		public const string Version = "2.0.5";
+		public const string Version = "2.1.0";
 
 		private Harmony harmony = new Harmony(PluginGUID);
 
