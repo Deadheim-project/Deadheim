@@ -104,6 +104,8 @@ namespace RaidSystem
         private static void RegisterWardBridge()
         {
             Deadheim.Wards.WardBridge.IsExternallyGoverned = Util.IsRaidEnabledHere;
+            // O Guilds so responde por quem esta online: o acesso volta a seguir o carimbo.
+            Deadheim.Wards.WardBridge.LiveGuildLookup = false;
             Deadheim.Wards.WardBridge.GuildOfPlayer = playerId =>
             {
                 Player lp = Player.m_localPlayer;

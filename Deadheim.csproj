@@ -117,6 +117,11 @@
       <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
           <Private>false</Private>
     </Reference>
+    <!-- JsonUtility: estado do PvP no servidor (Pvp\PvpStore.cs). -->
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.JSONSerializeModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
           <Private>false</Private>
@@ -156,6 +161,21 @@
     <Compile Include="Wards\WardCore.cs" />
     <Compile Include="Wards\WardPatches.cs" />
     <Compile Include="World.cs" />
+    <!-- Modulo de PvP: regras de dano, zonas, cla, desafio, ranking. Tudo no Deadheim.dll. -->
+    <Compile Include="Pvp\Clans.cs" />
+    <Compile Include="Pvp\PvpChallenge.cs" />
+    <Compile Include="Pvp\PvpClient.cs" />
+    <Compile Include="Pvp\PvpCommands.cs" />
+    <Compile Include="Pvp\PvpConfig.cs" />
+    <Compile Include="Pvp\PvpHud.cs" />
+    <Compile Include="Pvp\PvpModule.cs" />
+    <Compile Include="Pvp\PvpNet.cs" />
+    <Compile Include="Pvp\PvpPatches.cs" />
+    <Compile Include="Pvp\PvpRules.cs" />
+    <Compile Include="Pvp\PvpServer.cs" />
+    <Compile Include="Pvp\PvpState.cs" />
+    <Compile Include="Pvp\PvpStore.cs" />
+    <Compile Include="Pvp\PvpZones.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="VipList.csproj">

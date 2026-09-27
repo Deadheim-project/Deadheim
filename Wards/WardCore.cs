@@ -45,7 +45,9 @@ namespace Deadheim.Wards
             WardProfile profile = WardProfiles.For(area);
             if (profile == null || !profile.GuildAccess) return false;
 
-            string wardGuild = GetWardGuild(area);
+            string wardGuild = WardBridge.LiveGuildLookup && area.m_piece != null
+                ? WardBridge.GuildOf(area.m_piece.GetCreator())
+                : GetWardGuild(area);
             if (string.IsNullOrEmpty(wardGuild)) return false;
 
             string playerGuild = WardBridge.GuildOf(playerId);

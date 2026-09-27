@@ -341,14 +341,18 @@ namespace Deadheim.Wards
             {
                 try
                 {
-                    if (!WardProfiles.ProtectPlants.Value || hit == null) return true;
+                    if (hit == null) return true;
 
-                    // So plantacao: pedra, arvore e minerio seguem livres.
-                    if (__instance.GetComponent<Plant>() == null
-                        && __instance.GetComponent<Pickable>() == null) return true;
+                    bool plant = __instance.GetComponent<Plant>() != null || __instance.GetComponent<Pickable>() != null;
+                    if (plant)
+                    {
+                        if (!WardProfiles.ProtectPlants.Value) return true;
+                        return !WardCore.IsBlocked(__instance.transform.position, hit.GetAttacker() as Player,
+                            "Plantacao protegida por um ward.");
+                    }
 
-                    return !WardCore.IsBlocked(__instance.transform.position, hit.GetAttacker() as Player,
-                        "Plantacao protegida por um ward.");
+                    // Pedra pequena, toco, arbusto: Destructible que nao e peca construida.
+                    return !NatureBlocked(__instance.transform.position, hit);
                 }
                 catch (Exception ex)
                 {
@@ -356,6 +360,47 @@ namespace Deadheim.Wards
                     return true;
                 }
             }
+        }
+
+        // ---------------------------------------------------------- pedra e arvore
+
+        /// <summary>
+        /// Pedra, minerio, arvore e tronco dentro do ward alheio. Roda no cliente de quem
+        /// bate (IDestructible.Damage), antes do RPC: o golpe nem sai. Usa o ponto do golpe,
+        /// nao o centro do objeto, porque rocha grande (MineRock5) passa da borda do ward.
+        /// </summary>
+        private static bool NatureBlocked(Vector3 fallback, HitData hit)
+        {
+            if (!WardProfiles.ProtectNature.Value || hit == null) return false;
+            if (!(hit.GetAttacker() is Player attacker) || attacker != Player.m_localPlayer) return false;
+            if (Admin.LocalPlayerIsAdmin()) return false;
+
+            Vector3 point = hit.m_point != Vector3.zero ? hit.m_point : fallback;
+            return WardCore.IsBlocked(point, attacker, "Pedras e arvores protegidas por um ward.");
+        }
+
+        [HarmonyPatch(typeof(MineRock), "Damage")]
+        public static class MineRockPatch
+        {
+            private static bool Prefix(MineRock __instance, HitData hit) => !NatureBlocked(__instance.transform.position, hit);
+        }
+
+        [HarmonyPatch(typeof(MineRock5), "Damage")]
+        public static class MineRock5Patch
+        {
+            private static bool Prefix(MineRock5 __instance, HitData hit) => !NatureBlocked(__instance.transform.position, hit);
+        }
+
+        [HarmonyPatch(typeof(TreeBase), "Damage")]
+        public static class TreeBasePatch
+        {
+            private static bool Prefix(TreeBase __instance, HitData hit) => !NatureBlocked(__instance.transform.position, hit);
+        }
+
+        [HarmonyPatch(typeof(TreeLog), "Damage")]
+        public static class TreeLogPatch
+        {
+            private static bool Prefix(TreeLog __instance, HitData hit) => !NatureBlocked(__instance.transform.position, hit);
         }
     }
 }

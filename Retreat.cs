@@ -45,6 +45,15 @@ namespace Deadheim
                         return;
                     }
 
+                    // Cooldown, combate e cacado: o retreat nao pode ser a saida de uma luta.
+                    string refusal = Pvp.PvpModule.RetreatRefusal(Player.m_localPlayer);
+                    if (refusal != null)
+                    {
+                        args.Context.AddString(refusal);
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, refusal);
+                        return;
+                    }
+
                     Vector3 teleportPosition = GetHearthStonePosition();
 
                     if (teleportPosition == Vector3.zero)
@@ -54,6 +63,7 @@ namespace Deadheim
                     }
 
                     Player.m_localPlayer.TeleportTo(teleportPosition, Player.m_localPlayer.transform.rotation, true);
+                    Pvp.PvpModule.MarkRetreatUsed(Player.m_localPlayer);
 
                 }));			
 			}

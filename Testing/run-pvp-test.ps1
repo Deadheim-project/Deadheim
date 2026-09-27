@@ -1,0 +1,241 @@
+<#
+    Teste de ponta a ponta do modulo de PvP do Deadheim, sem ninguem clicar em nada.
+
+    Sobe um servidor dedicado local e dois clientes reais do Valheim (Alfa e Bravo), cada
+    um com a sua propria arvore BepInEx (via argumentos do Doorstop, como o launcher faz),
+    so com Deadheim.dll + VipList.dll (+ o PvpTestDriver.dll nos clientes). Nada e
+    instalado nas pastas do jogo; personagens de teste vao para uma pasta propria.
+
+    1. Primeira subida do servidor: gera o mundo e registra onde fica o templo inicial
+       (e quanto mede a zona segura no modo Island).
+    2. Grava a config de teste (zona segura pequena, arena no templo, tempos curtos) e
+       sobe o servidor de novo.
+    3. Sobe os dois clientes. O PvpTestDriver cria os personagens, conecta e segue o
+       roteiro de Driver.cs. O resultado sai como linhas [PVPTEST] no log de cada cliente.
+
+    As preferencias do Valheim (registro HKCU\Software\IronGate\valheim) sao salvas antes e
+    restauradas no fim: os clientes de teste abrem em janela pequena.
+
+    Uso:
+      powershell -ExecutionPolicy Bypass -File Testing\run-pvp-test.ps1 -Root D:\tmp\pvptest
+#>
+param(
+    [string]$Root = (Join-Path $env:TEMP 'deadheim-pvptest'),
+    [int]$Port = 2476,
+    [string]$Password = 'pvptest1',
+    [string]$ServerDir = 'C:\Program Files (x86)\Steam\steamapps\common\Valheim dedicated server',
+    [string]$ClientDir = 'C:\Program Files (x86)\Steam\steamapps\common\Valheim',
+    [string]$BepInExCore = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\core'),
+    [int]$TimeoutMinutes = 25,
+    [switch]$NewWorld,
+    # Um cliente so, com o segundo jogador simulado pelo driver: cabe numa maquina onde
+    # dois clientes + servidor estouram a memoria.
+    [switch]$Solo,
+    # So estes passos do roteiro solo, separados por virgula (o setup sempre roda).
+    [string]$Steps = '',
+    [switch]$KeepRunning
+)
+
+$ErrorActionPreference = 'Stop'
+$repo = Split-Path -Parent $PSScriptRoot
+$deadheimDll = Join-Path $repo 'bin\Release\Deadheim.dll'
+$vipDll = Join-Path $repo 'bin\Release\VipList.dll'
+$driverDll = Join-Path $PSScriptRoot 'PvpTestDriver\bin\Release\PvpTestDriver.dll'
+
+foreach ($f in @($deadheimDll, $vipDll, $driverDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
+    if (-not (Test-Path $f)) { throw "Nao encontrei $f" }
+}
+
+New-Item -ItemType Directory -Force $Root | Out-Null
+$processes = @()
+
+function Write-Step($text) { Write-Host ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $text) }
+
+function New-BepInExTree([string]$dir, [string[]]$plugins) {
+    if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }
+    New-Item -ItemType Directory -Force "$dir\BepInEx\plugins\Deadheim", "$dir\BepInEx\config" | Out-Null
+    Copy-Item -Recurse $BepInExCore "$dir\BepInEx\core"
+    foreach ($p in $plugins) { Copy-Item $p "$dir\BepInEx\plugins\Deadheim\" }
+}
+
+function Write-ServerConfig([string]$mode, [string]$arena) {
+    $cfg = @"
+[Server config]
+WardRadius = 12
+
+[Wards]
+PlayerWardRadius = 12
+
+[PvP]
+Enabled = true
+ForcePvp = true
+DamageMultiplier = 0.5
+WardDefenseMultiplier = 0.5
+ImmunityMinutes = 2
+CombatTagSeconds = 6
+KillCreditSeconds = 5
+KillFeed = true
+
+[PvP - PK]
+PkMinutes = 5
+PkSkillLossMultiplier = 2
+PkClearsOnDeath = true
+
+[PvP - Zonas]
+StartIslandMode = $mode
+StartIslandRadius = $(if ($mode -eq 'Island') { 1500 } else { 30 })
+SafeZones =
+ArenaZones = $arena
+TransportsSafe = true
+TransportsInvulnerable = true
+
+[PvP - Desafio]
+ChallengeDelaySeconds = 5
+ChallengeDurationMinutes = 1
+ChallengeCooldownMinutes = 0.1
+ChallengeKillReward = Coins:500
+ChallengeSurviveReward = Coins:1000
+"@
+    Set-Content -Path "$Root\server\BepInEx\config\Detalhes.Deadheim.cfg" -Value $cfg -Encoding UTF8
+}
+
+# O BepInEx do servidor nao copia o log da Unity (WriteUnityLog = false no pack), e o
+# Debug.Log dos mods so aparece no -logFile. E nele que se espera.
+$serverLog = "$Root\server-unity.log"
+
+function Start-Server {
+    if (Test-Path $serverLog) { Remove-Item $serverLog -Force }
+    $env:SteamAppId = '892970'
+    $argLine = "--doorstop-enabled true --doorstop-target-assembly `"$Root\server\BepInEx\core\BepInEx.Preloader.dll`" " +
+            "-nographics -batchmode -name DeadheimPvpTest -port $Port -world PvpTest -password $Password -public 0 " +
+            "-savedir `"$Root\saves-server`" -logFile `"$Root\server-unity.log`""
+    $p = Start-Process -FilePath "$ServerDir\valheim_server.exe" -ArgumentList $argLine -WorkingDirectory $ServerDir -WindowStyle Hidden -PassThru
+    $script:processes += $p
+    return $p
+}
+
+function Wait-Log([string]$path, [string]$pattern, [int]$seconds) {
+    $until = (Get-Date).AddSeconds($seconds)
+    while ((Get-Date) -lt $until) {
+        if (Test-Path $path) {
+            $hit = Select-String -Path $path -Pattern $pattern -ErrorAction SilentlyContinue | Select-Object -Last 1
+            if ($hit) { return $hit.Line }
+        }
+        Start-Sleep -Seconds 2
+    }
+    return $null
+}
+
+$clients = @()
+
+# Commit livre (RAM + pagefile) em GB. Um cliente do Valheim reserva uns 3-4 GB; o
+# pagefile ainda pode crescer ate o maximo configurado, por isso o solo pede menos.
+function Wait-Memory([double]$needGb) {
+    $until = (Get-Date).AddMinutes(10)
+    while ($true) {
+        $free = (Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory / 1MB
+        if ($free -ge $needGb) { return }
+        if ((Get-Date) -gt $until) { throw ("Memoria insuficiente: {0:N1} GB de commit livre, preciso de {1} GB." -f $free, $needGb) }
+        Write-Step ("Esperando memoria: {0:N1} GB livres, preciso de {1} GB" -f $free, $needGb)
+        Start-Sleep -Seconds 15
+    }
+}
+
+function Stop-All {
+    foreach ($p in $script:processes) {
+        try { if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force } } catch { }
+    }
+    $script:processes = @()
+}
+
+$prefsBackup = "$Root\valheim-prefs.reg"
+& reg export "HKCU\Software\IronGate\valheim" $prefsBackup /y | Out-Null
+
+try {
+    # ------------------------------------------------------------ servidor: mundo e templo
+    Write-Step "Montando arvores BepInEx em $Root"
+    New-BepInExTree "$Root\server" @($deadheimDll, $vipDll)
+    New-BepInExTree "$Root\clientA" @($deadheimDll, $vipDll, $driverDll)
+    New-BepInExTree "$Root\clientB" @($deadheimDll, $vipDll, $driverDll)
+    New-BepInExTree "$Root\clientS" @($deadheimDll, $vipDll, $driverDll)
+    foreach ($d in @("$Root\sync", "$Root\chars-A", "$Root\chars-B", "$Root\chars-S")) {
+        if (Test-Path $d) { Remove-Item -Recurse -Force $d }
+        New-Item -ItemType Directory -Force $d | Out-Null
+    }
+    if ($NewWorld -and (Test-Path "$Root\saves-server")) { Remove-Item -Recurse -Force "$Root\saves-server" }
+    Get-ChildItem "$Root\server\BepInEx\config" -Filter 'pvp-*.json' -ErrorAction SilentlyContinue | Remove-Item -Force
+
+    Write-ServerConfig 'Island' ''
+    Write-Step "Servidor (1a subida, modo Island) na porta $Port"
+    Start-Server | Out-Null
+    $line = Wait-Log $serverLog 'Templo inicial em x=' 600
+    if (-not $line) { throw "O servidor nao registrou o templo inicial em 10 min. Veja $serverLog" }
+    Write-Step $line
+    if ($line -notmatch 'x=(-?\d+) z=(-?\d+)') { throw "Nao entendi a linha do templo: $line" }
+    $tx = $Matches[1]; $tz = $Matches[2]
+    Stop-All
+    Start-Sleep -Seconds 5
+
+    # -------------------------------------------------------------- servidor: config de teste
+    Get-ChildItem "$Root\server\BepInEx\config" -Filter 'Deadheim' -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+    Write-ServerConfig 'Radius' "ArenaTeste,$tx,$tz,15"
+    Write-Step "Servidor (2a subida, config de teste; arena no templo $tx,$tz)"
+    Start-Server | Out-Null
+    if (-not (Wait-Log $serverLog 'Templo inicial em x=' 300)) { throw 'O servidor nao subiu de novo.' }
+    Start-Sleep -Seconds 5
+
+    # ----------------------------------------------------------------------- clientes
+    # Um de cada vez: os dois carregando o mundo juntos estouram memoria numa maquina
+    # comum (crash nativo da Unity no segundo). O B so abre depois que o A spawnou.
+    $roles = if ($Solo) { @('S') } else { @('A', 'B') }
+    foreach ($role in $roles) {
+        Wait-Memory $(if ($Solo) { 1.5 } else { 6 })
+        $dir = "$Root\client$role"
+        $argLine = "--doorstop-enabled true --doorstop-target-assembly `"$dir\BepInEx\core\BepInEx.Preloader.dll`" " +
+                "+connect 127.0.0.1:$Port -password $Password " +
+                "-dhtest-role $role -dhtest-sync `"$Root\sync`" -dhtest-save `"$Root\chars-$role`" " +
+                $(if ($Steps) { "-dhtest-steps $Steps " } else { '' }) +
+                "-screen-fullscreen 0 -screen-width 960 -screen-height 540 -logFile `"$Root\client$role-unity.log`""
+        Write-Step "Cliente $role"
+        $client = Start-Process -FilePath "$ClientDir\valheim.exe" -ArgumentList $argLine -WorkingDirectory $ClientDir -PassThru
+        $script:processes += $client
+        $script:clients += $client
+        $until = (Get-Date).AddMinutes(8)
+        while (-not (Test-Path "$Root\sync\spawned-$role")) {
+            if ($client.HasExited) { throw "Cliente $role caiu antes de entrar no mundo (codigo $($client.ExitCode)). Veja $Root\client$role-unity.log" }
+            if ((Get-Date) -gt $until) { throw "Cliente $role nao entrou no mundo em 8 min." }
+            Start-Sleep -Seconds 3
+        }
+        Write-Step "Cliente $role no mundo"
+    }
+
+    Write-Step "Esperando o roteiro (ate $TimeoutMinutes min)"
+    $until = (Get-Date).AddMinutes($TimeoutMinutes)
+    while ((Get-Date) -lt $until) {
+        if (-not ($roles | Where-Object { -not (Test-Path "$Root\sync\result-$_.txt") })) { break }
+        $dead = $script:clients | Where-Object { $_.HasExited } | Select-Object -First 1
+        if ($dead) { Write-Step "Cliente $($dead.Id) caiu (codigo $($dead.ExitCode)); encerrando"; break }
+        Start-Sleep -Seconds 5
+    }
+
+    # ----------------------------------------------------------------------- resultado
+    foreach ($role in $roles) {
+        $log = "$Root\client$role\BepInEx\LogOutput.log"
+        Write-Host ""
+        Write-Host "===== Cliente $role ====="
+        if (Test-Path $log) {
+            Select-String -Path $log -Pattern '\[PVPTEST\]' | ForEach-Object { $_.Line -replace '^.*\[PVPTEST\] ', '' }
+        } else { Write-Host "(sem log em $log)" }
+    }
+    Write-Host ""
+    Write-Host "===== Servidor (PvP) ====="
+    Select-String -Path $serverLog -Pattern 'Deadheim PvP|Exception' | ForEach-Object { $_.Line }
+}
+finally {
+    if (-not $KeepRunning) { Stop-All }
+    if (Test-Path $prefsBackup) {
+        & reg delete "HKCU\Software\IronGate\valheim" /f | Out-Null
+        & reg import $prefsBackup 2>$null | Out-Null
+        Write-Step 'Preferencias do Valheim restauradas'
+    }
+}

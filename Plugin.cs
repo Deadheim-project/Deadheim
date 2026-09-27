@@ -11,17 +11,19 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "6.1.7";
+        public const string Version = "7.0.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
         // IsAdminOnly do Jotunn: o servidor recusa quem nao tem o mod ou tem uma
-        // versao abaixo de 6.1, e as configs de servidor valem as do servidor.
+        // versao abaixo da minima, e as configs de servidor valem as do servidor.
+        // Minimo 7.0.0: as regras de PvP rodam no cliente de quem leva o golpe, entao um
+        // cliente sem o modulo de PvP seria alvo sem zona segura, imunidade ou reducao.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "6.1.0",
+            MinimumRequiredVersion = "7.0.0",
             ModRequired = true,
             IsLocked = true
         };
@@ -58,7 +60,7 @@ namespace Deadheim
         public static bool hasSpawned = false;
         Harmony _harmony = new Harmony("Detalhes.deadheim");
 
-        private static ConfigEntry<T> Synced<T>(ConfigEntry<T> entry)
+        internal static ConfigEntry<T> Synced<T>(ConfigEntry<T> entry)
         {
             ServerConfigSync.AddConfigEntry(entry).SynchronizedConfig = true;
             return entry;
@@ -87,6 +89,7 @@ namespace Deadheim
             ItemService.WolvesTameable();
             ItemService.StubNoLife();
             ItemService.OnlyAdminPieces();
+            Pvp.PvpModule.ApplyItemTweaks();
 
             IsAdmin = AdminList.Value.Contains(Plugin.steamId);
             Logger.LogInfo("Config do servidor recebida e aplicada.");
@@ -96,6 +99,7 @@ namespace Deadheim
         {
             ApplyServerConfigOnce();
             Wards.WardCore.Update();
+            Pvp.PvpModule.Update();
 
             Player localPlayer = Player.m_localPlayer;
             bool flag = Player.m_localPlayer == null;
@@ -187,6 +191,8 @@ new ConfigDescription("boatWindSpeedmultiplier")));
 
             PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:100,GreydwarfEye:30,SurtlingCore:10",
     new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
+
+            Pvp.PvpModule.Init(Config);
 
             _harmony.PatchAll();
             DirectJoinFlow.Initialize(Logger);

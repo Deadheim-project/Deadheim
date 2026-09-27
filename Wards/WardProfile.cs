@@ -74,6 +74,7 @@ namespace Deadheim.Wards
         public static ConfigEntry<bool> ProtectTerrain;
         public static ConfigEntry<bool> ProtectPortals;
         public static ConfigEntry<bool> ProtectPlants;
+        public static ConfigEntry<bool> ProtectNature;
 
         private static GameObject _playerWardPrefab;
         private static bool _registeredInHammer;
@@ -111,6 +112,8 @@ namespace Deadheim.Wards
                 "Bloqueia renomear portais dentro do ward.");
             ProtectPlants = config.Bind(section, "ProtectPlants", true,
                 "Bloqueia colher e destruir plantacao dentro do ward.");
+            ProtectNature = config.Bind(section, "ProtectNature", true,
+                "Bloqueia quebrar pedra, minerio, arvore, tronco e toco dentro do ward de outro jogador.");
         }
 
         // ------------------------------------------------------------- identificacao
