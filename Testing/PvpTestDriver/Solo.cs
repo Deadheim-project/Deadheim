@@ -88,6 +88,7 @@ namespace PvpTestDriver
                 Step("setup", SoloSetup),
                 Step("eu-bato", SoloIHit),
                 Step("dummy-bate", SoloDummyHits),
+                Step("armadura", SoloArmor),
                 Step("zona-segura", SoloSafeZone),
                 Step("atacante-protegido", SoloAttackerProtected),
                 Step("combate", SoloCombatTag),
@@ -286,7 +287,8 @@ namespace PvpTestDriver
             // Mesmo deslocamento que o run-pvp-test.ps1 usa para escrever a zona do RaidSystem.
             _castle = FindLand(new Vector3(_temple.x - CastleOffset, 0f, _temple.z - CastleOffset), 0f, 20f);
             _deathFactor = Me.GetSkills().m_DeathLowerFactor * Game.m_skillReductionRate;
-            Log($"posicoes: templo={_temple} seguro={_safe} aberto={_openA} wardA={_wardA} wardB={_wardB} castelo={_castle} fatorMorte={_deathFactor}");
+            Log($"posicoes: templo={_temple} seguro={_safe} aberto={_openA} wardA={_wardA} wardB={_wardB} castelo={_castle} fatorMorte={_deathFactor} " +
+                $"janelaSemPerda={Me.m_hardDeathCooldown}s");
             Check("setup/raidsystem-ligado", PvpBridge.CastleAt != null && PvpBridge.CastleOwner != null);
             Log("ilha: " + PvpZones.DescribeIsland());
 
@@ -329,6 +331,33 @@ namespace PvpTestDriver
             yield return ExpectDamage("dummy-bate/dano-x0.5", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
             yield return Wait(0.5f);
             Check("dummy-bate/em-combate", PvpState.InCombat && (PvpState.Current & PvpFlags.Combat) != 0, $"flags={PvpState.Current}");
+        }
+
+        /// <summary>
+        /// Com armadura o corte de PvP vale sobre o dano que passou da armadura. Aplicado no
+        /// golpe cru, a armadura quadratica do Valheim transformava x0.5 em ~x0.25.
+        /// </summary>
+        private IEnumerator SoloArmor()
+        {
+            foreach (string prefab in new[] { "HelmetBronze", "ArmorBronzeChest", "ArmorBronzeLegs" })
+            {
+                Me.GetInventory().AddItem(ObjectDB.instance.GetItemPrefab(prefab), 1);
+                ItemDrop.ItemData item = Me.GetInventory().GetAllItems()
+                    .Find(i => i.m_dropPrefab != null && i.m_dropPrefab.name == prefab);
+                if (item != null) Me.EquipItem(item, false);
+            }
+            yield return Wait(0.5f);
+            const float raw = 40f;
+            float armor = Me.GetBodyArmor();
+            float vanilla = HitData.DamageTypes.ApplyArmor(raw, armor);
+            float expected = vanilla * PvpConfig.DamageMultiplier.Value;
+            float cutBeforeArmor = HitData.DamageTypes.ApplyArmor(raw * PvpConfig.DamageMultiplier.Value, armor);
+            Log($"armadura={armor} golpe={raw} vanilla={vanilla:0.##} esperado={expected:0.##} corteAntesDaArmadura={cutBeforeArmor:0.##}");
+            Check("armadura/equipada", armor > raw / 4f, "armadura=" + armor);
+            Heal();
+            DummyStrikesMe(raw);
+            yield return ExpectDamage("armadura/corte-depois-da-armadura", expected, 0.5f);
+            Me.UnequipAllItems();
         }
 
         private IEnumerator SoloSafeZone()
@@ -462,6 +491,8 @@ namespace PvpTestDriver
             yield return DummyKillsMe("castelo: invasor");
             Check("castelo-invasor/sem-perda-de-skill", Mathf.Abs(Swords(Me) - 50f) < 0.05f, "skill=" + Swords(Me));
             Check("castelo-invasor/sem-imunidade", !PvpState.IsImmune, $"flags={PvpState.Current}");
+            Check("castelo-invasor/nao-abre-janela-sem-perda", Me.m_timeSinceDeath > Me.m_hardDeathCooldown,
+                $"desdeAMorte={Me.m_timeSinceDeath:0} janela={Me.m_hardDeathCooldown:0}");
             yield return Wait(1f);
 
             string log = ServerLogSinceMark();
@@ -503,7 +534,8 @@ namespace PvpTestDriver
             Check("pk/hud", PvpHud.Compose(Me).Contains("PK"), PvpHud.Compose(Me));
             SetSwords(Me, 50f);
             float before = Swords(Me);
-            ArmHardDeath();
+            // Acabou de morrer: o vanilla estaria na janela sem perda de skill. PK perde assim mesmo.
+            Me.m_timeSinceDeath = 0f;
             MarkServerLog();
             yield return DummyKillsMe("pk");
             yield return Wait(1f);
@@ -540,6 +572,8 @@ namespace PvpTestDriver
             yield return DummyKillsMe("arena");
             Check("arena/sem-perda-de-skill", Mathf.Abs(Swords(Me) - 50f) < 0.05f, "skill=" + Swords(Me));
             Check("arena/sem-imunidade", !PvpState.IsImmune, $"flags={PvpState.Current}");
+            Check("arena/nao-abre-janela-sem-perda", Me.m_timeSinceDeath > Me.m_hardDeathCooldown,
+                $"desdeAMorte={Me.m_timeSinceDeath:0} janela={Me.m_hardDeathCooldown:0}");
         }
 
         private static bool ListedPublic(string name, out Vector3 position)
@@ -678,6 +712,34 @@ namespace PvpTestDriver
             yield return WaitRespawn(dead);
             Check("pvp/queda-apos-golpe-conta-como-jogador", PvpState.IsImmune, $"imune={PvpState.IsImmune} flags={PvpState.Current}");
             PvpState.ClearImmunity(Me);
+
+            // 4. Veneno de jogador que dura mais que KillCreditSeconds. O tique do veneno nao
+            //    tem atacante (SE_Poison chama ApplyDamage direto), mas a morte e de quem envenenou.
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+            Heal();
+            HitData venomHit = HitFrom(_dummy, Me, 0f);
+            venomHit.m_damage.m_poison = 800f;
+            Me.m_nview.InvokeRPC("RPC_Damage", venomHit);
+            yield return Wait(0.5f);
+            StatusEffect venom = Me.GetSEMan().GetStatusEffects().FirstOrDefault(e => e is SE_Poison);
+            float lasts = venom != null ? venom.GetRemaningTime() : 0f;
+            Check("pvp/veneno-dura-mais-que-o-credito", lasts > PvpConfig.KillCreditSeconds.Value + 3f,
+                $"veneno={lasts:0.#}s credito={PvpConfig.KillCreditSeconds.Value}s");
+            float until = Time.time + PvpConfig.KillCreditSeconds.Value + 2f;
+            while (Time.time < until)
+            {
+                Me.SetHealth(Me.GetMaxHealth());
+                yield return Wait(0.2f);
+            }
+            dead = Me;
+            HitData tick = new HitData { m_hitType = HitData.HitType.Poisoned, m_point = Me.GetCenterPoint() };
+            tick.m_damage.m_poison = 1000f;
+            Me.ApplyDamage(tick, true, false);
+            yield return WaitRespawn(dead);
+            Check("pvp/morte-por-veneno-de-jogador-conta-como-jogador", PvpState.IsImmune, $"imune={PvpState.IsImmune} flags={PvpState.Current}");
+            PvpState.ClearImmunity(Me);
         }
 
         private IEnumerator SoloTombstone()
@@ -783,12 +845,12 @@ namespace PvpTestDriver
             Command("rank");
             yield return Wait(2f);
             List<string> lines = Chat.instance.m_chatBuffer.Skip(Math.Max(0, before - 1)).ToList();
-            // O Dummy me matou fora da arena 6 vezes (castelo como invasor, imunidade, PK, desafio,
-            // queda logo depois do golpe, castelo como defensor). Arena e PvE (queda sozinha, javali)
-            // nao contam.
+            // O Dummy me matou fora da arena 7 vezes (castelo como invasor, imunidade, PK, desafio,
+            // queda logo depois do golpe, veneno, castelo como defensor). Arena e PvE (queda
+            // sozinha, javali) nao contam.
             string mine = lines.LastOrDefault(l => l.StartsWith("Voce:")) ?? "";
-            Check("rank/minha-linha", mine.Contains("K 0  D 6"), mine);
-            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 6  D 0")), string.Join(" / ", lines));
+            Check("rank/minha-linha", mine.Contains("K 0  D 7"), mine);
+            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 7  D 0")), string.Join(" / ", lines));
         }
     }
 }

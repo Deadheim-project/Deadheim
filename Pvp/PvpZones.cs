@@ -27,6 +27,7 @@ namespace Deadheim.Pvp
         private static int _islandHalf;
         private static bool[] _islandMask;
         private static int _islandCells;
+        private static string _islandBiomes = "";
         private static long _worldUid;
 
         public static void Invalidate()
@@ -127,7 +128,8 @@ namespace Deadheim.Pvp
         {
             if (!EnsureIsland()) return "ilha inicial ainda nao calculada (templo inicial desconhecido)";
             return $"centro=({_islandCenter.x:F0},{_islandCenter.y:F0}) raio={PvpConfig.StartIslandRadius.Value} " +
-                   $"modo={PvpConfig.StartIslandMode.Value} celulas={_islandCells} (~{_islandCells * Cell * Cell / 1e6f:F2} km2)";
+                   $"modo={PvpConfig.StartIslandMode.Value} celulas={_islandCells} (~{_islandCells * Cell * Cell / 1e6f:F2} km2) " +
+                   $"biomas: {_islandBiomes}";
         }
 
         private static bool EnsureIsland()
@@ -216,8 +218,23 @@ namespace Deadheim.Pvp
 
             _islandMask = Dilate(reached, size);
             _islandCells = 0;
+            Dictionary<Heightmap.Biome, int> biomes = new Dictionary<Heightmap.Biome, int>();
             for (int i = 0; i < _islandMask.Length; i++)
-                if (_islandMask[i]) _islandCells++;
+            {
+                if (!_islandMask[i]) continue;
+                _islandCells++;
+                // O admin precisa saber o que a zona segura cobre: se passa da Campina, da
+                // para evoluir inteiro sem sair dela.
+                Heightmap.Biome biome = WorldGenerator.instance.GetBiome(
+                    center.x + (i % size - _islandHalf) * Cell, center.y + (i / size - _islandHalf) * Cell);
+                biomes[biome] = biomes.TryGetValue(biome, out int n) ? n + 1 : 1;
+            }
+            List<KeyValuePair<Heightmap.Biome, int>> sorted = new List<KeyValuePair<Heightmap.Biome, int>>(biomes);
+            sorted.Sort((a, b) => b.Value.CompareTo(a.Value));
+            List<string> parts = new List<string>();
+            foreach (KeyValuePair<Heightmap.Biome, int> entry in sorted)
+                parts.Add($"{entry.Key} {entry.Value * 100f / Mathf.Max(1, _islandCells):0}%");
+            _islandBiomes = string.Join(", ", parts);
         }
 
         private static bool[] Dilate(bool[] source, int size)

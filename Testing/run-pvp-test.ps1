@@ -266,7 +266,14 @@ finally {
     if (-not $KeepRunning) { Stop-All }
     if (Test-Path $prefsBackup) {
         & reg delete "HKCU\Software\IronGate\valheim" /f | Out-Null
-        & reg import $prefsBackup 2>$null | Out-Null
+        # Via cmd: o reg escreve o "concluida com exito" no stderr, e o PowerShell 5.1
+        # transforma isso em erro e o script saia com codigo 1 mesmo com tudo certo.
+        & cmd /c "reg import `"$prefsBackup`" >nul 2>&1"
         Write-Step 'Preferencias do Valheim restauradas'
     }
 }
+
+# Codigo de saida = resultado do roteiro: 0 so se todo cliente terminou sem FAIL.
+$results = @($roles | ForEach-Object { Get-Content "$Root\sync\result-$_.txt" -ErrorAction SilentlyContinue })
+if ($results.Count -eq $roles.Count -and -not ($results | Where-Object { $_ -notmatch 'fail=0$' })) { exit 0 }
+exit 1

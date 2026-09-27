@@ -30,8 +30,9 @@ Uma regra so (`PvpRules.ClassifyDeath`), usada por tudo que reage a morte:
 
 1. O golpe que matou tem atacante e ele e um **jogador** (conferido pela ZDO, entao vale
    mesmo se o matador estiver longe ou ja tiver saido) -> **morte por jogador**.
-2. Senao, se a vitima levou dano de jogador ha menos de `KillCreditSeconds` (20 s) -> **morte
-   por jogador**, credito para quem bateu (queda, afogamento, fogo ou mob terminando o servico).
+2. Senao, se a vitima levou dano de jogador ha menos de `KillCreditSeconds` (20 s), ou ainda
+   esta com veneno/fogo que um jogador deixou -> **morte por jogador**, credito para quem bateu
+   (queda, afogamento, o tique do veneno ou mob terminando o servico).
 3. Senao -> **PvE**.
 
 | | Morte por jogador | Morte por PvE |
@@ -44,6 +45,7 @@ Uma regra so (`PvpRules.ClassifyDeath`), usada por tudo que reage a morte:
 | Guilda dona mata invasor no castelo | ganha a recompensa do bioma | - |
 | Cacado morre | quem matou ganha a recompensa | desafio acaba sem recompensa |
 | PK que morre | perde skill x2 e deixa de ser PK | perde skill x2 e deixa de ser PK |
+| Janela "sem perda de skill" do vanilla (10 min depois de morrer) | morte sem perda (arena, castelo) nao abre a janela; PK perde mesmo dentro dela | igual |
 | Tumba | so o dono abre | so o dono abre |
 
 O cliente registra cada morte no log (`[Deadheim PvP] Morri: causa=PlayerDirect|PlayerCredit|Pve
@@ -55,7 +57,7 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Pedido | Como ficou | Config |
 |---|---|---|
 | PvP para todos | Ligado fora das zonas seguras; o botao do inventario fica travado | `ForcePvp` |
-| Reducao de dano PvP | Dano de jogador em jogador x0.5 | `DamageMultiplier` |
+| Reducao de dano PvP | Dano de jogador em jogador x0.5, aplicado **depois da armadura** (a armadura do Valheim e quadratica: cortar o golpe cru pela metade tirava ~75% do dano de quem usa armadura) | `DamageMultiplier` |
 | Reducao de dano em ward | Jogador: dentro de ward **ligado e abastecido** onde voce tem permissao, o dano PvP que voce recebe e x0.5 de novo. Estrutura: ward de jogador segue o `[Wards] DamagePercent` (0 = invulneravel) e a RaidWard o `Ward Damage Reduction %` do RaidSystem | `WardDefenseMultiplier` |
 | Dono do territorio sem FF | Mesma guilda nao se fere; e quem tem permissao no mesmo ward nao se fere dentro dele | `NoFriendlyFireGuild`, `NoFriendlyFireTerritory` |
 | Guilda ou party | Guilda do mod **Guilds** | - |

@@ -20,6 +20,11 @@ namespace Deadheim.Pvp
 
         // ------------------------------------------------------------------- dano
 
+        // Golpe de jogador em jogador sendo processado agora no RPC_Damage da vitima.
+        private static HitData _pvpHit;
+        private static float _pvpHitMultiplier = 1f;
+        private static bool _pvpHitScaled;
+
         /// <summary>
         /// Vitima: roda no dono da ZDO dela, que e o proprio cliente do jogador atingido.
         /// E a decisao que vale. Prefix antes do vanilla porque o vanilla ja cambaleia o
@@ -40,7 +45,10 @@ namespace Deadheim.Pvp
                     PvpRules.Verdict verdict = PvpRules.Check(attacker, victim);
                     if (verdict != PvpRules.Verdict.Allow) return false;
 
-                    hit.ApplyModifier(PvpRules.DamageMultiplier(victim));
+                    // O corte entra depois da armadura (PvpAfterArmorPatch), nao aqui.
+                    _pvpHit = hit;
+                    _pvpHitMultiplier = PvpRules.DamageMultiplier(victim);
+                    _pvpHitScaled = false;
                     if (victim == Player.m_localPlayer) PvpState.RecordPvpHit(hit.m_attacker);
                     return true;
                 }
@@ -49,6 +57,41 @@ namespace Deadheim.Pvp
                     Debug.LogError("[Deadheim PvP] Regra de dano falhou: " + ex);
                     return true;
                 }
+            }
+
+            /// <summary>
+            /// Veneno e fogo viram dano continuo sem atacante (SE_Poison/SE_Burning chamam
+            /// ApplyDamage direto). O credito da morte tem que durar enquanto o efeito durar.
+            /// </summary>
+            private static void Postfix(Character __instance, HitData hit)
+            {
+                if (_pvpHit == null || !ReferenceEquals(hit, _pvpHit)) return;
+                if (__instance is Player victim && victim == Player.m_localPlayer)
+                    PvpState.CoverDamageOverTime(victim);
+            }
+
+            private static void Finalizer()
+            {
+                _pvpHit = null;
+                _pvpHitMultiplier = 1f;
+                _pvpHitScaled = false;
+            }
+        }
+
+        /// <summary>
+        /// Reducao de dano PvP depois da armadura. A armadura do Valheim e quadratica
+        /// (dano^2 / 4*armadura quando a armadura passa de metade do golpe): cortar o golpe
+        /// cru pela metade tirava 70-75% do dano de quem usa armadura, nao os 50% da config.
+        /// Aqui o jogador perde exatamente DamageMultiplier da vida que perderia no vanilla.
+        /// </summary>
+        [HarmonyPatch(typeof(HitData), nameof(HitData.ApplyArmor))]
+        private static class PvpAfterArmorPatch
+        {
+            private static void Postfix(HitData __instance)
+            {
+                if (_pvpHitScaled || _pvpHit == null || !ReferenceEquals(__instance, _pvpHit)) return;
+                __instance.ApplyModifier(_pvpHitMultiplier);
+                _pvpHitScaled = true;
             }
         }
 
@@ -103,10 +146,18 @@ namespace Deadheim.Pvp
         // ----------------------------------------------------------------- morte
 
         private static float _pendingSkillMultiplier = 1f;
+        private static float _keepTimeSinceDeath = -1f;
 
         /// <summary>
         /// Antes do vanilla: m_lastHit ainda diz quem matou e Skills.OnDeath ainda nao rodou.
         /// Decide perda de skill, imunidade e avisa o servidor.
+        ///
+        /// O vanilla tem a janela "sem perda de skill" (m_hardDeathCooldown): quem morre de
+        /// novo pouco depois de morrer nao perde skill. Duas regras mexem nela:
+        /// - morte sem perda (arena, castelo) nao abre a janela, senao morrer na arena de
+        ///   proposito daria minutos de morte gratis no PvE e no PvP;
+        /// - morte de PK sempre perde, mesmo dentro da janela, senao o PK nao pagaria nada
+        ///   se tivesse morrido ha pouco.
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
         private static class DeathPatch
@@ -114,6 +165,7 @@ namespace Deadheim.Pvp
             private static void Prefix(Player __instance)
             {
                 _pendingSkillMultiplier = 1f;
+                _keepTimeSinceDeath = -1f;
                 try
                 {
                     if (!PvpConfig.Active) return;
@@ -135,6 +187,9 @@ namespace Deadheim.Pvp
                     else if (castle != null && PvpConfig.CastleNoSkillLoss.Value) _pendingSkillMultiplier = 0f;
                     else if (wasPk) _pendingSkillMultiplier = Mathf.Max(0f, PvpConfig.PkSkillLossMultiplier.Value);
 
+                    if (_pendingSkillMultiplier <= 0f) _keepTimeSinceDeath = __instance.m_timeSinceDeath;
+                    else if (wasPk) __instance.ClearHardDeath();
+
                     bool warZone = arena || (castle != null && PvpConfig.CastleIgnoresImmunity.Value);
                     if (byPlayer && !warZone && PvpConfig.ImmunityMinutes.Value > 0f)
                         PvpState.GrantImmunity(__instance, PvpConfig.ImmunityMinutes.Value * 60d);
@@ -153,7 +208,17 @@ namespace Deadheim.Pvp
                 }
             }
 
-            private static void Finalizer() => _pendingSkillMultiplier = 1f;
+            private static void Postfix(Player __instance)
+            {
+                if (_keepTimeSinceDeath >= 0f && __instance == Player.m_localPlayer)
+                    __instance.m_timeSinceDeath = _keepTimeSinceDeath;
+            }
+
+            private static void Finalizer()
+            {
+                _pendingSkillMultiplier = 1f;
+                _keepTimeSinceDeath = -1f;
+            }
         }
 
         [HarmonyPatch(typeof(Skills), nameof(Skills.OnDeath))]

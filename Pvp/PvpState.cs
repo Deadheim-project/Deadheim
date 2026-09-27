@@ -43,6 +43,8 @@ namespace Deadheim.Pvp
 
         private static ZDOID _lastPvpAttacker = ZDOID.None;
         private static float _lastPvpHitTime = -9999f;
+        // Veneno/fogo que um jogador deixou: o credito vale ate o efeito acabar.
+        private static float _dotCreditUntil = -9999f;
 
         public static PvpFlags Current { get; private set; }
         public static string ZoneLabel { get; private set; }
@@ -68,6 +70,7 @@ namespace Deadheim.Pvp
             _combatUntil = 0f;
             _lastPvpAttacker = ZDOID.None;
             _lastPvpHitTime = -9999f;
+            _dotCreditUntil = -9999f;
             Current = PvpFlags.None;
             ZoneLabel = null;
         }
@@ -112,17 +115,35 @@ namespace Deadheim.Pvp
             MarkCombat();
         }
 
+        /// <summary>
+        /// Depois de um golpe PvP: se ele deixou veneno ou fogo, o credito da morte vale
+        /// enquanto o efeito durar. Veneno forte passa de 20 s (2 + raiz(2 x dano)) e o
+        /// tique dele nao tem atacante, entao sem isso a morte cairia em PvE.
+        /// </summary>
+        public static void CoverDamageOverTime(Player victim)
+        {
+            SEMan seman = victim != null ? victim.GetSEMan() : null;
+            if (seman == null) return;
+            float longest = 0f;
+            foreach (StatusEffect effect in seman.GetStatusEffects())
+                if (effect is SE_Poison || effect is SE_Burning)
+                    longest = Mathf.Max(longest, effect.GetRemaningTime());
+            if (longest > 0f) _dotCreditUntil = Mathf.Max(_dotCreditUntil, Time.time + longest + 1f);
+        }
+
         /// <summary>Quem leva o credito de uma morte que nao veio direto de um jogador.</summary>
         public static ZDOID RecentAttacker()
         {
             float window = Mathf.Max(0f, PvpConfig.KillCreditSeconds.Value);
-            return Time.time - _lastPvpHitTime <= window ? _lastPvpAttacker : ZDOID.None;
+            bool recent = Time.time - _lastPvpHitTime <= window || Time.time <= _dotCreditUntil;
+            return recent ? _lastPvpAttacker : ZDOID.None;
         }
 
         public static void ForgetAttacker()
         {
             _lastPvpAttacker = ZDOID.None;
             _lastPvpHitTime = -9999f;
+            _dotCreditUntil = -9999f;
         }
 
         // -------------------------------------------------------------- bandeira de PvP
