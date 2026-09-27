@@ -37,3 +37,6 @@ packages/
 
 # Staging de empacotamento local
 dist-stage-*/
+
+# Launcher baixado do GitHub pelo build do LauncherCli
+Testing/LauncherCli/launcher/

@@ -1,6 +1,7 @@
 // Usa o Deadheim Launcher sem a janela: o mesmo caminho do botao Jogar (manifest das
 // configuracoes do launcher -> regra de atualizacao -> ModInstallerService -> perfil), so
 // que sem abrir o Valheim. Instala no perfil de verdade (%APPDATA%\DeadheimLauncher).
+// O codigo e o do launcher publicado no GitHub, baixado pelo build (ver o csproj).
 //
 //   launcher-cli [perfil]          instala/atualiza o que o manifest pede
 //   launcher-cli [perfil] --check  so mostra o que faria
@@ -13,11 +14,18 @@ using DeadheimLauncher.ViewModels;
 string profileName = args.FirstOrDefault(a => !a.StartsWith("--")) ?? "Default";
 bool checkOnly = args.Contains("--check");
 
+using var http = new HttpClient();
+
+// O jogador recebe o release novo pela atualizacao automatica; aqui so avisa.
+Console.WriteLine($"launcher: {AutoAtualizacaoService.VersaoAtual}");
+var nova = await new AutoAtualizacaoService(http).ProcurarAsync();
+if (nova is not null)
+    Console.WriteLine($"aviso: o GitHub ja tem o launcher {nova.Versao}; rode o build com -p:RefreshLauncher=true");
+
 var settings = new SettingsService().Load();
 Console.WriteLine($"manifest: {settings.ManifestUrl}");
 Console.WriteLine($"servidor: {settings.ServerHost}:{settings.ServerPort}");
 
-using var http = new HttpClient();
 var manifest = await new ManifestService(http).GetManifestAsync(settings.ManifestUrl);
 Console.WriteLine($"pack: {manifest.PackVersion}  mods: {manifest.AllMods.Count()}");
 

@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Usa o Deadheim Launcher sem a janela (ver Program.cs). Caminho do launcher: D:deadheim-launcher. -->
+  <!-- Usa o Deadheim Launcher sem a janela (ver Program.cs). Compila contra o launcher PUBLICADO
+       (release do GitHub, o mesmo que os jogadores recebem), nao contra um build local.
+         dotnet build -c Release                              baixa o latest na primeira vez
+         dotnet build -c Release -p:LauncherRelease=v1.2.5    uma versao fixa
+         dotnet build -c Release -p:RefreshLauncher=true      baixa o latest de novo -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -7,12 +11,31 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <LauncherRelease Condition="'$(LauncherRelease)' == ''">latest</LauncherRelease>
+    <LauncherDir>$(MSBuildProjectDirectory)\launcher\$(LauncherRelease)\</LauncherDir>
+    <LauncherZipUrl Condition="'$(LauncherRelease)' == 'latest'">https://github.com/Deadheim-project/Launcher/releases/latest/download/DeadheimLauncher.zip</LauncherZipUrl>
+    <LauncherZipUrl Condition="'$(LauncherRelease)' != 'latest'">https://github.com/Deadheim-project/Launcher/releases/download/$(LauncherRelease)/DeadheimLauncher.zip</LauncherZipUrl>
+  </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="DeadheimLauncher">
-      <HintPath>D:\deadheim-launcher\DeadheimLauncher\bin\Release\net8.0-windows\DeadheimLauncher.dll</HintPath>
+      <HintPath>$(LauncherDir)DeadheimLauncher.dll</HintPath>
     </Reference>
     <Reference Include="CommunityToolkit.Mvvm">
-      <HintPath>D:\deadheim-launcher\DeadheimLauncher\bin\Release\net8.0-windows\CommunityToolkit.Mvvm.dll</HintPath>
+      <HintPath>$(LauncherDir)CommunityToolkit.Mvvm.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="BaixarLauncher" BeforeTargets="ResolveAssemblyReferences"
+          Condition="'$(RefreshLauncher)' == 'true' Or !Exists('$(LauncherDir)DeadheimLauncher.dll')">
+    <RemoveDir Directories="$(LauncherDir)" />
+    <DownloadFile SourceUrl="$(LauncherZipUrl)" DestinationFolder="$(MSBuildProjectDirectory)\launcher\"
+                  DestinationFileName="DeadheimLauncher-$(LauncherRelease).zip" Retries="3" />
+    <Unzip SourceFiles="$(MSBuildProjectDirectory)\launcher\DeadheimLauncher-$(LauncherRelease).zip"
+           DestinationFolder="$(LauncherDir)" />
+    <Delete Files="$(MSBuildProjectDirectory)\launcher\DeadheimLauncher-$(LauncherRelease).zip" />
+    <Message Importance="high" Text="Launcher $(LauncherRelease) baixado do GitHub em $(LauncherDir)" />
+  </Target>
 </Project>
