@@ -80,6 +80,16 @@
       <HintPath>$(ValheimManaged)\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- Canvas, CanvasGroup e RectTransformUtility (Ajustes.cs). -->
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Fotos das telas do passo ajustes. -->
+    <Reference Include="UnityEngine.ScreenCaptureModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.ScreenCaptureModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>$(ValheimManaged)\UnityEngine.UI.dll</HintPath>
       <Private>false</Private>
@@ -98,6 +108,7 @@
   <ItemGroup>
     <Compile Include="Driver.cs" />
     <Compile Include="Solo.cs" />
+    <Compile Include="Ajustes.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

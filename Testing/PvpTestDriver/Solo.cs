@@ -113,6 +113,8 @@ namespace PvpTestDriver
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
                 Step("coins", Coins),
+                // Por ultimo: abre o menu do ESC, e com -Admin o cliente e admin.
+                Step("ajustes", SoloAjustes),
             };
 
             // -dhtest-steps a,b,c roda so esses passos (o setup sempre roda).

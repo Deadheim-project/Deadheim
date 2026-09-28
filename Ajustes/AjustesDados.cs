@@ -192,14 +192,14 @@ namespace Deadheim.Ajustes
 
         // ------------------------------------------------------------------ leitura
 
+        // So o ConfigFile interessa, e ele e objeto comum: "?." em vez do == da Unity.
         private static IEnumerable<PluginInfo> Plugins()
-            => Chainloader.PluginInfos.Values.Where(p => p != null && p.Instance != null && p.Instance.Config != null);
+            => Chainloader.PluginInfos.Values.Where(p => p?.Instance?.Config != null);
 
         private static ConfigFile Config(string guid)
         {
             if (string.IsNullOrEmpty(guid)) return null;
-            if (!Chainloader.PluginInfos.TryGetValue(guid, out PluginInfo info) || info?.Instance == null) return null;
-            return info.Instance.Config;
+            return Chainloader.PluginInfos.TryGetValue(guid, out PluginInfo info) ? info?.Instance?.Config : null;
         }
 
         private static List<ConfigEntryBase> Entradas(ConfigFile config)

@@ -18,6 +18,10 @@
 
     Uso:
       powershell -ExecutionPolicy Bypass -File Testing\run-pvp-test.ps1 -Root D:\tmp\pvptest
+
+    Opcao Deadheim do menu do ESC (passo "ajustes", fotos em <Root>\fotos):
+      ... -Solo -Steps ajustes           como jogador comum
+      ... -Solo -Steps ajustes -Admin    como admin (a conta Steam logada entra na adminlist.txt)
 #>
 param(
     [string]$Root = (Join-Path $env:TEMP 'deadheim-pvptest'),
@@ -39,11 +43,27 @@ param(
     [switch]$Solo,
     # So estes passos do roteiro solo, separados por virgula (o setup sempre roda).
     [string[]]$Steps = @(),
+    # Poe a conta Steam deste PC na adminlist.txt do servidor de teste. Admin passa por cima
+    # de ward, portal e teleporte em combate: use so com -Steps ajustes.
+    [switch]$Admin,
+    # SteamID64 do admin; sem ele, o da conta logada no Steam (HKCU\...\ActiveProcess\ActiveUser).
+    [string]$AdminId = '',
     [switch]$KeepRunning
 )
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
+
+if ($Admin) {
+    if (-not $AdminId) {
+        $activeUser = (Get-ItemProperty 'HKCU:\Software\Valve\Steam\ActiveProcess' -ErrorAction SilentlyContinue).ActiveUser
+        if (-not $activeUser) { throw 'Nao achei a conta do Steam (Steam aberto?). Passe -AdminId <SteamID64>.' }
+        $AdminId = ([UInt64]76561197960265728 + [UInt64]$activeUser).ToString()
+    }
+    if (($Steps | Where-Object { $_ -ne 'ajustes' }) -or -not $Steps) {
+        Write-Warning 'Com -Admin o cliente de teste e admin e os passos de PvP que dependem de ward/teleporte podem falhar. Use -Steps ajustes.'
+    }
+}
 $deadheimDll = Join-Path $repo 'bin\Release\Deadheim.dll'
 $vipDll = Join-Path $repo 'bin\Release\VipList.dll'
 $driverDll = Join-Path $PSScriptRoot 'PvpTestDriver\bin\Release\PvpTestDriver.dll'
@@ -231,6 +251,12 @@ try {
 
     # -------------------------------------------------------------- servidor: config de teste
     Get-ChildItem "$Root\server\BepInEx\config" -Filter 'Deadheim' -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+    # Sempre reescrita: sem -Admin, uma rodada anterior com -Admin nao deixa o cliente admin.
+    New-Item -ItemType Directory -Force "$Root\saves-server" | Out-Null
+    $adminLines = @('// adminlist do teste (run-pvp-test.ps1)')
+    if ($Admin) { $adminLines += @($AdminId, "Steam_$AdminId"); Write-Step "Admin no servidor de teste: $AdminId" }
+    Set-Content -Path "$Root\saves-server\adminlist.txt" -Value $adminLines -Encoding ASCII
+    if (Test-Path "$Root\fotos") { Remove-Item -Recurse -Force "$Root\fotos" }
     Write-ServerConfig 'Radius' "ArenaTeste,$tx,$tz,15"
     Write-RaidSystem ([int]$tx) ([int]$tz)
     Write-Step "Servidor (2a subida, config de teste; arena no templo $tx,$tz)"
@@ -286,8 +312,12 @@ try {
         } else { Write-Host "(sem log em $log)" }
     }
     Write-Host ""
-    Write-Host "===== Servidor (PvP) ====="
-    Select-String -Path $serverLog -Pattern 'Deadheim PvP|Exception' | ForEach-Object { $_.Line }
+    Write-Host "===== Servidor (PvP e Ajustes) ====="
+    Select-String -Path $serverLog -Pattern 'Deadheim PvP|Deadheim\] Ajustes|Exception' | ForEach-Object { $_.Line }
+    if (Test-Path "$Root\fotos") {
+        Write-Host ""
+        Write-Host "Fotos do passo ajustes em $Root\fotos"
+    }
 }
 finally {
     if (-not $KeepRunning) { Stop-All }

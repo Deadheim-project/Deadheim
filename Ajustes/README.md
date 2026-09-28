@@ -39,3 +39,21 @@ Valor invalido e recusado com a mensagem embaixo.
 O servidor registra cada mudanca no log: `Ajustes: <id> mudou <mod> [secao] chave: 'antes' -> 'depois'`.
 
 Alguns mods so leem certas opcoes quando iniciam; essas passam a valer no proximo restart.
+
+## Testes
+
+- **Sem o jogo** (`Testing/AjustesSemJogo`): o `AjustesRede.cs` e o `AjustesDados.cs` de verdade,
+  com o Harmony aplicando os patches, um servidor e clientes simulados trocando pacotes e o
+  `ConfigFile` do BepInEx gravando em disco. 39 checagens: jogador comum negado (inclusive com
+  id de admin forjado no pacote), admin lista/le/muda, valor invalido, faixa, liga/desliga,
+  lista, opcao oculta, mod com 400 opcoes, host de mundo local, e o que entra em "Meus ajustes".
+
+      dotnet build Testing\AjustesSemJogo -c Release
+      Testing\AjustesSemJogo\bin\Release\net48\AjustesSemJogo.exe
+
+- **No jogo** (passo `ajustes` do `Testing/run-pvp-test.ps1`): abre o ESC, confere o botao
+  (texto, sem sobrepor os outros, dentro da tela), abre a janela, edita pelos controles dela e
+  testa a aba Servidor contra o servidor dedicado. Tira fotos de cada tela em `<Root>\fotos`.
+
+      Testing\run-pvp-test.ps1 -Solo -Steps ajustes           como jogador comum
+      Testing\run-pvp-test.ps1 -Solo -Steps ajustes -Admin    como admin

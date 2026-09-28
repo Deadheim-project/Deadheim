@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Teste sem o jogo da opcao Deadheim do menu do ESC (ver Program.cs). Fora do
+       Deadheim.sln, como o PvpTestDriver. Nao referencia o assembly_valheim: a rede do
+       jogo e simulada no Stubs.cs. BepInEx, Harmony e UnityEngine vem da mesma arvore
+       que o Deadheim.csproj usa (Directory.Build.props). -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>9.0</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0649;MSB3277</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Stubs.cs;Program.cs" />
+    <Compile Include="..\..\Ajustes\AjustesDados.cs;..\..\Ajustes\AjustesRede.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="BepInEx"><HintPath>$(BepInExCorePath)\BepInEx.dll</HintPath></Reference>
+    <Reference Include="0Harmony"><HintPath>$(BepInExCorePath)\0Harmony.dll</HintPath></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(ValheimManaged)\UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath></Reference>
+    <!-- O Harmony precisa destes em tempo de execucao. -->
+    <None Include="$(BepInExCorePath)\MonoMod.RuntimeDetour.dll;$(BepInExCorePath)\MonoMod.Utils.dll;$(BepInExCorePath)\Mono.Cecil.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
