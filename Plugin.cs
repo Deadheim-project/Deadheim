@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.0.0";
+        public const string Version = "7.1.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -97,6 +97,7 @@ namespace Deadheim
             ApplyServerConfigOnce();
             Wards.WardCore.Update();
             Pvp.PvpModule.Update();
+            Ajustes.AjustesMenu.Update();
 
             Player localPlayer = Player.m_localPlayer;
             bool flag = Player.m_localPlayer == null;
@@ -191,6 +192,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Montarias.Bind(Config);
 
             _harmony.PatchAll();
+            Ajustes.AjustesMenu.Init(_harmony);
             DirectJoinFlow.Initialize(Logger);
             ClonedItems.LoadAssets();
 

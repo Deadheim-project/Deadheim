@@ -180,6 +180,11 @@
     <Compile Include="Pvp\PvpState.cs" />
     <Compile Include="Pvp\PvpStore.cs" />
     <Compile Include="Pvp\PvpZones.cs" />
+    <!-- Opcao "Deadheim" no menu do ESC: config local do jogador e, para admin, a do servidor ao vivo. -->
+    <Compile Include="Ajustes\AjustesDados.cs" />
+    <Compile Include="Ajustes\AjustesJanela.cs" />
+    <Compile Include="Ajustes\AjustesMenu.cs" />
+    <Compile Include="Ajustes\AjustesRede.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="VipList.csproj">

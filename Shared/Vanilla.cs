@@ -436,6 +436,35 @@ namespace Deadheim.Vanilla
         }
 
         /// <summary>
+        /// Caixa de marcar do Valheim (sprites checkbox e checkbox_marker), como o
+        /// CreateToggle do Jotunn. Centralizada no pai; quem chama posiciona.
+        /// </summary>
+        public static GameObject CreateToggle(Transform parent, float width = 28f, float height = 28f)
+        {
+            Vector2 center = new Vector2(0.5f, 0.5f);
+            GameObject go = NewUiObject("Toggle", parent, center, center, Vector2.zero, width, height);
+            Image background = go.AddComponent<Image>();
+            ApplySprite(background, "checkbox", FieldFallback);
+
+            GameObject check = NewUiObject("Checkmark", go.transform, Vector2.zero, Vector2.one, Vector2.zero, 0f, 0f);
+            RectTransform checkRect = (RectTransform)check.transform;
+            Stretch(checkRect);
+            checkRect.offsetMin = new Vector2(3f, 3f);
+            checkRect.offsetMax = new Vector2(-3f, -3f);
+            Image mark = check.AddComponent<Image>();
+            ApplySprite(mark, "checkbox_marker", ValheimOrange);
+            mark.type = Image.Type.Simple;
+            mark.preserveAspect = true;
+            mark.raycastTarget = false;
+
+            Toggle toggle = go.AddComponent<Toggle>();
+            toggle.targetGraphic = background;
+            toggle.graphic = mark;
+            toggle.isOn = false;
+            return go;
+        }
+
+        /// <summary>
         /// Mesma arvore do Jotunn: raiz / "Scroll View" / "Viewport" / "Content", com o
         /// Content empilhando os filhos de cima para baixo. Os menus buscam o Content
         /// por esse caminho.
