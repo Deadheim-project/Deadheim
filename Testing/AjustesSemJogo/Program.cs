@@ -53,10 +53,8 @@ static class Program
     static void AddPlugin(string guid, string nome, string versao, ConfigFile cfg)
     {
         var plugin = (FakePlugin)FormatterServices.GetUninitializedObject(typeof(FakePlugin));
-        // O operador == da Unity considera "destruido" objeto sem ponteiro nativo.
-        var ptr = typeof(UnityEngine.Object).GetField("m_CachedPtr", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
-                  ?? throw new Exception("m_CachedPtr nao existe");
-        ptr.SetValue(plugin, new IntPtr(1));
+        // Sem gravar o m_CachedPtr: o SetValue dispara o construtor estatico do UnityEngine.Object,
+        // que chama o motor da Unity (SecurityException fora do jogo). O AjustesDados so usa ?. nos plugins.
         (typeof(BaseUnityPlugin).GetField("<Config>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new Exception("Config backing nao existe")).SetValue(plugin, cfg);
         var info = (PluginInfo)FormatterServices.GetUninitializedObject(typeof(PluginInfo));

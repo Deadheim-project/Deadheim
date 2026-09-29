@@ -278,7 +278,7 @@ namespace Deadheim.Ajustes
         {
             using (MemoryStream saida = new MemoryStream())
             {
-                using (DeflateStream deflate = new DeflateStream(saida, CompressionLevel.Optimal))
+                using (DeflateStream deflate = new DeflateStream(saida, System.IO.Compression.CompressionLevel.Optimal))
                     deflate.Write(dados, 0, dados.Length);
                 return saida.ToArray();
             }
