@@ -17,6 +17,7 @@ using Deadheim.Ajustes;
 using HarmonyLib;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -34,6 +35,7 @@ namespace PvpTestDriver
         {
             bool admin = Deadheim.Vanilla.Admin.LocalPlayerIsAdmin();
             Log($"ajustes: admin={admin} tela={Screen.width}x{Screen.height}");
+            Log($"ajustes: adminlist no cliente=[{string.Join(", ", ZNet.instance.GetAdminList() ?? new List<string>())}] eu={Splatform.PlatformManager.DistributionPlatform.LocalUser.PlatformUserID}");
 
             var update = AccessTools.Method(typeof(Menu), "Update");
             Check("ajustes/esc-volta-ao-menu (patch no Menu.Update)",
@@ -346,5 +348,13 @@ namespace PvpTestDriver
             yield return Wait(0.5f);
             Log("foto: " + arquivo);
         }
+    }
+
+    // Diagnostico: a lista de admins que o servidor manda ao cliente (ZNet.RPC_AdminList).
+    [HarmonyPatch(typeof(ZNet), "RPC_AdminList")]
+    internal static class DiagAdminList
+    {
+        private static void Postfix(ZNet __instance)
+            => BepInEx.Logging.Logger.CreateLogSource("PvpTestDriver").LogInfo($"[PVPTEST] RPC_AdminList recebido: [{string.Join(", ", __instance.GetAdminList())}]");
     }
 }

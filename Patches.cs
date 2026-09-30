@@ -20,10 +20,7 @@ namespace Deadheim
                 try
                 {
                     if (!Player.m_localPlayer) return;
-                    steamId = ((IUser)PlatformManager.DistributionPlatform.LocalUser).PlatformUserID.m_userID;
                     Plugin.PlayerName = Player.m_localPlayer.m_nview.GetZDO().GetString("playerName");
-
-                    Debug.Log("steamId: " + steamId);
                 }
                 catch
                 {
@@ -103,6 +100,19 @@ namespace Deadheim
                     if (playerList.Exists(existing => existing.m_name == player.m_name)) continue;
                     playerList.Add(player);
                 }
+            }
+        }
+
+        // O Valheim manda a adminlist.txt ao cliente uma vez so, no RPC_PeerInfo. O ServerSync
+        // segura o PeerInfo do servidor ate mandar as configs, entao o AdminList chega antes de
+        // o cliente registrar o RPC e se perde: o admin nunca se ve como admin no cliente.
+        // O CharacterID vem do cliente ja no mundo; ai a lista chega.
+        [HarmonyPatch(typeof(ZNet), "RPC_CharacterID")]
+        private class ReenviaAdminList
+        {
+            private static void Postfix(ZNet __instance)
+            {
+                if (__instance.IsServer()) __instance.SendAdminList();
             }
         }
 

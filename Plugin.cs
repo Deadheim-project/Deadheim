@@ -29,8 +29,6 @@ namespace Deadheim
         };
 
         private bool _serverConfigApplied;
-        public static string steamId = "";  
-        public static ConfigEntry<string> AdminList;
         public static ConfigEntry<string> OnlyAdminPieces;
         public static ConfigEntry<string> VipPortalNames;
         public static ConfigEntry<int> WardRadius;
@@ -49,7 +47,6 @@ namespace Deadheim
 
         public static string PlayerName = "";
 
-        public static bool IsAdmin = false;
         public static int PlayerWardCount = 999;
         public static int PlayerPortalCount = 999;
 
@@ -88,7 +85,6 @@ namespace Deadheim
             ItemService.OnlyAdminPieces();
             Pvp.PvpModule.ApplyItemTweaks();
 
-            IsAdmin = AdminList.Value.Contains(Plugin.steamId);
             Logger.LogInfo("Config do servidor recebida e aplicada.");
         }
 
@@ -146,8 +142,6 @@ new ConfigDescription("VipPortalNames")));
             SkillCap = Synced(Config.Bind("Server config", "SkillCap", 100,
 new ConfigDescription("SkillCap")));
 
-            AdminList = Synced(Config.Bind("Server config", "AdminList", "76561198053330247 76561197961128381 76561198111650012 76561197993642177 76561198993982965",
-           new ConfigDescription("AdminList")));
 
 
             StaffMessage = Synced(Config.Bind("Server config", "StaffMessage", "",
