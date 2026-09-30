@@ -18,7 +18,7 @@ namespace RaidSystem
     {
         public const string PluginGUID = "Detalhes.RaidSystem";
         public const string PluginName = "RaidSystem";
-        public const string PluginVersion = "2.1.0";
+        public const string PluginVersion = "2.1.1";
         public const string DefaultWebhookUrl = "";
         public static RaidSystemPlugin Instance { get; private set; }
         private Harmony _harmony;
@@ -152,7 +152,11 @@ namespace RaidSystem
 
             // sync: false de proposito. O ServerSync empurra config sincronizada para todos
             // os clientes, e a URL do webhook e um segredo: quem tiver ela posta no Discord.
-            WebhookUrl = config("7 - Integration", "Discord Webhook URL", DefaultWebhookUrl, "Discord webhook for RaidSystem notifications. Server-side only, never sent to clients.", false);
+            // So o servidor usa: no cliente fica escondida do ConfigurationManager e dos "Meus
+            // ajustes" da opcao Deadheim do ESC; no servidor dedicado continua na aba Servidor.
+            WebhookUrl = config("7 - Integration", "Discord Webhook URL", DefaultWebhookUrl,
+                new ConfigDescription("Discord webhook for RaidSystem notifications. Server-side only, never sent to clients.", null,
+                    new ConfigurationManagerAttributes { Browsable = Application.isBatchMode }), false);
 
             ConquestMessage = config("8 - UI Text", "Conquest Message", "conquistou o território em:", "Conquest notification text.");
             ScoreboardTitle = config("8 - UI Text", "Scoreboard Title", "Ranking de Guerra", "Scoreboard title.");
@@ -256,5 +260,14 @@ namespace RaidSystem
             sb.AppendLine($"{key} = {value}");
             sb.AppendLine();
         }
+    }
+
+    /// <summary>
+    /// Lido pelo nome, por reflexao, pelo ConfigurationManager e pela opcao Deadheim do ESC.
+    /// O do ServerSync (namespace ServerSync) so tem ReadOnly; este traz o Browsable.
+    /// </summary>
+    internal sealed class ConfigurationManagerAttributes
+    {
+        public bool? Browsable;
     }
 }

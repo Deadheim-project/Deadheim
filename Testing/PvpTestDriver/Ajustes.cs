@@ -84,6 +84,8 @@ namespace PvpTestDriver
             string vazou = string.Join(", ", locais.SelectMany(m => AjustesDados.Itens(m.Guid, local: true).Where(i => i.Sincronizado).Select(i => m.Nome + ":" + i.Chave)));
             Check("ajustes/meus-sem-opcao-do-servidor", vazou.Length == 0, vazou);
             Check("ajustes/meus-sem-config-de-servidor-do-deadheim", AjustesDados.Itens(Plugin.PluginGUID, local: true).All(i => i.Chave != "WardRadius"));
+            // RaidSystem 2.1.1: o webhook e so do servidor e fica fora dos ajustes do jogador.
+            Check("ajustes/meus-sem-webhook-do-raidsystem", AjustesDados.Itens("Detalhes.RaidSystem", local: true).All(i => i.Chave != "Discord Webhook URL"));
 
             yield return EditarLocal();
 

@@ -19,6 +19,9 @@ opcionais. O que conta e o `ConfigFile` que o BepInEx ja tem aberto para cada mo
   com `IsAdminOnly`). Essas opcoes nunca aparecem em "Meus ajustes": no cliente elas valem o que
   o servidor mandou, e a regra de PvP roda no cliente de quem leva o golpe.
 - Opcao com `Browsable = false` nao aparece; com `ReadOnly = true` aparece travada.
+- Opcao que so o servidor usa e nao e sincronizada (segredo, como o webhook do RaidSystem):
+  o mod marca `Browsable = Application.isBatchMode`. No cliente ela some de "Meus ajustes" (e do
+  F1); no servidor dedicado continua na aba Servidor.
 - Admin e quem esta na `adminlist.txt` do servidor, a mesma lista que o ServerSync e os
   devcommands usam. A aba Servidor so aparece para admin, e o servidor confere de novo a cada
   pedido pela conexao de verdade (`ZRpc`), nao pelo id que o cliente escreve no pacote.
@@ -44,7 +47,7 @@ Alguns mods so leem certas opcoes quando iniciam; essas passam a valer no proxim
 
 - **Sem o jogo** (`Testing/AjustesSemJogo`): o `AjustesRede.cs` e o `AjustesDados.cs` de verdade,
   com o Harmony aplicando os patches, um servidor e clientes simulados trocando pacotes e o
-  `ConfigFile` do BepInEx gravando em disco. 39 checagens: jogador comum negado (inclusive com
+  `ConfigFile` do BepInEx gravando em disco. 40 checagens: jogador comum negado (inclusive com
   id de admin forjado no pacote), admin lista/le/muda, valor invalido, faixa, liga/desliga,
   lista, opcao oculta, mod com 400 opcoes, host de mundo local, e o que entra em "Meus ajustes".
 

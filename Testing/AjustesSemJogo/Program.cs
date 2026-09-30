@@ -22,6 +22,8 @@ using HarmonyLib;
 
 namespace ServerSync { public abstract class OwnConfigEntryBase { public bool SynchronizedConfig = true; } public class SyncedConfigEntry<T> : OwnConfigEntryBase { } }
 class ConfigurationManagerAttributes { public bool? ReadOnly; public bool? Browsable; public bool? IsAdminOnly; }
+// O ServerSync poe o dele (so ReadOnly) antes das tags do mod; o RaidSystem traz o seu com o Browsable.
+namespace ServerSync { class ConfigurationManagerAttributes { public bool? ReadOnly; } }
 public class FakePlugin : BaseUnityPlugin { }
 
 static class Program
@@ -109,6 +111,10 @@ static class Program
 
         var raid = NovoCfg("Detalhes.RaidSystem");
         raid.Bind("9 - Client", "Menu Key", "PageUp", "Abre o menu de raide.");
+        // Como o RaidSystem 2.1.1 no cliente: nao sincronizada (segredo) e Browsable=false.
+        var webhook = raid.Bind("7 - Integration", "Discord Webhook URL", "", new ConfigDescription("Server-side only.", null,
+            new ServerSync.ConfigurationManagerAttributes(), new ConfigurationManagerAttributes { Browsable = false }));
+        AddTag(webhook, new ServerSync.SyncedConfigEntry<string> { SynchronizedConfig = false });
         Sync(raid.Bind("2 - Raid Rules", "Raid Hours (UTC)", "18-22", "Horario."));
         AddPlugin("Detalhes.RaidSystem", "Detalhes.RaidSystem", "2.1.0", raid);
 
@@ -223,6 +229,8 @@ static class Program
         // ------------------------------------------------------ "Meus ajustes"
         var locais = AjustesDados.Mods(local: true);
         Check("Meus ajustes: so mods com opcao local", locais.Select(m => m.Guid).SequenceEqual(new[] { "Detalhes.Deadheim", "Detalhes.RaidSystem" }), string.Join(", ", locais.Select(m => $"{m.Guid}({m.Itens})")));
+        Check("webhook do RaidSystem fora de Meus ajustes (Browsable no 2o ConfigurationManagerAttributes)",
+            AjustesDados.Itens("Detalhes.RaidSystem", local: true).All(i => i.Chave != "Discord Webhook URL"));
         var itensLocais = AjustesDados.Itens("Detalhes.Deadheim", local: true);
         Check("Meus ajustes do Deadheim: so as locais (IsAdminOnly fica de fora)",
             itensLocais.Select(i => i.Chave).OrderBy(k => k).SequenceEqual(new[] { "Local pelo ServerSync", "Tecla" }), string.Join(", ", itensLocais.Select(i => i.Chave)));
