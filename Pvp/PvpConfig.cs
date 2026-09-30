@@ -16,6 +16,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> Enabled;
         public static ConfigEntry<bool> ForcePvp;
         public static ConfigEntry<float> DamageMultiplier;
+        public static ConfigEntry<float> StaggerMultiplier;
         public static ConfigEntry<float> WardDefenseMultiplier;
         public static ConfigEntry<bool> NoFriendlyFireGuild;
         public static ConfigEntry<bool> NoFriendlyFireGroup;
@@ -26,11 +27,14 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> KillFeed;
 
         // --------------------------------------------------------------------- PK
-        public static ConfigEntry<float> PkMinutes;
+        public static ConfigEntry<string> PkTiers;
         public static ConfigEntry<float> PkSkillLossMultiplier;
         public static ConfigEntry<bool> PkClearsOnDeath;
+        public static ConfigEntry<bool> PkPenaltyOnPveDeath;
+        public static ConfigEntry<bool> PkPermanentOnMap;
         public static ConfigEntry<bool> AggressorRule;
         public static ConfigEntry<float> AggressorSeconds;
+        public static ConfigEntry<bool> AggressorPausesInCombat;
 
         // ------------------------------------------------------------------ zonas
         public static ConfigEntry<string> StartIslandMode;
@@ -42,6 +46,8 @@ namespace Deadheim.Pvp
         public static ConfigEntry<string> ArenaZones;
         public static ConfigEntry<bool> TransportsSafe;
         public static ConfigEntry<bool> TransportsInvulnerable;
+        public static ConfigEntry<bool> ShipsSafe;
+        public static ConfigEntry<bool> ShipsInvulnerable;
         public static ConfigEntry<bool> ArenaNoSkillLoss;
         public static ConfigEntry<bool> ArenaFriendlyFire;
         public static ConfigEntry<bool> ArenaCountsLeaderboard;
@@ -53,17 +59,21 @@ namespace Deadheim.Pvp
         public static ConfigEntry<string> CastleRewardByBiome;
         public static ConfigEntry<float> CastleRewardCooldownMinutes;
 
-        // ----------------------------------------------------------------- desafio
-        public static ConfigEntry<bool> ChallengeEnabled;
-        public static ConfigEntry<int> ChallengeDelaySeconds;
-        public static ConfigEntry<float> ChallengeDurationMinutes;
-        public static ConfigEntry<float> ChallengeCooldownMinutes;
-        public static ConfigEntry<string> ChallengeSurviveReward;
-        public static ConfigEntry<string> ChallengeKillReward;
+        // ------------------------------------------------------------------ bounty
+        public static ConfigEntry<bool> BountyEnabled;
+        public static ConfigEntry<int> BountyMinimum;
+        public static ConfigEntry<float> BountyMinutesPer1000;
+        public static ConfigEntry<int> BountyUntilDeathAt;
+        public static ConfigEntry<float> BountyKillerSharePercent;
+        public static ConfigEntry<float> BountyBuyoutMultiplier;
+        public static ConfigEntry<float> BountyExpiredRefundPercent;
+        public static ConfigEntry<int> BountyDelaySeconds;
+        public static ConfigEntry<float> BountyCooldownMinutes;
         public static ConfigEntry<bool> HuntedCanUsePortals;
-        public static ConfigEntry<bool> ChallengePausesInOwnWard;
+        public static ConfigEntry<bool> BountyPausesInOwnWard;
         public static ConfigEntry<bool> HuntedNoWardDefense;
-        public static ConfigEntry<int> ChallengeMinPlayers;
+        public static ConfigEntry<int> BountyMinPlayers;
+        public static ConfigEntry<bool> BountyArenaKillsCount;
 
         // ------------------------------------------------------------------- fuga
         public static ConfigEntry<bool> CombatBlocksTeleport;
@@ -98,6 +108,8 @@ namespace Deadheim.Pvp
                 "PvP ligado para todos, fora das zonas seguras. O jogador nao escolhe.");
             DamageMultiplier = Bind(config, general, "DamageMultiplier", 0.5f,
                 "Multiplicador do dano de jogador em jogador. 0.5 = metade do dano normal.");
+            StaggerMultiplier = Bind(config, general, "StaggerMultiplier", 1f,
+                "Multiplicador do stagger (cambalear) de golpe de jogador em jogador. 1 = vanilla, 0.5 = metade, 0 = sem stagger no PvP.");
             WardDefenseMultiplier = Bind(config, general, "WardDefenseMultiplier", 0.5f,
                 "Multiplicador extra do dano PvP recebido dentro de um ward abastecido onde voce tem permissao (seu territorio).");
             NoFriendlyFireGuild = Bind(config, general, "NoFriendlyFireGuild", true,
@@ -116,17 +128,28 @@ namespace Deadheim.Pvp
                 "Anuncia no chat quem matou quem.");
 
             const string pk = "PvP - PK";
-            PkMinutes = Bind(config, pk, "PkMinutes", 30f,
-                "Minutos que quem mata outro jogador fica marcado como PK. Nao vale para arena, castelo, alvo PK, alvo cacado ou alvo agressor (AggressorRule).");
+            PkTiers = Bind(config, pk, "PkTiers", "1:60:Skills,2:120:Skills,3:1440:Unequipped,5:-1:All",
+                "Niveis de PK pela quantidade de abates que deram PK seguidos: Abates:Minutos:Perda,... " +
+                "Minutos -1 = PK permanente ate ser morto por jogador (fica no mapa de todos). " +
+                "Perda ao morrer marcado: Skills = so skill (x PkSkillLossMultiplier); Unequipped = skill e tudo que nao esta " +
+                "equipado cai no chao; All = skill e o inventario inteiro cai no chao. A contagem zera quando a marca some. " +
+                "Nao gera PK: arena, castelo em raid, alvo PK, alvo cacado ou alvo agressor (AggressorRule).");
             PkSkillLossMultiplier = Bind(config, pk, "PkSkillLossMultiplier", 2f,
                 "Multiplicador da perda de skill de quem morre marcado como PK.");
             PkClearsOnDeath = Bind(config, pk, "PkClearsOnDeath", true,
-                "A marca de PK some quando o PK morre.");
+                "A marca de PK (nao permanente) some quando o PK morre. O PK permanente so sai morto por jogador.");
+            PkPenaltyOnPveDeath = Bind(config, pk, "PkPenaltyOnPveDeath", true,
+                "A perda do nivel de PK vale em qualquer morte. Desligado, so quando o PK e morto por jogador " +
+                "(morte PvE perde skill normal).");
+            PkPermanentOnMap = Bind(config, pk, "PkPermanentOnMap", true,
+                "PK permanente aparece no mapa de todos, como o cacado.");
             AggressorRule = Bind(config, pk, "AggressorRule", true,
                 "Legitima defesa: quem bate primeiro em um jogador sem marca vira AGRESSOR. Matar um agressor " +
                 "(inclusive quem te atacou) nao faz de ninguem PK.");
-            AggressorSeconds = Bind(config, pk, "AggressorSeconds", 60f,
-                "Segundos que a marca de agressor dura depois do ultimo golpe dado.");
+            AggressorSeconds = Bind(config, pk, "AggressorSeconds", 600f,
+                "Segundos que a marca de agressor dura depois do ultimo golpe dado. Morrer como agressor nao tem perda extra.");
+            AggressorPausesInCombat = Bind(config, pk, "AggressorPausesInCombat", true,
+                "O tempo de agressor para enquanto ele esta em combate com jogador, para a marca nao acabar no meio da luta.");
 
             const string zones = "PvP - Zonas";
             StartIslandMode = Bind(config, zones, "StartIslandMode", "Island",
@@ -141,9 +164,13 @@ namespace Deadheim.Pvp
             ArenaZones = Bind(config, zones, "ArenaZones", "",
                 "Arenas: Nome,x,z,raio|... Dentro da arena o PvP vale sempre, sem perda de skill, sem PK e sem imunidade.");
             TransportsSafe = Bind(config, zones, "TransportsSafe", true,
-                "Quem esta num barco, carroca ou montaria fica em zona segura.");
+                "Quem esta numa carroca ou montaria fica em zona segura. Barco e ShipsSafe.");
             TransportsInvulnerable = Bind(config, zones, "TransportsInvulnerable", true,
-                "Barcos, carrocas e montarias com sela nao tomam dano de jogador.");
+                "Carrocas e montarias com sela nao tomam dano de jogador. Barco e ShipsInvulnerable.");
+            ShipsSafe = Bind(config, zones, "ShipsSafe", false,
+                "Quem esta num barco andando fica em zona segura. Desligado, barco e alvo (pirataria).");
+            ShipsInvulnerable = Bind(config, zones, "ShipsInvulnerable", false,
+                "Barcos nao tomam dano de jogador. Desligado, da para afundar barco.");
             ShipSafeMinSpeed = Bind(config, zones, "ShipSafeMinSpeed", 1f,
                 "O barco so protege quem esta nele se estiver andando acima desta velocidade (m/s). " +
                 "Barco parado ou encalhado nao e abrigo. 0 = protege parado tambem.");
@@ -168,31 +195,38 @@ namespace Deadheim.Pvp
             CastleRewardByBiome = Bind(config, castle, "CastleRewardByBiome",
                 "Meadows:25,BlackForest:50,Swamp:75,Mountain:100,Plains:150,Mistlands:200,AshLands:250,DeepNorth:250,Ocean:50",
                 "Quantidade da recompensa de defesa por bioma do castelo. Bioma:Quantidade,...");
-            CastleRewardCooldownMinutes = Bind(config, castle, "CastleRewardCooldownMinutes", 30f,
+            CastleRewardCooldownMinutes = Bind(config, castle, "CastleRewardCooldownMinutes", 1440f,
                 "Minutos ate o mesmo invasor render recompensa de novo para o mesmo defensor.");
 
-            const string challenge = "PvP - Desafio";
-            ChallengeEnabled = Bind(config, challenge, "ChallengeEnabled", true,
-                "Libera o comando /desafio.");
-            ChallengeDelaySeconds = Bind(config, challenge, "ChallengeDelaySeconds", 180,
-                "Segundos entre aceitar o desafio e aparecer no mapa.");
-            ChallengeDurationMinutes = Bind(config, challenge, "ChallengeDurationMinutes", 60f,
-                "Minutos que o desafiante fica CACADO: visivel no mapa de todos e sem zona segura.");
-            ChallengeCooldownMinutes = Bind(config, challenge, "ChallengeCooldownMinutes", 120f,
-                "Minutos entre dois desafios do mesmo jogador.");
-            ChallengeSurviveReward = Bind(config, challenge, "ChallengeSurviveReward", "Coins:1000",
-                "Recompensa de quem sobrevive ao desafio. Item:Quantidade");
-            ChallengeKillReward = Bind(config, challenge, "ChallengeKillReward", "Coins:500",
-                "Recompensa de quem mata o cacado. Item:Quantidade");
-            HuntedCanUsePortals = Bind(config, challenge, "HuntedCanUsePortals", false,
+            const string bounty = "PvP - Bounty";
+            BountyEnabled = Bind(config, bounty, "BountyEnabled", true,
+                "Libera o /bounty: um jogador paga moedas para outro ser cacado. Quem matar o alvo fica com parte do pote.");
+            BountyMinimum = Bind(config, bounty, "BountyMinimum", 1000,
+                "Menor valor (Coins) de uma bounty.");
+            BountyMinutesPer1000 = Bind(config, bounty, "BountyMinutesPer1000", 60f,
+                "Minutos de cacada por 1000 moedas no pote. O tempo so corre com o alvo online.");
+            BountyUntilDeathAt = Bind(config, bounty, "BountyUntilDeathAt", 5000,
+                "Com o pote a partir deste valor a bounty nao expira: so acaba quando o alvo morrer para jogador. 0 = nunca.");
+            BountyKillerSharePercent = Bind(config, bounty, "BountyKillerSharePercent", 75f,
+                "Porcentagem do pote que vai para quem matar o alvo. O resto e da casa (sai do jogo).");
+            BountyBuyoutMultiplier = Bind(config, bounty, "BountyBuyoutMultiplier", 1.5f,
+                "O alvo pode pagar o pote vezes este valor para a casa e encerrar a bounty (/bounty pagar). 0 = desligado.");
+            BountyExpiredRefundPercent = Bind(config, bounty, "BountyExpiredRefundPercent", 0f,
+                "Porcentagem do pote devolvida a quem pagou quando a bounty expira sem ninguem matar o alvo. O resto e da casa.");
+            BountyDelaySeconds = Bind(config, bounty, "BountyDelaySeconds", 600,
+                "Segundos entre a bounty ser colocada e o alvo virar CACADO. Nesse tempo ele e avisado e ainda pode teleportar.");
+            BountyCooldownMinutes = Bind(config, bounty, "BountyCooldownMinutes", 120f,
+                "Minutos depois de uma bounty acabar ate o mesmo jogador poder receber outra.");
+            HuntedCanUsePortals = Bind(config, bounty, "HuntedCanUsePortals", false,
                 "O cacado pode usar portal, NPC teleportador e pedra de retorno.");
-            ChallengePausesInOwnWard = Bind(config, challenge, "ChallengePausesInOwnWard", true,
-                "O tempo do desafio para enquanto o cacado esta dentro de um ward onde ele tem permissao " +
-                "(paredes invulneraveis nao podem valer a recompensa).");
-            HuntedNoWardDefense = Bind(config, challenge, "HuntedNoWardDefense", true,
+            BountyPausesInOwnWard = Bind(config, bounty, "BountyPausesInOwnWard", true,
+                "O tempo da bounty para enquanto o cacado esta dentro de um ward onde tem permissao.");
+            HuntedNoWardDefense = Bind(config, bounty, "HuntedNoWardDefense", true,
                 "O cacado nao tem a reducao de dano do proprio ward (WardDefenseMultiplier).");
-            ChallengeMinPlayers = Bind(config, challenge, "ChallengeMinPlayers", 3,
-                "Jogadores online (contando o cacado) para aceitar o desafio. Abaixo disso o tempo do desafio para.");
+            BountyMinPlayers = Bind(config, bounty, "BountyMinPlayers", 3,
+                "Jogadores online (contando o alvo) para o tempo da bounty correr. Abaixo disso ele para.");
+            BountyArenaKillsCount = Bind(config, bounty, "BountyArenaKillsCount", false,
+                "Matar o cacado dentro de uma arena paga a bounty.");
 
             const string escape = "PvP - Fuga";
             CombatBlocksTeleport = Bind(config, escape, "CombatBlocksTeleport", true,
@@ -206,7 +240,7 @@ namespace Deadheim.Pvp
                 "Deslogar em combate. Off = nada; Rank = conta morte para quem saiu e abate para quem bateu; " +
                 "Death = alem disso, ao voltar o jogador morre onde saiu (perde skill e a tumba fica la).");
 
-            PvpCoinDropPercent = Bind(config, "PvP - Saque", "PvpCoinDropPercent", 10f,
+            PvpCoinDropPercent = Bind(config, "PvP - Saque", "PvpCoinDropPercent", 0f,
                 "Porcentagem das moedas que quem morre para jogador deixa no chao, fora da tumba, para quem matou " +
                 "pegar. 0 = desligado. Nao vale na arena.");
 
@@ -262,6 +296,68 @@ namespace Deadheim.Pvp
             reward.Prefab = parts[0].Trim();
             reward.Amount = amount;
             return reward;
+        }
+
+        public enum PkPenalty
+        {
+            Skills,
+            Unequipped,
+            All,
+        }
+
+        public struct PkTier
+        {
+            public int Kills;
+            /// <summary>Minutos de PK; 0 ou menos = permanente.</summary>
+            public float Minutes;
+            public PkPenalty Penalty;
+            public bool Permanent => Minutes <= 0f;
+        }
+
+        private static string _tiersText;
+        private static List<PkTier> _tiers;
+
+        /// <summary>Niveis de PK em ordem de abates, lidos de PkTiers ("1:60:Skills,...").</summary>
+        public static List<PkTier> Tiers
+        {
+            get
+            {
+                string text = PkTiers.Value ?? string.Empty;
+                if (_tiers != null && _tiersText == text) return _tiers;
+                _tiersText = text;
+                _tiers = new List<PkTier>();
+                foreach (string raw in text.Split(','))
+                {
+                    string[] p = raw.Split(':');
+                    if (p.Length < 2
+                        || !int.TryParse(p[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int kills)
+                        || !float.TryParse(p[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float minutes))
+                    {
+                        if (!string.IsNullOrWhiteSpace(raw))
+                            Debug.LogWarning($"[Deadheim PvP] PkTiers: entrada ignorada '{raw}'. Formato: Abates:Minutos:Perda");
+                        continue;
+                    }
+                    PkPenalty penalty = PkPenalty.Skills;
+                    if (p.Length >= 3 && !Enum.TryParse(p[2].Trim(), true, out penalty)) penalty = PkPenalty.Skills;
+                    _tiers.Add(new PkTier { Kills = Math.Max(1, kills), Minutes = minutes, Penalty = penalty });
+                }
+                _tiers.Sort((a, b) => a.Kills.CompareTo(b.Kills));
+                return _tiers;
+            }
+        }
+
+        /// <summary>Nivel de PK de quem acumula <paramref name="streak"/> abates que deram PK.</summary>
+        public static bool TryGetTier(int streak, out PkTier tier)
+        {
+            tier = default;
+            bool found = false;
+            foreach (PkTier candidate in Tiers)
+            {
+                if (candidate.Kills > streak) break;
+                tier = candidate;
+                found = true;
+            }
+            return found;
         }
 
         /// <summary>Recompensa de defesa de castelo para o bioma, lida de CastleRewardByBiome.</summary>

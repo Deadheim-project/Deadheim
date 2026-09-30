@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using Deadheim.Vanilla;
 using Splatform;
 using System.Collections.Generic;
@@ -130,7 +130,7 @@ namespace Deadheim
         [HarmonyPrefix]
         public static bool EdgeOfWorldKill()
         {
-            return false;
+            return Plugin.EdgeOfWorldKills == null || Plugin.EdgeOfWorldKills.Value;
         }
 
 

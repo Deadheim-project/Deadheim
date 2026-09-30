@@ -13,17 +13,17 @@ namespace RaidSystem
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency("org.bepinex.plugins.guilds", BepInDependency.DependencyFlags.HardDependency)]
     // 7.0.0 traz o PvpBridge: castelos e abates classificados vem do modulo de PvP.
-    [BepInDependency("Detalhes.Deadheim", "7.0.0")]
+    [BepInDependency("Detalhes.Deadheim", "7.2.0")]
     public class RaidSystemPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "Detalhes.RaidSystem";
         public const string PluginName = "RaidSystem";
-        public const string PluginVersion = "2.1.1";
+        public const string PluginVersion = "2.2.0";
         public const string DefaultWebhookUrl = "";
         public static RaidSystemPlugin Instance { get; private set; }
         private Harmony _harmony;
 
-        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.1.0" };
+        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.2.0" };
 
         public static readonly string ModPath = Path.GetDirectoryName(typeof(RaidSystemPlugin).Assembly.Location);
         public static readonly string FileDirectory = Path.Combine(Paths.ConfigPath, "RaidSystem");
@@ -43,6 +43,8 @@ namespace RaidSystem
         public static ConfigEntry<int> SpawnDelayMS;
         public static ConfigEntry<int> Scale;
         public static ConfigEntry<Toggle> ForcePvpInZones;
+        public static ConfigEntry<Toggle> SafeAfterConquest;
+        public static ConfigEntry<Toggle> CastleRulesOnlyDuringRaid;
         public static ConfigEntry<Toggle> WardOnlyAdminCanBuild;
         public static ConfigEntry<int> PointsPerKill;
         public static ConfigEntry<int> PointsPerConquest;
@@ -62,6 +64,7 @@ namespace RaidSystem
         public static ConfigEntry<int> TributeIntervalMinutes;
         public static ConfigEntry<int> TributeMaxCharges;
         public static ConfigEntry<int> TributeRequiredFreeSlots;
+        public static ConfigEntry<int> DefenseTributeCharges;
         public static ConfigEntry<float> WardReductionDamageSiege;
         public static ConfigEntry<Toggle> SiegeOnly;
         public static ConfigEntry<Toggle> LogWardHits;
@@ -90,6 +93,7 @@ namespace RaidSystem
         {
             RaidDoorManager.Update();
             TributeManager.Update();
+            CastleDefense.Update();
 
             Player lp = Player.m_localPlayer;
             if (!lp || lp.IsDead() || lp.InCutscene() || lp.IsTeleporting()) return;
@@ -108,8 +112,9 @@ namespace RaidSystem
         /// </summary>
         private static void RegisterDeadheimBridges()
         {
-            Deadheim.Pvp.PvpBridge.CastleAt = Util.GetZoneNameAt;
+            Deadheim.Pvp.PvpBridge.CastleAt = CastleDefense.CastleAt;
             Deadheim.Pvp.PvpBridge.CastleOwner = Util.GetTerritoryOwner;
+            Deadheim.Pvp.PvpBridge.CastleSafeAt = CastleDefense.IsFallenAt;
             Deadheim.Pvp.PvpBridge.PlayerKilled += ScoreManager.OnPvpKill;
 
             Deadheim.Wards.WardBridge.IsExternallyGoverned = Util.IsRaidEnabledHere;
@@ -130,7 +135,7 @@ namespace RaidSystem
             RaidTimeToAllowUtc = config("2 - Raid Rules", "Raid Hours (UTC)", "0-24", "Global UTC hours when raids are enabled. Supports ranges like 18-24, comma lists like 18,19,20, or * for all day.");
             RaidEnabledPositions = config("2 - Raid Rules", "Raid Zones", "", "Named zones: name,x,z,wardRadius,pvpRadius[,hoursUtc[,tier[,minToolTier]]]|... Per-zone hours use UTC ranges separated by semicolon, for example Castelo,500,300,150,300,18-24;0-2,3,2. tier drives the tribute table and the ore portal; minToolTier is the minimum weapon tool tier able to damage the ward. Empty disables territorial raid rules.");
             AreaRadius = config("2 - Raid Rules", "Area Radius", 150, "Radius around ward for raid zone.");
-            WardReductionDamage = config("2 - Raid Rules", "Ward Damage Reduction %", 99.0f, "Damage reduction % on structures.");
+            WardReductionDamage = config("2 - Raid Rules", "Ward Damage Reduction %", 99.0f, "Damage reduction % on the RaidWard. Other structures in the zone take no damage; doors and gates take full damage.");
             HitPoints = config("2 - Raid Rules", "Ward HP", 10000, "Hit points of raid ward.");
             SpawnDelayMS = config("2 - Raid Rules", "Respawn Delay (ms)", 5000, "Delay before ward respawns.");
             Scale = config("2 - Raid Rules", "Ward Scale", 3, "Scale multiplier of ward object.");
@@ -140,11 +145,18 @@ namespace RaidSystem
             WardOnlyAdminCanBuild = config("5 - Ward", "Only Admin Can Build", Toggle.On, "Only admins can place the territorial RaidWard.");
 
             ForcePvpInZones = config("3 - PvP", "Force PvP In Zones", Toggle.Off, "Force PvP on inside the pvpRadius of a raid zone, even for players with PvP off. Off keeps pvpRadius parsed but inert.");
+            SafeAfterConquest = config("3 - PvP", "Safe After Conquest", Toggle.On,
+                "Castelo que caiu (RaidWard derrubada) vira zona segura ate a janela de raid fechar: a luta ali acabou.");
+            CastleRulesOnlyDuringRaid = config("3 - PvP", "Castle Rules Only During Raid", Toggle.On,
+                "As regras de castelo do PvP do Deadheim (sem perda de skill, sem imunidade, sem PK) so valem na janela de raid. " +
+                "Fora dela o castelo e terra comum.");
 
 
             PointsPerKill = config("4 - Scoring", "Points Per Kill", 10, "Points per enemy kill.");
             PointsPerConquest = config("4 - Scoring", "Points Per Conquest", 50, "Points for conquering territory.");
-            PointsPerDefense = config("4 - Scoring", "Points Per Defense", 25, "Points for killing an enemy inside territory your own guild holds.");
+            PointsPerDefense = config("4 - Scoring", "Points Per Defense", 50,
+                "Pontos por defesa do castelo: cada membro online da guilda dona quando a janela de raid fecha sem o castelo cair. " +
+                "Abate dentro do territorio nao pontua mais como defesa.");
             PointsLostPerDeath = config("4 - Scoring", "Points Lost Per Death", 3, "Points lost on death.");
 
             ColorAlpha = config("6 - Visual", "Map Color Alpha", 0.7f, "Territory overlay transparency.");
@@ -180,6 +192,9 @@ namespace RaidSystem
                 "Teto de cargas acumuladas. Guild inativa para de render.");
             TributeRequiredFreeSlots = config("10 - Economia", "Tribute Required Free Slots", 6,
                 "Espacos livres exigidos na mochila para resgatar.");
+            DefenseTributeCharges = config("10 - Economia", "Defense Tribute Charges", 3,
+                "Cargas de tributo extras (materiais do tier do castelo, em Tribute.json) para a guilda que segura o castelo " +
+                "a janela de raid inteira. Resgata na RaidWard. 0 = desligado.");
 
             KeyboardShortcut = config("9 - Client", "Menu Key", KeyCode.PageUp, "Open raid menu.", false);
             ScoreboardShortcut = config("9 - Client", "Scoreboard Key", KeyCode.PageDown, "Open scoreboard.", false);

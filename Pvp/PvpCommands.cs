@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Deadheim.Pvp
 {
-    /// <summary>Comandos de chat do PvP: /pvp, /cla, /desafio, /rank e /pvpadmin.</summary>
+    /// <summary>Comandos de chat do PvP: /pvp, /bounty, /rank e /pvpadmin.</summary>
     [HarmonyPatch]
     internal static class PvpCommands
     {
@@ -17,13 +17,13 @@ namespace Deadheim.Pvp
             {
                 new Terminal.ConsoleCommand("pvp", "estado do PvP e ajuda", args => Status(args.Context));
 
-                new Terminal.ConsoleCommand("desafio", "[cancelar|status] vira CACADO: aparece no mapa e perde a zona segura",
-                    args => RequireOnline(args.Context, () => PvpClient.SendChallenge(args.Length > 1 ? args[1] : "start")));
+                new Terminal.ConsoleCommand("bounty", "<jogador> <moedas> | lista | pagar - cabeca a premio",
+                    args => RequireOnline(args.Context, () => Bounty(args)));
 
                 new Terminal.ConsoleCommand("rank", "ranking PvP (abates/mortes)",
                     args => RequireOnline(args.Context, PvpClient.SendRankRequest));
 
-                new Terminal.ConsoleCommand("pvpadmin", "(admin) zona | imune <min> | limpar | pk <min>", AdminCommand);
+                new Terminal.ConsoleCommand("pvpadmin", "(admin) zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas>", AdminCommand);
             }
         }
 
@@ -33,7 +33,7 @@ namespace Deadheim.Pvp
             private static void Postfix(Chat __instance)
             {
                 int index = Math.Max(0, __instance.m_chatBuffer.Count - 5);
-                __instance.m_chatBuffer.Insert(index, "/pvp estado | /desafio | /rank");
+                __instance.m_chatBuffer.Insert(index, "/pvp estado | /bounty | /rank");
                 __instance.UpdateChat();
             }
         }
@@ -53,6 +53,54 @@ namespace Deadheim.Pvp
             action();
         }
 
+        /// <summary>
+        /// /bounty &lt;jogador&gt; &lt;moedas&gt; coloca (as moedas saem do inventario); /bounty pagar
+        /// compra a propria cabeca; /bounty ou /bounty lista mostra as bounties.
+        /// </summary>
+        private static void Bounty(Terminal.ConsoleEventArgs args)
+        {
+            Terminal context = args.Context;
+            if (!PvpConfig.BountyEnabled.Value)
+            {
+                context?.AddString("A bounty esta desligada neste servidor.");
+                return;
+            }
+
+            string first = args.Length > 1 ? args[1].ToLowerInvariant() : "lista";
+            string refusal;
+            if (args.Length <= 2 && (first == "lista" || first == "list" || first == "status"))
+            {
+                PvpClient.SendBounty("list", null, 0, out _);
+                context?.AddString($"/bounty <jogador> <moedas> (minimo {PvpConfig.BountyMinimum.Value}); quem matar leva " +
+                                   $"{PvpConfig.BountyKillerSharePercent.Value:0}%. /bounty pagar para comprar a sua cabeca.");
+                return;
+            }
+
+            if (args.Length <= 2 && (first == "pagar" || first == "pay"))
+            {
+                int cost = PvpBounty.BuyoutCost(PvpClient.BountyPot);
+                if (PvpClient.BountyPot <= 0) { context?.AddString("Nao ha bounty na sua cabeca."); return; }
+                if (cost <= 0) { context?.AddString("Pagar a propria bounty esta desligado neste servidor."); return; }
+                if (!PvpClient.SendBounty("pay", null, cost, out refusal)) context?.AddString(refusal);
+                else context?.AddString($"Pagando {cost} moedas para encerrar a sua bounty...");
+                return;
+            }
+
+            if (args.Length < 3 || !PvpBounty.TryParseAmount(args[args.Length - 1], out int amount))
+            {
+                context?.AddString("Uso: /bounty <jogador> <moedas> | /bounty lista | /bounty pagar");
+                return;
+            }
+            string target = string.Join(" ", args.Args, 1, args.Length - 2);
+            if (amount < PvpConfig.BountyMinimum.Value)
+            {
+                context?.AddString($"A bounty minima e {PvpConfig.BountyMinimum.Value} moedas.");
+                return;
+            }
+            if (!PvpClient.SendBounty("place", target, amount, out refusal)) context?.AddString(refusal);
+            else context?.AddString($"Colocando {amount} moedas na cabeca de {target}...");
+        }
+
         private static void Status(Terminal context)
         {
             Player player = Player.m_localPlayer;
@@ -65,8 +113,11 @@ namespace Deadheim.Pvp
             StringBuilder text = new StringBuilder();
             text.AppendLine("Estado: " + PvpHud.Compose(player));
             text.AppendLine($"Dano PvP x{PvpConfig.DamageMultiplier.Value:0.##}; no seu territorio x{PvpConfig.DamageMultiplier.Value * PvpConfig.WardDefenseMultiplier.Value:0.##}.");
-            if (PvpClient.ChallengeCooldownRemaining > 0d)
-                text.AppendLine("Proximo desafio em " + PvpClient.FormatDuration(PvpClient.ChallengeCooldownRemaining) + ".");
+            if (PvpClient.BountyPot > 0)
+                text.AppendLine($"Bounty na sua cabeca: {PvpClient.BountyPot} moedas" +
+                                (PvpBounty.BuyoutCost(PvpClient.BountyPot) > 0 ? $" (pagar: {PvpBounty.BuyoutCost(PvpClient.BountyPot)} com /bounty pagar)." : "."));
+            else if (PvpClient.BountyCooldownRemaining > 0d)
+                text.AppendLine("Ninguem pode colocar bounty em voce por " + PvpClient.FormatDuration(PvpClient.BountyCooldownRemaining) + ".");
             string guild = PvpGuilds.GuildOf(player);
             text.AppendLine(guild != null
                 ? $"Guilda: {guild} (sem fogo amigo entre membros)"
@@ -76,12 +127,15 @@ namespace Deadheim.Pvp
             text.AppendLine(PvpState.PkCount > 0
                 ? $"Contador de PK: {PvpState.PkCount} abate(s) que deram PK."
                 : "Contador de PK: 0.");
+            if (PvpState.IsPk)
+                text.AppendLine((PvpState.IsPkPermanent ? "Voce e PK PERMANENTE (so sai morto por jogador)" : "Voce e PK")
+                                + $": se morrer, perde {PvpConfig.PkSkillLossMultiplier.Value:0.#}x skill{PvpServer.PenaltyText(PvpState.PkPenalty)}.");
             if (PvpState.IsAggressor)
-                text.AppendLine("Voce e AGRESSOR: bateu primeiro. Quem te matar agora nao vira PK.");
+                text.AppendLine("Voce e AGRESSOR: bateu primeiro. Quem te matar agora nao vira PK (voce nao perde nada a mais).");
             string castle = PvpBridge.Castle(player.transform.position);
             if (castle != null)
                 text.AppendLine($"Castelo {castle}, dono: {PvpBridge.Owner(player.transform.position) ?? "ninguem"}.");
-            text.AppendLine("/desafio - vira CACADO por " + PvpConfig.ChallengeDurationMinutes.Value.ToString("0") + " min, com recompensa");
+            text.AppendLine("/bounty <jogador> <moedas> - cabeca a premio; /bounty lista");
             text.Append("/rank - ranking K/D");
             foreach (string line in text.ToString().Split('\n')) context?.AddString(line.TrimEnd('\r'));
         }
@@ -126,8 +180,21 @@ namespace Deadheim.Pvp
                     PvpState.ApplyServerTimers(minutes * 60d, PvpState.HuntPendingRemaining, PvpState.HuntedRemaining);
                     context.AddString($"PK local por {minutes} min (so neste cliente).");
                     break;
+                case "bounty":
+                {
+                    // /pvpadmin bounty <jogador> <moedas>: a casa paga; pode ser em si mesmo.
+                    if (args.Length < 4 || !PvpBounty.TryParseAmount(args[args.Length - 1], out int amount))
+                    {
+                        context.AddString("pvpadmin bounty <jogador> <moedas>");
+                        break;
+                    }
+                    string target = string.Join(" ", args.Args, 2, args.Length - 3);
+                    PvpClient.SendBounty("admin", target, 0, out _, amount);
+                    context.AddString($"Bounty de {amount} (paga pela casa) em {target}.");
+                    break;
+                }
                 default:
-                    context.AddString("pvpadmin zona | imune <min> | limpar | pk <min>");
+                    context.AddString("pvpadmin zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas>");
                     break;
             }
         }

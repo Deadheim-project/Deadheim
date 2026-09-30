@@ -15,21 +15,40 @@ namespace Deadheim.Pvp
         public int deaths;
         /// <summary>Segundos UTC ate quando e PK. Relogio so do servidor.</summary>
         public double pkUntil;
-        /// <summary>Segundos UTC a partir de quando pode aceitar outro desafio.</summary>
-        public double challengeReadyAt;
+        /// <summary>PK permanente: so sai quando e morto por jogador.</summary>
+        public bool pkPermanent;
+        /// <summary>Abates que deram PK desde que a marca atual comecou: escolhe o nivel (PkTiers).</summary>
+        public int pkStreak;
+        /// <summary>Perda do nivel atual de PK (PvpConfig.PkPenalty).</summary>
+        public int pkPenalty;
+        /// <summary>Segundos UTC a partir de quando pode receber outra bounty.</summary>
+        public double bountyReadyAt;
         /// <summary>Contador de PK: abates que deram PK (matar sem ser em defesa, arena ou castelo).</summary>
         public int pkKills;
         /// <summary>Deslogou em combate com CombatLogout=Death: morre ao voltar.</summary>
         public bool combatLogPending;
+        /// <summary>Moedas a entregar quando ele voltar (bounty paga ou devolvida com ele offline).</summary>
+        public int pendingCoins;
 
         public float Ratio => deaths <= 0 ? kills : (float)kills / deaths;
+
+        public bool IsPk(double now) => pkPermanent || pkUntil > now;
+
+        public void ClearPk()
+        {
+            pkUntil = 0d;
+            pkPermanent = false;
+            pkStreak = 0;
+            pkPenalty = 0;
+        }
     }
 
     [Serializable]
     internal sealed class PvpStoreData
     {
-        public int version = 1;
+        public int version = 2;
         public List<PvpPlayerRecord> players = new List<PvpPlayerRecord>();
+        public List<PvpBountyRecord> bounties = new List<PvpBountyRecord>();
     }
 
     /// <summary>
@@ -83,6 +102,9 @@ namespace Deadheim.Pvp
 
             if (_data == null) _data = new PvpStoreData();
             if (_data.players == null) _data.players = new List<PvpPlayerRecord>();
+            if (_data.bounties == null) _data.bounties = new List<PvpBountyRecord>();
+            foreach (PvpBountyRecord bounty in _data.bounties)
+                if (bounty.contributions == null) bounty.contributions = new List<PvpBountyContribution>();
             _dirty = false;
             Debug.Log($"[Deadheim PvP] Estado carregado de {path}: {_data.players.Count} jogador(es).");
         }

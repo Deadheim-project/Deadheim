@@ -117,9 +117,12 @@ KillCreditSeconds = 5
 KillFeed = true
 
 [PvP - PK]
-PkMinutes = 5
+PkTiers = 1:5:Skills,2:10:Skills,3:60:Unequipped,5:-1:All
 PkSkillLossMultiplier = 2
 PkClearsOnDeath = true
+PkPenaltyOnPveDeath = true
+AggressorSeconds = 600
+AggressorPausesInCombat = true
 
 [PvP - Zonas]
 StartIslandMode = $mode
@@ -128,16 +131,20 @@ SafeZones =
 ArenaZones = $arena
 TransportsSafe = true
 TransportsInvulnerable = true
+ShipsSafe = false
+ShipsInvulnerable = false
 
-[PvP - Desafio]
-ChallengeDelaySeconds = 5
-ChallengeDurationMinutes = 1
-ChallengeCooldownMinutes = 0.1
-ChallengeKillReward = Coins:500
-ChallengeSurviveReward = Coins:1000
+[PvP - Bounty]
+BountyDelaySeconds = 5
+# 1000 moedas = 30 s de cacada online: da para ver a bounty expirar.
+BountyMinutesPer1000 = 0.5
+BountyUntilDeathAt = 5000
+BountyKillerSharePercent = 75
+BountyBuyoutMultiplier = 1.5
+BountyCooldownMinutes = 0.1
 # Solo: so um jogador online de verdade (o Dummy nao e peer).
-ChallengeMinPlayers = 1
-ChallengePausesInOwnWard = true
+BountyMinPlayers = 1
+BountyPausesInOwnWard = true
 HuntedNoWardDefense = true
 
 [PvP - Saque]

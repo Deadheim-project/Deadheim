@@ -135,10 +135,17 @@ namespace RaidSystem
         {
             var def = new Dictionary<string, List<TributeEntry>>
             {
+                // Floresta Negra. Cada carga sorteia a lista inteira: uma defesa
+                // (3 cargas) da ~13 de cobre e estanho, ~9 de bronze e 3 a 6 banquetes.
                 ["1"] = new List<TributeEntry> {
-                    new TributeEntry { prefab = "SurtlingCore", min = 1,  max = 2  },
-                    new TributeEntry { prefab = "Coal",         min = 8,  max = 15 },
-                    new TributeEntry { prefab = "Resin",        min = 10, max = 20 },
+                    new TributeEntry { prefab = "Copper",           min = 3,  max = 6  },
+                    new TributeEntry { prefab = "Tin",              min = 3,  max = 6  },
+                    new TributeEntry { prefab = "Bronze",           min = 2,  max = 4  },
+                    new TributeEntry { prefab = "RoundLog",         min = 10, max = 20 },
+                    new TributeEntry { prefab = "Thistle",          min = 5,  max = 10 },
+                    new TributeEntry { prefab = "Carrot",           min = 5,  max = 10 },
+                    new TributeEntry { prefab = "Blueberries",      min = 10, max = 20 },
+                    new TributeEntry { prefab = "FeastBlackforest", min = 1,  max = 2  },
                 },
                 ["2"] = new List<TributeEntry> {
                     new TributeEntry { prefab = "IronScrap",    min = 5,  max = 10 },

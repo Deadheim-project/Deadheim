@@ -28,8 +28,8 @@ roda no dono da ZDO dela), que e o mesmo lugar onde o vanilla ja checa PvP. Cada
 publica na propria ZDO se participa de PvP agora (`pvp`) e o motivo (`dh_pvpFlags`:
 imune, PK, cacado, protegido, em combate, arena, castelo). Os outros so leem.
 
-O servidor guarda o que precisa sobreviver: K/D, marca de PK e cooldown de desafio, num
-JSON por mundo em `BepInEx/config/Deadheim/pvp-<mundo>.json`.
+O servidor guarda o que precisa sobreviver: K/D, marca e nivel de PK, bounties ativas e moedas a
+entregar, num JSON por mundo em `BepInEx/config/Deadheim/pvp-<mundo>.json`.
 
 ## Morte por jogador x morte por PvE
 
@@ -47,12 +47,12 @@ Uma regra so (`PvpRules.ClassifyDeath`), usada por tudo que reage a morte:
 | Imunidade a PvP | sim, fora de arena e castelo | nao |
 | Conta no `/rank` (K/D) | sim, fora da arena | nao |
 | Conta no Ranking de Guerra (RaidSystem) | sim, entre guildas diferentes, fora da arena | nao |
-| Matador vira PK | sim, salvo arena / castelo / alvo PK / alvo cacado / alvo agressor | - |
-| Moedas | `PvpCoinDropPercent` das moedas vai para o chao, fora da tumba (nao na arena) | ficam na tumba |
+| Matador vira PK | sim, salvo arena / castelo em raid / alvo PK / alvo cacado / alvo agressor | - |
+| Moedas | `PvpCoinDropPercent` das moedas vai para o chao, fora da tumba (nao na arena; padrao 0) | ficam na tumba |
 | Morte dentro de castelo | ninguem perde skill (atacante ou defensor) | perda normal |
 | Guilda dona mata invasor no castelo | ganha a recompensa do bioma | - |
-| Cacado morre | quem matou ganha a recompensa | desafio acaba sem recompensa |
-| PK que morre | perde skill x2 e deixa de ser PK | perde skill x2 e deixa de ser PK |
+| Alvo de bounty morre | quem matou leva `BountyKillerSharePercent` do pote | a bounty continua |
+| PK que morre | perde pelo nivel (skill x2, e itens no Unequipped/All) e deixa de ser PK | perde pelo nivel (se `PkPenaltyOnPveDeath`); PK comum sai, o permanente fica |
 | Janela "sem perda de skill" do vanilla (10 min depois de morrer) | morte sem perda (arena, castelo) nao abre a janela; PK perde mesmo dentro dela | igual |
 | Tumba | so o dono abre | so o dono abre |
 
@@ -71,21 +71,24 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Guilda ou party | Guilda do mod **Guilds** e grupo do mod **Groups** | `NoFriendlyFireGuild`, `NoFriendlyFireGroup` |
 | Morto por jogador | Fica **imune a PvP**: nao da nem leva dano de jogador; PvE normal | `ImmunityMinutes` (10) |
 | Ilha inicial safe zone | A terra ligada ao templo inicial (ate o raio), opcionalmente so em certos biomas. Calculada do gerador do mundo, igual em cliente e servidor; o log do servidor mostra os biomas que ela cobre | `StartIslandMode` (Island/Radius/Off), `StartIslandRadius`, `StartIslandBiomes` |
-| Transportes safe zone | Barco andando, carroca sendo puxada e montaria andando protegem quem esta neles; barco ou montaria parados nao sao abrigo. Barco, carroca e montaria com sela nao tomam dano de jogador | `TransportsSafe`, `TransportsInvulnerable`, `ShipSafeMinSpeed`, `MountSafeMinSpeed` |
+| Transportes safe zone | Carroca sendo puxada e montaria andando protegem quem esta neles; montaria parada nao e abrigo. Carroca e montaria com sela nao tomam dano de jogador. **Barco e alvo** (pirataria): por padrao nao protege e toma dano; `ShipsSafe`/`ShipsInvulnerable` voltam o comportamento antigo | `TransportsSafe`, `TransportsInvulnerable`, `ShipsSafe`, `ShipsInvulnerable`, `ShipSafeMinSpeed`, `MountSafeMinSpeed` |
 | Montarias | Estamina da sela (Lox, Asksvin) configuravel, valendo na hora para as selas ja carregadas; 0 = valor do jogo. | `[Montarias] MaxStamina`, `RunStaminaDrain`, `SwimStaminaDrain`, `StaminaRegen`, `StaminaRegenHungry` |
 | Combate | Dar ou levar dano PvP deixa "em combate": zona segura nao protege e retreat nao funciona | `CombatTagSeconds` (30) |
 | Retreat cooldown e combate | `/retreat` com recarga, bloqueado em combate e cacado (a pedra do Hearthstone tambem) | `RetreatCooldownMinutes` (30) |
 | Combate | Status "Em combate" com contagem na barra de efeitos. Opcional: apanhar de/bater em monstro tambem conta, so para teleporte (zona segura continua valendo contra jogador) | `CombatStatusIcon`, `CombatFromPve`, `CombatTagSeconds` |
 | Fuga de combate | Em combate nenhum teleporte longo funciona (portal, NPC teleportador, pedra, retreat). Deslogar em combate conta morte para quem saiu e abate para quem bateu; com `Death`, ao voltar ele morre onde saiu | `CombatBlocksTeleport`, `CombatLogout` (Off/Rank/Death) |
-| PK dobro de perda de skill | Quem mata jogador vira PK; PK que morre perde skill x2 e deixa de ser PK. Matar PK, cacado, agressor, na arena ou no castelo nao gera PK | `PkMinutes`, `PkSkillLossMultiplier`, `PkClearsOnDeath` |
-| Legitima defesa | Quem bate primeiro em alguem sem marca vira AGRESSOR (nome e HUD). Matar um agressor nao gera PK | `AggressorRule`, `AggressorSeconds` |
+| PK por niveis | Quem mata jogador vira PK. O nivel sobe com os abates seguidos (padrao: 1 = 1 h, 2 = 2 h, 3+ = 24 h, 5+ = permanente ate ser morto por jogador, no mapa de todos). Ao morrer marcado perde pelo nivel: `Skills` (skill x2), `Unequipped` (+ tudo que nao esta equipado cai no chao), `All` (+ o inventario inteiro cai no chao). Matar PK, cacado, agressor, na arena ou no castelo em raid nao gera PK | `PkTiers`, `PkSkillLossMultiplier`, `PkClearsOnDeath`, `PkPenaltyOnPveDeath`, `PkPermanentOnMap` |
+| Legitima defesa | Quem bate primeiro em alguem sem marca vira AGRESSOR por 10 min (nome e HUD); o relogio para enquanto ele esta em combate com jogador. Matar um agressor nao gera PK, e o agressor que morre nao perde nada a mais | `AggressorRule`, `AggressorSeconds`, `AggressorPausesInCombat` |
 | Contador de PK | Quantos abates deram PK a cada jogador: no `/rank`, no `/pvp`, no HUD e no nome (`[PK x3]`), e no anuncio da morte (`[PK #3]`) | - |
 | Arena sem perda de skill | Zonas de arena: PvP sempre, sem perda de skill, sem PK, sem imunidade, fogo amigo liberado, fora do ranking | `ArenaZones`, `ArenaNoSkillLoss`, `ArenaFriendlyFire`, `ArenaCountsLeaderboard` |
 | Defesa de castelo | Castelo = zona do RaidSystem. Quem morre para jogador la nao perde skill (qualquer lado), a imunidade nao vale la e ninguem vira PK. A guilda dona que mata invasor ganha moedas pelo bioma | `CastleNoSkillLoss`, `CastleIgnoresImmunity`, `CastleRewardItem`, `CastleRewardByBiome`, `CastleRewardCooldownMinutes` |
-| Challenge / Hunted | `/desafio`: em 3 min vira CACADO por 1 h, visivel no mapa de todos, sem zona segura nem imunidade, sem teleporte. Dentro do proprio ward o relogio para e o ward nao reduz o dano; com poucos jogadores online tambem para. Sobreviveu: recompensa. Quem matar: recompensa | `Challenge*`, `HuntedCanUsePortals`, `ChallengePausesInOwnWard`, `HuntedNoWardDefense`, `ChallengeMinPlayers` |
+| Bounty / Hunted | `/bounty <jogador> <moedas>` (minimo 1000, sai do inventario): o alvo e avisado e 10 min depois vira CACADO, no mapa de todos, sem zona segura nem imunidade, sem teleporte. Tempo = 1 h por 1000 moedas, contado so com o alvo online; a partir de 5000, ate morrer. Quem matar leva 75% do pote, o resto e da casa. O alvo pode pagar 1,5x o pote para a casa e se livrar (`/bounty pagar`). Sem recompensa por sobreviver (nada sai do nada). Dentro do proprio ward o relogio para e o ward nao reduz o dano; com poucos jogadores online tambem para. Admin: `/pvpadmin bounty <jogador> <moedas>` (a casa paga) | `Bounty*`, `HuntedCanUsePortals`, `HuntedNoWardDefense` |
 | Leaderboard K/D | `/rank` (todo mundo, com ou sem guilda, com o contador de PK) e o Ranking de Guerra do RaidSystem (PageDown, pontos por guilda), que agora conta os abates de verdade | `LeaderboardSize` |
 | Tumba por player | So o dono (e admin) abre a propria tumba | `TombstoneOwnerOnly`, `TombstoneGuildAccess` |
 | Tirar raids | Ataques aleatorios de monstros as bases (raids do vanilla) desligados. O RaidSystem continua: e o PvP de castelos | `DisableRandomEvents` |
+| Stagger no PvP | O cambalear de golpe de jogador em jogador pode ser reduzido | `StaggerMultiplier` |
+| Base raidavel | Fora da zona segura, o que o ward cobre toma `DamagePercent` do dano (padrao 25%); na zona segura (SafeArea, ilha inicial, SafeZones) e sempre 0. Wards sem limite por jogador | `[Wards] DamagePercent`, `[Server config] WardLimit` |
+| Castelo | O castelo so e zona de guerra na janela de raid do RaidSystem; quando a RaidWard cai, vira zona segura ate a janela fechar. Guilda que segura o castelo a janela inteira ganha cargas de tributo e pontos de defesa | RaidSystem `3 - PvP`, `Defense Tribute Charges`, `Points Per Defense` |
 | Gold sem peso, pilha 5k | Coins pesam 0 e empilham 5000 | `CoinsWeightless`, `CoinsMaxStack` |
 | Ward sem quebrar chao, pedra e arvore | Dentro do ward alheio: sem picareta/enxada no terreno, sem quebrar pedra, arvore, tronco e toco. Veio de minerio fica livre (senao guilda tranca os veios com ward), e a protecao pode ficar so perto do ward | `[Wards] ProtectTerrain`, `ProtectNature`, `ProtectNatureOres`, `NatureOreDrops`, `ProtectNatureRadius` |
 
@@ -102,10 +105,11 @@ o tamanho da zona segura calculada:
 | Comando | O que faz |
 |---|---|
 | `/pvp` | Seu estado de PvP, sua guilda, o castelo onde voce esta e ajuda |
-| `/desafio` / `/desafio cancelar` / `/desafio status` | Desafio |
+| `/bounty <jogador> <moedas>` / `/bounty lista` / `/bounty pagar` | Bounty (cabeca a premio) |
 | `/rank` | Ranking K/D |
 | `/pvpadmin zona` | (admin) coordenadas, bioma, zona, castelo, guilda e bandeiras onde voce esta |
 | `/pvpadmin imune <min>` / `limpar` / `pk <min>` | (admin) mexe no proprio estado, para testar |
+| `/pvpadmin bounty <jogador> <moedas>` | (admin) bounty paga pela casa, pode ser em si mesmo |
 
 ## Teste de ponta a ponta
 

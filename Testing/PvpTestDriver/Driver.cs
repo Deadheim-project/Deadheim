@@ -153,7 +153,7 @@ namespace PvpTestDriver
                 Step("immunity", Immunity),
                 Step("pk", Pk),
                 Step("arena", Arena),
-                Step("challenge", Challenge),
+                Step("bounty", Bounty),
                 Step("tombstone", Tombstone),
                 Step("transport", Transport),
                 Step("retreat", Retreat),
@@ -709,17 +709,26 @@ namespace PvpTestDriver
             }
         }
 
-        private IEnumerator Challenge()
+        /// <summary>A coloca bounty em B (moedas saem do inventario), B vira CACADO, A mata e leva a parte dele.</summary>
+        private IEnumerator Bounty()
         {
+            const int pot = 1000;
             ClearAllProtection();
             yield return MoveTo(IsA ? _openA : _safe);
             yield return Wait(CombatWait);
+            if (IsA)
+            {
+                Me.GetInventory().AddItem(ObjectDB.instance.GetItemPrefab("Coins"), pot);
+                int before = CountItem(Me, "Coins");
+                Command($"bounty {_otherName} {pot}");
+                yield return Wait(2f);
+                Check("desafio/bounty-cobrou", CountItem(Me, "Coins") == before - pot, $"antes={before} depois={CountItem(Me, "Coins")}");
+            }
+            yield return Both("desafio-colocada");
             if (!IsA)
             {
-                Command("desafio");
-                yield return Wait(1.5f);
-                Check("desafio/pendente", PvpState.IsHuntPending, $"flags={PvpState.Current}");
-                yield return Wait(PvpConfig.ChallengeDelaySeconds.Value + 2f);
+                Check("desafio/pendente", PvpState.IsHuntPending && PvpClient.BountyPot == pot, $"flags={PvpState.Current} pote={PvpClient.BountyPot}");
+                yield return Wait(PvpConfig.BountyDelaySeconds.Value + 2f);
                 Check("desafio/cacado", PvpState.IsHunted && Me.IsPVPEnabled() && (PvpState.Current & PvpFlags.Protected) == 0,
                     $"flags={PvpState.Current} zona={PvpZones.SafeAreaName(Me.transform.position)}");
                 DamageTaken = 0f;
@@ -744,9 +753,9 @@ namespace PvpTestDriver
             {
                 Strike(1000f);
                 yield return Wait(5f);
-                PvpConfig.Reward reward = PvpConfig.ParseReward(PvpConfig.ChallengeKillReward.Value);
-                int gained = CountItem(Me, reward.Prefab) - _coinsBefore;
-                Check("desafio/recompensa-do-cacador", gained == reward.Amount, $"ganhou={gained} esperado={reward.Amount}");
+                int expected = Mathf.FloorToInt(pot * PvpConfig.BountyKillerSharePercent.Value / 100f);
+                int gained = CountItem(Me, "Coins") - _coinsBefore;
+                Check("desafio/recompensa-do-cacador", gained == expected, $"ganhou={gained} esperado={expected}");
             }
             else
             {

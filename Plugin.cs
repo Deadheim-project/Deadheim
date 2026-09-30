@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using ServerSync;
@@ -11,19 +11,20 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.1.0";
+        public const string Version = "7.2.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
         // IsAdminOnly do Jotunn: o servidor recusa quem nao tem o mod ou tem uma
         // versao abaixo da minima, e as configs de servidor valem as do servidor.
-        // Minimo 7.0.0: as regras de PvP rodam no cliente de quem leva o golpe, entao um
-        // cliente sem o modulo de PvP seria alvo sem zona segura, imunidade ou reducao.
+        // Minimo 7.2.0: as regras de PvP rodam no cliente de quem leva o golpe, entao um
+        // cliente sem o modulo de PvP seria alvo sem zona segura, imunidade ou reducao; e o
+        // pacote de estado do PvP mudou em 7.2.0 (bounty e niveis de PK).
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.0.0",
+            MinimumRequiredVersion = "7.2.0",
             ModRequired = true,
             IsLocked = true
         };
@@ -44,6 +45,8 @@ namespace Deadheim
         public static ConfigEntry<int> SkillCap;
         public static ConfigEntry<string> PortalMaterials;
         public static ConfigEntry<int> CartographyTableAmount;
+        public static ConfigEntry<bool> EdgeOfWorldKills;
+        public static ConfigEntry<bool> MonsterScalingAlliesOnly;
 
         public static string PlayerName = "";
 
@@ -157,11 +160,11 @@ new ConfigDescription("SafeArea")));
     new ConfigDescription("WardChargeDurationInSec")));
 
 
-            WardLimit = Synced(Config.Bind("Server config", "WardLimit", 3,
-    new ConfigDescription("WardLimit")));
+            WardLimit = Synced(Config.Bind("Server config", "WardLimit", 0,
+    new ConfigDescription("Wards por jogador. 0 = sem limite (base e raidavel, entao nao precisa limitar).")));
 
-            WardLimitVip = Synced(Config.Bind("Server config", "WardLimitVip", 5,
-    new ConfigDescription("WardLimitVip")));
+            WardLimitVip = Synced(Config.Bind("Server config", "WardLimitVip", 0,
+    new ConfigDescription("Wards por VIP. 0 = sem limite.")));
 
             WardRadius = Synced(Config.Bind("Server config", "WardRadius", 150,
 new ConfigDescription("WardRadius")));
@@ -170,17 +173,23 @@ new ConfigDescription("WardRadius")));
             BoatWindSpeedmultiplier = Synced(Config.Bind("Server config", "boatWindSpeedmultiplier", 1f,
 new ConfigDescription("boatWindSpeedmultiplier")));
 
-            SkillMultiplier = Synced(Config.Bind("Server config", "SkillMultiplier", 0.5f,
-            new ConfigDescription("SkillMultiplier")));
+            SkillMultiplier = Synced(Config.Bind("Server config", "SkillMultiplier", 0.75f,
+            new ConfigDescription("Multiplicador do ganho de skill. 1 = vanilla.")));
 
             ResetWorldDay = Synced(Config.Bind("Server config", "ResetWorldDay", false,
             new ConfigDescription("ResetWorldDay")));
 
-            PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:100,GreydwarfEye:30,SurtlingCore:10",
+            PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:50,GreydwarfEye:30,SurtlingCore:5",
     new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
 
-            CartographyTableAmount = Synced(Config.Bind("Server config", "CartographyTableAmount", 100,
-    new ConfigDescription("Quantidade de cada material da mesa de cartografia.")));
+            CartographyTableAmount = Synced(Config.Bind("Server config", "CartographyTableAmount", 0,
+    new ConfigDescription("Quantidade de cada material da mesa de cartografia. 0 = receita do jogo.")));
+
+            EdgeOfWorldKills = Synced(Config.Bind("Server config", "EdgeOfWorldKills", true,
+    new ConfigDescription("A borda do mundo mata, como no jogo. Desligado, quem cai da borda nao morre.")));
+
+            MonsterScalingAlliesOnly = Synced(Config.Bind("Server config", "MonsterScalingAlliesOnly", true,
+    new ConfigDescription("O bonus de vida e dano do monstro por jogador perto (vanilla e CreatureLevelControl) so conta quem luta e o grupo e a guilda dele. Desligado, conta todo mundo no raio, como no jogo.")));
 
             Pvp.PvpModule.Init(Config);
             Montarias.Bind(Config);

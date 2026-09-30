@@ -70,9 +70,10 @@ namespace Deadheim.Pvp
         }
 
         /// <summary>
-        /// Barco andando (dentro do volume do navio, de pe no convés ou no leme), montaria ou
-        /// puxando carroca. So faz sentido para o jogador local: e ele quem decide a
-        /// propria bandeira de PvP.
+        /// Transporte que protege quem esta nele: barco andando (ShipsSafe; dentro do volume do
+        /// navio, de pe no convés ou no leme), montaria andando ou puxando carroca
+        /// (TransportsSafe). So faz sentido para o jogador local: e ele quem decide a propria
+        /// bandeira de PvP.
         /// </summary>
         public static bool IsOnTransport(Player player)
         {
@@ -80,7 +81,8 @@ namespace Deadheim.Pvp
             try
             {
                 if (player.InNumShipVolumes > 0 || player.IsAttachedToShip() || player.GetStandingOnShip() != null)
-                    return ShipIsMoving(player);
+                    return PvpConfig.ShipsSafe.Value && ShipIsMoving(player);
+                if (!PvpConfig.TransportsSafe.Value) return false;
                 if (player.IsRiding()) return MountIsMoving(player);
 
                 foreach (Vagon vagon in Vagon.m_instances)

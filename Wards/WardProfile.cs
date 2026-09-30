@@ -106,13 +106,14 @@ namespace Deadheim.Wards
                 "Raio do DeadheimWard em metros."));
             PlayerWardCost = Plugin.Synced(config.Bind(section, "PlayerWardCost", "Stone:100,SurtlingCore:5",
                 "Custo do DeadheimWard no formato Item:Quantidade,Item:Quantidade."));
-            DamagePercent = Plugin.Synced(config.Bind(section, "DamagePercent", 0f,
+            DamagePercent = Plugin.Synced(config.Bind(section, "DamagePercent", 25f,
                 new ConfigDescription(
-                    "Percentual de dano que o ward e tudo que ele cobre recebem. 0 = invulneravel, 100 = dano normal.",
+                    "Percentual de dano que o ward e tudo que ele cobre recebem FORA da zona segura (a base e raidavel). " +
+                    "0 = invulneravel, 100 = dano normal. Na zona segura (SafeArea, ilha inicial, SafeZones) e sempre 0.",
                     new AcceptableValueRange<float>(0f, 100f))));
             Spacing = Plugin.Synced(config.Bind(section, "Spacing", 3f,
                 "Distancia minima de um ward alheio, em multiplos do raio. 0 desliga a checagem."));
-            FuelItem = Plugin.Synced(config.Bind(section, "FuelItem", "GreydwarfEye",
+            FuelItem = Plugin.Synced(config.Bind(section, "FuelItem", "Resin",
                 "Prefab do item usado para abastecer o ward."));
             MaxCharges = Plugin.Synced(config.Bind(section, "MaxCharges", 10,
                 "Maximo de cargas de combustivel que um ward guarda."));

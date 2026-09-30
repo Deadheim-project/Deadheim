@@ -9,6 +9,9 @@ namespace RaidSystem
     {
         public static void RecordConquest(string pid, string nick, string team) => DataStore.Modify(d => GetOrCreate(d, pid, nick, team).Conquests++);
 
+        /// <summary>Membro online da guilda que segurou o castelo a janela de raid inteira.</summary>
+        public static void RecordCastleDefense(string pid, string nick, string team) => DataStore.Modify(d => GetOrCreate(d, pid, nick, team).Defenses++);
+
         /// <summary>
         /// Abate, morte e defesa de um mesmo PvP num Modify so. Separados eram tres
         /// serializacoes do JSON inteiro e tres gravacoes em disco por kill.
@@ -22,7 +25,8 @@ namespace RaidSystem
             {
                 PlayerScore killer = GetOrCreate(d, killerPid, killerNick, killerTeam);
                 killer.Kills++;
-                if (defended) killer.Defenses++;
+                // Abate dentro do proprio territorio nao pontua mais como defesa: "defesa" agora e
+                // segurar o castelo a janela de raid inteira (CastleDefense).
 
                 GetOrCreate(d, deadPid, deadNick, deadTeam).Deaths++;
             });

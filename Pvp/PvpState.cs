@@ -24,8 +24,10 @@ namespace Deadheim.Pvp
         Castle = 128,
         /// <summary>Bateu primeiro em alguem sem marca: mata-lo nao gera PK (legitima defesa).</summary>
         Aggressor = 256,
-        /// <summary>Dentro de um ward onde tem permissao: o servidor pausa o desafio.</summary>
+        /// <summary>Dentro de um ward onde tem permissao: o servidor pausa a bounty.</summary>
         InOwnWard = 512,
+        /// <summary>PK permanente: so sai morto por jogador.</summary>
+        PkPermanent = 1024,
     }
 
     internal static class PvpState
@@ -45,6 +47,10 @@ namespace Deadheim.Pvp
 
         private static double _immuneUntil;
         private static double _pkUntil;
+        private static bool _pkPermanent;
+        private static PvpConfig.PkPenalty _pkPenalty;
+        private static bool _huntedForever;
+        private static float _lastTick;
         private static double _huntPendingUntil;
         private static double _huntedUntil;
         private static float _combatUntil;
@@ -61,11 +67,17 @@ namespace Deadheim.Pvp
         public static string ZoneLabel { get; private set; }
 
         public static bool IsImmune => _immuneUntil > Now;
-        public static bool IsPk => _pkUntil > Now;
-        public static bool IsHunted => _huntedUntil > Now;
+        public static bool IsPk => _pkPermanent || _pkUntil > Now;
+        public static bool IsPkPermanent => _pkPermanent;
+        /// <summary>O que o PK perde ao morrer, pelo nivel atual (PkTiers).</summary>
+        public static PvpConfig.PkPenalty PkPenalty => _pkPenalty;
+        public static bool IsHunted => _huntedForever || _huntedUntil > Now;
+        /// <summary>Bounty sem fim: so acaba morrendo para jogador.</summary>
+        public static bool IsHuntedForever => _huntedForever;
         public static bool IsHuntPending => _huntPendingUntil > Now;
         public static bool InCombat => Time.time < _combatUntil;
         public static bool IsAggressor => Time.time < _aggressorUntil;
+        public static float AggressorRemaining => Mathf.Max(0f, _aggressorUntil - Time.time);
         public static bool InPveCombat => Time.time < _pveCombatUntil;
         public static float PveCombatRemaining => Mathf.Max(0f, _pveCombatUntil - Time.time);
 
@@ -90,12 +102,16 @@ namespace Deadheim.Pvp
         public static void ResetSession()
         {
             _pkUntil = 0d;
+            _pkPermanent = false;
+            _pkPenalty = PvpConfig.PkPenalty.Skills;
+            _huntedForever = false;
             _huntPendingUntil = 0d;
             _huntedUntil = 0d;
             _combatUntil = 0f;
             _aggressorUntil = 0f;
             _pveCombatUntil = 0f;
             _pkCount = 0;
+            _lastTick = 0f;
             _lastPvpAttacker = ZDOID.None;
             _lastPvpHitTime = -9999f;
             _dotCreditUntil = -9999f;
@@ -123,12 +139,19 @@ namespace Deadheim.Pvp
         public static void ClearImmunity(Player player) => GrantImmunity(player, 0d);
 
         /// <summary>O servidor manda segundos restantes, nunca horario: relogios diferentes nao importam.</summary>
-        public static void ApplyServerTimers(double pkRemaining, double huntPendingRemaining, double huntedRemaining)
+        public static void ApplyServerTimers(double pkRemaining, double huntPendingRemaining, double huntedRemaining, bool huntedUntilDeath = false)
         {
             double now = Now;
             _pkUntil = pkRemaining > 0d ? now + pkRemaining : 0d;
             _huntPendingUntil = huntPendingRemaining > 0d ? now + huntPendingRemaining : 0d;
             _huntedUntil = huntedRemaining > 0d ? now + huntedRemaining : 0d;
+            _huntedForever = huntedUntilDeath && huntPendingRemaining <= 0d;
+        }
+
+        public static void ApplyPk(bool permanent, PvpConfig.PkPenalty penalty)
+        {
+            _pkPermanent = permanent;
+            _pkPenalty = penalty;
         }
 
         public static void ApplyPkCount(Player player, int count)
@@ -161,7 +184,12 @@ namespace Deadheim.Pvp
             _aggressorUntil = Time.time + Mathf.Max(0f, PvpConfig.AggressorSeconds.Value);
         }
 
-        public static void ClearPk() => _pkUntil = 0d;
+        public static void ClearPk()
+        {
+            _pkUntil = 0d;
+            _pkPermanent = false;
+            _pkPenalty = PvpConfig.PkPenalty.Skills;
+        }
 
         public static void MarkCombat()
             => _combatUntil = Time.time + Mathf.Max(0f, PvpConfig.CombatTagSeconds.Value);
@@ -230,16 +258,26 @@ namespace Deadheim.Pvp
         {
             if (player == null || player.m_nview == null || !player.m_nview.IsValid()) return;
 
+            // Agressor em luta nao perde a marca: o relogio para enquanto ele estiver em combate
+            // com jogador, senao ela acabaria no meio da briga e o revide viraria PK.
+            float delta = _lastTick > 0f ? Mathf.Max(0f, Time.time - _lastTick) : 0f;
+            _lastTick = Time.time;
+            if (IsAggressor && InCombat && PvpConfig.AggressorPausesInCombat.Value) _aggressorUntil += delta;
+
             Vector3 pos = player.transform.position;
             bool arena = PvpZones.IsArena(pos);
             string castle = PvpBridge.Castle(pos);
+            // Castelo que ja caiu nesta janela de raid vira zona segura: a luta ali acabou.
+            string fallenCastle = castle != null && PvpBridge.CastleSafe(pos) ? castle : null;
+            if (fallenCastle != null) castle = null;
             // Castelo do RaidSystem e zona de guerra: la a imunidade nao segura ninguem.
             bool warZone = arena || (castle != null && PvpConfig.CastleIgnoresImmunity.Value);
             bool hunted = IsHunted;
             bool immune = IsImmune;
             bool combat = InCombat;
-            string safeArea = PvpZones.SafeAreaName(pos);
-            bool transport = PvpConfig.TransportsSafe.Value && PvpZones.IsOnTransport(player);
+            string safeArea = PvpZones.SafeAreaName(pos)
+                              ?? (fallenCastle != null ? $"Castelo {fallenCastle} (conquistado)" : null);
+            bool transport = PvpZones.IsOnTransport(player);
 
             bool protectedZone = !hunted && !combat && (safeArea != null || transport);
 
@@ -279,6 +317,7 @@ namespace Deadheim.Pvp
             PvpFlags flags = PvpFlags.None;
             if (immune && !warZone) flags |= PvpFlags.Immune;
             if (IsPk) flags |= PvpFlags.Pk;
+            if (_pkPermanent) flags |= PvpFlags.PkPermanent;
             if (hunted) flags |= PvpFlags.Hunted;
             if (IsHuntPending) flags |= PvpFlags.HuntPending;
             if (protectedZone && !warZone) flags |= PvpFlags.Protected;

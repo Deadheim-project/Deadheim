@@ -65,6 +65,7 @@
     <Compile Include="RaidSystem\DataStore.cs" />
     <Compile Include="RaidSystem\ScoreManager.cs" />
     <Compile Include="RaidSystem\OrePortal.cs" />
+    <Compile Include="RaidSystem\CastleDefense.cs" />
     <Compile Include="RaidSystem\TributeManager.cs" />
     <Compile Include="RaidSystem\Patches.cs" />
     <Compile Include="RaidSystem\RPCManager.cs" />

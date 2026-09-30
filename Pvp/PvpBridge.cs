@@ -31,6 +31,12 @@ namespace Deadheim.Pvp
         public static Func<Vector3, string> CastleOwner;
 
         /// <summary>
+        /// O castelo que cobre o ponto ja caiu nesta janela de raid: vira zona segura ate a
+        /// proxima janela (a luta acabou). Sem resolvedor, nunca.
+        /// </summary>
+        public static Func<Vector3, bool> CastleSafeAt;
+
+        /// <summary>
         /// Servidor: cada morte por jogador, ja com matador resolvido pela ZDO. O RaidSystem
         /// usa para o Ranking de Guerra: o patch antigo dele so contava abate quando a morte
         /// era processada no servidor, o que nunca acontece com jogador em servidor dedicado.
@@ -40,6 +46,20 @@ namespace Deadheim.Pvp
         internal static string Castle(Vector3 point) => Call(CastleAt, point, nameof(CastleAt));
 
         internal static string Owner(Vector3 point) => Call(CastleOwner, point, nameof(CastleOwner));
+
+        internal static bool CastleSafe(Vector3 point)
+        {
+            if (CastleSafeAt == null) return false;
+            try
+            {
+                return CastleSafeAt(point);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Deadheim PvP] {nameof(CastleSafeAt)} falhou: {ex.Message}");
+                return false;
+            }
+        }
 
         internal static void RaiseKilled(PvpKill kill)
         {

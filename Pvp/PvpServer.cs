@@ -7,8 +7,8 @@ using UnityEngine;
 namespace Deadheim.Pvp
 {
     /// <summary>
-    /// Lado servidor do PvP: ranking K/D, marca de PK, recompensa de defesa, desafio
-    /// (cacado) e a entrega do estado a cada cliente. O cliente da vitima conta como
+    /// Lado servidor do PvP: ranking K/D, marca de PK (com niveis), recompensa de defesa,
+    /// bounty (cacado) e a entrega do estado a cada cliente. O cliente da vitima conta como
     /// morreu; quem foi o matador o servidor resolve pela ZDO, nunca pelo que o
     /// cliente escreve no pacote.
     /// </summary>
@@ -21,6 +21,16 @@ namespace Deadheim.Pvp
         private static double Now => PvpState.Now;
 
         public static bool IsServer => ZNet.instance != null && ZNet.instance.IsServer();
+
+        /// <summary>Admin pela adminlist do servidor. O host de um servidor com jogador e admin.</summary>
+        public static bool IsAdminPeer(long peerId)
+        {
+            ZNet net = ZNet.instance;
+            if (net == null) return false;
+            if (ZRoutedRpc.instance != null && peerId == ZRoutedRpc.instance.m_id) return true;
+            ZNetPeer peer = net.GetPeer(peerId);
+            return peer?.m_socket != null && net.IsAdmin(peer.m_socket.GetHostName());
+        }
 
         public static void Handle(long sender, string op, ZPackage pkg)
         {
@@ -42,7 +52,7 @@ namespace Deadheim.Pvp
             {
                 case PvpNet.OpHello: OnHello(peer); break;
                 case PvpNet.OpDeath: OnDeath(peer, pkg); break;
-                case PvpNet.OpChallenge: PvpChallenge.OnCommand(peer, pkg.ReadString()); break;
+                case PvpNet.OpBounty: PvpBounty.OnCommand(peer, pkg.ReadString(), pkg.ReadString(), pkg.ReadInt()); break;
                 case PvpNet.OpRank: SendRank(peer); break;
                 default:
                     Debug.LogWarning($"[Deadheim PvP] Operacao desconhecida '{op}' de {peer.Name}.");
@@ -57,6 +67,14 @@ namespace Deadheim.Pvp
             PvpPlayerRecord record = PvpStore.Player(peer.PlayerId, peer.Name);
             SendState(peer);
             Debug.Log($"[Deadheim PvP] {peer.Name} ({peer.PlayerId}) sincronizado.");
+
+            if (record.pendingCoins > 0)
+            {
+                SendReward(peer.PeerId, "Coins", record.pendingCoins, "Moedas guardadas enquanto voce estava fora");
+                Debug.Log($"[Deadheim PvP] {peer.Name} recebeu {record.pendingCoins} moedas pendentes.");
+                record.pendingCoins = 0;
+                PvpStore.MarkDirty();
+            }
 
             if (record.combatLogPending)
             {
@@ -73,15 +91,20 @@ namespace Deadheim.Pvp
         public static void SendState(PvpPeer peer)
         {
             PvpPlayerRecord record = PvpStore.Player(peer.PlayerId, peer.Name);
-            PvpChallenge.Remaining(peer.PlayerId, out double pending, out double hunted);
+            PvpBounty.Describe(peer.PlayerId, out double pending, out double hunted, out int pot, out bool untilDeath);
+            bool pk = record.IsPk(Now);
 
             ZPackage pkg = PvpNet.Package(PvpNet.OpState);
-            pkg.Write(Math.Max(0d, record.pkUntil - Now));
+            pkg.Write(pk && !record.pkPermanent ? Math.Max(0d, record.pkUntil - Now) : 0d);
+            pkg.Write(pk && record.pkPermanent);
+            pkg.Write(pk ? record.pkPenalty : 0);
+            pkg.Write(record.pkKills);
             pkg.Write(pending);
             pkg.Write(hunted);
-            pkg.Write(Math.Max(0d, record.challengeReadyAt - Now));
-            pkg.Write(record.pkKills);
-            pkg.Write(PvpChallenge.IsPaused(peer.PlayerId));
+            pkg.Write(pot);
+            pkg.Write(untilDeath);
+            pkg.Write(PvpBounty.IsPaused(peer.PlayerId));
+            pkg.Write(Math.Max(0d, record.bountyReadyAt - Now));
             PvpNet.SendToClient(peer.PeerId, pkg);
         }
 
@@ -114,20 +137,24 @@ namespace Deadheim.Pvp
             if (killerId == victim.PlayerId) killerId = 0L;
 
             PvpPlayerRecord victimRecord = PvpStore.Player(victim.PlayerId, victim.Name);
-            bool victimWasPk = victimRecord.pkUntil > Now;
-            bool victimWasHunted = PvpChallenge.IsHunted(victim.PlayerId);
+            bool victimWasPk = victimRecord.IsPk(Now);
+            bool victimWasHunted = PvpBounty.IsHunted(victim.PlayerId);
 
             Debug.Log($"[Deadheim PvP] Morte: {victim.Name} por {(killerId != 0L ? killerName : "PvE")} " +
                       $"arena={arena} castelo={castle ?? "-"} defesaDoCastelo={killerDefendingCastle} " +
                       $"vitimaPK={victimWasPk} vitimaCacada={victimWasHunted} vitimaAgressora={victimWasAggressor} " +
                       $"moedasNoChao={coinsDropped} pos=({position.x:F0},{position.z:F0})");
 
-            PvpChallenge.OnDeath(victim, killerId, killerName);
+            PvpBounty.OnDeath(victim, killerId, killerName, arena);
 
-            if (victimWasPk && PvpConfig.PkClearsOnDeath.Value)
+            // PK permanente so sai morto por jogador; o PK comum sai em qualquer morte (PkClearsOnDeath).
+            if (victimWasPk && (victimRecord.pkPermanent ? killerId != 0L : PvpConfig.PkClearsOnDeath.Value))
             {
-                victimRecord.pkUntil = 0d;
+                bool wasPermanent = victimRecord.pkPermanent;
+                victimRecord.ClearPk();
                 PvpStore.MarkDirty();
+                if (wasPermanent)
+                    PvpNet.Broadcast($"<color=#ff3030>O PK permanente {victim.Name}</color> foi morto por <color=#ffb347>{killerName}</color>.", true);
             }
 
             if (killerId != 0L)
@@ -145,24 +172,10 @@ namespace Deadheim.Pvp
                 // atacou primeiro (agressor) e legitima defesa.
                 bool selfDefense = victimWasAggressor && PvpConfig.AggressorRule.Value;
                 bool pk = !arena && castle == null && !victimWasPk && !victimWasHunted && !selfDefense
-                          && PvpConfig.PkMinutes.Value > 0f;
+                          && PvpConfig.Tiers.Count > 0;
                 if (selfDefense && !arena && castle == null)
                     Debug.Log($"[Deadheim PvP] {killerName} matou {victim.Name}, que era agressor: legitima defesa, sem PK.");
-                if (pk)
-                {
-                    killerRecord.pkUntil = Now + PvpConfig.PkMinutes.Value * 60d;
-                    killerRecord.pkKills++;
-                    PvpStore.MarkDirty();
-                    Debug.Log($"[Deadheim PvP] {killerName} ({killerId}) agora e PK por {PvpConfig.PkMinutes.Value:0.#} min " +
-                              $"(contador de PK: {killerRecord.pkKills}).");
-                    if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer))
-                    {
-                        SendState(killerPeer);
-                        PvpNet.Message(killerPeer.PeerId,
-                            $"<color=#ff5050>Voce e PK por {PvpConfig.PkMinutes.Value:0} min ({killerRecord.pkKills} PK no total).</color> " +
-                            $"Se morrer, perde {PvpConfig.PkSkillLossMultiplier.Value:0.#}x skill.");
-                    }
-                }
+                if (pk) MarkPk(killerId, killerName, killerRecord);
 
                 if (killerDefendingCastle) GiveCastleReward(killerId, killerName, victim, castle, position);
 
@@ -191,6 +204,59 @@ namespace Deadheim.Pvp
             }
 
             SendState(victim);
+        }
+
+        /// <summary>
+        /// Mais um abate que deu PK: sobe o nivel (PkTiers) pela sequencia desde que a marca
+        /// atual comecou. Nivel permanente so sai com a morte por jogador.
+        /// </summary>
+        private static void MarkPk(long killerId, string killerName, PvpPlayerRecord record)
+        {
+            if (!record.IsPk(Now)) record.pkStreak = 0;
+            record.pkStreak++;
+            record.pkKills++;
+            if (!PvpConfig.TryGetTier(record.pkStreak, out PvpConfig.PkTier tier)) return;
+
+            if (tier.Permanent) record.pkPermanent = true;
+            else if (!record.pkPermanent) record.pkUntil = Math.Max(record.pkUntil, Now + tier.Minutes * 60d);
+            record.pkPenalty = (int)tier.Penalty;
+            PvpStore.MarkDirty();
+
+            string length = record.pkPermanent ? "PERMANENTE (ate ser morto por um jogador)" : PvpClient.FormatDuration(record.pkUntil - Now);
+            Debug.Log($"[Deadheim PvP] {killerName} ({killerId}) agora e PK {length}, sequencia {record.pkStreak}, " +
+                      $"perda={tier.Penalty} (contador de PK: {record.pkKills}).");
+            if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer))
+            {
+                SendState(killerPeer);
+                PvpNet.Message(killerPeer.PeerId,
+                    $"<color=#ff5050>Voce e PK {length}.</color> Se morrer, perde {PvpConfig.PkSkillLossMultiplier.Value:0.#}x skill" +
+                    PenaltyText(tier.Penalty) + ".");
+            }
+            if (record.pkPermanent && tier.Permanent && record.pkStreak == tier.Kills)
+                PvpNet.Broadcast($"<color=#ff3030>{killerName} virou PK PERMANENTE</color> e aparece no mapa ate ser morto.", true);
+        }
+
+        public static string PenaltyText(PvpConfig.PkPenalty penalty)
+        {
+            switch (penalty)
+            {
+                case PvpConfig.PkPenalty.Unequipped: return " e tudo que nao estiver equipado cai no chao";
+                case PvpConfig.PkPenalty.All: return " e o inventario inteiro cai no chao";
+                default: return string.Empty;
+            }
+        }
+
+        /// <summary>Moedas para um jogador: na hora se estiver online, senao quando ele voltar.</summary>
+        public static void PayCoins(long playerId, string name, int amount, string reason)
+        {
+            if (amount <= 0 || playerId == 0L) return;
+            if (PvpPeer.TryFindByPlayerId(playerId, out PvpPeer peer))
+            {
+                SendReward(peer.PeerId, "Coins", amount, reason);
+                return;
+            }
+            PvpStore.Player(playerId, name).pendingCoins += amount;
+            PvpStore.MarkDirty();
         }
 
         private static void GiveCastleReward(long killerId, string killerName, PvpPeer victim, string castle, Vector3 position)
@@ -277,7 +343,7 @@ namespace Deadheim.Pvp
             ReportStartZoneOnce();
             RetryPendingHellos();
             RememberPeers();
-            PvpChallenge.Tick();
+            PvpBounty.Tick();
             PvpStore.Tick();
         }
 
@@ -432,7 +498,7 @@ namespace Deadheim.Pvp
             private static void Prefix()
             {
                 if (IsServer) PvpStore.Unload();
-                PvpChallenge.Reset();
+                PvpBounty.Reset();
                 _pendingHello.Clear();
                 _defenseRewardAt.Clear();
                 _seen.Clear();
@@ -441,7 +507,7 @@ namespace Deadheim.Pvp
         }
 
         /// <summary>
-        /// O cacado aparece no mapa de todo mundo. Em vez de desenhar marcador proprio,
+        /// O cacado (e o PK permanente) aparece no mapa de todo mundo. Em vez de desenhar marcador proprio,
         /// reaproveitamos a lista de jogadores que o servidor ja manda a cada 2 s: basta
         /// marcar a posicao dele como publica, e o mapa do vanilla faz o resto.
         /// </summary>
@@ -451,13 +517,16 @@ namespace Deadheim.Pvp
             private static void Postfix(ZNet __instance)
             {
                 if (!__instance.IsServer() || !PvpConfig.Active) return;
-                if (!PvpChallenge.AnyHunted) return;
+                bool anyPermanent = PvpConfig.PkPermanentOnMap.Value && PvpStore.Data.players.Exists(p => p.pkPermanent);
+                if (!PvpBounty.AnyHunted && !anyPermanent) return;
 
                 List<ZNet.PlayerInfo> players = __instance.m_players;
                 foreach (ZNetPeer peer in __instance.GetPeers())
                 {
                     if (peer == null || !peer.IsReady()) continue;
-                    if (!PvpPeer.TryFrom(peer, out PvpPeer info) || !PvpChallenge.IsHunted(info.PlayerId)) continue;
+                    if (!PvpPeer.TryFrom(peer, out PvpPeer info)) continue;
+                    bool permanentPk = anyPermanent && PvpStore.Player(info.PlayerId, info.Name).pkPermanent;
+                    if (!PvpBounty.IsHunted(info.PlayerId) && !permanentPk) continue;
 
                     for (int i = 0; i < players.Count; i++)
                     {

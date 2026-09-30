@@ -227,6 +227,26 @@ namespace RaidSystem
             return _cachedGlobalHours;
         }
 
+        /// <summary>Horas UTC de raid da zona: as proprias, ou as globais se ela nao tiver.</summary>
+        public static List<int> HoursFor(RaidZone zone)
+            => zone?.AllowedHoursUtc != null && zone.AllowedHoursUtc.Count > 0 ? zone.AllowedHoursUtc : GetGlobalHours();
+
+        public static bool IsRaidHour(RaidZone zone, DateTime utc) => HoursFor(zone).Contains(utc.Hour);
+
+        /// <summary>
+        /// Inicio (UTC, hora cheia) da janela de raid aberta agora na zona, ou null se nao ha.
+        /// Janela = horas permitidas seguidas; com o dia todo liberado ela nunca fecha.
+        /// </summary>
+        public static DateTime? CurrentWindowStartUtc(RaidZone zone, DateTime utc)
+        {
+            List<int> hours = HoursFor(zone);
+            if (!hours.Contains(utc.Hour)) return null;
+            DateTime start = new DateTime(utc.Year, utc.Month, utc.Day, utc.Hour, 0, 0, DateTimeKind.Utc);
+            for (int i = 0; i < 24 && hours.Contains(start.AddHours(-1).Hour); i++)
+                start = start.AddHours(-1);
+            return start;
+        }
+
         public static bool IsRaidDisabledThisTime()
         {
             return !GetGlobalHours().Contains(DateTime.UtcNow.Hour);

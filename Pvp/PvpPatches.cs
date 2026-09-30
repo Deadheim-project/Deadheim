@@ -47,6 +47,8 @@ namespace Deadheim.Pvp
                     PvpRules.Verdict verdict = PvpRules.Check(attacker, victim);
                     if (verdict != PvpRules.Verdict.Allow) return false;
 
+                    // Stagger de PvP: o vanilla cambaleia com hit.m_staggerMultiplier logo depois deste prefix.
+                    hit.m_staggerMultiplier *= Mathf.Max(0f, PvpConfig.StaggerMultiplier.Value);
                     // O corte entra depois da armadura (PvpAfterArmorPatch), nao aqui.
                     _pvpHit = hit;
                     _pvpHitMultiplier = PvpRules.DamageMultiplier(victim);
@@ -152,17 +154,20 @@ namespace Deadheim.Pvp
             }
         }
 
-        /// <summary>Barco e carroca nao tomam dano de jogador.</summary>
+        /// <summary>
+        /// Carroca (TransportsInvulnerable) e barco (ShipsInvulnerable) sem dano de jogador.
+        /// Com ShipsInvulnerable desligado o barco e alvo: da para afundar (pirataria).
+        /// </summary>
         [HarmonyPatch(typeof(WearNTear), "RPC_Damage")]
         private static class TransportDamagePatch
         {
             [HarmonyPriority(Priority.High)]
             private static bool Prefix(WearNTear __instance, HitData hit)
             {
-                if (!PvpConfig.Active || !PvpConfig.TransportsInvulnerable.Value || hit == null) return true;
-                if (!(hit.GetAttacker() is Player)) return true;
-                if (__instance.GetComponent<Ship>() == null && __instance.GetComponent<Vagon>() == null) return true;
-                return false;
+                if (!PvpConfig.Active || hit == null || !(hit.GetAttacker() is Player)) return true;
+                if (__instance.GetComponent<Ship>() != null) return !PvpConfig.ShipsInvulnerable.Value;
+                if (__instance.GetComponent<Vagon>() != null) return !PvpConfig.TransportsInvulnerable.Value;
+                return true;
             }
         }
 
@@ -181,6 +186,8 @@ namespace Deadheim.Pvp
         ///   proposito daria minutos de morte gratis no PvE e no PvP;
         /// - morte de PK sempre perde, mesmo dentro da janela, senao o PK nao pagaria nada
         ///   se tivesse morrido ha pouco.
+        /// O PK tambem perde itens pelo nivel (PkTiers): Unequipped ou All jogam no chao, antes
+        /// da tumba, o que ele perdeu. Com PkPenaltyOnPveDeath desligado, so morte por jogador.
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
         private static class DeathPatch
@@ -205,18 +212,25 @@ namespace Deadheim.Pvp
                     bool killerDefendingCastle = castle != null
                                                  && PvpRules.IsDefendingCastle(Player.GetPlayer(killerId), __instance, pos);
                     bool wasPk = PvpState.IsPk;
+                    bool wasPermanent = PvpState.IsPkPermanent;
+                    PvpConfig.PkPenalty penalty = PvpState.PkPenalty;
+                    // O PK paga pelo nivel; com PkPenaltyOnPveDeath desligado, so quando e morto por jogador.
+                    bool pkPays = wasPk && (byPlayer || PvpConfig.PkPenaltyOnPveDeath.Value);
 
                     if (arena && PvpConfig.ArenaNoSkillLoss.Value) _pendingSkillMultiplier = 0f;
                     else if (castle != null && PvpConfig.CastleNoSkillLoss.Value) _pendingSkillMultiplier = 0f;
-                    else if (wasPk) _pendingSkillMultiplier = Mathf.Max(0f, PvpConfig.PkSkillLossMultiplier.Value);
+                    else if (pkPays) _pendingSkillMultiplier = Mathf.Max(0f, PvpConfig.PkSkillLossMultiplier.Value);
 
                     if (_pendingSkillMultiplier <= 0f) _keepTimeSinceDeath = __instance.m_timeSinceDeath;
-                    else if (wasPk) __instance.ClearHardDeath();
+                    else if (pkPays) __instance.ClearHardDeath();
 
                     bool warZone = arena || (castle != null && PvpConfig.CastleIgnoresImmunity.Value);
                     if (byPlayer && !warZone && PvpConfig.ImmunityMinutes.Value > 0f)
                         PvpState.GrantImmunity(__instance, PvpConfig.ImmunityMinutes.Value * 60d);
-                    if (wasPk && PvpConfig.PkClearsOnDeath.Value) PvpState.ClearPk();
+
+                    // Antes do vanilla criar a tumba: o que o nivel de PK manda perder vai para o chao.
+                    int itemsDropped = pkPays && !arena ? DropPkItems(__instance, pos, penalty) : 0;
+                    if (wasPk && (wasPermanent ? byPlayer : PvpConfig.PkClearsOnDeath.Value)) PvpState.ClearPk();
 
                     bool wasAggressor = PvpState.IsAggressor;
                     // Antes do vanilla criar a tumba: a parte das moedas que fica para quem matou.
@@ -229,6 +243,7 @@ namespace Deadheim.Pvp
 
                     Debug.Log($"[Deadheim PvP] Morri: causa={cause} matador={killerId} ultimoGolpe={__instance.m_lastHit?.m_hitType} " +
                               $"arena={arena} castelo={castle ?? "-"} defesaDoMatador={killerDefendingCastle} PK={wasPk} " +
+                              $"PKpermanente={wasPermanent} perda={(pkPays ? penalty.ToString() : "-")} itensNoChao={itemsDropped} " +
                               $"agressor={wasAggressor} moedasNoChao={coinsDropped} multiplicadorSkill={_pendingSkillMultiplier}");
                 }
                 catch (Exception ex)
@@ -263,6 +278,34 @@ namespace Deadheim.Pvp
                     if (drop != null) drop.SetStack(Mathf.Min(left, maxStack));
                 }
                 return amount;
+            }
+
+            /// <summary>
+            /// Perda de itens do PK: Unequipped joga no chao tudo que nao esta equipado; All,
+            /// o inventario inteiro. No chao qualquer um pega (a tumba so o dono abre).
+            /// </summary>
+            private static int DropPkItems(Player player, Vector3 pos, PvpConfig.PkPenalty penalty)
+            {
+                if (penalty == PvpConfig.PkPenalty.Skills) return 0;
+                Inventory inventory = player.GetInventory();
+                if (inventory == null) return 0;
+
+                int dropped = 0;
+                foreach (ItemDrop.ItemData item in new System.Collections.Generic.List<ItemDrop.ItemData>(inventory.GetAllItems()))
+                {
+                    if (item == null || item.m_dropPrefab == null) continue;
+                    bool equipped = player.IsItemEquiped(item);
+                    if (equipped && penalty == PvpConfig.PkPenalty.Unequipped) continue;
+                    if (equipped) player.UnequipItem(item, false);
+
+                    Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.6f;
+                    ItemDrop.DropItem(item, item.m_stack, at, Quaternion.identity);
+                    inventory.RemoveItem(item);
+                    dropped++;
+                }
+                if (dropped > 0)
+                    player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>PK: {dropped} item(ns) cairam no chao.</color>");
+                return dropped;
             }
 
             private static void Postfix(Player __instance)
@@ -335,7 +378,8 @@ namespace Deadheim.Pvp
                 string suffix = string.Empty;
                 if ((flags & PvpFlags.Hunted) != 0) suffix += " <color=#ff8c00>[CACADO]</color>";
                 int pkCount = PvpState.PkCountOf(__instance);
-                if ((flags & PvpFlags.Pk) != 0) suffix += pkCount > 1 ? $" <color=#ff3030>[PK x{pkCount}]</color>" : " <color=#ff3030>[PK]</color>";
+                if ((flags & PvpFlags.PkPermanent) != 0) suffix += $" <color=#ff3030>[PK PERMANENTE x{pkCount}]</color>";
+                else if ((flags & PvpFlags.Pk) != 0) suffix += pkCount > 1 ? $" <color=#ff3030>[PK x{pkCount}]</color>" : " <color=#ff3030>[PK]</color>";
                 if ((flags & PvpFlags.Aggressor) != 0) suffix += " <color=#ff7a3d>[AGRESSOR]</color>";
                 if ((flags & PvpFlags.Immune) != 0) suffix += " <color=#7fd4ff>[IMUNE]</color>";
                 else if ((flags & PvpFlags.Protected) != 0) suffix += " <color=#7CFC00>[SEGURO]</color>";

@@ -175,10 +175,12 @@ namespace Deadheim.Wards
                     PrivateArea ward = WardCore.GetProtectingWard(pos, attacker);
                     if (ward == null) return true;
 
-                    // Zona segura do mundo: nada protegido por ward toma dano perto da origem.
+                    // Zona segura: nada protegido por ward toma dano perto da origem (SafeArea) nem
+                    // numa zona segura do PvP (ilha inicial, SafeZones). Fora dela a base e
+                    // raidavel e toma DamagePercent do dano.
                     // A versao antiga media a distancia do jogador local, o que estourava
                     // NullReference no servidor dedicado e bloqueava dano no mundo inteiro.
-                    if (Utils.DistanceXZ(pos, Vector3.zero) <= Plugin.SafeArea.Value)
+                    if (Utils.DistanceXZ(pos, Vector3.zero) <= Plugin.SafeArea.Value || Pvp.PvpZones.IsSafeArea(pos))
                     {
                         ward.FlashShield(false);
                         return false;
@@ -239,8 +241,9 @@ namespace Deadheim.Wards
                         return false;
                     }
 
+                    // Limite 0 = sem limite: a base e raidavel, entao o limite nao protege nada.
                     int limit = WardCore.GetWardLimit();
-                    if (Plugin.PlayerWardCount < 999 && Plugin.PlayerWardCount >= limit)
+                    if (limit > 0 && Plugin.PlayerWardCount < 999 && Plugin.PlayerWardCount >= limit)
                     {
                         __instance.Message(MessageHud.MessageType.Center, "Limite de wards atingido (" + limit + ").");
                         return false;

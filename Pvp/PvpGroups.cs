@@ -21,8 +21,13 @@ namespace Deadheim.Pvp
         /// <summary>So para o driver de teste: ids que estao no grupo do jogador local.</summary>
         internal static Func<long, bool> TestOverride;
 
+        /// <summary>So para o driver de teste: chave do grupo do jogador local.</summary>
+        internal static Func<long> TestGroupKey;
+
         private static bool _resolved;
         private static MethodInfo _findMember;
+        private static MethodInfo _groupPlayers;
+        private static FieldInfo _peerId;
 
         public static bool IsAvailable
         {
@@ -48,6 +53,35 @@ namespace Deadheim.Pvp
             {
                 Debug.LogWarning("[Deadheim PvP] Groups.API.FindGroupMemberByPlayerId falhou: " + ex.Message);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Chave do grupo do jogador local, igual para todos os membros (o menor peerId da
+        /// lista); 0 = sem grupo. Publicada na ZDO do jogador para quem nao e do grupo poder
+        /// comparar dois jogadores (bonus de monstro por aliado, AllyScaling).
+        /// </summary>
+        public static long LocalGroupKey()
+        {
+            if (TestGroupKey != null) return TestGroupKey();
+            Resolve();
+            if (_groupPlayers == null || _peerId == null) return 0L;
+            try
+            {
+                long key = 0L;
+                if (_groupPlayers.Invoke(null, null) is System.Collections.IEnumerable members)
+                    foreach (object member in members)
+                    {
+                        long id = (long)_peerId.GetValue(member);
+                        if (id != 0L && (key == 0L || id < key)) key = id;
+                    }
+                return key;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[Deadheim PvP] Groups.API.GroupPlayers falhou: " + ex.Message);
+                _groupPlayers = null;
+                return 0L;
             }
         }
 
@@ -79,6 +113,9 @@ namespace Deadheim.Pvp
                 Type api = assembly.GetType(ApiTypeName);
                 _findMember = api?.GetMethod("FindGroupMemberByPlayerId",
                     BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(long) }, null);
+                _groupPlayers = api?.GetMethod("GroupPlayers", BindingFlags.Public | BindingFlags.Static,
+                    null, Type.EmptyTypes, null);
+                _peerId = assembly.GetType("Groups.PlayerReference")?.GetField("peerId");
                 Debug.Log($"[Deadheim PvP] Groups integrado (FindGroupMemberByPlayerId={_findMember != null}).");
             }
             catch (Exception ex)

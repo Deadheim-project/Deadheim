@@ -8,6 +8,7 @@
 //
 // O que o solo nao cobre e o roteiro A/B cobre: o servidor entregando a marca de PK e a
 // recompensa ao matador online, o convite de cla entre dois jogadores e o mapa do colega.
+using Deadheim;
 using Deadheim.Pvp;
 using System;
 using System.Collections;
@@ -99,10 +100,13 @@ namespace PvpTestDriver
                 Step("castelo-invasor", SoloCastleInvader),
                 Step("imunidade", SoloImmunity),
                 Step("pk", SoloPk),
+                Step("pk-niveis", SoloPkTiers),
                 Step("agressor", SoloAggressor),
                 Step("arena", SoloArena),
-                Step("desafio", SoloChallenge),
-                Step("desafio-sobrevive", SoloChallengeSurvive),
+                // Bounty precisa de admin (a casa paga a bounty no proprio personagem): rode com -Admin.
+                Step("bounty", SoloBounty),
+                Step("bounty-pagar", SoloBountyBuyout),
+                Step("bounty-expira", SoloBountyExpire),
                 Step("morte-pve-x-pvp", SoloDeathCause),
                 Step("saque", SoloLoot),
                 Step("castelo-defensor", SoloCastleDefender),
@@ -110,6 +114,7 @@ namespace PvpTestDriver
                 Step("transporte", SoloTransport),
                 Step("montaria", SoloMount),
                 Step("ward-natureza", SoloWardNature),
+                Step("monstro-aliados", SoloMonsterScaling),
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
                 Step("coins", Coins),
@@ -464,6 +469,18 @@ namespace PvpTestDriver
             Check("agressor/marcado", PvpState.IsAggressor && (PvpState.Current & PvpFlags.Aggressor) != 0, $"flags={PvpState.Current}");
             Check("agressor/hud", PvpHud.Compose(Me).Contains("AGRESSOR"), PvpHud.Compose(Me));
 
+            // Em combate com jogador o relogio de agressor para (AggressorPausesInCombat).
+            float start = PvpState.AggressorRemaining;
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return Wait(3f);
+            Check("agressor/pausa-em-combate", PvpState.InCombat && Mathf.Abs(PvpState.AggressorRemaining - start) < 1f,
+                $"antes={start:0.0} depois={PvpState.AggressorRemaining:0.0} combate={PvpState.InCombat}");
+            yield return Wait(CombatWait);
+            Check("agressor/volta-a-correr-fora-de-combate", !PvpState.InCombat && PvpState.AggressorRemaining < start - 1f,
+                $"antes={start:0.0} depois={PvpState.AggressorRemaining:0.0}");
+            Check("agressor/dura-dez-minutos", PvpState.AggressorRemaining > 500f, $"resta={PvpState.AggressorRemaining:0}");
+
             MarkServerLog();
             yield return DummyKillsMe("agressor");
             yield return Wait(1f);
@@ -708,6 +725,169 @@ namespace PvpTestDriver
             Check("pk/marca-some-ao-morrer", !PvpState.IsPk, $"flags={PvpState.Current}");
         }
 
+        /// <summary>
+        /// Niveis de PK (servidor): o Dummy ja e PK dos passos anteriores; mais quatro abates
+        /// seguidos sobem ate o nivel de perda Unequipped e depois ao permanente (PkTiers do teste).
+        /// Perda de itens (cliente): Unequipped deixa o equipado, All joga tudo no chao.
+        /// </summary>
+        private IEnumerator SoloPkTiers()
+        {
+            ClearAllProtection();
+            yield return BackToOpen();
+            MarkServerLog();
+
+            // Renascer e no templo, que no teste e a arena: la abate nao gera PK nem perda.
+            yield return DummyKillsMe("pk-niveis-1");
+            yield return BackToOpen();
+            yield return DummyKillsMe("pk-niveis-2");
+            yield return BackToOpen();
+
+            // Unequipped: o que esta equipado fica (vai para a tumba), o resto cai no chao.
+            GiveItem("Wood", 20);
+            GiveAndEquip("SwordBronze");
+            PvpState.ApplyServerTimers(300d, 0d, 0d);
+            PvpState.ApplyPk(false, PvpConfig.PkPenalty.Unequipped);
+            yield return Wait(0.5f);
+            Vector3 deathAt = Me.transform.position;
+            yield return DummyKillsMe("pk-perda-desequipado");
+            yield return Wait(1.5f);
+            Check("pk-perda/desequipado-no-chao", GroundCount("Wood", deathAt) == 20, "madeira=" + GroundCount("Wood", deathAt));
+            Check("pk-perda/equipado-nao-cai", GroundCount("SwordBronze", deathAt) == 0, "espada=" + GroundCount("SwordBronze", deathAt));
+            ClearGround(deathAt);
+            yield return BackToOpen();
+
+            // All + permanente: tudo cai; a marca sai porque a morte foi por jogador.
+            GiveItem("Wood", 20);
+            GiveAndEquip("SwordBronze");
+            PvpState.ApplyServerTimers(0d, 0d, 0d);
+            PvpState.ApplyPk(true, PvpConfig.PkPenalty.All);
+            yield return Wait(0.5f);
+            Check("pk-perda/permanente-no-hud", PvpHud.Compose(Me).Contains("PK PERMANENTE"), PvpHud.Compose(Me));
+            deathAt = Me.transform.position;
+            yield return DummyKillsMe("pk-perda-tudo");
+            yield return Wait(1.5f);
+            Check("pk-perda/tudo-no-chao", GroundCount("Wood", deathAt) == 20 && GroundCount("SwordBronze", deathAt) == 1,
+                $"madeira={GroundCount("Wood", deathAt)} espada={GroundCount("SwordBronze", deathAt)}");
+            Check("pk-perda/permanente-sai-morto-por-jogador", !PvpState.IsPk, $"flags={PvpState.Current}");
+            ClearGround(deathAt);
+
+            string log = ServerLogSinceMark();
+            Check("pk-niveis/sobe-para-perda-de-itens", log.Contains($"{DummyName} ({DummyId}) agora e PK") && log.Contains("perda=Unequipped"), Tail(log));
+            Check("pk-niveis/chega-ao-permanente", log.Contains($"{DummyName} ({DummyId}) agora e PK PERMANENTE"), Tail(log));
+            PvpState.ClearImmunity(Me);
+        }
+
+        private IEnumerator BackToOpen()
+        {
+            PvpState.ClearImmunity(Me);
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+        }
+
+        private void GiveItem(string prefab, int amount)
+        {
+            GameObject item = ObjectDB.instance.GetItemPrefab(prefab);
+            string name = item.GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+            Inventory inventory = Me.GetInventory();
+            inventory.RemoveItem(name, inventory.CountItems(name));
+            inventory.AddItem(item, amount);
+        }
+
+        private void GiveAndEquip(string prefab)
+        {
+            GiveItem(prefab, 1);
+            string name = ObjectDB.instance.GetItemPrefab(prefab).GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+            ItemDrop.ItemData item = Me.GetInventory().GetItem(name);
+            if (item != null) Me.EquipItem(item);
+        }
+
+        private static int GroundCount(string prefab, Vector3 near)
+        {
+            string name = ObjectDB.instance.GetItemPrefab(prefab).GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+            return ItemDrop.s_instances.Where(d => d != null && d.m_itemData.m_shared.m_name == name
+                                                   && Utils.DistanceXZ(d.transform.position, near) < 8f)
+                                       .Sum(d => d.m_itemData.m_stack);
+        }
+
+        private static void ClearGround(Vector3 near)
+        {
+            foreach (ItemDrop drop in ItemDrop.s_instances.Where(d => d != null && Utils.DistanceXZ(d.transform.position, near) < 8f).ToList())
+                ZNetScene.instance.Destroy(drop.gameObject);
+        }
+
+        /// <summary>
+        /// Bonus de monstro por jogador perto so conta aliados (MonsterScalingAlliesOnly): o
+        /// Dummy estranho ao lado nao deixa o javali mais duro; na mesma guilda ou grupo, deixa.
+        /// Desligado no cfg, volta a conta do jogo (todo mundo no raio).
+        /// </summary>
+        private IEnumerator SoloMonsterScaling()
+        {
+            ClearAllProtection();
+            ClearGuilds();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(1f);
+            Vector3 at = _openA;
+            Check("monstro/jogo-conta-o-dummy", Player.GetPlayersInRangeXZ(at, Game.instance.m_difficultyScaleRange) >= 2);
+            Check("monstro/estranho-nao-conta", PlayersFor(Me, at) == 1, "jogadores=" + PlayersFor(Me, at));
+            SetGuild(Me.GetPlayerID(), "Lobos");
+            SetGuild(DummyId, "Lobos");
+            Check("monstro/guilda-conta", PlayersFor(Me, at) == 2, "jogadores=" + PlayersFor(Me, at));
+            ClearGuilds();
+            PvpGroups.TestOverride = id => id == DummyId;
+            Check("monstro/grupo-conta", PlayersFor(Me, at) == 2, "jogadores=" + PlayersFor(Me, at));
+            PvpGroups.TestOverride = null;
+
+            PvpGroups.TestGroupKey = () => 77L;
+            yield return Wait(2.5f);
+            Check("monstro/chave-do-grupo-na-zdo", Me.m_nview.GetZDO().GetLong(AllyScaling.ZdoGroupKey, 0L) == 77L);
+            PvpGroups.TestGroupKey = null;
+
+            // Pelo caminho de verdade: golpe meu num javali, com o Dummy ao lado.
+            Character boar = Instantiate(ZNetScene.instance.GetPrefab("Boar"), Ground(at + Vector3.forward * 3f), Quaternion.identity)
+                .GetComponent<Character>();
+            yield return Wait(1f);
+            yield return HitBoar(boar);
+            float stranger = _boarLoss;
+            SetGuild(Me.GetPlayerID(), "Lobos");
+            SetGuild(DummyId, "Lobos");
+            yield return HitBoar(boar);
+            float ally = _boarLoss;
+            ClearGuilds();
+            Check("monstro/golpe-com-estranho-sem-bonus", ally > 0f && stranger > ally * 1.2f, $"estranho={stranger:0.00} aliado={ally:0.00}");
+
+            SetServerConfig("MonsterScalingAlliesOnly", "false");
+            yield return WaitFor(() => !Plugin.MonsterScalingAlliesOnly.Value, 20f);
+            yield return HitBoar(boar);
+            Check("monstro/desligado-conta-todo-mundo", Mathf.Abs(_boarLoss - ally) < 0.05f, $"desligado={_boarLoss:0.00} aliado={ally:0.00}");
+            SetServerConfig("MonsterScalingAlliesOnly", "true");
+            yield return WaitFor(() => Plugin.MonsterScalingAlliesOnly.Value, 20f);
+            ZNetScene.instance.Destroy(boar.gameObject);
+        }
+
+        private float _boarLoss;
+
+        private IEnumerator HitBoar(Character boar)
+        {
+            const float full = 10000f;
+            boar.SetMaxHealth(full);
+            boar.SetHealth(full);
+            HitData hit = new HitData { m_hitType = HitData.HitType.PlayerHit, m_point = boar.GetCenterPoint() };
+            hit.m_damage.m_blunt = 20f;
+            hit.SetAttacker(Me);
+            boar.m_nview.InvokeRPC("RPC_Damage", hit);
+            yield return Wait(0.5f);
+            _boarLoss = full - boar.GetHealth();
+        }
+
+        private static int PlayersFor(Player fighter, Vector3 at)
+        {
+            AllyScaling.Anchor = fighter;
+            try { return Game.instance.GetPlayerDifficulty(at); }
+            finally { AllyScaling.Anchor = null; }
+        }
+
         private IEnumerator SoloArena()
         {
             ClearAllProtection();
@@ -745,74 +925,113 @@ namespace PvpTestDriver
             return entry.m_name == name && entry.m_publicPosition;
         }
 
-        private IEnumerator SoloChallenge()
+        private bool RequireAdmin(string step)
         {
+            if (Deadheim.Vanilla.Admin.LocalPlayerIsAdmin()) return true;
+            Log($"SKIP {step}: precisa de admin (rode com -Admin -Steps bounty,bounty-pagar,bounty-expira)");
+            return false;
+        }
+
+        /// <summary>
+        /// Bounty paga pela casa (/pvpadmin bounty) no proprio personagem: aviso, CACADO sem zona
+        /// segura e no mapa, pausa no proprio ward, e o Dummy mata e leva a parte dele do pote.
+        /// Admin passa por cima do bloqueio de teleporte, entao ele nao e checado aqui.
+        /// </summary>
+        private IEnumerator SoloBounty()
+        {
+            if (!RequireAdmin("bounty")) yield break;
             ClearAllProtection();
             yield return MoveTo(_openA);
             MoveDummy(_openB);
             yield return Wait(CombatWait);
             ZNet.instance.SetPublicReferencePosition(false);
             yield return Wait(3f);
-            Check("desafio/fora-do-mapa-antes", !ListedPublic(_myName, out _));
+            Check("bounty/fora-do-mapa-antes", !ListedPublic(_myName, out _));
 
-            Command("desafio");
-            yield return Wait(1.5f);
-            Check("desafio/pendente", PvpState.IsHuntPending && (PvpState.Current & PvpFlags.HuntPending) != 0, $"flags={PvpState.Current}");
-            yield return Wait(PvpConfig.ChallengeDelaySeconds.Value + 1.5f);
+            const int pot = 2000;
+            Command($"pvpadmin bounty {_myName} {pot}");
+            yield return Wait(2f);
+            Check("bounty/pendente", PvpState.IsHuntPending && PvpClient.BountyPot == pot && (PvpState.Current & PvpFlags.HuntPending) != 0,
+                $"flags={PvpState.Current} pote={PvpClient.BountyPot}");
+            Check("bounty/hud-aviso", PvpHud.Compose(Me).Contains("Bounty de " + pot), PvpHud.Compose(Me));
+            yield return Wait(PvpConfig.BountyDelaySeconds.Value + 1.5f);
             yield return MoveTo(_safe);
             yield return Wait(0.5f);
-            Check("desafio/cacado-sem-zona-segura", PvpState.IsHunted && Me.IsPVPEnabled() && (PvpState.Current & PvpFlags.Protected) == 0,
+            Check("bounty/cacado-sem-zona-segura", PvpState.IsHunted && Me.IsPVPEnabled() && (PvpState.Current & PvpFlags.Protected) == 0,
                 $"flags={PvpState.Current}");
-            Check("desafio/hud", PvpHud.Compose(Me).Contains("CACADO"), PvpHud.Compose(Me));
+            Check("bounty/hud", PvpHud.Compose(Me).Contains("CACADO") && PvpHud.Compose(Me).Contains(pot.ToString()), PvpHud.Compose(Me));
             yield return Wait(3f);
             bool listed = ListedPublic(_myName, out Vector3 at);
-            Check("desafio/no-mapa-de-todos", listed && Utils.DistanceXZ(at, _safe) < 25f, $"listado={listed} pos={at}");
+            Check("bounty/no-mapa-de-todos", listed && Utils.DistanceXZ(at, _safe) < 25f, $"listado={listed} pos={at}");
 
             Heal();
             DummyStrikesMe(Hit);
-            yield return ExpectDamage("desafio/leva-dano-na-zona-segura", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
-
-            Vector3 here = Me.transform.position;
-            bool went = Me.TeleportTo(Ground(_openA), Me.transform.rotation, true);
-            yield return Wait(1f);
-            Check("desafio/cacado-nao-teleporta", !went && Utils.DistanceXZ(Me.transform.position, here) < 3f,
-                $"teleportou={went} andou={Utils.DistanceXZ(Me.transform.position, here):0.0}");
+            yield return ExpectDamage("bounty/leva-dano-na-zona-segura", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
 
             MarkServerLog();
             yield return MoveTo(_wardA + Vector3.right * 2f);
             MoveDummy(_wardA - Vector3.right * 2f);
             yield return Wait(3f);
-            Check("desafio/pausado-no-proprio-ward", PvpClient.HuntPaused && PvpHud.Compose(Me).Contains("pausado"), PvpHud.Compose(Me));
+            Check("bounty/pausada-no-proprio-ward", PvpClient.HuntPaused && PvpHud.Compose(Me).Contains("pausado"), PvpHud.Compose(Me));
             string pause = ServerLogSinceMark();
-            Check("desafio/servidor-pausou", pause.Contains("pausado (dentro do proprio ward)"), Tail(pause));
-            Heal();
-            DummyStrikesMe(Hit);
-            yield return ExpectDamage("desafio/cacado-sem-defesa-do-ward", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+            Check("bounty/servidor-pausou", pause.Contains("pausada (dentro do proprio ward)"), Tail(pause));
             yield return MoveTo(_openA);
             MoveDummy(_openB);
             yield return Wait(3f);
-            Check("desafio/retomado-fora-do-ward", !PvpClient.HuntPaused && PvpState.IsHunted, PvpHud.Compose(Me));
+            Check("bounty/retomada-fora-do-ward", !PvpClient.HuntPaused && PvpState.IsHunted, PvpHud.Compose(Me));
 
-            yield return DummyKillsMe("desafio");
+            MarkServerLog();
+            yield return DummyKillsMe("bounty");
             yield return Wait(2f);
-            Check("desafio/terminou-ao-morrer", !PvpState.IsHunted && !PvpState.IsHuntPending, $"flags={PvpState.Current}");
+            int payout = Mathf.FloorToInt(pot * PvpConfig.BountyKillerSharePercent.Value / 100f);
+            string log = ServerLogSinceMark();
+            Check("bounty/paga-quem-matou", log.Contains($"Bounty paga: {DummyName} ({DummyId}) +{payout}"), Tail(log));
+            Check("bounty/terminou-ao-morrer", !PvpState.IsHunted && !PvpState.IsHuntPending && PvpClient.BountyPot == 0,
+                $"flags={PvpState.Current} pote={PvpClient.BountyPot}");
             yield return Wait(3f);
-            Check("desafio/saiu-do-mapa", !ListedPublic(_myName, out _));
+            Check("bounty/saiu-do-mapa", !ListedPublic(_myName, out _));
+            PvpState.ClearImmunity(Me);
         }
 
-        private IEnumerator SoloChallengeSurvive()
+        /// <summary>O alvo compra a propria cabeca: pote x BountyBuyoutMultiplier sai do inventario.</summary>
+        private IEnumerator SoloBountyBuyout()
         {
+            if (!RequireAdmin("bounty-pagar")) yield break;
             ClearAllProtection();
-            yield return Wait(Mathf.Max(1f, PvpConfig.ChallengeCooldownMinutes.Value * 60f) + 2f);
-            PvpConfig.Reward reward = PvpConfig.ParseReward(PvpConfig.ChallengeSurviveReward.Value);
-            int before = CountItem(Me, reward.Prefab);
-            Command("desafio");
-            float until = Time.time + PvpConfig.ChallengeDelaySeconds.Value + PvpConfig.ChallengeDurationMinutes.Value * 60f + 15f;
-            while (Time.time < until && CountItem(Me, reward.Prefab) == before) yield return Wait(1f);
-            int gained = CountItem(Me, reward.Prefab) - before;
-            Check("desafio-sobrevive/recompensa", gained == reward.Amount, $"ganhou={gained} esperado={reward.Amount}");
-            yield return Wait(2f);
-            Check("desafio-sobrevive/terminou", !PvpState.IsHunted, $"flags={PvpState.Current}");
+            yield return MoveTo(_openA);
+            const int pot = 1000;
+            Command($"pvpadmin bounty {_myName} {pot}");
+            yield return WaitFor(() => PvpClient.BountyPot == pot, 10f);
+            int cost = PvpBounty.BuyoutCost(pot);
+            GiveItem("Coins", cost + 100);
+            MarkServerLog();
+            Command("bounty pagar");
+            yield return WaitFor(() => PvpClient.BountyPot == 0, 10f);
+            yield return Wait(1f);
+            Check("bounty-pagar/terminou", PvpClient.BountyPot == 0 && !PvpState.IsHuntPending && !PvpState.IsHunted,
+                $"pote={PvpClient.BountyPot} flags={PvpState.Current}");
+            Check("bounty-pagar/cobrou-do-inventario", CountItem(Me, "Coins") == 100, "moedas=" + CountItem(Me, "Coins"));
+            string log = ServerLogSinceMark();
+            Check("bounty-pagar/servidor-registrou", log.Contains($"comprada por {cost}"), Tail(log));
+        }
+
+        /// <summary>Sem ninguem matar, a bounty acaba depois do tempo online do pote.</summary>
+        private IEnumerator SoloBountyExpire()
+        {
+            if (!RequireAdmin("bounty-expira")) yield break;
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            const int pot = 1000;
+            MarkServerLog();
+            Command($"pvpadmin bounty {_myName} {pot}");
+            yield return WaitFor(() => PvpState.IsHunted, PvpConfig.BountyDelaySeconds.Value + 10f);
+            Check("bounty-expira/cacado", PvpState.IsHunted, $"flags={PvpState.Current}");
+            float total = (float)PvpBounty.TotalSeconds(pot);
+            yield return WaitFor(() => !PvpState.IsHunted && PvpClient.BountyPot == 0, total + 15f);
+            Check("bounty-expira/acabou-no-tempo", !PvpState.IsHunted && PvpClient.BountyPot == 0,
+                $"flags={PvpState.Current} pote={PvpClient.BountyPot} tempo={total:0}s");
+            string log = ServerLogSinceMark();
+            Check("bounty-expira/servidor-registrou", log.Contains("expirou"), Tail(log));
         }
 
         private static string Tail(string text)
@@ -998,6 +1217,7 @@ namespace PvpTestDriver
             GameObject ship = Instantiate(ZNetScene.instance.GetPrefab("Raft"), Ground(_ship) + Vector3.up * 0.3f, Quaternion.identity);
             yield return Wait(2f);
             WearNTear wnt = ship.GetComponent<WearNTear>();
+            // Pirataria (ShipsInvulnerable=false, o padrao): barco toma dano de jogador.
             float before = wnt.GetHealthPercentage();
             HitData hit = new HitData();
             hit.m_damage.m_blunt = 50f;
@@ -1005,7 +1225,7 @@ namespace PvpTestDriver
             hit.SetAttacker(Me);
             wnt.Damage(hit);
             yield return Wait(1.5f);
-            Check("transporte/barco-nao-toma-dano-de-jogador", Mathf.Approximately(before, wnt.GetHealthPercentage()),
+            Check("transporte/barco-toma-dano-de-jogador", wnt.GetHealthPercentage() < before,
                 $"antes={before} depois={wnt.GetHealthPercentage()}");
 
             Vector3 deck = ship.transform.position + Vector3.up * 1.2f;
@@ -1013,28 +1233,39 @@ namespace PvpTestDriver
             Me.m_body.position = deck;
             Me.m_body.linearVelocity = Vector3.zero;
             yield return Wait(1.5f);
-            Check("transporte/barco-parado-nao-protege", !PvpZones.IsOnTransport(Me) && (PvpState.Current & PvpFlags.Protected) == 0,
+            Check("transporte/barco-nao-e-abrigo", !PvpZones.IsOnTransport(Me) && (PvpState.Current & PvpFlags.Protected) == 0,
                 $"volumes={Me.InNumShipVolumes} flags={PvpState.Current}");
 
             // Recarga do cfg com o servidor ligado: o arquivo muda, o servidor rele e o
-            // ServerSync entrega o valor novo aqui, sem reiniciar nada.
+            // ServerSync entrega o valor novo aqui, sem reiniciar nada. Barco volta a proteger.
             MarkServerLog();
+            SetServerConfig("ShipsSafe", "true");
+            SetServerConfig("ShipsInvulnerable", "true");
             SetServerConfig("ShipSafeMinSpeed", "0");
-            yield return WaitFor(() => Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 0f), 20f);
-            Check("config/recarga-chega-no-cliente", Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 0f),
-                "ShipSafeMinSpeed=" + PvpConfig.ShipSafeMinSpeed.Value);
+            yield return WaitFor(() => PvpConfig.ShipsSafe.Value && PvpConfig.ShipsInvulnerable.Value
+                                       && Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 0f), 20f);
+            Check("config/recarga-chega-no-cliente", PvpConfig.ShipsSafe.Value && Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 0f),
+                $"ShipsSafe={PvpConfig.ShipsSafe.Value} ShipSafeMinSpeed={PvpConfig.ShipSafeMinSpeed.Value}");
             string reload = ServerLogSinceMark();
             Check("config/servidor-recarregou", reload.Contains("Config recarregada de Detalhes.Deadheim.cfg"), Tail(reload));
             yield return Wait(1f);
-            Check("transporte/no-barco-protegido", PvpZones.IsOnTransport(Me) && (PvpState.Current & PvpFlags.Protected) != 0,
+            Check("transporte/barco-protege-com-shipssafe", PvpZones.IsOnTransport(Me) && (PvpState.Current & PvpFlags.Protected) != 0,
                 $"volumes={Me.InNumShipVolumes} flags={PvpState.Current}");
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("transporte/barco-bloqueia-dano", 0f, 0.5f);
+            before = wnt.GetHealthPercentage();
+            wnt.Damage(hit);
+            yield return Wait(1.5f);
+            Check("transporte/barco-invulneravel-com-shipsinvulnerable", Mathf.Approximately(before, wnt.GetHealthPercentage()),
+                $"antes={before} depois={wnt.GetHealthPercentage()}");
+            SetServerConfig("ShipsSafe", "false");
+            SetServerConfig("ShipsInvulnerable", "false");
             SetServerConfig("ShipSafeMinSpeed", "1");
-            yield return WaitFor(() => Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 1f), 20f);
-            Check("config/recarga-volta", Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 1f),
-                "ShipSafeMinSpeed=" + PvpConfig.ShipSafeMinSpeed.Value);
+            yield return WaitFor(() => !PvpConfig.ShipsSafe.Value && !PvpConfig.ShipsInvulnerable.Value
+                                       && Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 1f), 20f);
+            Check("config/recarga-volta", !PvpConfig.ShipsSafe.Value && Mathf.Approximately(PvpConfig.ShipSafeMinSpeed.Value, 1f),
+                $"ShipsSafe={PvpConfig.ShipsSafe.Value} ShipSafeMinSpeed={PvpConfig.ShipSafeMinSpeed.Value}");
             yield return MoveTo(_openA);
             ZNetScene.instance.Destroy(ship);
         }
@@ -1102,12 +1333,12 @@ namespace PvpTestDriver
             Command("rank");
             yield return Wait(2f);
             List<string> lines = Chat.instance.m_chatBuffer.Skip(Math.Max(0, before - 1)).ToList();
-            // O Dummy me matou fora da arena 9 vezes (castelo como invasor, imunidade, PK, agressor,
-            // desafio, queda logo depois do golpe, veneno, saque, castelo como defensor). Arena e
-            // PvE (queda sozinha, javali) nao contam.
+            // O Dummy me matou fora da arena 12 vezes (castelo como invasor, imunidade, PK, quatro nos
+            // niveis de PK, agressor, queda logo depois do golpe, veneno, saque, castelo como defensor).
+            // Arena e PvE (queda sozinha, javali) nao contam; a bounty so roda com -Admin.
             string mine = lines.LastOrDefault(l => l.StartsWith("Voce:")) ?? "";
-            Check("rank/minha-linha", mine.Contains("K 0  D 9"), mine);
-            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 9  D 0")), string.Join(" / ", lines));
+            Check("rank/minha-linha", mine.Contains("K 0  D 12"), mine);
+            Check("rank/dummy", lines.Any(l => l.Contains(DummyName) && l.Contains("K 12  D 0")), string.Join(" / ", lines));
             Check("rank/contador-de-pk", lines.Any(l => l.Contains(DummyName) && l.Contains("PK ")), string.Join(" / ", lines));
         }
     }

@@ -7,15 +7,19 @@ namespace Deadheim.Pvp
     /// <summary>Lado cliente: o que chega do servidor e o que o jogador local conta a ele.</summary>
     internal static class PvpClient
     {
-        public static double ChallengeCooldown { get; private set; }
-        private static double _challengeCooldownAt;
+        public static double BountyCooldown { get; private set; }
+        private static double _bountyCooldownAt;
 
-        /// <summary>O servidor parou o relogio do desafio (cacado no proprio ward ou pouca gente online).</summary>
+        /// <summary>O servidor parou o relogio da bounty (cacado no proprio ward ou pouca gente online).</summary>
         public static bool HuntPaused { get; private set; }
+        /// <summary>Moedas na cabeca do jogador local (0 = sem bounty).</summary>
+        public static int BountyPot { get; private set; }
+        /// <summary>A bounty do jogador local so acaba com a morte dele.</summary>
+        public static bool BountyUntilDeath { get; private set; }
         private static bool _punishPending;
 
-        public static double ChallengeCooldownRemaining
-            => Math.Max(0d, ChallengeCooldown - (PvpState.Now - _challengeCooldownAt));
+        public static double BountyCooldownRemaining
+            => Math.Max(0d, BountyCooldown - (PvpState.Now - _bountyCooldownAt));
 
         public static void Handle(string op, ZPackage pkg)
         {
@@ -24,13 +28,18 @@ namespace Deadheim.Pvp
                 case PvpNet.OpState:
                 {
                     double pk = pkg.ReadDouble();
+                    bool pkPermanent = pkg.ReadBool();
+                    int pkPenalty = pkg.ReadInt();
+                    int pkCount = pkg.ReadInt();
                     double pending = pkg.ReadDouble();
                     double hunted = pkg.ReadDouble();
-                    ChallengeCooldown = pkg.ReadDouble();
-                    _challengeCooldownAt = PvpState.Now;
-                    int pkCount = pkg.ReadInt();
+                    BountyPot = pkg.ReadInt();
+                    BountyUntilDeath = pkg.ReadBool();
                     HuntPaused = pkg.ReadBool();
-                    PvpState.ApplyServerTimers(pk, pending, hunted);
+                    BountyCooldown = pkg.ReadDouble();
+                    _bountyCooldownAt = PvpState.Now;
+                    PvpState.ApplyServerTimers(pk, pending, hunted, BountyPot > 0 && BountyUntilDeath);
+                    PvpState.ApplyPk(pkPermanent, (PvpConfig.PkPenalty)pkPenalty);
                     PvpState.ApplyPkCount(Player.m_localPlayer, pkCount);
                     break;
                 }
@@ -130,6 +139,8 @@ namespace Deadheim.Pvp
         public static void ResetSession()
         {
             HuntPaused = false;
+            BountyPot = 0;
+            BountyUntilDeath = false;
             _punishPending = false;
         }
 
@@ -151,11 +162,44 @@ namespace Deadheim.Pvp
             PvpNet.SendToServer(pkg);
         }
 
-        public static void SendChallenge(string action)
+        /// <summary>
+        /// Pedido de bounty. Em place/pay as moedas saem do inventario AQUI, antes de pedir
+        /// (o inventario e do cliente); se o servidor recusar, ele devolve.
+        /// </summary>
+        public static bool SendBounty(string action, string target, int amount, out string refusal, int houseAmount = 0)
         {
-            ZPackage pkg = PvpNet.Package(PvpNet.OpChallenge);
+            refusal = null;
+            if (amount > 0 && !TakeCoins(amount, out refusal)) return false;
+            ZPackage pkg = PvpNet.Package(PvpNet.OpBounty);
             pkg.Write(action ?? string.Empty);
+            pkg.Write(target ?? string.Empty);
+            // Bounty de admin (paga pela casa): nenhuma moeda sai do inventario.
+            pkg.Write(amount > 0 ? amount : houseAmount);
             PvpNet.SendToServer(pkg);
+            return true;
+        }
+
+        private static bool TakeCoins(int amount, out string refusal)
+        {
+            refusal = null;
+            Player player = Player.m_localPlayer;
+            GameObject prefab = ObjectDB.instance != null ? ObjectDB.instance.GetItemPrefab("Coins") : null;
+            ItemDrop coins = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
+            Inventory inventory = player != null ? player.GetInventory() : null;
+            if (coins == null || inventory == null)
+            {
+                refusal = "Entre no mundo primeiro.";
+                return false;
+            }
+            string name = coins.m_itemData.m_shared.m_name;
+            int have = inventory.CountItems(name);
+            if (have < amount)
+            {
+                refusal = $"Voce precisa de {amount} moedas no inventario (tem {have}).";
+                return false;
+            }
+            inventory.RemoveItem(name, amount);
+            return true;
         }
 
         public static void SendRankRequest() => PvpNet.SendToServer(PvpNet.Package(PvpNet.OpRank));

@@ -6,12 +6,20 @@ using UnityEngine;
 namespace Deadheim
 { internal class ItemService
     {
+        // Quantidades originais da mesa de cartografia: com a config em 0 elas voltam, mesmo
+        // depois de uma recarga do cfg que ja tinha trocado a receita.
+        private static readonly Dictionary<Piece.Requirement, int> _cartographyVanilla = new Dictionary<Piece.Requirement, int>();
+
         public static void ModifyItemsCost()
         {
             GameObject cartographyTable = Prefabs.Get("piece_cartographytable");
             if (cartographyTable != null)
                 foreach (Piece.Requirement requirement in cartographyTable.GetComponent<Piece>().m_resources)
-                    requirement.m_amount = Plugin.CartographyTableAmount.Value;
+                {
+                    if (!_cartographyVanilla.ContainsKey(requirement)) _cartographyVanilla[requirement] = requirement.m_amount;
+                    int amount = Plugin.CartographyTableAmount.Value;
+                    requirement.m_amount = amount > 0 ? amount : _cartographyVanilla[requirement];
+                }
 
             // O custo do portal vem do cfg (PortalMaterials); antes era fixo aqui e a config
             // nao tinha efeito nenhum.
