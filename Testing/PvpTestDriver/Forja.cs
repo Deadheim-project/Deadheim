@@ -16,6 +16,17 @@ using UnityEngine;
 
 namespace PvpTestDriver
 {
+    /// <summary>Durante o passo forja: o raio do efeito da forja nao fere o jogador de teste.</summary>
+    [HarmonyLib.HarmonyPatch(typeof(Character), "RPC_Damage")]
+    internal static class RaioDaForja
+    {
+        internal static bool Ignorar;
+
+        [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.First)]
+        private static bool Prefix(Character __instance, HitData hit)
+            => !(Ignorar && __instance == Player.m_localPlayer && hit != null && hit.m_damage.m_lightning > 0f);
+    }
+
     public partial class Driver
     {
         private const string ForjaArma = "SwordIron";
@@ -36,7 +47,7 @@ namespace PvpTestDriver
             Check("forja/estacao-do-jogo", estacao != null && estacao.GetComponentInChildren<CraftingStation>(true)?.m_upgrader == true);
             Recipe receita = ObjectDB.instance.GetRecipe(ObjectDB.instance.GetItemPrefab(ForjaArma).GetComponent<ItemDrop>().m_itemData);
             Piece.Requirement idoloReq = receita?.m_resources.FirstOrDefault(r => r.m_upgraderResource);
-            Check("forja/receita-pede-idolo", idoloReq != null, receita == null ? "sem receita" : "sem idolo");
+            Check("forja/receita-pede-idolo", idoloReq != null, receita == null ? "sem receita" : idoloReq?.m_resItem.name ?? "sem idolo");
             if (estacao == null || idoloReq == null) yield break;
             string idolo = idoloReq.m_resItem.m_itemData.m_shared.m_name;
             float chanceDoJogo = idoloReq.m_resItem.m_itemData.m_shared.m_upgradeChance;
@@ -47,6 +58,12 @@ namespace PvpTestDriver
 
             yield return MoveTo(_openA);
             MoveDummy(_openA + Vector3.right * 30f);
+            // O efeito da forja (fx_UpgradeStation_Success/Fail) da raio em quem refina: 10 no
+            // sucesso, 60 na falha. Varias tentativas seguidas matam o personagem novo de 25 de vida,
+            // e o modo deus faz o AzuAntiCheat fechar o jogo: o RaioDaForja ignora esse dano.
+            RaioDaForja.Ignorar = true;
+            // O painel so lista receita conhecida; quem tem a espada de ferro ja a conhece.
+            Me.AddKnownRecipe(receita);
             Me.UnequipAllItems();
             Inventory inv = Me.GetInventory();
             inv.RemoveAll();
@@ -173,6 +190,8 @@ namespace PvpTestDriver
             InventoryGui.instance.Hide();
             ZNetScene.instance.Destroy(go);
             inv.RemoveAll();
+            yield return Wait(1f);
+            RaioDaForja.Ignorar = false;
         }
 
         private ItemDrop.ItemData Give(string prefab, int amount, int quality)
