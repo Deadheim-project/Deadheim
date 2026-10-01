@@ -184,6 +184,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
 
             Pvp.PvpModule.Init(Config);
             Montarias.Bind(Config);
+            Forja.Bind(Config);
 
             _harmony.PatchAll();
             Ajustes.AjustesMenu.Init(_harmony);

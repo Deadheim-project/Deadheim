@@ -20,12 +20,16 @@ namespace Deadheim
             public string FirstMaterialPrefab;
             public string SecondMaterialPrefab;
             public string Icon;
+            // Valor de venda no mercador; null = o do item-base.
+            public int? Value;
         }
 
         private static readonly NativeItemDefinition[] NativeItems =
         {
             new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = "Me compre para o Detalhes poder manter seu vício.", MaxStack = 10 },
             new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = "Token used to build protected vanilla spawners.", MaxStack = 10 },
+            // Comprada com Deadcoins: nao pode virar moeda no mercador.
+            new NativeItemDefinition { PrefabName = Forja.GarantiaPrefab, Name = Forja.GarantiaNome, Description = "Na Forja de Potencial, garante o sucesso do refino: o item sobe de nível em vez de quebrar. Gasta junto com o ídolo, a cada tentativa.", MaxStack = 50, Icon = "garantiarefino.png", Value = 0 },
             new NativeItemDefinition { PrefabName = "ArmorKit1", Name = "Basic Armor Kit I", Description = "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Guck", Icon = "armorkit1.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit2", Name = "Good Armor Kit II", Description = "Kit de itens utilizados para fabricar armaduras de refinadas de qualidade pertencente a era do ferro.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Blueberries", Icon = "armorkit2.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit3", Name = "Great Armor Kit III", Description = "Kit de itens utilizados para fabricar armaduras reluzentes beirando a perfeição, sua qualidade pertence a era da prata.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Amber", Icon = "armorkit3.png" },
@@ -135,6 +139,8 @@ namespace Deadheim
             itemDrop.m_itemData.m_shared.m_maxStackSize = definition.MaxStack;
             if (!string.IsNullOrWhiteSpace(definition.Icon))
                 itemDrop.m_itemData.m_shared.m_icons = new[] { Util.LoadSprite(definition.Icon, 64, 64) };
+            if (definition.Value.HasValue)
+                itemDrop.m_itemData.m_shared.m_value = definition.Value.Value;
             itemDrop.m_itemData.m_dropPrefab = item;
 
             ApplyMaterials(objectDb, item, definition.FirstMaterialPrefab, definition.SecondMaterialPrefab);

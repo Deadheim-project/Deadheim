@@ -113,6 +113,7 @@ namespace PvpTestDriver
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
                 Step("coins", Coins),
+                Step("forja", SoloForja),
                 // Por ultimo: abre o menu do ESC, e com -Admin o cliente e admin.
                 Step("ajustes", SoloAjustes),
             };
