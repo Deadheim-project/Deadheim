@@ -176,6 +176,7 @@
     <Compile Include="Pvp\PvpModule.cs" />
     <Compile Include="Pvp\PvpNet.cs" />
     <Compile Include="Pvp\PvpPatches.cs" />
+    <Compile Include="Pvp\PvpPve.cs" />
     <Compile Include="Pvp\PvpRules.cs" />
     <Compile Include="Pvp\PvpServer.cs" />
     <Compile Include="Pvp\PvpState.cs" />

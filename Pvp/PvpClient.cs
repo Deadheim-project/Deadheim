@@ -38,6 +38,7 @@ namespace Deadheim.Pvp
                     HuntPaused = pkg.ReadBool();
                     BountyCooldown = pkg.ReadDouble();
                     _bountyCooldownAt = PvpState.Now;
+                    PvpPve.ApplyLocal(pkg.ReadBool());
                     PvpState.ApplyServerTimers(pk, pending, hunted, BountyPot > 0 && BountyUntilDeath);
                     PvpState.ApplyPk(pkPermanent, (PvpConfig.PkPenalty)pkPenalty);
                     PvpState.ApplyPkCount(Player.m_localPlayer, pkCount);
@@ -166,6 +167,15 @@ namespace Deadheim.Pvp
         /// Pedido de bounty. Em place/pay as moedas saem do inventario AQUI, antes de pedir
         /// (o inventario e do cliente); se o servidor recusar, ele devolve.
         /// </summary>
+        /// <summary>join (virar PvE permanente) | admin-off &lt;jogador&gt;. Quem decide e o servidor.</summary>
+        public static void SendPve(string action, string target)
+        {
+            ZPackage pkg = PvpNet.Package(PvpNet.OpPve);
+            pkg.Write(action ?? string.Empty);
+            pkg.Write(target ?? string.Empty);
+            PvpNet.SendToServer(pkg);
+        }
+
         public static bool SendBounty(string action, string target, int amount, out string refusal, int houseAmount = 0)
         {
             refusal = null;

@@ -89,6 +89,8 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Stagger no PvP | O cambalear de golpe de jogador em jogador pode ser reduzido | `StaggerMultiplier` |
 | Base raidavel | Fora da zona segura, o que o ward cobre toma `DamagePercent` do dano (padrao 25%); na zona segura (SafeArea, ilha inicial, SafeZones) e sempre 0. Wards sem limite por jogador | `[Wards] DamagePercent`, `[Server config] WardLimit` |
 | Castelo | O castelo so e zona de guerra na janela de raid do RaidSystem; quando a RaidWard cai, vira zona segura ate a janela fechar. Guilda que segura o castelo a janela inteira ganha cargas de tributo e pontos de defesa | RaidSystem `3 - PvP`, `Defense Tribute Charges`, `Points Per Defense` |
+| PvE permanente | `/pve confirmar`: o jogador vira `PveTitle` (padrao Mercador) e sai do PvP para sempre, em todo lugar (arena e castelo inclusive); nao pode receber bounty. Ganha uma vez +70 em pesca, criacao, culinaria, agricultura, picareta, lenhador e montaria (o jogo nao tem skill de domar); sobe skill x0.5 e a coleta fica sem o bonus de recursos do mundo no que ele junta. PK e quem tem bounty nao podem virar. Sem volta: so admin desfaz (`/pvpadmin pve <jogador>`) | `PveEnabled`, `PveTitle`, `PveSkillMultiplier`, `PveSkillBonus`, `PveResourceRate` |
+| Bonus de monstro so para aliados | O bonus de vida e dano do monstro por jogador perto (jogo e CreatureLevelControl) so conta quem luta e o grupo e a guilda dele: estranho passando perto nao deixa o monstro mais duro | `[Server config] MonsterScalingAlliesOnly` |
 | Gold sem peso, pilha 5k | Coins pesam 0 e empilham 5000 | `CoinsWeightless`, `CoinsMaxStack` |
 | Ward sem quebrar chao, pedra e arvore | Dentro do ward alheio: sem picareta/enxada no terreno, sem quebrar pedra, arvore, tronco e toco. Veio de minerio fica livre (senao guilda tranca os veios com ward), e a protecao pode ficar so perto do ward | `[Wards] ProtectTerrain`, `ProtectNature`, `ProtectNatureOres`, `NatureOreDrops`, `ProtectNatureRadius` |
 
@@ -107,9 +109,11 @@ o tamanho da zona segura calculada:
 | `/pvp` | Seu estado de PvP, sua guilda, o castelo onde voce esta e ajuda |
 | `/bounty <jogador> <moedas>` / `/bounty lista` / `/bounty pagar` | Bounty (cabeca a premio) |
 | `/rank` | Ranking K/D |
+| `/pve` / `/pve confirmar` | Explica o PvE permanente / vira PvE para sempre |
 | `/pvpadmin zona` | (admin) coordenadas, bioma, zona, castelo, guilda e bandeiras onde voce esta |
 | `/pvpadmin imune <min>` / `limpar` / `pk <min>` | (admin) mexe no proprio estado, para testar |
 | `/pvpadmin bounty <jogador> <moedas>` | (admin) bounty paga pela casa, pode ser em si mesmo |
+| `/pvpadmin pve <jogador>` | (admin) tira o jogador do PvE permanente |
 
 ## Teste de ponta a ponta
 

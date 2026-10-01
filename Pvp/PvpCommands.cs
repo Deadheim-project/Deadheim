@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Deadheim.Pvp
 {
-    /// <summary>Comandos de chat do PvP: /pvp, /bounty, /rank e /pvpadmin.</summary>
+    /// <summary>Comandos de chat do PvP: /pvp, /bounty, /rank, /pve e /pvpadmin.</summary>
     [HarmonyPatch]
     internal static class PvpCommands
     {
@@ -23,7 +23,10 @@ namespace Deadheim.Pvp
                 new Terminal.ConsoleCommand("rank", "ranking PvP (abates/mortes)",
                     args => RequireOnline(args.Context, PvpClient.SendRankRequest));
 
-                new Terminal.ConsoleCommand("pvpadmin", "(admin) zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas>", AdminCommand);
+                new Terminal.ConsoleCommand("pve", "[confirmar] - sair do PvP para sempre",
+                    args => RequireOnline(args.Context, () => Pve(args)));
+
+                new Terminal.ConsoleCommand("pvpadmin", "(admin) zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas> | pve <jogador>", AdminCommand);
             }
         }
 
@@ -101,6 +104,35 @@ namespace Deadheim.Pvp
             else context?.AddString($"Colocando {amount} moedas na cabeca de {target}...");
         }
 
+        /// <summary>
+        /// /pve explica e pede confirmacao; /pve confirmar pede ao servidor. Sem volta: o
+        /// servidor guarda e so um admin desfaz.
+        /// </summary>
+        private static void Pve(Terminal.ConsoleEventArgs args)
+        {
+            Terminal context = args.Context;
+            if (!PvpConfig.PveEnabled.Value) { context?.AddString("O PvE permanente esta desligado neste servidor."); return; }
+            if (PvpPve.IsLocal) { context?.AddString($"Voce ja e PvE permanente ({PvpPve.Title})."); return; }
+
+            bool confirm = args.Length > 1 && (args[1].ToLowerInvariant() == "confirmar" || args[1].ToLowerInvariant() == "confirm");
+            if (!confirm)
+            {
+                string bonus = PvpConfig.PveSkillBonus.Value;
+                context?.AddString($"PvE permanente: voce vira {PvpPve.Title} e nunca mais luta com jogadores (nem na arena ou no castelo).");
+                context?.AddString($"Ganha uma vez: {(string.IsNullOrWhiteSpace(bonus) ? "nada" : bonus.Replace(",", ", "))}.");
+                context?.AddString($"Skill sobe x{PvpConfig.PveSkillMultiplier.Value:0.##}" +
+                                   (PvpConfig.PveResourceRate.Value > 0f ? $" e a coleta fica sem o bonus do mundo (x{PvpConfig.PveResourceRate.Value:0.##})." : "."));
+                context?.AddString("<color=#ff5050>NAO TEM VOLTA.</color> Para confirmar: /pve confirmar");
+                return;
+            }
+
+            if (PvpState.IsPk) { context?.AddString("PK nao pode virar PvE: espere a marca sair."); return; }
+            if (PvpState.IsHunted || PvpState.IsHuntPending || PvpClient.BountyPot > 0) { context?.AddString("Com bounty na cabeca nao da para virar PvE."); return; }
+            if (PvpState.InCombat) { context?.AddString("Em combate nao da para virar PvE."); return; }
+            PvpClient.SendPve("join", null);
+            context?.AddString("Pedindo o PvE permanente ao servidor...");
+        }
+
         private static void Status(Terminal context)
         {
             Player player = Player.m_localPlayer;
@@ -130,6 +162,10 @@ namespace Deadheim.Pvp
             if (PvpState.IsPk)
                 text.AppendLine((PvpState.IsPkPermanent ? "Voce e PK PERMANENTE (so sai morto por jogador)" : "Voce e PK")
                                 + $": se morrer, perde {PvpConfig.PkSkillLossMultiplier.Value:0.#}x skill{PvpServer.PenaltyText(PvpState.PkPenalty)}.");
+            if (PvpPve.IsLocal)
+                text.AppendLine($"Voce e PvE permanente ({PvpPve.Title}): nao luta com jogadores; skill x{PvpConfig.PveSkillMultiplier.Value:0.##}.");
+            else if (PvpConfig.PveEnabled.Value)
+                text.AppendLine("/pve - sair do PvP para sempre (sem volta).");
             if (PvpState.IsAggressor)
                 text.AppendLine("Voce e AGRESSOR: bateu primeiro. Quem te matar agora nao vira PK (voce nao perde nada a mais).");
             string castle = PvpBridge.Castle(player.transform.position);
@@ -193,8 +229,17 @@ namespace Deadheim.Pvp
                     context.AddString($"Bounty de {amount} (paga pela casa) em {target}.");
                     break;
                 }
+                case "pve":
+                {
+                    // /pvpadmin pve <jogador>: tira do PvE permanente (o jogador nao consegue sozinho).
+                    if (args.Length < 3) { context.AddString("pvpadmin pve <jogador>"); break; }
+                    string target = string.Join(" ", args.Args, 2, args.Length - 2);
+                    PvpClient.SendPve("admin-off", target);
+                    context.AddString($"Tirando {target} do PvE permanente...");
+                    break;
+                }
                 default:
-                    context.AddString("pvpadmin zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas>");
+                    context.AddString("pvpadmin zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas> | pve <jogador>");
                     break;
             }
         }

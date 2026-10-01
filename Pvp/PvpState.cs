@@ -28,6 +28,8 @@ namespace Deadheim.Pvp
         InOwnWard = 512,
         /// <summary>PK permanente: so sai morto por jogador.</summary>
         PkPermanent = 1024,
+        /// <summary>PvE permanente (/pve): fora do PvP para sempre.</summary>
+        Pve = 2048,
     }
 
     internal static class PvpState
@@ -117,6 +119,7 @@ namespace Deadheim.Pvp
             _dotCreditUntil = -9999f;
             Current = PvpFlags.None;
             ZoneLabel = null;
+            PvpPve.ResetSession();
         }
 
         /// <summary>Imunidade vive no personagem (m_customData), entao relogar nao a apaga.</summary>
@@ -283,7 +286,14 @@ namespace Deadheim.Pvp
 
             bool pvp;
             string label;
-            if (arena)
+            bool pve = PvpPve.IsLocal;
+            if (pve)
+            {
+                // PvE permanente vale em todo lugar, arena e castelo inclusive.
+                pvp = false;
+                label = PvpPve.Title;
+            }
+            else if (arena)
             {
                 pvp = true;
                 label = "Arena: " + PvpZones.ArenaName(pos);
@@ -315,7 +325,8 @@ namespace Deadheim.Pvp
             }
 
             PvpFlags flags = PvpFlags.None;
-            if (immune && !warZone) flags |= PvpFlags.Immune;
+            if (pve) flags |= PvpFlags.Pve;
+            if (immune && !warZone && !pve) flags |= PvpFlags.Immune;
             if (IsPk) flags |= PvpFlags.Pk;
             if (_pkPermanent) flags |= PvpFlags.PkPermanent;
             if (hunted) flags |= PvpFlags.Hunted;

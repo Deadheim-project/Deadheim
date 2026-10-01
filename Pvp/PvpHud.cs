@@ -108,7 +108,9 @@ namespace Deadheim.Pvp
             PvpFlags flags = PvpState.Current;
             List<string> parts = new List<string>();
 
-            if ((flags & (PvpFlags.Arena | PvpFlags.Castle)) != 0)
+            if ((flags & PvpFlags.Pve) != 0)
+                parts.Add("<color=#9acd32>PvE PERMANENTE: " + PvpPve.Title + "</color>");
+            else if ((flags & (PvpFlags.Arena | PvpFlags.Castle)) != 0)
                 parts.Add("<color=#ff8c00>" + PvpState.ZoneLabel + "</color>");
             else if ((flags & PvpFlags.Hunted) != 0)
                 parts.Add("<color=#ff5050>CACADO " + (PvpState.IsHuntedForever ? "ate morrer" : PvpClient.FormatDuration(PvpState.HuntedRemaining))

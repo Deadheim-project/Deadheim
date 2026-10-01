@@ -54,6 +54,7 @@ namespace Deadheim.Pvp
                 case PvpNet.OpDeath: OnDeath(peer, pkg); break;
                 case PvpNet.OpBounty: PvpBounty.OnCommand(peer, pkg.ReadString(), pkg.ReadString(), pkg.ReadInt()); break;
                 case PvpNet.OpRank: SendRank(peer); break;
+                case PvpNet.OpPve: PvpPve.OnCommand(peer, pkg.ReadString(), pkg.ReadString()); break;
                 default:
                     Debug.LogWarning($"[Deadheim PvP] Operacao desconhecida '{op}' de {peer.Name}.");
                     break;
@@ -105,6 +106,7 @@ namespace Deadheim.Pvp
             pkg.Write(untilDeath);
             pkg.Write(PvpBounty.IsPaused(peer.PlayerId));
             pkg.Write(Math.Max(0d, record.bountyReadyAt - Now));
+            pkg.Write(record.pvePermanent);
             PvpNet.SendToClient(peer.PeerId, pkg);
         }
 

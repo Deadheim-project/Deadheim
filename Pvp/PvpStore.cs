@@ -29,6 +29,10 @@ namespace Deadheim.Pvp
         public bool combatLogPending;
         /// <summary>Moedas a entregar quando ele voltar (bounty paga ou devolvida com ele offline).</summary>
         public int pendingCoins;
+        /// <summary>Escolheu o PvE permanente (/pve confirmar). So admin desfaz.</summary>
+        public bool pvePermanent;
+        /// <summary>Segundos UTC de quando virou PvE.</summary>
+        public double pveSince;
 
         public float Ratio => deaths <= 0 ? kills : (float)kills / deaths;
 

@@ -67,6 +67,8 @@ namespace Deadheim.Pvp
             }
         }
 
+        public static bool HasBounty(long playerId) => Find(playerId) != null;
+
         public static bool IsHunted(long playerId)
         {
             PvpBountyRecord bounty = Find(playerId);
@@ -152,6 +154,7 @@ namespace Deadheim.Pvp
                 return;
             }
             if (targetId == peer.PlayerId && !byHouse) { Refuse("Voce nao pode colocar bounty em si mesmo."); return; }
+            if (PvpStore.Player(targetId, name).pvePermanent) { Refuse($"{name} e PvE permanente: nao pode ser cacado."); return; }
             if (paid <= 0) { Refuse("Valor invalido."); return; }
 
             PvpBountyRecord bounty = Find(targetId);
@@ -200,7 +203,7 @@ namespace Deadheim.Pvp
                       $"em {bounty.targetName} ({targetId}); pote={bounty.pot}.");
         }
 
-        private static bool TryFindTarget(string name, out long id, out string resolvedName)
+        internal static bool TryFindTarget(string name, out long id, out string resolvedName)
         {
             id = 0L;
             resolvedName = null;

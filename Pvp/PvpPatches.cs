@@ -375,6 +375,11 @@ namespace Deadheim.Pvp
                 if (!PvpConfig.Active || __instance == null || __instance == Player.m_localPlayer) return;
 
                 PvpFlags flags = PvpState.FlagsOf(__instance);
+                if ((flags & PvpFlags.Pve) != 0)
+                {
+                    __result += $" <color=#9acd32>[{PvpPve.Title}]</color>";
+                    return;
+                }
                 string suffix = string.Empty;
                 if ((flags & PvpFlags.Hunted) != 0) suffix += " <color=#ff8c00>[CACADO]</color>";
                 int pkCount = PvpState.PkCountOf(__instance);

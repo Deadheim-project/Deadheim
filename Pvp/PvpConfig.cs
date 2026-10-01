@@ -75,6 +75,13 @@ namespace Deadheim.Pvp
         public static ConfigEntry<int> BountyMinPlayers;
         public static ConfigEntry<bool> BountyArenaKillsCount;
 
+        // PvE permanente
+        public static ConfigEntry<bool> PveEnabled;
+        public static ConfigEntry<string> PveTitle;
+        public static ConfigEntry<float> PveSkillMultiplier;
+        public static ConfigEntry<string> PveSkillBonus;
+        public static ConfigEntry<float> PveResourceRate;
+
         // ------------------------------------------------------------------- fuga
         public static ConfigEntry<bool> CombatBlocksTeleport;
         public static ConfigEntry<bool> CombatStatusIcon;
@@ -227,6 +234,18 @@ namespace Deadheim.Pvp
                 "Jogadores online (contando o alvo) para o tempo da bounty correr. Abaixo disso ele para.");
             BountyArenaKillsCount = Bind(config, bounty, "BountyArenaKillsCount", false,
                 "Matar o cacado dentro de uma arena paga a bounty.");
+
+            const string pve = "PvP - PvE permanente";
+            PveEnabled = Bind(config, pve, "PveEnabled", true,
+                "Libera o /pve: o jogador sai do PvP para sempre (so admin desfaz com /pvpadmin pve <jogador>).");
+            PveTitle = Bind(config, pve, "PveTitle", "Mercador",
+                "Titulo de quem e PvE permanente, no nome sobre a cabeca e no HUD.");
+            PveSkillMultiplier = Bind(config, pve, "PveSkillMultiplier", 0.5f,
+                "Ganho de skill do PvE, multiplicado em cima do SkillMultiplier do servidor. 0.5 = metade.");
+            PveSkillBonus = Bind(config, pve, "PveSkillBonus", "Fishing:70,Crafting:70,Cooking:70,Farming:70,Pickaxes:70,WoodCutting:70,Ride:70",
+                "Niveis dados uma vez, ao virar PvE. Skill:Niveis,... Nome da skill do jogo ou de mod (o jogo nao tem skill de domar; Ride e montaria).");
+            PveResourceRate = Bind(config, pve, "PveResourceRate", 1f,
+                "Taxa de coleta do PvE: o bonus de recursos do mundo nao passa disso para ele. 0 = sem limite.");
 
             const string escape = "PvP - Fuga";
             CombatBlocksTeleport = Bind(config, escape, "CombatBlocksTeleport", true,

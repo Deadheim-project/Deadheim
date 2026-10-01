@@ -118,6 +118,8 @@ namespace PvpTestDriver
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
                 Step("coins", Coins),
+                // Sem volta para o personagem de teste: depois de todos os passos de PvP.
+                Step("pve", SoloPve),
                 // Por ultimo: abre o menu do ESC, e com -Admin o cliente e admin.
                 Step("ajustes", SoloAjustes),
             };
@@ -886,6 +888,70 @@ namespace PvpTestDriver
             AllyScaling.Anchor = fighter;
             try { return Game.instance.GetPlayerDifficulty(at); }
             finally { AllyScaling.Anchor = null; }
+        }
+
+        /// <summary>
+        /// PvE permanente: /pve so explica, /pve confirmar vira. Depois: titulo, fora do PvP em
+        /// todo lugar (arena inclusive), bonus de skill uma vez so, skill mais devagar e a taxa
+        /// de coleta sem o bonus do mundo.
+        /// </summary>
+        private IEnumerator SoloPve()
+        {
+            ClearAllProtection();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+            Skills.Skill fishing = Me.GetSkills().GetSkill(Skills.SkillType.Fishing);
+            fishing.m_level = 5f;
+            float normalGain = SwordGain();
+            MarkServerLog();
+
+            Command("pve");
+            yield return Wait(2f);
+            Check("pve/so-explica-sem-confirmar", !PvpPve.IsLocal);
+
+            Command("pve confirmar");
+            yield return WaitFor(() => PvpPve.IsLocal, 15f);
+            yield return Wait(1f);
+            Check("pve/virou", PvpPve.IsLocal && (PvpState.Current & PvpFlags.Pve) != 0, $"flags={PvpState.Current}");
+            Check("pve/zdo", (Me.m_nview.GetZDO().GetInt(PvpState.ZdoFlags, 0) & (int)PvpFlags.Pve) != 0);
+            Check("pve/sem-pvp", !Me.IsPVPEnabled());
+            Check("pve/hud", PvpHud.Compose(Me).Contains(PvpPve.Title), PvpHud.Compose(Me));
+            Check("pve/bonus-de-skill", Mathf.Abs(fishing.m_level - 75f) < 0.01f, "pesca=" + fishing.m_level);
+            PvpPve.ApplyLocal(true);
+            Check("pve/bonus-uma-vez-so", Mathf.Abs(fishing.m_level - 75f) < 0.01f, "pesca=" + fishing.m_level);
+            float pveGain = SwordGain();
+            Check("pve/skill-mais-devagar", normalGain > 0f && Mathf.Abs(pveGain / normalGain - PvpConfig.PveSkillMultiplier.Value) < 0.01f,
+                $"normal={normalGain:0.0000} pve={pveGain:0.0000}");
+
+            Game.m_resourceRate = 2f;
+            PvpPve.ClampResourceRate();
+            Check("pve/coleta-sem-bonus", Mathf.Approximately(Game.m_resourceRate, PvpConfig.PveResourceRate.Value), "taxa=" + Game.m_resourceRate);
+            ZoneSystem.instance.UpdateWorldRates();
+
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("pve/jogador-nao-fere", 0f, 0.5f);
+            Check("pve/nao-ataca", PvpRules.Check(Me, _dummy) == PvpRules.Verdict.AttackerProtected, PvpRules.Check(Me, _dummy).ToString());
+
+            yield return MoveTo(_temple + Vector3.right * 2f);
+            yield return Wait(1f);
+            Check("pve/arena-nao-liga-pvp", (PvpState.Current & PvpFlags.Arena) != 0 && !Me.IsPVPEnabled(), $"flags={PvpState.Current}");
+
+            string log = ServerLogSinceMark();
+            Check("pve/servidor-guardou", log.Contains($"{_myName} ({Me.GetPlayerID()}) virou PvE permanente"), Tail(log));
+        }
+
+        /// <summary>Acumulado de um RaiseSkill de espada partindo do zero, no nivel 10.</summary>
+        private float SwordGain()
+        {
+            Skills.Skill sword = Me.GetSkills().GetSkill(Skills.SkillType.Swords);
+            sword.m_level = 10f;
+            sword.m_accumulator = 0f;
+            Me.RaiseSkill(Skills.SkillType.Swords, 1f);
+            float gain = sword.m_accumulator;
+            sword.m_accumulator = 0f;
+            return gain;
         }
 
         private IEnumerator SoloArena()

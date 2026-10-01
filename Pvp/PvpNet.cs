@@ -19,6 +19,7 @@ namespace Deadheim.Pvp
         public const string OpDeath = "death";
         public const string OpBounty = "bounty";
         public const string OpRank = "rank";
+        public const string OpPve = "pve";
 
         // Servidor -> cliente
         public const string OpState = "state";
