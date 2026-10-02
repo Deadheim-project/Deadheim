@@ -55,6 +55,7 @@ namespace Deadheim.Pvp
                 case PvpNet.OpBounty: PvpBounty.OnCommand(peer, pkg.ReadString(), pkg.ReadString(), pkg.ReadInt()); break;
                 case PvpNet.OpRank: SendRank(peer); break;
                 case PvpNet.OpPve: PvpPve.OnCommand(peer, pkg.ReadString(), pkg.ReadString()); break;
+                case PvpNet.OpAdmin: OnAdmin(peer, pkg.ReadString(), pkg.ReadString(), pkg.ReadDouble()); break;
                 default:
                     Debug.LogWarning($"[Deadheim PvP] Operacao desconhecida '{op}' de {peer.Name}.");
                     break;
@@ -93,10 +94,10 @@ namespace Deadheim.Pvp
         {
             PvpPlayerRecord record = PvpStore.Player(peer.PlayerId, peer.Name);
             PvpBounty.Describe(peer.PlayerId, out double pending, out double hunted, out int pot, out bool untilDeath);
-            bool pk = record.IsPk(Now);
+            bool pk = record.IsPk;
 
             ZPackage pkg = PvpNet.Package(PvpNet.OpState);
-            pkg.Write(pk && !record.pkPermanent ? Math.Max(0d, record.pkUntil - Now) : 0d);
+            pkg.Write(pk && !record.pkPermanent ? Math.Max(0d, record.pkLeft) : 0d);
             pkg.Write(pk && record.pkPermanent);
             pkg.Write(pk ? record.pkPenalty : 0);
             pkg.Write(record.pkKills);
@@ -127,6 +128,7 @@ namespace Deadheim.Pvp
             Vector3 position = pkg.ReadVector3();
             bool victimWasAggressor = pkg.ReadBool();
             int coinsDropped = pkg.ReadInt();
+            int cargoDropped = pkg.ReadInt();
 
             long killerId = 0L;
             string killerName = null;
@@ -139,18 +141,22 @@ namespace Deadheim.Pvp
             if (killerId == victim.PlayerId) killerId = 0L;
 
             PvpPlayerRecord victimRecord = PvpStore.Player(victim.PlayerId, victim.Name);
-            bool victimWasPk = victimRecord.IsPk(Now);
+            bool victimWasPk = victimRecord.IsPk;
             bool victimWasHunted = PvpBounty.IsHunted(victim.PlayerId);
 
             Debug.Log($"[Deadheim PvP] Morte: {victim.Name} por {(killerId != 0L ? killerName : "PvE")} " +
                       $"arena={arena} castelo={castle ?? "-"} defesaDoCastelo={killerDefendingCastle} " +
                       $"vitimaPK={victimWasPk} vitimaCacada={victimWasHunted} vitimaAgressora={victimWasAggressor} " +
-                      $"moedasNoChao={coinsDropped} pos=({position.x:F0},{position.z:F0})");
+                      $"moedasNoChao={coinsDropped} cargaNoChao={cargoDropped} pos=({position.x:F0},{position.z:F0})");
 
             PvpBounty.OnDeath(victim, killerId, killerName, arena);
 
-            // PK permanente so sai morto por jogador; o PK comum sai em qualquer morte (PkClearsOnDeath).
-            if (victimWasPk && (victimRecord.pkPermanent ? killerId != 0L : PvpConfig.PkClearsOnDeath.Value))
+            // A marca sai morto por jogador. Morte PvE so tira o PK comum com PkClearsOnPveDeath: senao
+            // o PK morreria de proposito em casa para ficar limpo. O permanente so sai morto por jogador.
+            bool clearsPk = killerId != 0L
+                ? victimRecord.pkPermanent || PvpConfig.PkClearsOnDeath.Value
+                : !victimRecord.pkPermanent && PvpConfig.PkClearsOnPveDeath.Value;
+            if (victimWasPk && clearsPk)
             {
                 bool wasPermanent = victimRecord.pkPermanent;
                 victimRecord.ClearPk();
@@ -200,12 +206,20 @@ namespace Deadheim.Pvp
                         : castle != null ? $" no castelo {castle}"
                         : string.Empty;
                     string tag = pk ? $" <color=#ff5050>[PK #{killerRecord.pkKills}]</color>" : string.Empty;
-                    string loot = coinsDropped > 0 ? $" e deixou {coinsDropped} moedas no chao" : string.Empty;
+                    string loot = LootText(coinsDropped, cargoDropped);
                     PvpNet.Broadcast($"<color=#ffb347>{killerName}</color>{tag} matou <color=#ffb347>{victim.Name}</color>{where}{loot}.");
                 }
             }
 
             SendState(victim);
+        }
+
+        private static string LootText(int coins, int cargo)
+        {
+            if (coins <= 0 && cargo <= 0) return string.Empty;
+            string what = coins > 0 && cargo > 0 ? $"{coins} moedas e {cargo} itens"
+                : coins > 0 ? $"{coins} moedas" : $"{cargo} itens";
+            return " e deixou " + what + " no chao";
         }
 
         /// <summary>
@@ -214,17 +228,17 @@ namespace Deadheim.Pvp
         /// </summary>
         private static void MarkPk(long killerId, string killerName, PvpPlayerRecord record)
         {
-            if (!record.IsPk(Now)) record.pkStreak = 0;
+            if (!record.IsPk) record.pkStreak = 0;
             record.pkStreak++;
             record.pkKills++;
             if (!PvpConfig.TryGetTier(record.pkStreak, out PvpConfig.PkTier tier)) return;
 
             if (tier.Permanent) record.pkPermanent = true;
-            else if (!record.pkPermanent) record.pkUntil = Math.Max(record.pkUntil, Now + tier.Minutes * 60d);
+            else if (!record.pkPermanent) record.pkLeft = Math.Max(record.pkLeft, tier.Minutes * 60d);
             record.pkPenalty = (int)tier.Penalty;
             PvpStore.MarkDirty();
 
-            string length = record.pkPermanent ? "PERMANENTE (ate ser morto por um jogador)" : PvpClient.FormatDuration(record.pkUntil - Now);
+            string length = record.pkPermanent ? "PERMANENTE (ate ser morto por um jogador)" : PkLengthText(record.pkLeft);
             Debug.Log($"[Deadheim PvP] {killerName} ({killerId}) agora e PK {length}, sequencia {record.pkStreak}, " +
                       $"perda={tier.Penalty} (contador de PK: {record.pkKills}).");
             if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer))
@@ -237,6 +251,9 @@ namespace Deadheim.Pvp
             if (record.pkPermanent && tier.Permanent && record.pkStreak == tier.Kills)
                 PvpNet.Broadcast($"<color=#ff3030>{killerName} virou PK PERMANENTE</color> e aparece no mapa ate ser morto.", true);
         }
+
+        private static string PkLengthText(double seconds)
+            => PvpClient.FormatDuration(seconds) + (PvpConfig.PkTimeOnlineOnly.Value ? " (tempo online)" : string.Empty);
 
         public static string PenaltyText(PvpConfig.PkPenalty penalty)
         {
@@ -345,8 +362,99 @@ namespace Deadheim.Pvp
             ReportStartZoneOnce();
             RetryPendingHellos();
             RememberPeers();
+            TickPkTimers();
             PvpBounty.Tick();
             PvpStore.Tick();
+        }
+
+        // ---------------------------------------------------------------- tempo de PK
+
+        private static float _lastPkTick = -1f;
+
+        /// <summary>
+        /// Desconta o tempo de PK. Com PkTimeOnlineOnly so de quem esta online: deslogar nao
+        /// limpa a marca. Quando acaba, o servidor avisa o jogador.
+        /// </summary>
+        private static void TickPkTimers()
+        {
+            float now = Time.realtimeSinceStartup;
+            // Teto de 10 s: um engasgo longo do servidor nao conta como tempo cumprido de uma vez.
+            double elapsed = _lastPkTick < 0f ? 0d : Mathf.Clamp(now - _lastPkTick, 0f, 10f);
+            _lastPkTick = now;
+            if (elapsed <= 0d) return;
+
+            List<PvpPlayerRecord> players = PvpStore.Data.players;
+            if (PvpConfig.PkTimeOnlineOnly.Value)
+            {
+                foreach (PvpPeer peer in PvpPeer.Online())
+                {
+                    PvpPlayerRecord record = players.Find(p => p.id == peer.PlayerId);
+                    if (record != null) TickPk(record, elapsed);
+                }
+            }
+            else
+            {
+                foreach (PvpPlayerRecord record in players.ToArray()) TickPk(record, elapsed);
+            }
+        }
+
+        private static void TickPk(PvpPlayerRecord record, double elapsed)
+        {
+            if (record.pkPermanent || record.pkLeft <= 0d) return;
+            PvpStore.MarkDirty();
+            if (!record.TickPk(elapsed)) return;
+            Debug.Log($"[Deadheim PvP] Marca de PK de {record.name} ({record.id}) acabou.");
+            if (PvpPeer.TryFindByPlayerId(record.id, out PvpPeer peer))
+            {
+                SendState(peer);
+                PvpNet.Message(peer.PeerId, "<color=#7CFC00>Sua marca de PK acabou.</color>");
+            }
+        }
+
+        // ----------------------------------------------------------------- admin
+
+        /// <summary>
+        /// pk &lt;minutos&gt; [jogador]: marca (minutos &gt; 0), torna permanente (-1) ou limpa (0) o PK
+        /// de alguem, ou do proprio admin sem jogador. Moderacao e teste.
+        /// </summary>
+        private static void OnAdmin(PvpPeer admin, string action, string target, double value)
+        {
+            if (!IsAdminPeer(admin.PeerId)) { PvpNet.Message(admin.PeerId, "So admin."); return; }
+            switch ((action ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "pk":
+                {
+                    long id = admin.PlayerId;
+                    string name = admin.Name;
+                    if (!string.IsNullOrWhiteSpace(target) && !PvpBounty.TryFindTarget(target, out id, out name))
+                    {
+                        PvpNet.Message(admin.PeerId, $"Nao conheco nenhum jogador chamado '{target}'.");
+                        return;
+                    }
+                    PvpPlayerRecord record = PvpStore.Player(id, name);
+                    if (value == 0d) record.ClearPk();
+                    else if (value < 0d)
+                    {
+                        record.pkPermanent = true;
+                        if (PvpConfig.TryGetTier(int.MaxValue, out PvpConfig.PkTier top) && top.Permanent) record.pkPenalty = (int)top.Penalty;
+                    }
+                    else
+                    {
+                        record.pkPermanent = false;
+                        record.pkLeft = value * 60d;
+                    }
+                    if (record.IsPk && record.pkStreak <= 0) record.pkStreak = 1;
+                    PvpStore.MarkDirty();
+                    SendState(id);
+                    string state = !record.IsPk ? "sem PK" : record.pkPermanent ? "PK PERMANENTE" : "PK por " + PkLengthText(record.pkLeft);
+                    PvpNet.Message(admin.PeerId, $"{name}: {state}.");
+                    Debug.Log($"[Deadheim PvP] Admin {admin.Name} deixou {name} ({id}) {state}.");
+                    break;
+                }
+                default:
+                    PvpNet.Message(admin.PeerId, $"Comando de admin desconhecido: {action}.");
+                    break;
+            }
         }
 
         private static void RetryPendingHellos()

@@ -5,28 +5,6 @@ using UnityEngine;
 
 namespace Deadheim.Pvp
 {
-    [Serializable]
-    internal sealed class PvpBountyContribution
-    {
-        public long id;
-        public string name;
-        public int amount;
-    }
-
-    /// <summary>Uma cabeca a premio. Os relogios sao segundos de alvo ONLINE, nao de parede.</summary>
-    [Serializable]
-    internal sealed class PvpBountyRecord
-    {
-        public long targetId;
-        public string targetName;
-        public int pot;
-        /// <summary>Segundos online que faltam para o alvo virar CACADO (o aviso para fugir).</summary>
-        public double delayLeft;
-        /// <summary>Segundos online ja cumpridos como CACADO.</summary>
-        public double elapsed;
-        public List<PvpBountyContribution> contributions = new List<PvpBountyContribution>();
-    }
-
     /// <summary>
     /// Bounty: um jogador paga moedas para outro ser cacado. Quem matar o alvo fica com
     /// BountyKillerSharePercent do pote; o resto e da casa. O tempo cresce com o pote e so

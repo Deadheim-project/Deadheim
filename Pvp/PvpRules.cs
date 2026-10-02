@@ -16,20 +16,39 @@ namespace Deadheim.Pvp
             AttackerProtected,
             VictimProtected,
             Ally,
+            /// <summary>Diferenca de chefes derrotados maior que BossGapMax (PvpBosses).</summary>
+            BossGap,
         }
 
         /// <summary>
         /// Pode <paramref name="attacker"/> ferir <paramref name="victim"/>?
         /// Cada lado ja decidiu a propria bandeira de PvP (zona segura, imunidade, arena,
-        /// cacado) em PvpState.Tick; aqui so cruzamos as duas e checamos alianca.
+        /// cacado) em PvpState.Tick; aqui so cruzamos as duas e checamos alianca e faixa de chefes.
         /// </summary>
         public static Verdict Check(Player attacker, Player victim)
         {
             if (attacker == null || victim == null || attacker == victim) return Verdict.Allow;
-            if (!attacker.IsPVPEnabled()) return Verdict.AttackerProtected;
+            if (!attacker.IsPVPEnabled() && !MayStrikeOutlaw(attacker, victim)) return Verdict.AttackerProtected;
             if (!victim.IsPVPEnabled()) return Verdict.VictimProtected;
             if (AreAllies(attacker, victim, victim.transform.position)) return Verdict.Ally;
+            if (PvpBosses.OutOfRange(attacker, victim, victim.transform.position)) return Verdict.BossGap;
             return Verdict.Allow;
+        }
+
+        /// <summary>
+        /// PK (PkNoSafeZone) e cacado nao tem zona segura, mas quem esta nela tambem nao ataca:
+        /// sem esta excecao ninguem na zona conseguiria alcanca-los. O protegido pela zona ou pelo
+        /// transporte pode atacar um deles; ao bater entra em combate e perde a protecao. Imune e
+        /// PvE continuam sem atacar.
+        /// </summary>
+        public static bool MayStrikeOutlaw(Player attacker, Player victim)
+        {
+            PvpFlags target = PvpState.FlagsOf(victim);
+            bool outlaw = (target & PvpFlags.Hunted) != 0
+                          || ((target & PvpFlags.Pk) != 0 && PvpConfig.PkNoSafeZone.Value);
+            if (!outlaw) return false;
+            PvpFlags self = PvpState.FlagsOf(attacker);
+            return (self & PvpFlags.Protected) != 0 && (self & (PvpFlags.Immune | PvpFlags.Pve)) == 0;
         }
 
         private static readonly int PlayerPrefab = "Player".GetStableHashCode();
@@ -173,6 +192,7 @@ namespace Deadheim.Pvp
                 case Verdict.AttackerProtected: return "Voce esta protegido (zona segura ou imunidade) e nao pode atacar jogadores.";
                 case Verdict.VictimProtected: return "Este jogador esta protegido.";
                 case Verdict.Ally: return "Aliado: sem fogo amigo.";
+                case Verdict.BossGap: return "Diferenca de chefes grande demais: o PvP entre voces nao da dano.";
                 default: return null;
             }
         }

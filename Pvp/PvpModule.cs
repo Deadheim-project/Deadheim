@@ -29,7 +29,7 @@ namespace Deadheim.Pvp
             PvpConfig.CoinsWeightless.SettingChanged += (_, __) => ApplyItemTweaks();
             PvpConfig.CoinsMaxStack.SettingChanged += (_, __) => ApplyItemTweaks();
             PvpConfig.Enabled.SettingChanged += (_, __) => ApplyItemTweaks();
-            Vanilla.Prefabs.PiecesReady += PvpHud.RegisterStatusEffect;
+            Vanilla.Prefabs.PiecesReady += PvpHud.RegisterStatusEffects;
         }
 
         public static void Update()
@@ -38,7 +38,13 @@ namespace Deadheim.Pvp
             PvpClient.Update();
 
             Player player = Player.m_localPlayer;
-            if (player == null || !PvpConfig.Active) return;
+            if (player == null) return;
+            if (!PvpConfig.Active)
+            {
+                // Admin desligou o PvP com o jogo rodando: buff sem prazo (zona segura, PvE) nao fica preso.
+                PvpHud.ClearBuffs(player);
+                return;
+            }
 
             if (Time.time >= _nextTick)
             {
@@ -51,18 +57,22 @@ namespace Deadheim.Pvp
 
         // ---------------------------------------------------------------- teleporte
 
-        /// <summary>Motivo para negar um teleporte "de fuga" (retreat, pedra), ou null.</summary>
-        public static string TeleportRefusal()
+        /// <summary>
+        /// Motivo para negar um teleporte "de fuga" (retreat, pedra), ou null. Com
+        /// <paramref name="pveBlocks"/>, luta com monstro tambem bloqueia (RetreatBlockedByPveCombat).
+        /// </summary>
+        public static string TeleportRefusal(bool pveBlocks = false)
         {
             if (!PvpConfig.Active) return null;
             if (PvpState.IsHunted) return "Cacado nao pode teleportar.";
             if (PvpState.InEscapeCombat) return $"Em combate! Aguarde {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
+            if (pveBlocks && PvpState.InPveCombat) return $"Em combate com monstro! Aguarde {Mathf.CeilToInt(PvpState.PveCombatRemaining)}s.";
             return null;
         }
 
         public static string RetreatRefusal(Player player)
         {
-            string refusal = TeleportRefusal();
+            string refusal = TeleportRefusal(PvpConfig.RetreatBlockedByPveCombat.Value);
             if (refusal != null || !PvpConfig.Active || player == null) return refusal;
 
             double cooldown = PvpConfig.RetreatCooldownMinutes.Value * 60d;

@@ -6,58 +6,10 @@ using UnityEngine;
 
 namespace Deadheim.Pvp
 {
-    [Serializable]
-    internal sealed class PvpPlayerRecord
-    {
-        public long id;
-        public string name;
-        public int kills;
-        public int deaths;
-        /// <summary>Segundos UTC ate quando e PK. Relogio so do servidor.</summary>
-        public double pkUntil;
-        /// <summary>PK permanente: so sai quando e morto por jogador.</summary>
-        public bool pkPermanent;
-        /// <summary>Abates que deram PK desde que a marca atual comecou: escolhe o nivel (PkTiers).</summary>
-        public int pkStreak;
-        /// <summary>Perda do nivel atual de PK (PvpConfig.PkPenalty).</summary>
-        public int pkPenalty;
-        /// <summary>Segundos UTC a partir de quando pode receber outra bounty.</summary>
-        public double bountyReadyAt;
-        /// <summary>Contador de PK: abates que deram PK (matar sem ser em defesa, arena ou castelo).</summary>
-        public int pkKills;
-        /// <summary>Deslogou em combate com CombatLogout=Death: morre ao voltar.</summary>
-        public bool combatLogPending;
-        /// <summary>Moedas a entregar quando ele voltar (bounty paga ou devolvida com ele offline).</summary>
-        public int pendingCoins;
-        /// <summary>Escolheu o PvE permanente (/pve confirmar). So admin desfaz.</summary>
-        public bool pvePermanent;
-        /// <summary>Segundos UTC de quando virou PvE.</summary>
-        public double pveSince;
-
-        public float Ratio => deaths <= 0 ? kills : (float)kills / deaths;
-
-        public bool IsPk(double now) => pkPermanent || pkUntil > now;
-
-        public void ClearPk()
-        {
-            pkUntil = 0d;
-            pkPermanent = false;
-            pkStreak = 0;
-            pkPenalty = 0;
-        }
-    }
-
-    [Serializable]
-    internal sealed class PvpStoreData
-    {
-        public int version = 2;
-        public List<PvpPlayerRecord> players = new List<PvpPlayerRecord>();
-        public List<PvpBountyRecord> bounties = new List<PvpBountyRecord>();
-    }
-
     /// <summary>
-    /// Estado persistente do PvP no servidor: K/D, PK e cooldown de desafio. Um JSON
-    /// por mundo em BepInEx/config/Deadheim, salvo junto com o mundo e a cada minuto se mudou.
+    /// Estado persistente do PvP no servidor: K/D, PK, bounties e PvE permanente. Um arquivo
+    /// de texto por mundo em BepInEx/config/Deadheim (formato em PvpStoreFormat), salvo junto
+    /// com o mundo e a cada minuto se mudou.
     /// </summary>
     internal static class PvpStore
     {
@@ -77,24 +29,28 @@ namespace Deadheim.Pvp
 
         public static void MarkDirty() => _dirty = true;
 
-        private static string PathFor()
+        private static string WorldFileName(string extension)
         {
             string world = ZNet.instance != null ? ZNet.instance.GetWorldName() : "world";
             foreach (char c in Path.GetInvalidFileNameChars()) world = world.Replace(c, '_');
-            return Path.Combine(Path.Combine(Paths.ConfigPath, "Deadheim"), "pvp-" + world + ".json");
+            return Path.Combine(Path.Combine(Paths.ConfigPath, "Deadheim"), "pvp-" + world + extension);
         }
 
         private static void EnsureLoaded()
         {
-            string path = PathFor();
+            string path = WorldFileName(".txt");
             if (_data != null && path == _path) return;
 
             if (_data != null && _dirty) Save();
             _path = path;
             _data = null;
+            int skipped = 0;
             try
             {
-                if (File.Exists(path)) _data = JsonUtility.FromJson<PvpStoreData>(File.ReadAllText(path));
+                if (File.Exists(path)) _data = PvpStoreFormat.Read(File.ReadAllText(path), out skipped);
+                else if (File.Exists(WorldFileName(".json")))
+                    // O formato antigo (JsonUtility) so gravava o "version": nao ha nada para trazer.
+                    Debug.LogWarning($"[Deadheim PvP] {WorldFileName(".json")} e do formato antigo, que nao guardava jogadores nem bounties; ignorado.");
             }
             catch (Exception ex)
             {
@@ -102,15 +58,13 @@ namespace Deadheim.Pvp
                 string backup = path + ".corrompido-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
                 try { File.Copy(path, backup, true); } catch { }
                 Debug.LogError($"[Deadheim PvP] {path} ilegivel ({ex.Message}); copia em {backup}, comecando vazio.");
+                _data = null;
             }
 
             if (_data == null) _data = new PvpStoreData();
-            if (_data.players == null) _data.players = new List<PvpPlayerRecord>();
-            if (_data.bounties == null) _data.bounties = new List<PvpBountyRecord>();
-            foreach (PvpBountyRecord bounty in _data.bounties)
-                if (bounty.contributions == null) bounty.contributions = new List<PvpBountyContribution>();
             _dirty = false;
-            Debug.Log($"[Deadheim PvP] Estado carregado de {path}: {_data.players.Count} jogador(es).");
+            Debug.Log($"[Deadheim PvP] Estado carregado de {path}: {_data.players.Count} jogador(es), " +
+                      $"{_data.bounties.Count} bounty(ies)" + (skipped > 0 ? $", {skipped} linha(s) ignorada(s)" : string.Empty) + ".");
         }
 
         public static void Save()
@@ -120,7 +74,7 @@ namespace Deadheim.Pvp
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_path));
                 string temp = _path + ".tmp";
-                File.WriteAllText(temp, JsonUtility.ToJson(_data, true));
+                File.WriteAllText(temp, PvpStoreFormat.Write(_data));
                 // Copy + Delete e nao File.Replace: o servidor da DatHost roda Mono em Linux.
                 File.Copy(temp, _path, true);
                 File.Delete(temp);

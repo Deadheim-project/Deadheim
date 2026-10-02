@@ -32,6 +32,9 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> PkClearsOnDeath;
         public static ConfigEntry<bool> PkPenaltyOnPveDeath;
         public static ConfigEntry<bool> PkPermanentOnMap;
+        public static ConfigEntry<bool> PkTimeOnlineOnly;
+        public static ConfigEntry<bool> PkNoSafeZone;
+        public static ConfigEntry<bool> PkClearsOnPveDeath;
         public static ConfigEntry<bool> AggressorRule;
         public static ConfigEntry<float> AggressorSeconds;
         public static ConfigEntry<bool> AggressorPausesInCombat;
@@ -51,6 +54,10 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> ArenaNoSkillLoss;
         public static ConfigEntry<bool> ArenaFriendlyFire;
         public static ConfigEntry<bool> ArenaCountsLeaderboard;
+
+        // ------------------------------------------------------------------ chefes
+        public static ConfigEntry<int> BossGapMax;
+        public static ConfigEntry<string> BossOrder;
 
         // ------------------------------------------------------- castelo (RaidSystem)
         public static ConfigEntry<bool> CastleNoSkillLoss;
@@ -79,17 +86,21 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> PveEnabled;
         public static ConfigEntry<string> PveTitle;
         public static ConfigEntry<float> PveSkillMultiplier;
-        public static ConfigEntry<string> PveSkillBonus;
         public static ConfigEntry<float> PveResourceRate;
+        public static ConfigEntry<float> PvpResourceRate;
 
         // ------------------------------------------------------------------- fuga
         public static ConfigEntry<bool> CombatBlocksTeleport;
         public static ConfigEntry<bool> CombatStatusIcon;
+        public static ConfigEntry<bool> StateBuffs;
         public static ConfigEntry<bool> CombatFromPve;
         public static ConfigEntry<string> CombatLogout;
 
         // ------------------------------------------------------------------ saque
         public static ConfigEntry<float> PvpCoinDropPercent;
+        public static ConfigEntry<float> PvpCargoDropPercent;
+        public static ConfigEntry<string> PvpCargoTypes;
+        public static ConfigEntry<string> PvpCargoKeep;
 
         // ------------------------------------------------------------------- tumba
         public static ConfigEntry<bool> TombstoneOwnerOnly;
@@ -97,6 +108,7 @@ namespace Deadheim.Pvp
 
         // ----------------------------------------------------------------- retreat
         public static ConfigEntry<float> RetreatCooldownMinutes;
+        public static ConfigEntry<bool> RetreatBlockedByPveCombat;
 
         // ------------------------------------------------------------------- mundo
         public static ConfigEntry<bool> DisableRandomEvents;
@@ -144,10 +156,18 @@ namespace Deadheim.Pvp
             PkSkillLossMultiplier = Bind(config, pk, "PkSkillLossMultiplier", 2f,
                 "Multiplicador da perda de skill de quem morre marcado como PK.");
             PkClearsOnDeath = Bind(config, pk, "PkClearsOnDeath", true,
-                "A marca de PK (nao permanente) some quando o PK morre. O PK permanente so sai morto por jogador.");
+                "A marca de PK (nao permanente) some quando o PK e morto por jogador. O PK permanente sempre sai assim.");
+            PkClearsOnPveDeath = Bind(config, pk, "PkClearsOnPveDeath", false,
+                "Morrer de PvE (monstro, queda, afogamento) tambem tira a marca de PK nao permanente. Desligado, " +
+                "a marca fica: morrer de proposito em casa nao limpa o PK.");
             PkPenaltyOnPveDeath = Bind(config, pk, "PkPenaltyOnPveDeath", true,
                 "A perda do nivel de PK vale em qualquer morte. Desligado, so quando o PK e morto por jogador " +
                 "(morte PvE perde skill normal).");
+            PkTimeOnlineOnly = Bind(config, pk, "PkTimeOnlineOnly", true,
+                "O tempo de PK so corre com o jogador online. Desligado, corre tambem offline (deslogar limpa a marca).");
+            PkNoSafeZone = Bind(config, pk, "PkNoSafeZone", true,
+                "PK nao tem zona segura nem protecao de transporte, como o cacado. Quem esta na zona segura pode atacar " +
+                "um PK (ou um cacado) e, ao bater, entra em combate e perde a protecao.");
             PkPermanentOnMap = Bind(config, pk, "PkPermanentOnMap", true,
                 "PK permanente aparece no mapa de todos, como o cacado.");
             AggressorRule = Bind(config, pk, "AggressorRule", true,
@@ -170,10 +190,12 @@ namespace Deadheim.Pvp
                 "Zonas seguras extras: Nome,x,z,raio|Nome2,x,z,raio");
             ArenaZones = Bind(config, zones, "ArenaZones", "",
                 "Arenas: Nome,x,z,raio|... Dentro da arena o PvP vale sempre, sem perda de skill, sem PK e sem imunidade.");
-            TransportsSafe = Bind(config, zones, "TransportsSafe", true,
-                "Quem esta numa carroca ou montaria fica em zona segura. Barco e ShipsSafe.");
-            TransportsInvulnerable = Bind(config, zones, "TransportsInvulnerable", true,
-                "Carrocas e montarias com sela nao tomam dano de jogador. Barco e ShipsInvulnerable.");
+            TransportsSafe = Bind(config, zones, "TransportsSafe", false,
+                "Quem esta numa carroca ou montaria andando fica em zona segura. Desligado, transporte nao protege " +
+                "ninguem (a carga em transito e alvo). Barco e ShipsSafe.");
+            TransportsInvulnerable = Bind(config, zones, "TransportsInvulnerable", false,
+                "Carrocas e montarias com sela nao tomam dano de jogador. Desligado, da para quebrar carroca e matar " +
+                "montaria. Barco e ShipsInvulnerable.");
             ShipsSafe = Bind(config, zones, "ShipsSafe", false,
                 "Quem esta num barco andando fica em zona segura. Desligado, barco e alvo (pirataria).");
             ShipsInvulnerable = Bind(config, zones, "ShipsInvulnerable", false,
@@ -190,6 +212,16 @@ namespace Deadheim.Pvp
                 "Na arena, membros da mesma guilda podem lutar entre si.");
             ArenaCountsLeaderboard = Bind(config, zones, "ArenaCountsLeaderboard", false,
                 "Abates na arena contam para o ranking K/D.");
+
+            const string bosses = "PvP - Chefes";
+            BossGapMax = Bind(config, bosses, "BossGapMax", 1,
+                "Faixa de PvP por chefes derrotados: dois jogadores so se ferem se a diferenca de chefes entre eles for " +
+                "no maximo esta. 1 = quem derrotou a Massa Ossea (3) luta com quem esta entre o Anciao (2) e a Moder (4). " +
+                "Conta o chefe mais avancado que o personagem ajudou a matar (deu dano). Nao vale na arena. -1 = desligado.");
+            BossOrder = Bind(config, bosses, "BossOrder",
+                "$enemy_eikthyr,$enemy_gdking,$enemy_bonemass,$enemy_dragon,$enemy_goblinking,$enemy_seekerqueen,$enemy_fader",
+                "Chefes em ordem de progressao (nome interno do inimigo). O nivel do jogador e a posicao do mais avancado " +
+                "que ele ajudou a matar: 0 = nenhum, 1 = Eikthyr, 2 = Anciao, 3 = Massa Ossea, 4 = Moder...");
 
             // Castelo e zona de guerra do RaidSystem (Raid Zones). Sem o RaidSystem, nao ha castelo.
             const string castle = "PvP - Castelo";
@@ -242,26 +274,38 @@ namespace Deadheim.Pvp
                 "Titulo de quem e PvE permanente, no nome sobre a cabeca e no HUD.");
             PveSkillMultiplier = Bind(config, pve, "PveSkillMultiplier", 0.5f,
                 "Ganho de skill do PvE, multiplicado em cima do SkillMultiplier do servidor. 0.5 = metade.");
-            PveSkillBonus = Bind(config, pve, "PveSkillBonus", "Fishing:70,Crafting:70,Cooking:70,Farming:70,Pickaxes:70,WoodCutting:70,Ride:70",
-                "Niveis dados uma vez, ao virar PvE. Skill:Niveis,... Nome da skill do jogo ou de mod (o jogo nao tem skill de domar; Ride e montaria).");
             PveResourceRate = Bind(config, pve, "PveResourceRate", 1f,
-                "Taxa de coleta do PvE: o bonus de recursos do mundo nao passa disso para ele. 0 = sem limite.");
+                "Taxa de coleta de quem e PvE permanente (arvore, pedra, minerio, colheita, drop de monstro). " +
+                "1 = normal. 0 = a do mundo.");
 
             const string escape = "PvP - Fuga";
             CombatBlocksTeleport = Bind(config, escape, "CombatBlocksTeleport", true,
                 "Em combate nenhum teleporte longo funciona: portal, NPC teleportador, pedra de retorno, retreat.");
             CombatStatusIcon = Bind(config, escape, "CombatStatusIcon", true,
-                "Mostra o status \"Em combate\" com contagem na barra de efeitos (o que o mod Combat fazia).");
+                "Mostra o buff \"Em combate\" com contagem na barra de efeitos (o que o mod Combat fazia), tambem na luta " +
+                "com monstro quando ela bloqueia algo (CombatFromPve ou RetreatBlockedByPveCombat).");
+            StateBuffs = Bind(config, escape, "StateBuffs", true,
+                "Mostra os outros estados do PvP como buffs na barra de efeitos, com contagem: imune a PvP, PK, agressor, " +
+                "cacado, bounty, zona segura e PvE permanente.");
             CombatFromPve = Bind(config, escape, "CombatFromPve", false,
                 "Dano de/em monstro tambem conta como combate, mas so para bloquear teleporte, retreat e pedra " +
                 "(zona segura continua valendo contra jogador). O mod Combat antigo fazia isso por padrao.");
-            CombatLogout = Bind(config, escape, "CombatLogout", "Death",
-                "Deslogar em combate. Off = nada; Rank = conta morte para quem saiu e abate para quem bateu; " +
-                "Death = alem disso, ao voltar o jogador morre onde saiu (perde skill e a tumba fica la).");
+            CombatLogout = Bind(config, escape, "CombatLogout", "Rank",
+                "Deslogar em combate. Off = nada; Rank = conta morte para quem saiu e abate para quem bateu (nao mata: " +
+                "quem caiu de verdade nao perde nada); Death = alem disso, ao voltar o jogador morre onde saiu.");
 
-            PvpCoinDropPercent = Bind(config, "PvP - Saque", "PvpCoinDropPercent", 0f,
-                "Porcentagem das moedas que quem morre para jogador deixa no chao, fora da tumba, para quem matou " +
-                "pegar. 0 = desligado. Nao vale na arena.");
+            const string loot = "PvP - Saque";
+            PvpCoinDropPercent = Bind(config, loot, "PvpCoinDropPercent", 100f,
+                "Porcentagem das moedas do inventario que quem morre para jogador deixa no chao, fora da tumba, " +
+                "seja PK ou nao. 100 = todas. 0 = desligado. Nao vale na arena.");
+            PvpCargoDropPercent = Bind(config, loot, "PvpCargoDropPercent", 50f,
+                "Porcentagem da carga (o que nao esta equipado e e de um tipo de PvpCargoTypes: minerio, metal, " +
+                "comida, trofeu...) que cai no chao na morte por jogador. Equipamento fica na tumba. 0 = desligado. Nao vale na arena.");
+            PvpCargoTypes = Bind(config, loot, "PvpCargoTypes", "Material,Consumable,Trophy,Fish",
+                "Tipos de item que contam como carga (ItemType do jogo): Material (minerio, metal, madeira...), " +
+                "Consumable (comida, hidromel), Trophy, Fish, Misc, Ammo...");
+            PvpCargoKeep = Bind(config, loot, "PvpCargoKeep", "PortalToken,ResetToken",
+                "Itens (nome do prefab) que nunca caem como carga, mesmo sendo de um tipo de PvpCargoTypes.");
 
             const string tomb = "PvP - Tumba";
             TombstoneOwnerOnly = Bind(config, tomb, "TombstoneOwnerOnly", true,
@@ -271,6 +315,9 @@ namespace Deadheim.Pvp
 
             RetreatCooldownMinutes = Bind(config, "PvP - Retreat", "RetreatCooldownMinutes", 30f,
                 "Minutos entre dois usos do /retreat. Em combate ou cacado o retreat nao funciona.");
+            RetreatBlockedByPveCombat = Bind(config, "PvP - Retreat", "RetreatBlockedByPveCombat", true,
+                "Luta com monstro (dar ou levar dano) tambem bloqueia o /retreat e a pedra de retorno por CombatTagSeconds. " +
+                "Portal continua seguindo CombatFromPve.");
 
             const string world = "PvP - Mundo";
             DisableRandomEvents = Bind(config, world, "DisableRandomEvents", true,
@@ -279,6 +326,9 @@ namespace Deadheim.Pvp
                 "Moedas (Coins) nao pesam.");
             CoinsMaxStack = Bind(config, world, "CoinsMaxStack", 5000,
                 "Tamanho da pilha de moedas.");
+            PvpResourceRate = Bind(config, world, "PvpResourceRate", 2f,
+                "Taxa de coleta de quem joga PvP (todo mundo que nao e PvE permanente): arvore, pedra, minerio, " +
+                "colheita, drop de monstro. 2 = dobro. 0 = a do mundo. O PvE usa PveResourceRate.");
 
             LeaderboardSize = Bind(config, "PvP - Ranking", "LeaderboardSize", 10,
                 "Quantas linhas o /rank mostra.");
@@ -288,6 +338,9 @@ namespace Deadheim.Pvp
             StartIslandMode.SettingChanged += (_, __) => PvpZones.Invalidate();
             StartIslandRadius.SettingChanged += (_, __) => PvpZones.Invalidate();
             StartIslandBiomes.SettingChanged += (_, __) => PvpZones.Invalidate();
+            PveResourceRate.SettingChanged += (_, __) => PvpPve.RefreshResourceRate();
+            PvpResourceRate.SettingChanged += (_, __) => PvpPve.RefreshResourceRate();
+            Enabled.SettingChanged += (_, __) => PvpPve.RefreshResourceRate();
         }
 
         private static ConfigEntry<T> Bind<T>(ConfigFile config, string section, string key, T value, string description)
@@ -377,6 +430,45 @@ namespace Deadheim.Pvp
                 found = true;
             }
             return found;
+        }
+
+        private static string _cargoTypesText;
+        private static HashSet<ItemDrop.ItemData.ItemType> _cargoTypes;
+        private static string _cargoKeepText;
+        private static HashSet<string> _cargoKeep;
+
+        /// <summary>Tipos de item que contam como carga (PvpCargoTypes).</summary>
+        public static HashSet<ItemDrop.ItemData.ItemType> CargoTypes
+        {
+            get
+            {
+                string text = PvpCargoTypes.Value ?? string.Empty;
+                if (_cargoTypes != null && _cargoTypesText == text) return _cargoTypes;
+                _cargoTypesText = text;
+                _cargoTypes = new HashSet<ItemDrop.ItemData.ItemType>();
+                foreach (string raw in text.Split(','))
+                {
+                    if (string.IsNullOrWhiteSpace(raw)) continue;
+                    try { _cargoTypes.Add((ItemDrop.ItemData.ItemType)Enum.Parse(typeof(ItemDrop.ItemData.ItemType), raw.Trim(), true)); }
+                    catch (Exception) { Debug.LogWarning($"[Deadheim PvP] PvpCargoTypes: tipo de item desconhecido '{raw.Trim()}'."); }
+                }
+                return _cargoTypes;
+            }
+        }
+
+        /// <summary>Prefabs que nunca caem como carga (PvpCargoKeep).</summary>
+        public static HashSet<string> CargoKeep
+        {
+            get
+            {
+                string text = PvpCargoKeep.Value ?? string.Empty;
+                if (_cargoKeep != null && _cargoKeepText == text) return _cargoKeep;
+                _cargoKeepText = text;
+                _cargoKeep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string raw in text.Split(','))
+                    if (!string.IsNullOrWhiteSpace(raw)) _cargoKeep.Add(raw.Trim());
+                return _cargoKeep;
+            }
         }
 
         /// <summary>Recompensa de defesa de castelo para o bioma, lida de CastleRewardByBiome.</summary>

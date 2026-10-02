@@ -842,6 +842,16 @@ namespace PvpTestDriver
                 Check("retreat/bloqueado-em-combate", refusal != null && refusal.Contains("combate"), refusal);
                 yield return Wait(CombatWait);
                 Check("retreat/livre-fora-de-combate", PvpModule.RetreatRefusal(Me) == null, PvpModule.RetreatRefusal(Me));
+                // Luta com monstro tambem segura o retreat (RetreatBlockedByPveCombat), mesmo sem CombatFromPve.
+                PvpState.MarkPveCombat();
+                refusal = PvpModule.RetreatRefusal(Me);
+                Check("retreat/bloqueado-em-luta-com-monstro", refusal != null && refusal.Contains("monstro"), refusal);
+                yield return Wait(0.4f);
+                StatusEffect fight = Me.GetSEMan().GetStatusEffect(PvpHud.CombatHash);
+                Check("retreat/buff-luta-com-monstro", fight != null && fight.m_name == "Luta com monstro",
+                    fight == null ? "sem buff" : fight.m_name);
+                yield return Wait(CombatWait);
+                Check("retreat/livre-depois-da-luta-com-monstro", PvpModule.RetreatRefusal(Me) == null, PvpModule.RetreatRefusal(Me));
                 PvpModule.MarkRetreatUsed(Me);
                 refusal = PvpModule.RetreatRefusal(Me);
                 Check("retreat/cooldown", refusal != null && refusal.Contains("recarga"), refusal);

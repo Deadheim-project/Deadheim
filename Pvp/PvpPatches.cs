@@ -230,21 +230,28 @@ namespace Deadheim.Pvp
 
                     // Antes do vanilla criar a tumba: o que o nivel de PK manda perder vai para o chao.
                     int itemsDropped = pkPays && !arena ? DropPkItems(__instance, pos, penalty) : 0;
-                    if (wasPk && (wasPermanent ? byPlayer : PvpConfig.PkClearsOnDeath.Value)) PvpState.ClearPk();
+                    // A marca sai morto por jogador. Morte PvE (monstro, queda) so tira com PkClearsOnPveDeath:
+                    // senao o PK morreria de proposito em casa para ficar limpo.
+                    bool clearsPk = byPlayer
+                        ? wasPermanent || PvpConfig.PkClearsOnDeath.Value
+                        : !wasPermanent && PvpConfig.PkClearsOnPveDeath.Value;
+                    if (wasPk && clearsPk) PvpState.ClearPk();
 
                     bool wasAggressor = PvpState.IsAggressor;
-                    // Antes do vanilla criar a tumba: a parte das moedas que fica para quem matou.
+                    // Antes do vanilla criar a tumba: moedas e carga que ficam para quem matou.
                     int coinsDropped = byPlayer && !arena ? DropCoins(__instance, pos) : 0;
+                    int cargoDropped = byPlayer && !arena ? DropCargo(__instance, pos) : 0;
 
                     PvpState.ForgetAttacker();
                     PvpState.ClearAggressor();
                     PvpState.ClearCombat();
-                    PvpClient.SendDeath(killer, arena, castle, killerDefendingCastle, pos, wasAggressor, coinsDropped);
+                    PvpClient.SendDeath(killer, arena, castle, killerDefendingCastle, pos, wasAggressor, coinsDropped, cargoDropped);
 
                     Debug.Log($"[Deadheim PvP] Morri: causa={cause} matador={killerId} ultimoGolpe={__instance.m_lastHit?.m_hitType} " +
                               $"arena={arena} castelo={castle ?? "-"} defesaDoMatador={killerDefendingCastle} PK={wasPk} " +
-                              $"PKpermanente={wasPermanent} perda={(pkPays ? penalty.ToString() : "-")} itensNoChao={itemsDropped} " +
-                              $"agressor={wasAggressor} moedasNoChao={coinsDropped} multiplicadorSkill={_pendingSkillMultiplier}");
+                              $"PKpermanente={wasPermanent} PKsaiu={wasPk && clearsPk} perda={(pkPays ? penalty.ToString() : "-")} " +
+                              $"itensNoChao={itemsDropped} agressor={wasAggressor} moedasNoChao={coinsDropped} cargaNoChao={cargoDropped} " +
+                              $"multiplicadorSkill={_pendingSkillMultiplier}");
                 }
                 catch (Exception ex)
                 {
@@ -253,8 +260,8 @@ namespace Deadheim.Pvp
             }
 
             /// <summary>
-            /// PvpCoinDropPercent das moedas vao para o chao, fora da tumba (que so o dono abre):
-            /// e o saque de quem matou.
+            /// PvpCoinDropPercent das moedas (padrao: todas) vao para o chao, fora da tumba (que so o
+            /// dono abre): e o saque de quem matou, seja a vitima PK ou nao.
             /// </summary>
             private static int DropCoins(Player player, Vector3 pos)
             {
@@ -278,6 +285,44 @@ namespace Deadheim.Pvp
                     if (drop != null) drop.SetStack(Mathf.Min(left, maxStack));
                 }
                 return amount;
+            }
+
+            /// <summary>
+            /// Carga: PvpCargoDropPercent de cada pilha que nao esta equipada e e de um tipo de
+            /// PvpCargoTypes (minerio, metal, comida, trofeu...) vai para o chao. Equipamento fica na
+            /// tumba. A fracao que sobra vira sorteio: 50% de uma pilha de 1 cai metade das vezes.
+            /// Moedas ficam com PvpCoinDropPercent.
+            /// </summary>
+            private static int DropCargo(Player player, Vector3 pos)
+            {
+                float percent = Mathf.Clamp(PvpConfig.PvpCargoDropPercent.Value, 0f, 100f);
+                Inventory inventory = player.GetInventory();
+                if (percent <= 0f || inventory == null) return 0;
+
+                System.Collections.Generic.HashSet<ItemDrop.ItemData.ItemType> types = PvpConfig.CargoTypes;
+                System.Collections.Generic.HashSet<string> keep = PvpConfig.CargoKeep;
+                int dropped = 0;
+                foreach (ItemDrop.ItemData item in new System.Collections.Generic.List<ItemDrop.ItemData>(inventory.GetAllItems()))
+                {
+                    if (item?.m_shared == null || item.m_dropPrefab == null || item.m_stack <= 0) continue;
+                    if (player.IsItemEquiped(item) || !types.Contains(item.m_shared.m_itemType)) continue;
+                    string prefab = item.m_dropPrefab.name;
+                    if (prefab == "Coins" || keep.Contains(prefab)) continue;
+
+                    float exact = item.m_stack * percent / 100f;
+                    int amount = Mathf.FloorToInt(exact);
+                    if (UnityEngine.Random.value < exact - amount) amount++;
+                    amount = Mathf.Min(amount, item.m_stack);
+                    if (amount <= 0) continue;
+
+                    Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.6f;
+                    ItemDrop.DropItem(item, amount, at, Quaternion.identity);
+                    inventory.RemoveItem(item, amount);
+                    dropped += amount;
+                }
+                if (dropped > 0)
+                    player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>{dropped} item(ns) da carga cairam no chao.</color>");
+                return dropped;
             }
 
             /// <summary>
@@ -388,6 +433,9 @@ namespace Deadheim.Pvp
                 if ((flags & PvpFlags.Aggressor) != 0) suffix += " <color=#ff7a3d>[AGRESSOR]</color>";
                 if ((flags & PvpFlags.Immune) != 0) suffix += " <color=#7fd4ff>[IMUNE]</color>";
                 else if ((flags & PvpFlags.Protected) != 0) suffix += " <color=#7CFC00>[SEGURO]</color>";
+                Player local = Player.m_localPlayer;
+                if (local != null && PvpBosses.OutOfRange(local, __instance, __instance.transform.position))
+                    suffix += " <color=#a0a0a0>[outra faixa]</color>";
                 __result += suffix;
             }
         }
@@ -483,7 +531,7 @@ namespace Deadheim.Pvp
                 if (!PvpConfig.Active || __instance != Player.m_localPlayer || item?.m_shared?.m_name == null) return true;
                 if (item.m_shared.m_name.IndexOf("hearthstone", StringComparison.OrdinalIgnoreCase) < 0) return true;
 
-                string refusal = PvpModule.TeleportRefusal();
+                string refusal = PvpModule.TeleportRefusal(PvpConfig.RetreatBlockedByPveCombat.Value);
                 if (refusal == null) return true;
                 Refuse(__instance, refusal);
                 __result = false;

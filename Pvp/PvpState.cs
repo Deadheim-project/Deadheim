@@ -90,6 +90,19 @@ namespace Deadheim.Pvp
         public static float EscapeCombatRemaining
             => Mathf.Max(CombatRemaining, PvpConfig.CombatFromPve != null && PvpConfig.CombatFromPve.Value ? PveCombatRemaining : 0f);
 
+        /// <summary>
+        /// Luta com monstro que bloqueia algo agora: todo teleporte longo (CombatFromPve) ou so o
+        /// retreat e a pedra (RetreatBlockedByPveCombat). E o que o jogador precisa ver na tela.
+        /// </summary>
+        public static bool PveCombatBlocks
+            => InPveCombat
+               && ((PvpConfig.CombatFromPve != null && PvpConfig.CombatFromPve.Value)
+                   || (PvpConfig.RetreatBlockedByPveCombat != null && PvpConfig.RetreatBlockedByPveCombat.Value));
+
+        /// <summary>Contagem do buff "Em combate": luta com jogador ou com monstro que bloqueia algo.</summary>
+        public static float ShownCombatRemaining
+            => Mathf.Max(CombatRemaining, PveCombatBlocks ? PveCombatRemaining : 0f);
+
         public static void MarkPveCombat()
             => _pveCombatUntil = Time.time + Mathf.Max(0f, PvpConfig.CombatTagSeconds.Value);
         public static int PkCount => _pkCount;
@@ -120,6 +133,7 @@ namespace Deadheim.Pvp
             Current = PvpFlags.None;
             ZoneLabel = null;
             PvpPve.ResetSession();
+            PvpBosses.ResetSession();
         }
 
         /// <summary>Imunidade vive no personagem (m_customData), entao relogar nao a apaga.</summary>
@@ -281,8 +295,10 @@ namespace Deadheim.Pvp
             string safeArea = PvpZones.SafeAreaName(pos)
                               ?? (fallenCastle != null ? $"Castelo {fallenCastle} (conquistado)" : null);
             bool transport = PvpZones.IsOnTransport(player);
+            // Cacado e PK (PkNoSafeZone) nao tem zona segura nem transporte que os proteja.
+            bool outlaw = hunted || (IsPk && PvpConfig.PkNoSafeZone.Value);
 
-            bool protectedZone = !hunted && !combat && (safeArea != null || transport);
+            bool protectedZone = !outlaw && !combat && (safeArea != null || transport);
 
             bool pvp;
             string label;
@@ -346,6 +362,7 @@ namespace Deadheim.Pvp
 
             ZDO zdo = player.m_nview.GetZDO();
             if (zdo.GetInt(ZdoFlags, 0) != (int)flags) zdo.Set(ZdoFlags, (int)flags);
+            PvpBosses.Tick(player);
         }
 
         /// <summary>

@@ -150,7 +150,7 @@ namespace Deadheim.Pvp
         public static void SendHello() => PvpNet.SendToServer(PvpNet.Package(PvpNet.OpHello));
 
         public static void SendDeath(ZDOID killer, bool arena, string castle, bool killerDefendingCastle, Vector3 position,
-                                     bool victimWasAggressor, int coinsDropped)
+                                     bool victimWasAggressor, int coinsDropped, int cargoDropped)
         {
             ZPackage pkg = PvpNet.Package(PvpNet.OpDeath);
             pkg.Write(killer);
@@ -160,6 +160,17 @@ namespace Deadheim.Pvp
             pkg.Write(position);
             pkg.Write(victimWasAggressor);
             pkg.Write(coinsDropped);
+            pkg.Write(cargoDropped);
+            PvpNet.SendToServer(pkg);
+        }
+
+        /// <summary>Comando de admin que o servidor decide (pk). O servidor confere se e admin.</summary>
+        public static void SendAdmin(string action, string target, double value)
+        {
+            ZPackage pkg = PvpNet.Package(PvpNet.OpAdmin);
+            pkg.Write(action ?? string.Empty);
+            pkg.Write(target ?? string.Empty);
+            pkg.Write(value);
             PvpNet.SendToServer(pkg);
         }
 

@@ -7,9 +7,10 @@ using UnityEngine.UI;
 namespace Deadheim.Pvp
 {
     /// <summary>
-    /// Uma linha no topo da tela dizendo o estado de PvP do jogador: ativo, protegido (e
-    /// por que), imune, PK, cacado, em combate. Pendurada no HUD do jogo, entao some junto
-    /// quando o jogador esconde o HUD.
+    /// O estado de PvP do jogador na tela: cada estado (em combate, imune, PK, agressor, cacado,
+    /// bounty, zona segura, PvE) e um buff na barra de efeitos do jogo, com contagem; e uma linha
+    /// no topo da tela resume tudo (PvP ativo ou nao, e por que). Os dois ficam no HUD do jogo,
+    /// entao somem junto quando o jogador esconde o HUD.
     /// </summary>
     internal static class PvpHud
     {
@@ -37,6 +38,7 @@ namespace Deadheim.Pvp
         public static void ResetSession()
         {
             _announced = false;
+            _buffsShown = false;
             if (_text != null) Object.Destroy(_text.gameObject);
             _text = null;
         }
@@ -46,45 +48,151 @@ namespace Deadheim.Pvp
             if (Time.time < _nextRefresh) return;
             _nextRefresh = Time.time + 0.25f;
 
-            UpdateCombatIcon(player);
+            UpdateBuffs(player);
             if (!EnsureText()) return;
             _text.text = Compose(player);
         }
 
-        // ------------------------------------------------------- icone "Em combate"
+        // ------------------------------------------------------------------ buffs
 
-        /// <summary>Status "Em combate" na barra de efeitos, como o mod Combat fazia.</summary>
-        public static readonly int CombatStatusHash = "DH_Combat".GetStableHashCode();
+        /// <summary>Um estado do PvP como buff do jogo. O icone vem de um efeito ou item que o jogo ja tem.</summary>
+        private sealed class Buff
+        {
+            public readonly string Id;
+            public readonly int Hash;
+            public readonly string Name;
+            public readonly string Tooltip;
+            public readonly string[] Icons;
 
-        public static void RegisterStatusEffect()
+            public Buff(string id, string name, string tooltip, params string[] icons)
+            {
+                Id = id;
+                Hash = id.GetStableHashCode();
+                Name = name;
+                Tooltip = tooltip;
+                Icons = icons;
+            }
+        }
+
+        // Icones: "se:Nome" e um efeito do jogo, o resto e prefab de item. O primeiro que existir vale.
+        private static readonly Buff Combat = new Buff("DH_Combat", "Em combate",
+            "Sem retreat nem pedra de retorno ate a luta esfriar; luta com jogador tambem trava portal e tira a zona segura.", "SwordBronze");
+        private static readonly Buff Immune = new Buff("DH_PvpImmune", "Imune a PvP",
+            "Morreu para um jogador: nao da nem leva dano de jogador. Monstro continua ferindo.", "ShieldWood", "SwordBronze");
+        private static readonly Buff Pk = new Buff("DH_Pk", "PK",
+            "Matou quem nao estava lutando. Sem zona segura; se morrer perde mais. O tempo so corre online e a marca so sai morto por jogador.",
+            "TrophySkeleton", "SwordBronze");
+        private static readonly Buff Aggressor = new Buff("DH_Aggressor", "Agressor",
+            "Bateu primeiro: quem te matar nao vira PK. O tempo para enquanto voce luta.", "AxeStone", "SwordBronze");
+        private static readonly Buff Hunted = new Buff("DH_Hunted", "Cacado",
+            "Ha uma bounty na sua cabeca: aparece no mapa, sem zona segura, imunidade nem teleporte.", "Bow", "SwordBronze");
+        private static readonly Buff Bounty = new Buff("DH_Bounty", "Bounty",
+            "Colocaram moedas na sua cabeca. Quando o tempo acabar voce vira CACADO. /bounty pagar encerra.", "Coins", "SwordBronze");
+        private static readonly Buff Safe = new Buff("DH_SafeZone", "Zona segura",
+            "Ninguem te fere aqui, e voce nao fere ninguem, enquanto nao estiver em combate.", "se:Shelter", "ShieldWood", "SwordBronze");
+        private static readonly Buff Pve = new Buff("DH_Pve", "PvE",
+            "PvE permanente: nao luta com jogadores em lugar nenhum.", "Hammer", "SwordBronze");
+
+        private static readonly Buff[] All = { Combat, Immune, Pk, Aggressor, Hunted, Bounty, Safe, Pve };
+
+        /// <summary>Hash dos buffs, para o teste conferir na barra de efeitos.</summary>
+        public static int CombatHash => Combat.Hash;
+        public static int ImmuneHash => Immune.Hash;
+        public static int PkHash => Pk.Hash;
+        public static int AggressorHash => Aggressor.Hash;
+        public static int HuntedHash => Hunted.Hash;
+        public static int BountyHash => Bounty.Hash;
+        public static int SafeHash => Safe.Hash;
+        public static int PveHash => Pve.Hash;
+
+        public static void RegisterStatusEffects()
         {
             ObjectDB db = ObjectDB.instance;
             if (db == null || db.m_StatusEffects == null) return;
-            if (db.m_StatusEffects.Exists(e => e != null && e.NameHash() == CombatStatusHash)) return;
-
-            SE_Stats effect = ScriptableObject.CreateInstance<SE_Stats>();
-            effect.name = "DH_Combat";
-            effect.m_name = "Em combate";
-            effect.m_tooltip = "Sem teleporte, retreat nem pedra de retorno ate a luta esfriar.";
-            GameObject sword = db.GetItemPrefab("SwordBronze");
-            effect.m_icon = sword != null ? sword.GetComponent<ItemDrop>()?.m_itemData.GetIcon() : null;
-            db.m_StatusEffects.Add(effect);
+            foreach (Buff buff in All)
+            {
+                if (db.m_StatusEffects.Exists(e => e != null && e.NameHash() == buff.Hash)) continue;
+                SE_Stats effect = ScriptableObject.CreateInstance<SE_Stats>();
+                effect.name = buff.Id;
+                effect.m_name = buff.Name;
+                effect.m_tooltip = buff.Tooltip;
+                effect.m_icon = IconFor(db, buff.Icons);
+                db.m_StatusEffects.Add(effect);
+            }
         }
 
-        private static void UpdateCombatIcon(Player player)
+        private static Sprite IconFor(ObjectDB db, string[] candidates)
+        {
+            foreach (string candidate in candidates)
+            {
+                Sprite icon = null;
+                if (candidate.StartsWith("se:"))
+                    icon = db.GetStatusEffect(candidate.Substring(3).GetStableHashCode())?.m_icon;
+                else
+                {
+                    GameObject item = db.GetItemPrefab(candidate);
+                    icon = item != null ? item.GetComponent<ItemDrop>()?.m_itemData.GetIcon() : null;
+                }
+                if (icon != null) return icon;
+            }
+            return null;
+        }
+
+        private static bool _buffsShown;
+
+        /// <summary>Tira todos os buffs do PvP (modulo desligado ao vivo).</summary>
+        public static void ClearBuffs(Player player)
+        {
+            if (!_buffsShown) return;
+            _buffsShown = false;
+            SEMan seman = player != null ? player.GetSEMan() : null;
+            if (seman == null) return;
+            foreach (Buff buff in All)
+                if (seman.GetStatusEffect(buff.Hash) != null) seman.RemoveStatusEffect(buff.Hash, true);
+        }
+
+        /// <summary>Liga, desliga e acerta a contagem de cada buff pelo estado que o modulo ja decidiu.</summary>
+        private static void UpdateBuffs(Player player)
         {
             SEMan seman = player != null ? player.GetSEMan() : null;
             if (seman == null) return;
-            StatusEffect current = seman.GetStatusEffect(CombatStatusHash);
-            float remaining = PvpState.EscapeCombatRemaining;
-            if (remaining <= 0f || !PvpConfig.CombatStatusIcon.Value)
+            _buffsShown = true;
+            PvpFlags flags = PvpState.Current;
+            bool states = PvpConfig.StateBuffs == null || PvpConfig.StateBuffs.Value;
+
+            float combat = PvpConfig.CombatStatusIcon.Value ? PvpState.ShownCombatRemaining : 0f;
+            Show(seman, Combat, combat > 0f, combat, PvpState.InCombat ? "Em combate" : "Luta com monstro");
+
+            Show(seman, Immune, states && (flags & PvpFlags.Immune) != 0, (float)PvpState.ImmuneRemaining);
+            bool permanent = (flags & PvpFlags.PkPermanent) != 0;
+            int pkCount = PvpState.PkCount;
+            Show(seman, Pk, states && (flags & PvpFlags.Pk) != 0, permanent ? 0f : (float)PvpState.PkRemaining,
+                (permanent ? "PK permanente" : "PK") + (pkCount > 1 ? $" x{pkCount}" : string.Empty));
+            Show(seman, Aggressor, states && (flags & PvpFlags.Aggressor) != 0, PvpState.AggressorRemaining);
+            Show(seman, Hunted, states && (flags & PvpFlags.Hunted) != 0, PvpState.IsHuntedForever ? 0f : (float)PvpState.HuntedRemaining,
+                (PvpState.IsHuntedForever ? "Cacado ate morrer" : "Cacado") + (PvpClient.HuntPaused ? " (pausado)" : string.Empty));
+            Show(seman, Bounty, states && (flags & PvpFlags.HuntPending) != 0, (float)PvpState.HuntPendingRemaining,
+                $"Bounty {PvpClient.BountyPot}" + (PvpClient.HuntPaused ? " (pausada)" : string.Empty));
+            Show(seman, Safe, states && (flags & PvpFlags.Protected) != 0, 0f, PvpState.ZoneLabel ?? "Zona segura");
+            Show(seman, Pve, states && (flags & PvpFlags.Pve) != 0, 0f, PvpPve.Title);
+        }
+
+        /// <summary>
+        /// Sem tempo (permanente, zona) o m_ttl fica 0: o jogo nao mostra contagem nem tira o buff.
+        /// Com tempo, a contagem da barra e m_ttl - m_time e acompanha o relogio do modulo.
+        /// </summary>
+        private static void Show(SEMan seman, Buff buff, bool active, float remaining, string name = null)
+        {
+            StatusEffect current = seman.GetStatusEffect(buff.Hash);
+            if (!active)
             {
-                if (current != null) seman.RemoveStatusEffect(CombatStatusHash, true);
+                if (current != null) seman.RemoveStatusEffect(buff.Hash, true);
                 return;
             }
-            if (current == null) current = seman.AddStatusEffect(CombatStatusHash, resetTime: true);
-            // A contagem da barra e m_ttl - m_time: acompanha o relogio de combate do modulo.
-            if (current != null) current.m_ttl = current.m_time + remaining;
+            if (current == null) current = seman.AddStatusEffect(buff.Hash, resetTime: true);
+            if (current == null) return;
+            current.m_name = name ?? buff.Name;
+            current.m_ttl = remaining > 0f ? current.m_time + remaining : 0f;
         }
 
         private static bool EnsureText()
@@ -137,8 +245,8 @@ namespace Deadheim.Pvp
                           + (PvpClient.HuntPaused ? " (pausado)" : string.Empty) + "</color>");
             if ((flags & PvpFlags.Combat) != 0)
                 parts.Add("<color=#ffb347>Em combate " + Mathf.CeilToInt(PvpState.CombatRemaining) + "s</color>");
-            else if (PvpState.InEscapeCombat)
-                parts.Add("<color=#ffb347>Em combate (PvE) " + Mathf.CeilToInt(PvpState.EscapeCombatRemaining) + "s</color>");
+            else if (PvpState.PveCombatBlocks)
+                parts.Add("<color=#ffb347>Luta com monstro " + Mathf.CeilToInt(PvpState.PveCombatRemaining) + "s</color>");
 
             StringBuilder text = new StringBuilder();
             for (int i = 0; i < parts.Count; i++)

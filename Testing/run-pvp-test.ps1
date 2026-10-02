@@ -120,17 +120,23 @@ KillFeed = true
 PkTiers = 1:5:Skills,2:10:Skills,3:60:Unequipped,5:-1:All
 PkSkillLossMultiplier = 2
 PkClearsOnDeath = true
+PkClearsOnPveDeath = false
 PkPenaltyOnPveDeath = true
+PkTimeOnlineOnly = true
+PkNoSafeZone = true
 AggressorSeconds = 600
 AggressorPausesInCombat = true
+
+[PvP - Chefes]
+BossGapMax = 1
 
 [PvP - Zonas]
 StartIslandMode = $mode
 StartIslandRadius = $(if ($mode -eq 'Island') { 1500 } else { 30 })
 SafeZones =
 ArenaZones = $arena
-TransportsSafe = true
-TransportsInvulnerable = true
+TransportsSafe = false
+TransportsInvulnerable = false
 ShipsSafe = false
 ShipsInvulnerable = false
 
@@ -148,7 +154,8 @@ BountyPausesInOwnWard = true
 HuntedNoWardDefense = true
 
 [PvP - Saque]
-PvpCoinDropPercent = 10
+PvpCoinDropPercent = 100
+PvpCargoDropPercent = 50
 "@
     Set-Content -Path "$Root\server\BepInEx\config\Detalhes.Deadheim.cfg" -Value $cfg -Encoding UTF8
 }

@@ -26,7 +26,7 @@ namespace Deadheim.Pvp
                 new Terminal.ConsoleCommand("pve", "[confirmar] - sair do PvP para sempre",
                     args => RequireOnline(args.Context, () => Pve(args)));
 
-                new Terminal.ConsoleCommand("pvpadmin", "(admin) zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas> | pve <jogador>", AdminCommand);
+                new Terminal.ConsoleCommand("pvpadmin", "(admin) zona | imune <min> | limpar | pk <min> [jogador] | bounty <jogador> <moedas> | pve <jogador>", AdminCommand);
             }
         }
 
@@ -117,11 +117,10 @@ namespace Deadheim.Pvp
             bool confirm = args.Length > 1 && (args[1].ToLowerInvariant() == "confirmar" || args[1].ToLowerInvariant() == "confirm");
             if (!confirm)
             {
-                string bonus = PvpConfig.PveSkillBonus.Value;
                 context?.AddString($"PvE permanente: voce vira {PvpPve.Title} e nunca mais luta com jogadores (nem na arena ou no castelo).");
-                context?.AddString($"Ganha uma vez: {(string.IsNullOrWhiteSpace(bonus) ? "nada" : bonus.Replace(",", ", "))}.");
                 context?.AddString($"Skill sobe x{PvpConfig.PveSkillMultiplier.Value:0.##}" +
-                                   (PvpConfig.PveResourceRate.Value > 0f ? $" e a coleta fica sem o bonus do mundo (x{PvpConfig.PveResourceRate.Value:0.##})." : "."));
+                                   (PvpConfig.PveResourceRate.Value > 0f ? $"; coleta x{PvpConfig.PveResourceRate.Value:0.##}" : string.Empty) +
+                                   (PvpConfig.PvpResourceRate.Value > 0f ? $" (quem joga PvP coleta x{PvpConfig.PvpResourceRate.Value:0.##})." : "."));
                 context?.AddString("<color=#ff5050>NAO TEM VOLTA.</color> Para confirmar: /pve confirmar");
                 return;
             }
@@ -145,6 +144,7 @@ namespace Deadheim.Pvp
             StringBuilder text = new StringBuilder();
             text.AppendLine("Estado: " + PvpHud.Compose(player));
             text.AppendLine($"Dano PvP x{PvpConfig.DamageMultiplier.Value:0.##}; no seu territorio x{PvpConfig.DamageMultiplier.Value * PvpConfig.WardDefenseMultiplier.Value:0.##}.");
+            text.AppendLine(PvpBosses.RangeText(PvpBosses.LocalTier));
             if (PvpClient.BountyPot > 0)
                 text.AppendLine($"Bounty na sua cabeca: {PvpClient.BountyPot} moedas" +
                                 (PvpBounty.BuyoutCost(PvpClient.BountyPot) > 0 ? $" (pagar: {PvpBounty.BuyoutCost(PvpClient.BountyPot)} com /bounty pagar)." : "."));
@@ -200,7 +200,7 @@ namespace Deadheim.Pvp
                                       $"segura={PvpZones.SafeAreaName(pos) ?? "-"} arena={PvpZones.ArenaName(pos) ?? "-"} " +
                                       $"castelo={PvpBridge.Castle(pos) ?? "-"}/{PvpBridge.Owner(pos) ?? "-"} guilda={PvpGuilds.GuildOf(player) ?? "-"} " +
                                       $"transporte={PvpZones.IsOnTransport(player)} territorio={PvpRules.InOwnTerritory(player.GetPlayerID(), pos)}");
-                    context.AddString($"Bandeiras: {PvpState.Current} pvp={player.IsPVPEnabled()}");
+                    context.AddString($"Bandeiras: {PvpState.Current} pvp={player.IsPVPEnabled()} chefes={PvpBosses.LocalTier}");
                     break;
                 }
                 case "imune":
@@ -213,9 +213,14 @@ namespace Deadheim.Pvp
                     context.AddString("Imunidade e PK locais limpos.");
                     break;
                 case "pk":
-                    PvpState.ApplyServerTimers(minutes * 60d, PvpState.HuntPendingRemaining, PvpState.HuntedRemaining);
-                    context.AddString($"PK local por {minutes} min (so neste cliente).");
+                {
+                    // /pvpadmin pk <min> [jogador]: o servidor marca (min > 0), torna permanente (-1) ou limpa (0).
+                    string target = args.Length > 3 ? string.Join(" ", args.Args, 3, args.Length - 3) : string.Empty;
+                    PvpClient.SendAdmin("pk", target, minutes);
+                    context.AddString($"PK de {(target.Length > 0 ? target : "voce")}: " +
+                                      (minutes < 0f ? "permanente" : minutes == 0f ? "limpar" : minutes + " min online") + "...");
                     break;
+                }
                 case "bounty":
                 {
                     // /pvpadmin bounty <jogador> <moedas>: a casa paga; pode ser em si mesmo.
@@ -239,7 +244,7 @@ namespace Deadheim.Pvp
                     break;
                 }
                 default:
-                    context.AddString("pvpadmin zona | imune <min> | limpar | pk <min> | bounty <jogador> <moedas> | pve <jogador>");
+                    context.AddString("pvpadmin zona | imune <min> | limpar | pk <min> [jogador] | bounty <jogador> <moedas> | pve <jogador>");
                     break;
             }
         }

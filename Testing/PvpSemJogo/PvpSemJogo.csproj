@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Teste sem o jogo do arquivo de estado do PvP (Pvp\PvpData.cs): formato, ida e volta,
+       arquivo antigo ou quebrado, e o relogio de PK. Fora do Deadheim.sln, como o
+       AjustesSemJogo. PvpData.cs nao usa Unity, entao nao ha referencia nenhuma ao jogo.
+       dotnet run -c Release -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>9.0</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\..\Pvp\PvpData.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

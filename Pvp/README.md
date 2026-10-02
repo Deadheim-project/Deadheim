@@ -17,8 +17,8 @@ que o servidor ja tem, em vez de duplicar:
 Config: secoes `PvP*` do `BepInEx/config/Detalhes.Deadheim.cfg`. Vale a do servidor
 (ServerSync); o cliente recebe ao conectar. **Salvar o cfg com o servidor ligado ja vale**: o
 arquivo e relido (`Shared/ConfigWatcher.cs`) e o ServerSync entrega o valor novo a quem esta
-conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.0.0**
-(Deadheim) e **2.1.0** (RaidSystem): as regras rodam no cliente de quem leva o golpe, entao um
+conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.3.0**
+(Deadheim) e **2.2.0** (RaidSystem): as regras rodam no cliente de quem leva o golpe, entao um
 cliente sem elas seria alvo sem nenhuma protecao.
 
 ## Onde a regra e decidida
@@ -28,8 +28,11 @@ roda no dono da ZDO dela), que e o mesmo lugar onde o vanilla ja checa PvP. Cada
 publica na propria ZDO se participa de PvP agora (`pvp`) e o motivo (`dh_pvpFlags`:
 imune, PK, cacado, protegido, em combate, arena, castelo). Os outros so leem.
 
-O servidor guarda o que precisa sobreviver: K/D, marca e nivel de PK, bounties ativas e moedas a
-entregar, num JSON por mundo em `BepInEx/config/Deadheim/pvp-<mundo>.json`.
+O servidor guarda o que precisa sobreviver: K/D, marca e nivel de PK, bounties ativas, PvE permanente
+e moedas a entregar, num arquivo de texto por mundo em `BepInEx/config/Deadheim/pvp-<mundo>.txt`
+(uma linha por registro, campos `chave=valor` separados por TAB; edite so com o servidor desligado).
+Ate o 7.2.0 era um JSON do `JsonUtility`, que gravava so o `version`: todo restart zerava K/D, PK,
+bounties (com as moedas pagas) e o PvE permanente. O arquivo antigo e ignorado.
 
 ## Morte por jogador x morte por PvE
 
@@ -48,11 +51,11 @@ Uma regra so (`PvpRules.ClassifyDeath`), usada por tudo que reage a morte:
 | Conta no `/rank` (K/D) | sim, fora da arena | nao |
 | Conta no Ranking de Guerra (RaidSystem) | sim, entre guildas diferentes, fora da arena | nao |
 | Matador vira PK | sim, salvo arena / castelo em raid / alvo PK / alvo cacado / alvo agressor | - |
-| Moedas | `PvpCoinDropPercent` das moedas vai para o chao, fora da tumba (nao na arena; padrao 0) | ficam na tumba |
+| Saque | todas as moedas (`PvpCoinDropPercent`, 100) e metade da carga (`PvpCargoDropPercent`: minerio, metal, comida, trofeu) vao para o chao, fora da tumba, seja PK ou nao; o equipado fica na tumba (nao na arena) | tudo na tumba |
 | Morte dentro de castelo | ninguem perde skill (atacante ou defensor) | perda normal |
 | Guilda dona mata invasor no castelo | ganha a recompensa do bioma | - |
 | Alvo de bounty morre | quem matou leva `BountyKillerSharePercent` do pote | a bounty continua |
-| PK que morre | perde pelo nivel (skill x2, e itens no Unequipped/All) e deixa de ser PK | perde pelo nivel (se `PkPenaltyOnPveDeath`); PK comum sai, o permanente fica |
+| PK que morre | perde pelo nivel (skill x2, e itens no Unequipped/All) e deixa de ser PK | perde pelo nivel (se `PkPenaltyOnPveDeath`) e **continua PK** (`PkClearsOnPveDeath`) |
 | Janela "sem perda de skill" do vanilla (10 min depois de morrer) | morte sem perda (arena, castelo) nao abre a janela; PK perde mesmo dentro dela | igual |
 | Tumba | so o dono abre | so o dono abre |
 
@@ -71,17 +74,19 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Guilda ou party | Guilda do mod **Guilds** e grupo do mod **Groups** | `NoFriendlyFireGuild`, `NoFriendlyFireGroup` |
 | Morto por jogador | Fica **imune a PvP**: nao da nem leva dano de jogador; PvE normal | `ImmunityMinutes` (10) |
 | Ilha inicial safe zone | A terra ligada ao templo inicial (ate o raio), opcionalmente so em certos biomas. Calculada do gerador do mundo, igual em cliente e servidor; o log do servidor mostra os biomas que ela cobre | `StartIslandMode` (Island/Radius/Off), `StartIslandRadius`, `StartIslandBiomes` |
-| Transportes safe zone | Carroca sendo puxada e montaria andando protegem quem esta neles; montaria parada nao e abrigo. Carroca e montaria com sela nao tomam dano de jogador. **Barco e alvo** (pirataria): por padrao nao protege e toma dano; `ShipsSafe`/`ShipsInvulnerable` voltam o comportamento antigo | `TransportsSafe`, `TransportsInvulnerable`, `ShipsSafe`, `ShipsInvulnerable`, `ShipSafeMinSpeed`, `MountSafeMinSpeed` |
+| Transportes | **Carga em transito e alvo**: por padrao carroca, montaria e barco nao protegem quem esta neles e tomam dano de jogador (quebrar a carroca derruba o que ela leva). `TransportsSafe`/`TransportsInvulnerable` (carroca e montaria) e `ShipsSafe`/`ShipsInvulnerable` (barco) voltam a protecao | `TransportsSafe`, `TransportsInvulnerable`, `ShipsSafe`, `ShipsInvulnerable`, `ShipSafeMinSpeed`, `MountSafeMinSpeed` |
 | Montarias | Estamina da sela (Lox, Asksvin) configuravel, valendo na hora para as selas ja carregadas; 0 = valor do jogo. | `[Montarias] MaxStamina`, `RunStaminaDrain`, `SwimStaminaDrain`, `StaminaRegen`, `StaminaRegenHungry` |
 | Combate | Dar ou levar dano PvP deixa "em combate": zona segura nao protege e retreat nao funciona | `CombatTagSeconds` (30) |
-| Retreat cooldown e combate | `/retreat` com recarga, bloqueado em combate e cacado (a pedra do Hearthstone tambem) | `RetreatCooldownMinutes` (30) |
-| Combate | Status "Em combate" com contagem na barra de efeitos. Opcional: apanhar de/bater em monstro tambem conta, so para teleporte (zona segura continua valendo contra jogador) | `CombatStatusIcon`, `CombatFromPve`, `CombatTagSeconds` |
-| Fuga de combate | Em combate nenhum teleporte longo funciona (portal, NPC teleportador, pedra, retreat). Deslogar em combate conta morte para quem saiu e abate para quem bateu; com `Death`, ao voltar ele morre onde saiu | `CombatBlocksTeleport`, `CombatLogout` (Off/Rank/Death) |
-| PK por niveis | Quem mata jogador vira PK. O nivel sobe com os abates seguidos (padrao: 1 = 1 h, 2 = 2 h, 3+ = 24 h, 5+ = permanente ate ser morto por jogador, no mapa de todos). Ao morrer marcado perde pelo nivel: `Skills` (skill x2), `Unequipped` (+ tudo que nao esta equipado cai no chao), `All` (+ o inventario inteiro cai no chao). Matar PK, cacado, agressor, na arena ou no castelo em raid nao gera PK | `PkTiers`, `PkSkillLossMultiplier`, `PkClearsOnDeath`, `PkPenaltyOnPveDeath`, `PkPermanentOnMap` |
+| Retreat cooldown e combate | `/retreat` com recarga, bloqueado em combate (com jogador ou monstro) e cacado; a pedra do Hearthstone tambem | `RetreatCooldownMinutes` (30), `RetreatBlockedByPveCombat` |
+| Buffs de estado | Cada estado do PvP e um buff na barra de efeitos do jogo, com contagem: **Em combate** (ou **Luta com monstro**, quando ela bloqueia o retreat), **Imune a PvP**, **PK** (com o contador, `PK x3`, ou `PK permanente`), **Agressor**, **Cacado**, **Bounty** (o aviso), **Zona segura** (com o nome da zona) e o titulo do **PvE**. A linha no topo da tela continua resumindo | `CombatStatusIcon`, `StateBuffs` |
+| Combate | Opcional: apanhar de/bater em monstro tambem conta para todo teleporte (zona segura continua valendo contra jogador); so para o retreat e a pedra ja vale por padrao | `CombatFromPve`, `RetreatBlockedByPveCombat`, `CombatTagSeconds` |
+| Fuga de combate | Em combate nenhum teleporte longo funciona (portal, NPC teleportador, pedra, retreat). Deslogar em combate conta morte para quem saiu e abate para quem bateu (`Rank`, padrao); com `Death`, ao voltar ele tambem morre onde saiu | `CombatBlocksTeleport`, `CombatLogout` (Off/Rank/Death) |
+| PK por niveis | Quem mata jogador vira PK. O nivel sobe com os abates seguidos (padrao: 1 = 1 h, 2 = 2 h, 3+ = 24 h, 5+ = permanente ate ser morto por jogador, no mapa de todos). **O tempo so corre online** (deslogar nao limpa), **o PK nao tem zona segura nem transporte** (quem esta na zona pode ataca-lo) e **so sai morto por jogador** (morrer de PvE nao limpa). Ao morrer marcado perde pelo nivel: `Skills` (skill x2), `Unequipped` (+ tudo que nao esta equipado cai no chao), `All` (+ o inventario inteiro cai no chao). Matar PK, cacado, agressor, na arena ou no castelo em raid nao gera PK | `PkTiers`, `PkSkillLossMultiplier`, `PkClearsOnDeath`, `PkClearsOnPveDeath`, `PkTimeOnlineOnly`, `PkNoSafeZone`, `PkPenaltyOnPveDeath`, `PkPermanentOnMap` |
 | Legitima defesa | Quem bate primeiro em alguem sem marca vira AGRESSOR por 10 min (nome e HUD); o relogio para enquanto ele esta em combate com jogador. Matar um agressor nao gera PK, e o agressor que morre nao perde nada a mais | `AggressorRule`, `AggressorSeconds`, `AggressorPausesInCombat` |
 | Contador de PK | Quantos abates deram PK a cada jogador: no `/rank`, no `/pvp`, no HUD e no nome (`[PK x3]`), e no anuncio da morte (`[PK #3]`) | - |
 | Arena sem perda de skill | Zonas de arena: PvP sempre, sem perda de skill, sem PK, sem imunidade, fogo amigo liberado, fora do ranking | `ArenaZones`, `ArenaNoSkillLoss`, `ArenaFriendlyFire`, `ArenaCountsLeaderboard` |
 | Defesa de castelo | Castelo = zona do RaidSystem. Quem morre para jogador la nao perde skill (qualquer lado), a imunidade nao vale la e ninguem vira PK. A guilda dona que mata invasor ganha moedas pelo bioma | `CastleNoSkillLoss`, `CastleIgnoresImmunity`, `CastleRewardItem`, `CastleRewardByBiome`, `CastleRewardCooldownMinutes` |
+| Faixa por chefes | Dois jogadores so se ferem se a diferenca de chefes derrotados for no maximo `BossGapMax` (1): quem matou a Massa Ossea (3) luta com quem esta entre o Anciao (2) e a Moder (4). O nivel e o chefe mais avancado que o personagem ajudou a matar (o perfil do jogo conta a morte do chefe para quem deu dano). Fora da faixa ninguem fere ninguem e o nome mostra `[outra faixa]`; na arena nao vale. Protege o novato do veterano | `BossGapMax`, `BossOrder` |
 | Bounty / Hunted | `/bounty <jogador> <moedas>` (minimo 1000, sai do inventario): o alvo e avisado e 10 min depois vira CACADO, no mapa de todos, sem zona segura nem imunidade, sem teleporte. Tempo = 1 h por 1000 moedas, contado so com o alvo online; a partir de 5000, ate morrer. Quem matar leva 75% do pote, o resto e da casa. O alvo pode pagar 1,5x o pote para a casa e se livrar (`/bounty pagar`). Sem recompensa por sobreviver (nada sai do nada). Dentro do proprio ward o relogio para e o ward nao reduz o dano; com poucos jogadores online tambem para. Admin: `/pvpadmin bounty <jogador> <moedas>` (a casa paga) | `Bounty*`, `HuntedCanUsePortals`, `HuntedNoWardDefense` |
 | Leaderboard K/D | `/rank` (todo mundo, com ou sem guilda, com o contador de PK) e o Ranking de Guerra do RaidSystem (PageDown, pontos por guilda), que agora conta os abates de verdade | `LeaderboardSize` |
 | Tumba por player | So o dono (e admin) abre a propria tumba | `TombstoneOwnerOnly`, `TombstoneGuildAccess` |
@@ -89,7 +94,7 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Stagger no PvP | O cambalear de golpe de jogador em jogador pode ser reduzido | `StaggerMultiplier` |
 | Base raidavel | Fora da zona segura, o que o ward cobre toma `DamagePercent` do dano (padrao 25%); na zona segura (SafeArea, ilha inicial, SafeZones) e sempre 0. Wards sem limite por jogador | `[Wards] DamagePercent`, `[Server config] WardLimit` |
 | Castelo | O castelo so e zona de guerra na janela de raid do RaidSystem; quando a RaidWard cai, vira zona segura ate a janela fechar. Guilda que segura o castelo a janela inteira ganha cargas de tributo e pontos de defesa | RaidSystem `3 - PvP`, `Defense Tribute Charges`, `Points Per Defense` |
-| PvE permanente | `/pve confirmar`: o jogador vira `PveTitle` (padrao Mercador) e sai do PvP para sempre, em todo lugar (arena e castelo inclusive); nao pode receber bounty. Ganha uma vez +70 em pesca, criacao, culinaria, agricultura, picareta, lenhador e montaria (o jogo nao tem skill de domar); sobe skill x0.5 e a coleta fica sem o bonus de recursos do mundo no que ele junta. PK e quem tem bounty nao podem virar. Sem volta: so admin desfaz (`/pvpadmin pve <jogador>`) | `PveEnabled`, `PveTitle`, `PveSkillMultiplier`, `PveSkillBonus`, `PveResourceRate` |
+| PvE permanente | `/pve confirmar`: o jogador vira `PveTitle` (padrao Mercador) e sai do PvP para sempre, em todo lugar (arena e castelo inclusive); nao pode receber bounty. **Sem bonus**: sobe skill x0.5 e coleta 1x, enquanto quem joga PvP coleta 2x (arvore, pedra, minerio, colheita, drop de monstro). PK e quem tem bounty nao podem virar. Sem volta: so admin desfaz (`/pvpadmin pve <jogador>`) | `PveEnabled`, `PveTitle`, `PveSkillMultiplier`, `PveResourceRate`, `PvpResourceRate` |
 | Bonus de monstro so para aliados | O bonus de vida e dano do monstro por jogador perto (jogo e CreatureLevelControl) so conta quem luta e o grupo e a guilda dele: estranho passando perto nao deixa o monstro mais duro | `[Server config] MonsterScalingAlliesOnly` |
 | Gold sem peso, pilha 5k | Coins pesam 0 e empilham 5000 | `CoinsWeightless`, `CoinsMaxStack` |
 | Ward sem quebrar chao, pedra e arvore | Dentro do ward alheio: sem picareta/enxada no terreno, sem quebrar pedra, arvore, tronco e toco. Veio de minerio fica livre (senao guilda tranca os veios com ward), e a protecao pode ficar so perto do ward | `[Wards] ProtectTerrain`, `ProtectNature`, `ProtectNatureOres`, `NatureOreDrops`, `ProtectNatureRadius` |
@@ -111,7 +116,8 @@ o tamanho da zona segura calculada:
 | `/rank` | Ranking K/D |
 | `/pve` / `/pve confirmar` | Explica o PvE permanente / vira PvE para sempre |
 | `/pvpadmin zona` | (admin) coordenadas, bioma, zona, castelo, guilda e bandeiras onde voce esta |
-| `/pvpadmin imune <min>` / `limpar` / `pk <min>` | (admin) mexe no proprio estado, para testar |
+| `/pvpadmin imune <min>` / `limpar` | (admin) mexe na propria imunidade, para testar |
+| `/pvpadmin pk <min> [jogador]` | (admin) o servidor marca PK por `<min>` minutos online, permanente (`-1`) ou limpa (`0`); sem jogador, o proprio admin |
 | `/pvpadmin bounty <jogador> <moedas>` | (admin) bounty paga pela casa, pode ser em si mesmo |
 | `/pvpadmin pve <jogador>` | (admin) tira o jogador do PvE permanente |
 
@@ -135,3 +141,6 @@ powershell -ExecutionPolicy Bypass -File Testing\run-pvp-test.ps1 -Root D:\tmp\p
 - Sem `-Solo`: dois clientes reais (Alfa e Bravo) em roteiro sincronizado. Precisa de
   memoria para servidor + dois clientes (uns 10 GB de commit livre).
 - `-Steps eu-bato,pk,arena`: roda so esses passos do solo (o setup sempre roda).
+
+`Testing/PvpSemJogo` testa sem o jogo o arquivo de estado (ida e volta, arquivo editado a mao, o
+JSON antigo) e o relogio de PK: `dotnet run -c Release` na pasta.

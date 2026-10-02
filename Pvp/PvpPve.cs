@@ -1,28 +1,25 @@
 using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 namespace Deadheim.Pvp
 {
     /// <summary>
-    /// PvE permanente: o jogador escolhe (/pve confirmar) sair do PvP para sempre. Ganha um
-    /// titulo e um bonus unico nas skills de oficio, mas sobe skill mais devagar e perde o
-    /// bonus de coleta do mundo. Nao tem volta pelo jogador; so um admin desfaz.
+    /// PvE permanente: o jogador escolhe (/pve confirmar) sair do PvP para sempre. Ganha so o
+    /// titulo: sobe skill mais devagar (PveSkillMultiplier) e coleta na taxa do PvE
+    /// (PveResourceRate, 1x), enquanto quem joga PvP coleta na PvpResourceRate (2x). Nao tem
+    /// volta pelo jogador; so um admin desfaz.
     ///
     /// O servidor guarda a escolha (PvpStore) e manda no estado; o cliente aplica o que e
-    /// dele: bandeira de PvP sempre desligada (PvpState.Tick), o bonus de skill uma vez por
-    /// personagem (m_customData), o ganho de skill e a taxa de coleta local.
+    /// dele: bandeira de PvP sempre desligada (PvpState.Tick), o ganho de skill e a taxa de
+    /// coleta local.
     ///
-    /// A coleta: o jogo multiplica o que cai pela taxa do mundo no cliente que processa a
-    /// quebra (dono do objeto). O PvE usa a taxa PveResourceRate no proprio cliente, entao o
-    /// que ele junta sozinho vem sem o bonus; perto de outro jogador pode vir com.
+    /// A coleta: o jogo multiplica o que cai pela taxa do mundo (Game.m_resourceRate) no
+    /// cliente que processa a quebra ou a morte (dono do objeto). Cada cliente usa a taxa de quem
+    /// joga nele, entao o que um jogador junta sozinho vem na taxa dele; perto de outro jogador
+    /// pode vir na taxa de quem for dono do objeto.
     /// </summary>
     internal static class PvpPve
     {
-        private const string KeyBonusGiven = "dh_pveBonus";
-
         private static bool _local;
 
         /// <summary>O jogador local e PvE permanente (o servidor disse).</summary>
@@ -50,80 +47,33 @@ namespace Deadheim.Pvp
         {
             if (!_local) return;
             _local = false;
-            ZoneSystem.instance?.UpdateWorldRates();
+            RefreshResourceRate();
         }
 
-        /// <summary>Estado vindo do servidor. Na primeira vez que liga neste personagem, da o bonus.</summary>
+        /// <summary>Estado vindo do servidor.</summary>
         public static void ApplyLocal(bool pve)
         {
             bool changed = pve != _local;
             _local = pve;
-            if (pve) GiveBonusOnce(Player.m_localPlayer);
-            if (changed) ZoneSystem.instance?.UpdateWorldRates();
+            if (changed) RefreshResourceRate();
         }
 
-        private static void GiveBonusOnce(Player player)
+        /// <summary>Recalcula a taxa do mundo; o postfix abaixo poe a do PvP ou a do PvE por cima.</summary>
+        public static void RefreshResourceRate() => ZoneSystem.instance?.UpdateWorldRates();
+
+        /// <summary>Taxa de coleta do jogador local: PveResourceRate ou PvpResourceRate. 0 = a do mundo.</summary>
+        public static void ApplyResourceRate()
         {
-            if (player == null || player.m_customData.ContainsKey(KeyBonusGiven)) return;
-            player.m_customData[KeyBonusGiven] = "1";
-
-            Skills skills = player.GetSkills();
-            float cap = Mathf.Min(100f, Mathf.Max(0f, Plugin.SkillCap != null ? Plugin.SkillCap.Value : 100f));
-            List<string> given = new List<string>();
-            foreach (KeyValuePair<Skills.SkillType, float> bonus in ParseBonus(skills, PvpConfig.PveSkillBonus.Value))
-            {
-                Skills.Skill skill = skills.GetSkill(bonus.Key);
-                if (skill == null) continue;
-                float before = skill.m_level;
-                skill.m_level = Mathf.Clamp(skill.m_level + bonus.Value, 0f, Mathf.Max(cap, skill.m_level));
-                skill.m_accumulator = 0f;
-                given.Add($"{bonus.Key} {before:0}->{skill.m_level:0}");
-            }
-            Debug.Log("[Deadheim PvP] PvE permanente: bonus de skill " + (given.Count > 0 ? string.Join(", ", given) : "(nenhum)"));
-            if (given.Count > 0) player.Message(MessageHud.MessageType.TopLeft, "Bonus de PvE: " + string.Join(", ", given));
-        }
-
-        /// <summary>
-        /// "Fishing:70,Crafting:70": nome da skill do jogo, ou o de uma skill de mod (SkillManager
-        /// registra pelo hash do nome). Nome desconhecido e ignorado com aviso.
-        /// </summary>
-        public static List<KeyValuePair<Skills.SkillType, float>> ParseBonus(Skills skills, string text)
-        {
-            List<KeyValuePair<Skills.SkillType, float>> result = new List<KeyValuePair<Skills.SkillType, float>>();
-            if (string.IsNullOrWhiteSpace(text)) return result;
-            foreach (string entry in text.Split(','))
-            {
-                string[] parts = entry.Split(':');
-                if (parts.Length != 2) continue;
-                string name = parts[0].Trim();
-                if (!float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float amount)) continue;
-
-                Skills.SkillType type;
-                if (!Enum.TryParse(name, true, out type) || type == Skills.SkillType.None)
-                {
-                    type = (Skills.SkillType)Math.Abs(name.GetStableHashCode());
-                    if (skills == null || skills.GetSkillDef(type) == null)
-                    {
-                        Debug.LogWarning($"[Deadheim PvP] PveSkillBonus: skill '{name}' nao existe.");
-                        continue;
-                    }
-                }
-                result.Add(new KeyValuePair<Skills.SkillType, float>(type, amount));
-            }
-            return result;
-        }
-
-        /// <summary>Taxa de coleta do PvE: nunca acima de PveResourceRate. 0 = nao mexe.</summary>
-        public static void ClampResourceRate()
-        {
-            float rate = PvpConfig.PveResourceRate != null ? PvpConfig.PveResourceRate.Value : 0f;
-            if (_local && rate > 0f && Game.m_resourceRate > rate) Game.m_resourceRate = rate;
+            // O servidor dedicado nao e jogador nenhum: fica com a taxa do mundo.
+            if (!PvpConfig.Active || PvpConfig.PvpResourceRate == null || Application.isBatchMode) return;
+            float rate = _local ? PvpConfig.PveResourceRate.Value : PvpConfig.PvpResourceRate.Value;
+            if (rate > 0f) Game.m_resourceRate = rate;
         }
 
         [HarmonyPatch(typeof(Game), nameof(Game.UpdateWorldRates))]
         private static class ResourceRatePatch
         {
-            private static void Postfix() => ClampResourceRate();
+            private static void Postfix() => ApplyResourceRate();
         }
 
         // ---------------------------------------------------------------- servidor
@@ -146,7 +96,7 @@ namespace Deadheim.Pvp
             PvpPlayerRecord record = PvpStore.Player(peer.PlayerId, peer.Name);
             if (!PvpConfig.PveEnabled.Value) { PvpNet.Message(peer.PeerId, "O PvE permanente esta desligado neste servidor."); return; }
             if (record.pvePermanent) { PvpNet.Message(peer.PeerId, "Voce ja e PvE permanente."); return; }
-            if (record.IsPk(PvpState.Now)) { PvpNet.Message(peer.PeerId, "PK nao pode virar PvE: espere a marca sair."); return; }
+            if (record.IsPk) { PvpNet.Message(peer.PeerId, "PK nao pode virar PvE: espere a marca sair."); return; }
             if (PvpBounty.HasBounty(peer.PlayerId)) { PvpNet.Message(peer.PeerId, "Com bounty na cabeca nao da para virar PvE."); return; }
 
             record.pvePermanent = true;

@@ -101,7 +101,10 @@ namespace PvpTestDriver
                 Step("imunidade", SoloImmunity),
                 Step("pk", SoloPk),
                 Step("pk-niveis", SoloPkTiers),
+                // Com -Admin a marca vem do servidor e a morte PvE e conferida; sem admin, so a zona.
+                Step("pk-sem-protecao", SoloPkNoSafeZone),
                 Step("agressor", SoloAggressor),
+                Step("chefes", SoloBosses),
                 Step("arena", SoloArena),
                 // Bounty precisa de admin (a casa paga a bounty no proprio personagem): rode com -Admin.
                 Step("bounty", SoloBounty),
@@ -117,6 +120,7 @@ namespace PvpTestDriver
                 Step("monstro-aliados", SoloMonsterScaling),
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
+                Step("estado-salvo", SoloSavedState),
                 Step("coins", Coins),
                 Step("forja", SoloForja),
                 // Sem volta para o personagem de teste: depois de todos os passos de PvP.
@@ -348,7 +352,7 @@ namespace PvpTestDriver
             yield return ExpectDamage("dummy-bate/dano-x0.5", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
             yield return Wait(0.5f);
             Check("dummy-bate/em-combate", PvpState.InCombat && (PvpState.Current & PvpFlags.Combat) != 0, $"flags={PvpState.Current}");
-            StatusEffect icon = Me.GetSEMan().GetStatusEffect(PvpHud.CombatStatusHash);
+            StatusEffect icon = Me.GetSEMan().GetStatusEffect(PvpHud.CombatHash);
             Check("dummy-bate/icone-em-combate", icon != null && icon.GetRemaningTime() > 0f,
                 icon != null ? $"restante={icon.GetRemaningTime():0.0}s" : "sem icone");
         }
@@ -403,7 +407,7 @@ namespace PvpTestDriver
             while (Time.time < until && (Me.IsTeleporting() || Utils.DistanceXZ(Me.transform.position, far) > 3f)) yield return Wait(0.5f);
             Check("fuga/teleporte-livre-fora-de-combate", went && Utils.DistanceXZ(Me.transform.position, far) < 3f,
                 $"teleportou={went} distancia={Utils.DistanceXZ(Me.transform.position, far):0.0}");
-            Check("fuga/icone-some-fora-de-combate", Me.GetSEMan().GetStatusEffect(PvpHud.CombatStatusHash) == null);
+            Check("fuga/icone-some-fora-de-combate", Me.GetSEMan().GetStatusEffect(PvpHud.CombatHash) == null);
 
             // CombatFromPve: apanhar de monstro tambem prende o teleporte (o mod Combat fazia isso).
             yield return MoveTo(_openA);
@@ -471,6 +475,7 @@ namespace PvpTestDriver
             yield return Wait(0.6f);
             Check("agressor/marcado", PvpState.IsAggressor && (PvpState.Current & PvpFlags.Aggressor) != 0, $"flags={PvpState.Current}");
             Check("agressor/hud", PvpHud.Compose(Me).Contains("AGRESSOR"), PvpHud.Compose(Me));
+            Check("agressor/buff", BuffOn(PvpHud.AggressorHash) != null);
 
             // Em combate com jogador o relogio de agressor para (AggressorPausesInCombat).
             float start = PvpState.AggressorRemaining;
@@ -493,7 +498,11 @@ namespace PvpTestDriver
             PvpState.ClearImmunity(Me);
         }
 
-        /// <summary>Saque: quem morre para jogador deixa PvpCoinDropPercent das moedas no chao, fora da tumba.</summary>
+        /// <summary>
+        /// Saque: quem morre para jogador deixa no chao PvpCoinDropPercent das moedas (todas, no
+        /// padrao) e PvpCargoDropPercent da carga (material, comida...). O equipado fica na tumba e
+        /// o que esta em PvpCargoKeep nunca cai.
+        /// </summary>
         private IEnumerator SoloLoot()
         {
             ClearAllProtection();
@@ -501,24 +510,30 @@ namespace PvpTestDriver
             MoveDummy(_openB);
             yield return Wait(CombatWait);
 
-            GameObject coinsPrefab = ObjectDB.instance.GetItemPrefab("Coins");
-            string coinName = coinsPrefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
-            Inventory inventory = Me.GetInventory();
-            inventory.RemoveItem(coinName, inventory.CountItems(coinName));
-            inventory.AddItem(coinsPrefab, 1000);
-            int expected = Mathf.FloorToInt(1000 * PvpConfig.PvpCoinDropPercent.Value / 100f);
             Vector3 deathAt = Me.transform.position;
+            // Sobras de mortes anteriores no mesmo lugar estragariam a contagem.
+            ClearGround(deathAt);
+            GiveItem("Coins", 1000);
+            GiveItem("Wood", 20);
+            GiveItem("CookedMeat", 4);
+            bool token = ObjectDB.instance.GetItemPrefab("PortalToken") != null;
+            if (token) GiveItem("PortalToken", 2);
+            GiveAndEquip("SwordBronze");
+            int coins = Mathf.FloorToInt(1000 * PvpConfig.PvpCoinDropPercent.Value / 100f);
+            int wood = Mathf.FloorToInt(20 * PvpConfig.PvpCargoDropPercent.Value / 100f);
+            int meat = Mathf.FloorToInt(4 * PvpConfig.PvpCargoDropPercent.Value / 100f);
 
             MarkServerLog();
             yield return DummyKillsMe("saque");
             yield return Wait(1.5f);
-            List<ItemDrop> coins = ItemDrop.s_instances.Where(d => d != null && d.m_itemData.m_shared.m_name == coinName
-                                                                   && Utils.DistanceXZ(d.transform.position, deathAt) < 8f).ToList();
-            int onGround = coins.Sum(d => d.m_itemData.m_stack);
-            Check("saque/moedas-no-chao", onGround == expected, $"no-chao={onGround} esperado={expected}");
+            Check("saque/moedas-no-chao", GroundCount("Coins", deathAt) == coins, $"no-chao={GroundCount("Coins", deathAt)} esperado={coins}");
+            Check("saque/carga-material", GroundCount("Wood", deathAt) == wood, $"madeira={GroundCount("Wood", deathAt)} esperado={wood}");
+            Check("saque/carga-comida", GroundCount("CookedMeat", deathAt) == meat, $"carne={GroundCount("CookedMeat", deathAt)} esperado={meat}");
+            Check("saque/equipado-fica-na-tumba", GroundCount("SwordBronze", deathAt) == 0, "espada=" + GroundCount("SwordBronze", deathAt));
+            if (token) Check("saque/token-nunca-cai", GroundCount("PortalToken", deathAt) == 0, "token=" + GroundCount("PortalToken", deathAt));
             string log = ServerLogSinceMark();
-            Check("saque/servidor-sabe", log.Contains($"moedasNoChao={expected}"), Tail(log));
-            foreach (ItemDrop drop in coins) ZNetScene.instance.Destroy(drop.gameObject);
+            Check("saque/servidor-sabe", log.Contains($"moedasNoChao={coins} cargaNoChao="), Tail(log));
+            ClearGround(deathAt);
             PvpState.ClearImmunity(Me);
         }
 
@@ -546,6 +561,7 @@ namespace PvpTestDriver
             yield return Wait(0.5f);
             Check("zona-segura/protegido", (PvpState.Current & PvpFlags.Protected) != 0 && !Me.IsPVPEnabled(), $"flags={PvpState.Current}");
             Check("zona-segura/hud", PvpHud.Compose(Me).Contains("ZONA SEGURA"), PvpHud.Compose(Me));
+            Check("zona-segura/buff", BuffOn(PvpHud.SafeHash) != null, $"flags={PvpState.Current}");
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("zona-segura/bloqueia-dano", 0f, 0.5f);
@@ -580,11 +596,17 @@ namespace PvpTestDriver
             yield return MoveTo(_safe);
             Check("combate/zona-segura-nao-protege", PvpState.InCombat && Me.IsPVPEnabled() && (PvpState.Current & PvpFlags.Protected) == 0,
                 $"flags={PvpState.Current}");
+            yield return Wait(0.4f);
+            StatusEffect combat = BuffOn(PvpHud.CombatHash);
+            Check("combate/buff-com-contagem", combat != null && combat.m_name == "Em combate" && combat.GetRemaningTime() > 0f,
+                combat == null ? "sem buff" : $"{combat.m_name} {combat.GetRemaningTime():0.0}s");
+            Check("combate/zona-segura-sem-buff", BuffOn(PvpHud.SafeHash) == null);
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("combate/leva-dano-na-zona-segura", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
             yield return Wait(CombatWait);
             Check("combate/protegido-depois", (PvpState.Current & PvpFlags.Protected) != 0 && !Me.IsPVPEnabled(), $"flags={PvpState.Current}");
+            Check("combate/buff-some", BuffOn(PvpHud.CombatHash) == null && BuffOn(PvpHud.SafeHash) != null);
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("combate/bloqueado-depois", 0f, 0.5f);
@@ -696,6 +718,9 @@ namespace PvpTestDriver
             MoveDummy(_openB);
             yield return Wait(1f);
             Check("imunidade/hud", PvpHud.Compose(Me).Contains("IMUNE"), PvpHud.Compose(Me));
+            StatusEffect immune = BuffOn(PvpHud.ImmuneHash);
+            Check("imunidade/buff-com-contagem", immune != null && immune.GetRemaningTime() > 0f,
+                immune == null ? "sem buff" : $"{immune.m_name} {immune.GetRemaningTime():0.0}s");
             Heal();
             DummyStrikesMe(Hit);
             yield return ExpectDamage("imunidade/nao-recebe", 0f, 0.5f);
@@ -714,6 +739,10 @@ namespace PvpTestDriver
             PvpState.ApplyPkCount(Me, 3);
             Check("pk/contador-no-hud", PvpHud.Compose(Me).Contains("x3"), PvpHud.Compose(Me));
             Check("pk/contador-na-zdo", Me.m_nview.GetZDO().GetInt(PvpState.ZdoPkCount, 0) == 3);
+            yield return Wait(0.4f);
+            StatusEffect pk = BuffOn(PvpHud.PkHash);
+            Check("pk/buff-com-contador", pk != null && pk.m_name == "PK x3" && pk.GetRemaningTime() > 0f,
+                pk == null ? "sem buff" : $"{pk.m_name} {pk.GetRemaningTime():0.0}s");
             SetSwords(Me, 50f);
             float before = Swords(Me);
             // Acabou de morrer: o vanilla estaria na janela sem perda de skill. PK perde assim mesmo.
@@ -780,6 +809,73 @@ namespace PvpTestDriver
             PvpState.ClearImmunity(Me);
         }
 
+        /// <summary>
+        /// PK sem zona segura (PkNoSafeZone): na ilha ele leva dano, e quem esta protegido na ilha
+        /// pode atacar um PK (imune nao). Com admin a marca vem do servidor e morrer de PvE nao a
+        /// tira (PkClearsOnPveDeath=false).
+        /// </summary>
+        private IEnumerator SoloPkNoSafeZone()
+        {
+            ClearAllProtection();
+            yield return Wait(CombatWait);
+            bool admin = Deadheim.Vanilla.Admin.LocalPlayerIsAdmin();
+            MarkServerLog();
+            if (admin)
+            {
+                Command("pvpadmin pk 10");
+                yield return WaitFor(() => PvpState.IsPk, 10f);
+            }
+            else PvpState.ApplyServerTimers(600d, 0d, 0d);
+            Check("pk-sem-protecao/marcado", PvpState.IsPk, $"flags={PvpState.Current} admin={admin}");
+
+            yield return MoveTo(_safe);
+            yield return Wait(0.6f);
+            Check("pk-sem-protecao/zona-segura-nao-protege", Me.IsPVPEnabled() && (PvpState.Current & PvpFlags.Protected) == 0,
+                $"flags={PvpState.Current}");
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("pk-sem-protecao/leva-dano-na-ilha", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+
+            // Quem esta protegido pela ilha alcanca o PK; imune continua sem atacar.
+            SetDummy(false, PvpFlags.Protected);
+            yield return Wait(0.3f);
+            Check("pk-sem-protecao/protegido-pode-atacar-pk", PvpRules.Check(_dummy, Me) == PvpRules.Verdict.Allow, PvpRules.Check(_dummy, Me).ToString());
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("pk-sem-protecao/protegido-fere-pk", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+            SetDummy(false, PvpFlags.Protected | PvpFlags.Immune);
+            yield return Wait(0.3f);
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("pk-sem-protecao/imune-nao-ataca", 0f, 0.5f);
+            SetDummy(true, PvpFlags.None);
+
+            if (!admin)
+            {
+                Log("SKIP pk-sem-protecao/morte-pve: precisa de admin (-Admin)");
+                PvpState.ClearPk();
+                yield break;
+            }
+
+            // Morte PvE longe de qualquer golpe de jogador: a marca fica.
+            yield return MoveTo(_openA);
+            yield return Wait(Mathf.Max(CombatWait, PvpConfig.KillCreditSeconds.Value + 1.5f));
+            ArmHardDeath();
+            Player dead = Me;
+            HitData fall = new HitData { m_hitType = HitData.HitType.Fall, m_point = Me.GetCenterPoint() };
+            fall.m_damage.m_damage = 1000f;
+            Me.m_nview.InvokeRPC("RPC_Damage", fall);
+            yield return WaitRespawn(dead);
+            yield return Wait(1.5f);
+            Check("pk-sem-protecao/morte-pve-nao-limpa", PvpState.IsPk, $"flags={PvpState.Current}");
+            string log = ServerLogSinceMark();
+            Check("pk-sem-protecao/servidor-manteve", log.Contains($"Morte: {_myName} por PvE") && log.Contains("vitimaPK=True")
+                                                       && !log.Contains($"Marca de PK de {_myName}"), Tail(log));
+            Command("pvpadmin pk 0");
+            yield return WaitFor(() => !PvpState.IsPk, 10f);
+            Check("pk-sem-protecao/admin-limpa", !PvpState.IsPk, $"flags={PvpState.Current}");
+        }
+
         private IEnumerator BackToOpen()
         {
             PvpState.ClearImmunity(Me);
@@ -804,6 +900,9 @@ namespace PvpTestDriver
             ItemDrop.ItemData item = Me.GetInventory().GetItem(name);
             if (item != null) Me.EquipItem(item);
         }
+
+        /// <summary>Buff do PvP na barra de efeitos do jogador local (PvpHud), ou null.</summary>
+        private StatusEffect BuffOn(int hash) => Me.GetSEMan().GetStatusEffect(hash);
 
         private static int GroundCount(string prefab, Vector3 near)
         {
@@ -892,9 +991,71 @@ namespace PvpTestDriver
         }
 
         /// <summary>
+        /// Faixa por chefes (BossGapMax=1): sem chefe nenhum eu nao firo nem sou ferido pelo Dummy
+        /// de 3 chefes (Massa Ossea); com 1 (Eikthyr) a luta vale. Na arena a faixa nao vale. O meu
+        /// nivel vem do perfil do personagem (morte de chefe que ajudei a matar).
+        /// </summary>
+        private IEnumerator SoloBosses()
+        {
+            ClearAllProtection();
+            ClearGuilds();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+
+            Dictionary<string, float> kills = Game.instance.GetPlayerProfile().m_playerStats[0].m_enemyStats[0];
+            PvpBosses.Refresh();
+            yield return Wait(0.6f);
+            Check("chefes/sem-chefe", PvpBosses.LocalTier == 0, "nivel=" + PvpBosses.LocalTier);
+            kills["$enemy_gdking"] = 1f;
+            PvpBosses.Refresh();
+            yield return Wait(0.6f);
+            Check("chefes/anciao-no-perfil-e-nivel-2", PvpBosses.LocalTier == 2 && Me.m_nview.GetZDO().GetInt(PvpBosses.ZdoBossTier, 0) == 2,
+                "nivel=" + PvpBosses.LocalTier);
+            kills.Remove("$enemy_gdking");
+            PvpBosses.Refresh();
+            yield return Wait(0.6f);
+            Check("chefes/de-volta-a-zero", PvpBosses.LocalTier == 0, "nivel=" + PvpBosses.LocalTier);
+
+            SetDummyTier(3);
+            yield return Wait(0.3f);
+            Check("chefes/regra", PvpRules.Check(_dummy, Me) == PvpRules.Verdict.BossGap && PvpRules.Check(Me, _dummy) == PvpRules.Verdict.BossGap,
+                $"{PvpRules.Check(_dummy, Me)} / {PvpRules.Check(Me, _dummy)}");
+            Check("chefes/nome-mostra-outra-faixa", _dummy.GetHoverName().Contains("outra faixa"), _dummy.GetHoverName());
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("chefes/forte-nao-fere-fraco", 0f, 0.5f);
+            float before = _dummy.GetHealth();
+            IStrikeDummy(Hit);
+            yield return ExpectDummyDamage("chefes/fraco-nao-fere-forte", before, 0f);
+
+            SetDummyTier(1);
+            yield return Wait(0.3f);
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("chefes/um-de-diferenca-luta", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+
+            SetDummyTier(3);
+            yield return MoveTo(_temple + Vector3.right * 2f);
+            MoveDummy(_temple - Vector3.right * 2f);
+            yield return Wait(1f);
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return ExpectDamage("chefes/arena-ignora-a-faixa", Hit * PvpConfig.DamageMultiplier.Value, 0.5f);
+            SetDummyTier(0);
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+        }
+
+        private void SetDummyTier(int tier)
+        {
+            if (_dummy != null) _dummy.m_nview.GetZDO().Set(PvpBosses.ZdoBossTier, tier);
+        }
+
+        /// <summary>
         /// PvE permanente: /pve so explica, /pve confirmar vira. Depois: titulo, fora do PvP em
-        /// todo lugar (arena inclusive), bonus de skill uma vez so, skill mais devagar e a taxa
-        /// de coleta sem o bonus do mundo.
+        /// todo lugar (arena inclusive), sem bonus de skill, skill mais devagar e a coleta do PvE
+        /// (PveResourceRate) no lugar da do PvP (PvpResourceRate).
         /// </summary>
         private IEnumerator SoloPve()
         {
@@ -905,6 +1066,9 @@ namespace PvpTestDriver
             Skills.Skill fishing = Me.GetSkills().GetSkill(Skills.SkillType.Fishing);
             fishing.m_level = 5f;
             float normalGain = SwordGain();
+            ZoneSystem.instance.UpdateWorldRates();
+            Check("pve/pvp-coleta-na-taxa-do-pvp", Mathf.Approximately(Game.m_resourceRate, PvpConfig.PvpResourceRate.Value),
+                $"taxa={Game.m_resourceRate} esperado={PvpConfig.PvpResourceRate.Value}");
             MarkServerLog();
 
             Command("pve");
@@ -918,17 +1082,17 @@ namespace PvpTestDriver
             Check("pve/zdo", (Me.m_nview.GetZDO().GetInt(PvpState.ZdoFlags, 0) & (int)PvpFlags.Pve) != 0);
             Check("pve/sem-pvp", !Me.IsPVPEnabled());
             Check("pve/hud", PvpHud.Compose(Me).Contains(PvpPve.Title), PvpHud.Compose(Me));
-            Check("pve/bonus-de-skill", Mathf.Abs(fishing.m_level - 75f) < 0.01f, "pesca=" + fishing.m_level);
-            PvpPve.ApplyLocal(true);
-            Check("pve/bonus-uma-vez-so", Mathf.Abs(fishing.m_level - 75f) < 0.01f, "pesca=" + fishing.m_level);
+            StatusEffect pve = BuffOn(PvpHud.PveHash);
+            Check("pve/buff-sem-contagem", pve != null && pve.m_name == PvpPve.Title && pve.m_ttl == 0f,
+                pve == null ? "sem buff" : $"{pve.m_name} ttl={pve.m_ttl}");
+            Check("pve/sem-bonus-de-skill", Mathf.Abs(fishing.m_level - 5f) < 0.01f, "pesca=" + fishing.m_level);
             float pveGain = SwordGain();
             Check("pve/skill-mais-devagar", normalGain > 0f && Mathf.Abs(pveGain / normalGain - PvpConfig.PveSkillMultiplier.Value) < 0.01f,
                 $"normal={normalGain:0.0000} pve={pveGain:0.0000}");
 
-            Game.m_resourceRate = 2f;
-            PvpPve.ClampResourceRate();
-            Check("pve/coleta-sem-bonus", Mathf.Approximately(Game.m_resourceRate, PvpConfig.PveResourceRate.Value), "taxa=" + Game.m_resourceRate);
             ZoneSystem.instance.UpdateWorldRates();
+            Check("pve/coleta-na-taxa-do-pve", Mathf.Approximately(Game.m_resourceRate, PvpConfig.PveResourceRate.Value),
+                $"taxa={Game.m_resourceRate} esperado={PvpConfig.PveResourceRate.Value}");
 
             Heal();
             DummyStrikesMe(Hit);
@@ -1021,12 +1185,14 @@ namespace PvpTestDriver
             Check("bounty/pendente", PvpState.IsHuntPending && PvpClient.BountyPot == pot && (PvpState.Current & PvpFlags.HuntPending) != 0,
                 $"flags={PvpState.Current} pote={PvpClient.BountyPot}");
             Check("bounty/hud-aviso", PvpHud.Compose(Me).Contains("Bounty de " + pot), PvpHud.Compose(Me));
+            Check("bounty/buff-aviso", BuffOn(PvpHud.BountyHash) != null);
             yield return Wait(PvpConfig.BountyDelaySeconds.Value + 1.5f);
             yield return MoveTo(_safe);
             yield return Wait(0.5f);
             Check("bounty/cacado-sem-zona-segura", PvpState.IsHunted && Me.IsPVPEnabled() && (PvpState.Current & PvpFlags.Protected) == 0,
                 $"flags={PvpState.Current}");
             Check("bounty/hud", PvpHud.Compose(Me).Contains("CACADO") && PvpHud.Compose(Me).Contains(pot.ToString()), PvpHud.Compose(Me));
+            Check("bounty/buff-cacado", BuffOn(PvpHud.HuntedHash) != null && BuffOn(PvpHud.BountyHash) == null);
             yield return Wait(3f);
             bool listed = ListedPublic(_myName, out Vector3 at);
             Check("bounty/no-mapa-de-todos", listed && Utils.DistanceXZ(at, _safe) < 25f, $"listado={listed} pos={at}");
@@ -1338,8 +1504,9 @@ namespace PvpTestDriver
         }
 
         /// <summary>
-        /// Montaria com sela e transporte: nao toma dano de jogador. A estamina da sela vem do
-        /// cfg [Montarias] (o antigo SaddleStaminaControl).
+        /// Montaria com sela toma dano de jogador (TransportsInvulnerable=false, o padrao): a carga em
+        /// transito e alvo. Ligado no cfg, volta a ser invulneravel. A estamina da sela vem do cfg
+        /// [Montarias] (o antigo SaddleStaminaControl).
         /// </summary>
         private IEnumerator SoloMount()
         {
@@ -1370,7 +1537,17 @@ namespace PvpTestDriver
             float before = lox.GetHealth();
             lox.m_nview.InvokeRPC("RPC_Damage", HitFrom(Me, lox, 50f));
             yield return Wait(0.6f);
-            Check("montaria/com-sela-nao-toma-dano-de-jogador", Mathf.Approximately(before, lox.GetHealth()), $"antes={before} depois={lox.GetHealth()}");
+            Check("montaria/com-sela-toma-dano-de-jogador", lox.GetHealth() < before, $"antes={before} depois={lox.GetHealth()}");
+
+            SetServerConfig("TransportsInvulnerable", "true");
+            yield return WaitFor(() => PvpConfig.TransportsInvulnerable.Value, 20f);
+            before = lox.GetHealth();
+            lox.m_nview.InvokeRPC("RPC_Damage", HitFrom(Me, lox, 50f));
+            yield return Wait(0.6f);
+            Check("montaria/invulneravel-com-transportsinvulnerable", Mathf.Approximately(before, lox.GetHealth()),
+                $"antes={before} depois={lox.GetHealth()} cfg={PvpConfig.TransportsInvulnerable.Value}");
+            SetServerConfig("TransportsInvulnerable", "false");
+            yield return WaitFor(() => !PvpConfig.TransportsInvulnerable.Value, 20f);
 
             lox.m_nview.GetZDO().Set(ZDOVars.s_haveSaddleHash, false);
             tame.SetSaddle(false);
@@ -1380,6 +1557,35 @@ namespace PvpTestDriver
             yield return Wait(0.6f);
             Check("montaria/sem-sela-toma-dano", lox.GetHealth() < before, $"antes={before} depois={lox.GetHealth()}");
             ZNetScene.instance.Destroy(go);
+        }
+
+        /// <summary>
+        /// O estado do PvP chega ao disco do servidor com os jogadores e o K/D. O formato antigo
+        /// (JsonUtility) gravava so o "version", e cada restart zerava K/D, PK, bounties e PvE.
+        /// O servidor grava a cada minuto quando algo mudou.
+        /// </summary>
+        private IEnumerator SoloSavedState()
+        {
+            string dir = Path.Combine(Path.GetDirectoryName(_sync.TrimEnd('\\', '/')), "server", "BepInEx", "config", "Deadheim");
+            string mine = $"id={Me.GetPlayerID()}\tname={_myName}\t";
+            string dummy = $"id={DummyId}\tname={DummyName}\t";
+            string path = null, text = string.Empty;
+            float until = Time.time + 75f;
+            while (Time.time < until)
+            {
+                try
+                {
+                    path = Directory.Exists(dir) ? Directory.GetFiles(dir, "pvp-*.txt").FirstOrDefault() : null;
+                    if (path != null) text = File.ReadAllText(path);
+                }
+                catch (IOException) { }
+                if (text.Contains(mine) && text.Contains(dummy)) break;
+                yield return Wait(2f);
+            }
+            Check("estado-salvo/arquivo", path != null, dir);
+            Check("estado-salvo/jogadores", text.Contains(mine) && text.Contains(dummy), Tail(text));
+            Check("estado-salvo/abates-do-dummy", System.Text.RegularExpressions.Regex.IsMatch(text, "id=" + DummyId + "\\tname=" + DummyName + "\\tkills=[1-9]"),
+                Tail(text));
         }
 
         private HitData ChopHit(Component target)
