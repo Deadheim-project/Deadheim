@@ -118,6 +118,7 @@ namespace PvpTestDriver
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
                 Step("coins", Coins),
+                Step("forja", SoloForja),
                 // Sem volta para o personagem de teste: depois de todos os passos de PvP.
                 Step("pve", SoloPve),
                 // Por ultimo: abre o menu do ESC, e com -Admin o cliente e admin.

@@ -142,6 +142,7 @@
     <Compile Include="CraftPatches.cs" />
     <Compile Include="DirectJoinFlow.cs" />
     <Compile Include="EpicMMOApi.cs" />
+    <Compile Include="Forja.cs" />
     <Compile Include="ItemService.cs" />
     <Compile Include="MassPickUp.cs" />
     <Compile Include="Montarias.cs" />
@@ -202,6 +203,7 @@
     <EmbeddedResource Include="assets\armorkit4.png" />
     <EmbeddedResource Include="assets\esqueletaoshield.png" />
     <EmbeddedResource Include="assets\esqueletaosword.png" />
+    <EmbeddedResource Include="assets\garantiarefino.png" />
     <EmbeddedResource Include="assets\weaponkit1.png" />
     <EmbeddedResource Include="assets\weaponkit2.png" />
     <EmbeddedResource Include="assets\weaponkit3.png" />
