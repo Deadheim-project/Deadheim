@@ -112,7 +112,7 @@ namespace RaidSystem
 
             bool isAdmin = Admin.LocalPlayerIsAdmin();
 
-            foreach (PieceTable table in Resources.FindObjectsOfTypeAll<PieceTable>())
+            foreach (PieceTable table in PieceTables())
             {
                 if (table?.m_pieces == null) continue;
 
@@ -123,18 +123,30 @@ namespace RaidSystem
         }
 
         /// <summary>
-        /// FindObjectsOfTypeAll varre todos os objetos carregados e e caro. Isto roda a cada
-        /// UpdateKnownRecipesList, que dispara a cada mudanca de inventario, entao vai por
-        /// intervalo: pecas nulas so aparecem quando um prefab e registrado ou destruido.
+        /// FindObjectsOfTypeAll varre todos os objetos carregados (~340 mil no servidor ao
+        /// vivo) e e caro. Isto roda a cada UpdateKnownRecipesList, que dispara a cada mudanca
+        /// de inventario, entao vai por intervalo: pecas nulas so aparecem quando um prefab e
+        /// registrado ou destruido. A lista achada fica guardada para o ApplyAdminOnlyVisibility,
+        /// que antes varria de novo a cada item pego e travava o frame.
         /// </summary>
         private static float _nextPieceTableClean;
+        private static PieceTable[] _pieceTables;
+
+        private static PieceTable[] PieceTables()
+        {
+            if (_pieceTables == null || Time.time >= _nextPieceTableClean)
+            {
+                _nextPieceTableClean = Time.time + 30f;
+                _pieceTables = Resources.FindObjectsOfTypeAll<PieceTable>();
+            }
+            return _pieceTables;
+        }
 
         private static void CleanPieceTables()
         {
-            if (Time.time < _nextPieceTableClean) return;
-            _nextPieceTableClean = Time.time + 30f;
+            if (_pieceTables != null && Time.time < _nextPieceTableClean) return;
 
-            foreach (PieceTable table in Resources.FindObjectsOfTypeAll<PieceTable>())
+            foreach (PieceTable table in PieceTables())
                 table?.m_pieces?.RemoveAll(piece => piece == null || !piece);
         }
 
