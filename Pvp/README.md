@@ -10,9 +10,8 @@ que o servidor ja tem, em vez de duplicar:
   x2 se desfazem restaurando o `.fch` do PC.
 - **RaidSystem**: e a guerra de castelos. As zonas dele (`Raid Zones`) sao os castelos do
   PvP, e ele recebe do Deadheim cada morte por jogador ja classificada para o Ranking de Guerra.
-- Substitui o **TombstoneLock** (tumba por jogador), o **Combat** (Detalhes.Combat: status
-  "Em combate" e teleporte bloqueado) e o **SaddleStaminaControl** (estamina da sela, agora em
-  `[Montarias]` no mesmo cfg).
+- Substitui o **TombstoneLock** (tumba por jogador) e o **Combat** (Detalhes.Combat: status
+  "Em combate" e teleporte bloqueado).
 
 Config: secoes `PvP*` do `BepInEx/config/Detalhes.Deadheim.cfg`. Vale a do servidor
 (ServerSync); o cliente recebe ao conectar. **Salvar o cfg com o servidor ligado ja vale**: o
@@ -75,7 +74,6 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Morto por jogador | Fica **imune a PvP**: nao da nem leva dano de jogador; PvE normal | `ImmunityMinutes` (10) |
 | Ilha inicial safe zone | A terra ligada ao templo inicial (ate o raio), opcionalmente so em certos biomas. Calculada do gerador do mundo, igual em cliente e servidor; o log do servidor mostra os biomas que ela cobre | `StartIslandMode` (Island/Radius/Off), `StartIslandRadius`, `StartIslandBiomes` |
 | Transportes | **Carga em transito e alvo**: por padrao carroca, montaria e barco nao protegem quem esta neles e tomam dano de jogador (quebrar a carroca derruba o que ela leva). `TransportsSafe`/`TransportsInvulnerable` (carroca e montaria) e `ShipsSafe`/`ShipsInvulnerable` (barco) voltam a protecao | `TransportsSafe`, `TransportsInvulnerable`, `ShipsSafe`, `ShipsInvulnerable`, `ShipSafeMinSpeed`, `MountSafeMinSpeed` |
-| Montarias | Estamina da sela (Lox, Asksvin) configuravel, valendo na hora para as selas ja carregadas; 0 = valor do jogo. | `[Montarias] MaxStamina`, `RunStaminaDrain`, `SwimStaminaDrain`, `StaminaRegen`, `StaminaRegenHungry` |
 | Combate | Dar ou levar dano PvP deixa "em combate": zona segura nao protege e retreat nao funciona | `CombatTagSeconds` (30) |
 | Retreat cooldown e combate | `/retreat` com recarga, bloqueado em combate (com jogador ou monstro) e cacado; a pedra do Hearthstone tambem | `RetreatCooldownMinutes` (30), `RetreatBlockedByPveCombat` |
 | Buffs de estado | Cada estado do PvP e um buff na barra de efeitos do jogo, com contagem: **Em combate** (ou **Luta com monstro**, quando ela bloqueia o retreat), **Imune a PvP**, **PK** (com o contador, `PK x3`, ou `PK permanente`), **Agressor**, **Cacado**, **Bounty** (o aviso), **Zona segura** (com o nome da zona) e o titulo do **PvE**. A linha no topo da tela continua resumindo | `CombatStatusIcon`, `StateBuffs` |

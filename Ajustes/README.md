@@ -9,7 +9,7 @@ janela no visual do Valheim (painel de madeira, fonte e botoes do jogo) com duas
   tem, pedida a ele pela rede. Cada mudanca e aplicada e salva no cfg do servidor na hora. O que e
   sincronizado (ServerSync) chega a todos os jogadores conectados sem reiniciar nada.
 
-Cobre qualquer mod do launcher, sem lista fixa: Deadheim (PvP, Wards, Montarias...), RaidSystem,
+Cobre qualquer mod do launcher, sem lista fixa: Deadheim (PvP, Wards, Forja...), RaidSystem,
 Hearthstone, NPCs, Velas, AdaptiveNet, Guilds, Groups, ServerCharacters, CLLC, AzuAntiCheat e os
 opcionais. O que conta e o `ConfigFile` que o BepInEx ja tem aberto para cada mod.
 

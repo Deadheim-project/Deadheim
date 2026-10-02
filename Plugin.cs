@@ -192,7 +192,6 @@ new ConfigDescription("boatWindSpeedmultiplier")));
     new ConfigDescription("O bonus de vida e dano do monstro por jogador perto (vanilla e CreatureLevelControl) so conta quem luta e o grupo e a guilda dele. Desligado, conta todo mundo no raio, como no jogo.")));
 
             Pvp.PvpModule.Init(Config);
-            Montarias.Bind(Config);
             Forja.Bind(Config);
 
             _harmony.PatchAll();

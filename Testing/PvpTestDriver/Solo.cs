@@ -1505,8 +1505,7 @@ namespace PvpTestDriver
 
         /// <summary>
         /// Montaria com sela toma dano de jogador (TransportsInvulnerable=false, o padrao): a carga em
-        /// transito e alvo. Ligado no cfg, volta a ser invulneravel. A estamina da sela vem do cfg
-        /// [Montarias] (o antigo SaddleStaminaControl).
+        /// transito e alvo. Ligado no cfg, volta a ser invulneravel.
         /// </summary>
         private IEnumerator SoloMount()
         {
@@ -1528,11 +1527,6 @@ namespace PvpTestDriver
             lox.m_nview.GetZDO().Set(ZDOVars.s_haveSaddleHash, true);
             tame.SetSaddle(true);
             yield return Wait(0.5f);
-
-            Sadle saddle = go.GetComponentInChildren<Sadle>(true);
-            Check("montaria/estamina-da-sela-do-cfg", saddle != null && Mathf.Approximately(saddle.m_maxStamina, Deadheim.Montarias.MaxStamina.Value)
-                                                      && Mathf.Approximately(saddle.m_runStaminaDrain, Deadheim.Montarias.RunStaminaDrain.Value),
-                saddle != null ? $"max={saddle.m_maxStamina} corrida={saddle.m_runStaminaDrain}" : "sem sela");
 
             float before = lox.GetHealth();
             lox.m_nview.InvokeRPC("RPC_Damage", HitFrom(Me, lox, 50f));

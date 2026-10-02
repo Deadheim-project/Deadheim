@@ -140,7 +140,6 @@
     <Compile Include="Forja.cs" />
     <Compile Include="ItemService.cs" />
     <Compile Include="MassPickUp.cs" />
-    <Compile Include="Montarias.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="SkipIntroCinematic.cs" />
