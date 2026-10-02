@@ -18,7 +18,7 @@ namespace RaidSystem
     {
         public const string PluginGUID = "Detalhes.RaidSystem";
         public const string PluginName = "RaidSystem";
-        public const string PluginVersion = "2.2.0";
+        public const string PluginVersion = "2.2.1";
         public const string DefaultWebhookUrl = "";
         public static RaidSystemPlugin Instance { get; private set; }
         private Harmony _harmony;
