@@ -42,12 +42,13 @@ namespace RaidSystem
                         Directory.CreateDirectory(RaidSystemPlugin.FileDirectory);
                     var wrapper = RaidDataWrapper.FromRaidData(_cache);
                     string json = JsonConvert.SerializeObject(wrapper, Formatting.Indented);
-                    // File.Replace troca o arquivo numa operacao so. O Delete + Move de antes
-                    // deixava uma janela em que o arquivo nao existia: morrer ali perdia os dados.
+                    // Grava num .tmp e copia por cima: o arquivo nunca fica faltando (o Delete + Move de
+                    // antes deixava essa janela). Copy + Delete e nao File.Replace, igual ao PvpStore do
+                    // Deadheim: o servidor da DatHost roda Mono em Linux (B11).
                     string tmp = FilePath + ".tmp";
                     File.WriteAllText(tmp, json);
-                    if (File.Exists(FilePath)) File.Replace(tmp, FilePath, null);
-                    else File.Move(tmp, FilePath);
+                    File.Copy(tmp, FilePath, true);
+                    File.Delete(tmp);
                 }
                 catch (Exception ex) { Debug.LogError($"[RaidSystem] Save error: {ex.Message}"); }
             }
