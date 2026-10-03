@@ -250,10 +250,24 @@ namespace Deadheim
                 string portalTag = __instance.GetText();
 
                 // Se a tag do portal NÃO estiver na lista VIP, permite o teleporte
-                if (!Plugin.VipPortalNames.Value.Contains(portalTag)) return true;
+                if (!IsVipPortal(portalTag)) return true;
 
                 // 3. Jogador não é VIP tentando acessar portal VIP: Bloqueia!
                 player.Message(MessageHud.MessageType.Center, "Only Aesir can access this portal.");
+                return false;
+            }
+
+            /// <summary>
+            /// A tag inteira esta na lista (separada por virgula), sem diferenciar maiusculas.
+            /// O Contains do texto da lista casava portal sem nome ("" esta em qualquer texto) e
+            /// qualquer pedaco de um nome VIP ("cava", "lin", ","): o portal comum virava so VIP.
+            /// </summary>
+            internal static bool IsVipPortal(string portalTag)
+            {
+                string tag = portalTag?.Trim();
+                if (string.IsNullOrEmpty(tag)) return false;
+                foreach (string name in (Plugin.VipPortalNames.Value ?? string.Empty).Split(','))
+                    if (string.Equals(name.Trim(), tag, System.StringComparison.OrdinalIgnoreCase)) return true;
                 return false;
             }
         }
