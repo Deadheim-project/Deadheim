@@ -279,7 +279,7 @@ namespace Deadheim.Pvp
 
         // ------------------------------------------------------------------- morte
 
-        public static void OnDeath(PvpPeer victim, long killerId, string killerName, bool arena)
+        public static void OnDeath(PvpPeer victim, long killerId, string killerName, bool arena, PvpRules.DeathCause cause)
         {
             PvpBountyRecord bounty = Find(victim.PlayerId);
             if (bounty == null || killerId == 0L) return;

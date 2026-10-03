@@ -115,6 +115,8 @@ ImmunityMinutes = 2
 CombatTagSeconds = 6
 KillCreditSeconds = 5
 KillFeed = true
+# Solo: o Dummy nao e um jogador conectado, e o servidor so aceita matador conectado.
+KillerMustBeOnline = $(if ($Solo) { 'false' } else { 'true' })
 
 [PvP - PK]
 PkTiers = 1:5:Skills,2:10:Skills,3:60:Unequipped,5:-1:All

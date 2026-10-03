@@ -25,6 +25,8 @@ namespace Deadheim.Pvp
         public static ConfigEntry<float> CombatTagSeconds;
         public static ConfigEntry<float> KillCreditSeconds;
         public static ConfigEntry<bool> KillFeed;
+        public static ConfigEntry<bool> KillerMustBeOnline;
+        public static ConfigEntry<float> KillerMaxDistance;
 
         // --------------------------------------------------------------------- PK
         public static ConfigEntry<string> PkTiers;
@@ -146,6 +148,12 @@ namespace Deadheim.Pvp
                 "Morte ate estes segundos depois de levar dano PvP conta como morte por jogador (queda, afogamento, fogo, mob).");
             KillFeed = Bind(config, general, "KillFeed", true,
                 "Anuncia no chat quem matou quem.");
+            KillerMustBeOnline = Bind(config, general, "KillerMustBeOnline", true,
+                "O servidor so aceita morte por jogador se o matador for um jogador conectado. Desligue so no teste " +
+                "solo (o boneco Dummy nao e um jogador conectado).");
+            KillerMaxDistance = Bind(config, general, "KillerMaxDistance", 300f,
+                "Distancia maxima (m) entre o matador e a vitima para o servidor aceitar uma morte por jogador. " +
+                "Mais longe, a morte conta como PvE. 0 = sem limite.");
 
             const string pk = "PvP - PK";
             PkTiers = Bind(config, pk, "PkTiers", "1:60:Skills,2:120:Skills,3:1440:Unequipped,5:-1:All",

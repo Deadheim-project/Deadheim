@@ -9,8 +9,8 @@ namespace Deadheim.Pvp
     /// <summary>
     /// Lado servidor do PvP: ranking K/D, marca de PK (com niveis), recompensa de defesa,
     /// bounty (cacado) e a entrega do estado a cada cliente. O cliente da vitima conta como
-    /// morreu; quem foi o matador o servidor resolve pela ZDO, nunca pelo que o
-    /// cliente escreve no pacote.
+    /// morreu; o servidor so aplica depois de ver a ZDO dela morta, resolve o matador pela ZDO,
+    /// confere que ele esta conectado e perto, e calcula arena, castelo e defesa pela posicao.
     /// </summary>
     internal static class PvpServer
     {
@@ -51,7 +51,7 @@ namespace Deadheim.Pvp
             switch (op)
             {
                 case PvpNet.OpHello: OnHello(peer); break;
-                case PvpNet.OpDeath: OnDeath(peer, pkg); break;
+                case PvpNet.OpDeath: OnDeathReport(peer, pkg); break;
                 case PvpNet.OpBounty:
                 {
                     string action = pkg.ReadString();
@@ -126,38 +126,148 @@ namespace Deadheim.Pvp
 
         // ------------------------------------------------------------------- morte
 
-        private static void OnDeath(PvpPeer victim, ZPackage pkg)
+        /// <summary>Relato de morte esperando o servidor ver a ZDO da vitima morta.</summary>
+        private sealed class PendingDeath
         {
-            ZDOID killerZdo = pkg.ReadZDOID();
-            bool arena = pkg.ReadBool();
-            string castle = pkg.ReadString();
-            if (string.IsNullOrEmpty(castle)) castle = null;
-            bool killerDefendingCastle = pkg.ReadBool() && castle != null;
-            Vector3 position = pkg.ReadVector3();
-            bool victimWasAggressor = pkg.ReadBool();
-            int coinsDropped = pkg.ReadInt();
-            int cargoDropped = pkg.ReadInt();
+            public PvpPeer Victim;
+            public ZDOID KillerZdo;
+            public bool ClaimedArena;
+            public string ClaimedCastle;
+            public bool ClaimedDefending;
+            public Vector3 ClaimedPosition;
+            public bool VictimWasAggressor;
+            public int CoinsDropped;
+            public int CargoDropped;
+            public PvpRules.DeathCause Cause;
+            public float ReceivedAt;
+        }
+
+        // Player.OnDeath do vanilla pede o respawn com 10 s (RequestRespawn(10f)): duas mortes de
+        // verdade do mesmo jogador nunca vem mais perto que isso.
+        private const float DeathMinInterval = 10f;
+        // A ZDO morta (s_dead) chega em menos de 1 s e so some no respawn, 10 s depois.
+        private const float DeathConfirmSeconds = 9f;
+        private static readonly List<PendingDeath> _pendingDeaths = new List<PendingDeath>();
+        private static readonly Dictionary<long, float> _lastDeathAt = new Dictionary<long, float>();
+
+        /// <summary>
+        /// A vitima conta que morreu. Nada e aplicado ainda: o pacote sai antes de o vanilla marcar a
+        /// ZDO como morta, e um cliente modificado mandaria mortes que nao aconteceram (K/D, PK em
+        /// inocente, bounty para cumplice, moedas de defesa). Uma por vitima a cada 10 s, e so vale
+        /// quando a ZDO dela aparece morta (ProcessPendingDeaths).
+        /// </summary>
+        private static void OnDeathReport(PvpPeer victim, ZPackage pkg)
+        {
+            PendingDeath death = new PendingDeath
+            {
+                Victim = victim,
+                KillerZdo = pkg.ReadZDOID(),
+                ClaimedArena = pkg.ReadBool(),
+                ClaimedCastle = pkg.ReadString(),
+                ClaimedDefending = pkg.ReadBool(),
+                ClaimedPosition = pkg.ReadVector3(),
+                VictimWasAggressor = pkg.ReadBool(),
+                CoinsDropped = pkg.ReadInt(),
+                CargoDropped = pkg.ReadInt(),
+                Cause = pkg.GetPos() < pkg.Size() ? (PvpRules.DeathCause)pkg.ReadInt() : PvpRules.DeathCause.PlayerDirect,
+                ReceivedAt = Time.realtimeSinceStartup,
+            };
+
+            if (_lastDeathAt.TryGetValue(victim.PlayerId, out float last) && death.ReceivedAt - last < DeathMinInterval)
+            {
+                Debug.LogWarning($"[Deadheim PvP] Morte de {victim.Name} ({victim.PlayerId}) ignorada: outra ha {death.ReceivedAt - last:0.0} s.");
+                return;
+            }
+            _lastDeathAt[victim.PlayerId] = death.ReceivedAt;
+            _pendingDeaths.Add(death);
+            ProcessPendingDeaths();
+        }
+
+        /// <summary>Aplica as mortes cuja ZDO ja apareceu morta; descarta as que nao morreram.</summary>
+        private static void ProcessPendingDeaths()
+        {
+            if (_pendingDeaths.Count == 0 || ZDOMan.instance == null) return;
+            float now = Time.realtimeSinceStartup;
+            foreach (PendingDeath death in _pendingDeaths.ToArray())
+            {
+                ZDO zdo = death.Victim.CharacterId.IsNone() ? null : ZDOMan.instance.GetZDO(death.Victim.CharacterId);
+                if (zdo != null && zdo.GetBool(ZDOVars.s_dead))
+                {
+                    _pendingDeaths.Remove(death);
+                    try { ApplyDeath(death, zdo.GetPosition()); }
+                    catch (Exception ex) { Debug.LogError("[Deadheim PvP] Morte de " + death.Victim.Name + " falhou: " + ex); }
+                }
+                else if (now - death.ReceivedAt > DeathConfirmSeconds)
+                {
+                    _pendingDeaths.Remove(death);
+                    Debug.LogWarning($"[Deadheim PvP] Morte de {death.Victim.Name} ({death.Victim.PlayerId}) ignorada: o personagem " +
+                                     $"nao apareceu morto no servidor em {DeathConfirmSeconds:0} s.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// O matador vale se for um jogador conectado (KillerMustBeOnline) a no maximo KillerMaxDistance
+        /// da vitima, pela posicao que o proprio cliente dele informa ao servidor. Devolve o motivo da recusa.
+        /// </summary>
+        private static string KillerRefusal(long killerId, Vector3 where, out bool online)
+        {
+            online = PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer);
+            if (!online) return PvpConfig.KillerMustBeOnline.Value ? "o matador nao esta conectado" : null;
+            float max = PvpConfig.KillerMaxDistance.Value;
+            float distance = Utils.DistanceXZ(killerPeer.Position, where);
+            return max > 0f && distance > max ? $"o matador estava a {distance:0} m" : null;
+        }
+
+        private static void ApplyDeath(PendingDeath death, Vector3 position)
+        {
+            PvpPeer victim = death.Victim;
+            if (Utils.DistanceXZ(death.ClaimedPosition, position) > 50f)
+                Debug.LogWarning($"[Deadheim PvP] Morte de {victim.Name}: o relato diz ({death.ClaimedPosition.x:F0},{death.ClaimedPosition.z:F0}), " +
+                                 $"o servidor ve ({position.x:F0},{position.z:F0}); vale a do servidor.");
 
             long killerId = 0L;
             string killerName = null;
-            ZDO killer = killerZdo.IsNone() || ZDOMan.instance == null ? null : ZDOMan.instance.GetZDO(killerZdo);
-            if (killer != null)
+            bool killerOnline = false;
+            if (PvpRules.IsPlayerZdo(death.KillerZdo, out long candidate) && candidate != 0L && candidate != victim.PlayerId)
             {
-                killerId = killer.GetLong(ZDOVars.s_playerID, 0L);
-                killerName = killer.GetString(ZDOVars.s_playerName, "?");
+                string refusal = KillerRefusal(candidate, position, out killerOnline);
+                ZDO killer = ZDOMan.instance.GetZDO(death.KillerZdo);
+                string name = killer != null ? killer.GetString(ZDOVars.s_playerName, "?") : "?";
+                if (refusal == null)
+                {
+                    killerId = candidate;
+                    killerName = name;
+                }
+                else
+                    Debug.LogWarning($"[Deadheim PvP] Morte de {victim.Name} por {name} ({candidate}) conta como PvE: {refusal}.");
             }
-            if (killerId == victim.PlayerId) killerId = 0L;
+
+            // Arena, castelo e defesa pela posicao que o servidor ve, nao pelo pacote. Sem o matador
+            // conectado (so no teste solo, com KillerMustBeOnline desligado) a guilda dele nao e
+            // conhecida aqui, e vale o que o cliente da vitima calculou.
+            bool arena = PvpZones.IsArena(position);
+            string castle = killerId != 0L && !arena ? PvpBridge.Castle(position) : null;
+            bool killerDefendingCastle = castle != null && (killerOnline || PvpConfig.KillerMustBeOnline.Value
+                ? DefendsCastle(killerId, victim.PlayerId, position)
+                : death.ClaimedDefending);
+            if (arena != death.ClaimedArena || castle != (string.IsNullOrEmpty(death.ClaimedCastle) ? null : death.ClaimedCastle))
+                Debug.Log($"[Deadheim PvP] Morte de {victim.Name}: o cliente disse arena={death.ClaimedArena} castelo={death.ClaimedCastle}, " +
+                          $"o servidor calculou arena={arena} castelo={castle ?? "-"}.");
+            bool victimWasAggressor = death.VictimWasAggressor;
+            int coinsDropped = death.CoinsDropped;
+            int cargoDropped = death.CargoDropped;
 
             PvpPlayerRecord victimRecord = PvpStore.Player(victim.PlayerId, victim.Name);
             bool victimWasPk = victimRecord.IsPk;
             bool victimWasHunted = PvpBounty.IsHunted(victim.PlayerId);
 
-            Debug.Log($"[Deadheim PvP] Morte: {victim.Name} por {(killerId != 0L ? killerName : "PvE")} " +
+            Debug.Log($"[Deadheim PvP] Morte: {victim.Name} por {(killerId != 0L ? killerName : "PvE")} causa={death.Cause} " +
                       $"arena={arena} castelo={castle ?? "-"} defesaDoCastelo={killerDefendingCastle} " +
                       $"vitimaPK={victimWasPk} vitimaCacada={victimWasHunted} vitimaAgressora={victimWasAggressor} " +
                       $"moedasNoChao={coinsDropped} cargaNoChao={cargoDropped} pos=({position.x:F0},{position.z:F0})");
 
-            PvpBounty.OnDeath(victim, killerId, killerName, arena);
+            PvpBounty.OnDeath(victim, killerId, killerName, arena, death.Cause);
 
             // A marca sai morto por jogador. Morte PvE so tira o PK comum com PkClearsOnPveDeath: senao
             // o PK morreria de proposito em casa para ficar limpo. O permanente so sai morto por jogador.
@@ -220,6 +330,21 @@ namespace Deadheim.Pvp
             }
 
             SendState(victim);
+        }
+
+        /// <summary>
+        /// Defesa de castelo, decidida no servidor: o matador e da guilda dona do castelo onde a
+        /// vitima morreu e a vitima nao e. Guilda pelo resolvedor do RaidSystem (WardBridge), que
+        /// le o Guilds pelo playerId de quem esta conectado.
+        /// </summary>
+        private static bool DefendsCastle(long killerId, long victimId, Vector3 where)
+        {
+            string owner = PvpBridge.Owner(where);
+            if (owner == null) return false;
+            string killerGuild = Wards.WardBridge.GuildOf(killerId);
+            string victimGuild = Wards.WardBridge.GuildOf(victimId);
+            return string.Equals(killerGuild, owner, StringComparison.OrdinalIgnoreCase)
+                   && !string.Equals(victimGuild, owner, StringComparison.OrdinalIgnoreCase);
         }
 
         private static string LootText(int coins, int cargo)
@@ -368,6 +493,7 @@ namespace Deadheim.Pvp
             _nextTick = Time.time + 1f;
 
             ReportStartZoneOnce();
+            ProcessPendingDeaths();
             RetryPendingHellos();
             RememberPeers();
             TickPkTimers();
@@ -619,6 +745,8 @@ namespace Deadheim.Pvp
                 PvpBounty.Reset();
                 _pendingHello.Clear();
                 _defenseRewardAt.Clear();
+                _pendingDeaths.Clear();
+                _lastDeathAt.Clear();
                 _seen.Clear();
                 _startZoneReported = false;
             }

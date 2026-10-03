@@ -245,7 +245,7 @@ namespace Deadheim.Pvp
                     PvpState.ForgetAttacker();
                     PvpState.ClearAggressor();
                     PvpState.ClearCombat();
-                    PvpClient.SendDeath(killer, arena, castle, killerDefendingCastle, pos, wasAggressor, coinsDropped, cargoDropped);
+                    PvpClient.SendDeath(killer, arena, castle, killerDefendingCastle, pos, wasAggressor, coinsDropped, cargoDropped, cause);
 
                     Debug.Log($"[Deadheim PvP] Morri: causa={cause} matador={killerId} ultimoGolpe={__instance.m_lastHit?.m_hitType} " +
                               $"arena={arena} castelo={castle ?? "-"} defesaDoMatador={killerDefendingCastle} PK={wasPk} " +

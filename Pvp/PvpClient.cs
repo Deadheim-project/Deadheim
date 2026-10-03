@@ -174,8 +174,13 @@ namespace Deadheim.Pvp
 
         public static void SendHello() => PvpNet.SendToServer(PvpNet.Package(PvpNet.OpHello));
 
+        /// <summary>
+        /// A vitima conta que morreu. O servidor so aplica depois de ver a ZDO dela morta, confere
+        /// o matador e calcula arena e castelo pela posicao dele; arena, castelo e defesa daqui so
+        /// valem no teste solo (KillerMustBeOnline desligado).
+        /// </summary>
         public static void SendDeath(ZDOID killer, bool arena, string castle, bool killerDefendingCastle, Vector3 position,
-                                     bool victimWasAggressor, int coinsDropped, int cargoDropped)
+                                     bool victimWasAggressor, int coinsDropped, int cargoDropped, PvpRules.DeathCause cause)
         {
             ZPackage pkg = PvpNet.Package(PvpNet.OpDeath);
             pkg.Write(killer);
@@ -186,6 +191,7 @@ namespace Deadheim.Pvp
             pkg.Write(victimWasAggressor);
             pkg.Write(coinsDropped);
             pkg.Write(cargoDropped);
+            pkg.Write((int)cause);
             PvpNet.SendToServer(pkg);
         }
 
