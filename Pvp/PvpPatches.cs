@@ -138,6 +138,25 @@ namespace Deadheim.Pvp
         }
 
         /// <summary>
+        /// Protegido (zona segura, transporte) batendo em PK ou cacado: PvpRules.MayStrikeOutlaw.
+        /// O vanilla corta o golpe antes do Character.Damage: Attack (corpo a corpo, Attack.cs),
+        /// Projectile e Aoe pulam todo alvo que nao seja inimigo quando o atacante e jogador com o
+        /// PvP desligado, que e justamente o protegido. Para o BaseAI.IsEnemy dois jogadores sao da
+        /// mesma faccao; aqui o fora da lei vira inimigo do jogador local, e o golpe sai.
+        /// </summary>
+        [HarmonyPatch(typeof(BaseAI), nameof(BaseAI.IsEnemy), typeof(Character), typeof(Character))]
+        private static class OutlawIsEnemyPatch
+        {
+            private static void Postfix(Character a, Character b, ref bool __result)
+            {
+                // Roda em toda checagem de IA do jogo: sai cedo em tudo que nao e o jogador local.
+                if (__result || a == null || a != Player.m_localPlayer || !(b is Player target) || target == a) return;
+                if (!PvpConfig.Active) return;
+                if (PvpRules.MayStrikeOutlaw((Player)a, target)) __result = true;
+            }
+        }
+
+        /// <summary>
         /// Montaria com sela (Lox, Asksvin) e transporte como barco e carroca: nao toma dano de
         /// jogador. Roda no dono da montaria, que e quem aplica o dano.
         /// </summary>

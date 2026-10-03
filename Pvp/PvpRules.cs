@@ -39,7 +39,8 @@ namespace Deadheim.Pvp
         /// PK (PkNoSafeZone) e cacado nao tem zona segura, mas quem esta nela tambem nao ataca:
         /// sem esta excecao ninguem na zona conseguiria alcanca-los. O protegido pela zona ou pelo
         /// transporte pode atacar um deles; ao bater entra em combate e perde a protecao. Imune e
-        /// PvE continuam sem atacar.
+        /// PvE continuam sem atacar. O filtro do vanilla (Attack/Projectile/Aoe) so deixa o golpe
+        /// sair por causa do PvpPatches.OutlawIsEnemyPatch.
         /// </summary>
         public static bool MayStrikeOutlaw(Player attacker, Player victim)
         {
