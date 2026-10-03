@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
@@ -77,6 +78,11 @@ namespace Deadheim.Pvp
         // Veneno/fogo que um jogador deixou: o credito vale ate o efeito acabar.
         private static float _dotCreditUntil = -9999f;
 
+        // Quem bateu no jogador local e quando (Time.time). Revidar nele e legitima defesa mesmo
+        // antes de a bandeira de agressor dele chegar pela ZDO (o Tick dele e a sincronia levam
+        // de 0,25 s a 1 s): sem isto quem revidava rapido virava agressor tambem (M3).
+        private static readonly Dictionary<ZDOID, float> _hitMeAt = new Dictionary<ZDOID, float>();
+
         public static PvpFlags Current { get; private set; }
         public static string ZoneLabel { get; private set; }
 
@@ -142,6 +148,7 @@ namespace Deadheim.Pvp
             _lastPvpAttacker = ZDOID.None;
             _lastPvpHitTime = -9999f;
             _dotCreditUntil = -9999f;
+            _hitMeAt.Clear();
             Current = PvpFlags.None;
             ZoneLabel = null;
             PvpPve.ResetSession();
@@ -225,7 +232,7 @@ namespace Deadheim.Pvp
         /// <summary>
         /// Golpe dado pelo jogador local em <paramref name="victim"/>. Quem ataca alguem sem marca
         /// (nao agressor, nao PK, nao cacado) fora de arena e castelo vira agressor. Revidar em
-        /// quem ja e agressor e defesa e nao marca.
+        /// quem ja e agressor, ou em quem bateu no jogador local ha pouco, e defesa e nao marca.
         /// </summary>
         public static void MarkAttack(Player victim)
         {
@@ -234,7 +241,20 @@ namespace Deadheim.Pvp
             PvpFlags target = FlagsOf(victim);
             if ((target & (PvpFlags.Aggressor | PvpFlags.Pk | PvpFlags.Hunted | PvpFlags.Arena | PvpFlags.Castle)) != 0) return;
             if ((Current & (PvpFlags.Arena | PvpFlags.Castle)) != 0) return;
+            if (HitMeRecently(victim.GetZDOID())) return;
             _aggressorUntil = Time.time + Mathf.Max(0f, PvpConfig.AggressorSeconds.Value);
+        }
+
+        /// <summary>
+        /// <paramref name="attacker"/> bateu no jogador local nos ultimos AggressorSeconds: e quem
+        /// comecou. A janela e a mesma da marca de agressor que ele ganhou ao bater.
+        /// </summary>
+        public static bool HitMeRecently(ZDOID attacker)
+        {
+            if (attacker.IsNone() || !_hitMeAt.TryGetValue(attacker, out float at)) return false;
+            if (Time.time - at <= Mathf.Max(0f, PvpConfig.AggressorSeconds.Value)) return true;
+            _hitMeAt.Remove(attacker);
+            return false;
         }
 
         public static void ClearPk()
@@ -251,6 +271,7 @@ namespace Deadheim.Pvp
         {
             _lastPvpAttacker = attacker;
             _lastPvpHitTime = Time.time;
+            if (!attacker.IsNone()) _hitMeAt[attacker] = Time.time;
             MarkCombat();
 
             // O servidor precisa saber quem bateu se o jogador deslogar em combate.
@@ -298,6 +319,25 @@ namespace Deadheim.Pvp
             _lastPvpAttacker = ZDOID.None;
             _lastPvpHitTime = -9999f;
             _dotCreditUntil = -9999f;
+            ClearPublishedAttacker(Player.m_localPlayer);
+        }
+
+        /// <summary>
+        /// Quem bateu por ultimo (dh_lastPvpAttacker, que o servidor le se o jogador deslogar em
+        /// combate) so vale enquanto o golpe for recente: CombatTagSeconds ou KillCreditSeconds, o
+        /// maior. Antes o valor nunca saia da ZDO, e deslogar em combate com outra pessoa dava o
+        /// abate a quem tinha batido horas antes (M4).
+        /// </summary>
+        private static void ExpirePublishedAttacker(Player player)
+        {
+            float window = Mathf.Max(PvpConfig.CombatTagSeconds.Value, PvpConfig.KillCreditSeconds.Value);
+            if (Time.time - _lastPvpHitTime > window) ClearPublishedAttacker(player);
+        }
+
+        private static void ClearPublishedAttacker(Player player)
+        {
+            ZDO zdo = player != null && player.m_nview != null && player.m_nview.IsValid() ? player.m_nview.GetZDO() : null;
+            if (zdo != null && zdo.GetLong(ZdoLastAttacker, 0L) != 0L) zdo.Set(ZdoLastAttacker, 0L);
         }
 
         // -------------------------------------------------------------- bandeira de PvP
@@ -316,6 +356,7 @@ namespace Deadheim.Pvp
             float delta = _lastTick > 0f ? Mathf.Max(0f, Time.time - _lastTick) : 0f;
             _lastTick = Time.time;
             if (IsAggressor && InCombat && PvpConfig.AggressorPausesInCombat.Value) _aggressorUntil += delta;
+            ExpirePublishedAttacker(player);
 
             Vector3 pos = player.transform.position;
             bool arena = PvpZones.IsArena(pos);
