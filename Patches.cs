@@ -80,7 +80,10 @@ namespace Deadheim
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(Player __instance)
             {
-                if (Plugin.StaffMessage.Value != "") Player.m_localPlayer.Message(MessageHud.MessageType.Center, Plugin.StaffMessage.Value);
+                // Player.Update roda para todo Player carregado, inclusive os remotos e, no servidor
+                // dedicado, sem jogador local nenhum (m_localPlayer null): so o local mostra o aviso.
+                if (__instance == null || __instance != Player.m_localPlayer) return;
+                if (!string.IsNullOrEmpty(Plugin.StaffMessage.Value)) __instance.Message(MessageHud.MessageType.Center, Plugin.StaffMessage.Value);
             }
         }
 
