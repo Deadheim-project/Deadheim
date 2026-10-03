@@ -521,6 +521,8 @@ namespace Deadheim.Pvp
         /// <summary>
         /// O item do mod Hearthstone teleporta ao ser consumido. Em combate ou cacado ele
         /// teria o mesmo efeito do /retreat que o modulo bloqueia, entao vale a mesma regra.
+        /// No HarmonyX devolver false nao para os prefixos seguintes: o do Hearthstone (2.1.1+)
+        /// le __runOriginal e desiste, sem gastar a pedra.
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.ConsumeItem))]
         private static class HearthstoneCombatPatch

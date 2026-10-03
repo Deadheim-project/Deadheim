@@ -9,11 +9,16 @@ namespace Hearthstone
             [HarmonyPatch(typeof(Player), "ConsumeItem")]
             public static class ConsumePatch
             {
-                // Adicionamos 'ref bool __result' para dizer ao jogo base se o consumo deu certo
-                private static bool Prefix(Player __instance, ref bool __result, ItemDrop.ItemData item)
+                // Adicionamos 'ref bool __result' para dizer ao jogo base se o consumo deu certo.
+                // __runOriginal: no HarmonyX um prefixo que devolve false NAO impede os seguintes de
+                // rodar, so faz um E nesse valor. O Deadheim (prioridade First) recusa a pedra em
+                // combate ou cacado; sem olhar isto a pedra sumia e o teleporte saia mesmo assim.
+                private static bool Prefix(Player __instance, ref bool __result, ItemDrop.ItemData item, bool __runOriginal)
                 {
+                    if (!__runOriginal) return false;
+
                     // Usando IndexOf ignorando maiúsculas para não ter erro de digitação no nome do item
-                    if (item.m_shared.m_name != null && item.m_shared.m_name.IndexOf("hearthstone", StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (item?.m_shared?.m_name != null && item.m_shared.m_name.IndexOf("hearthstone", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         if (!__instance.IsTeleportable(allowAllItems: false) && !Hearthstone.allowTeleportWithoutRestriction.Value)
                         {
@@ -31,11 +36,16 @@ namespace Hearthstone
                             return false;
                         }
 
-                        // 1. Remove a pedra do inventário manualmente
-                        __instance.GetInventory().RemoveItem(item, 1);
+                        // 1. Teleporta o jogador. TeleportTo devolve false se ja estiver teleportando,
+                        //    na recarga do vanilla, ou se outro mod recusar (Deadheim: combate, cacado).
+                        if (!__instance.TeleportTo(teleportPosition, __instance.transform.rotation, true))
+                        {
+                            __result = false;
+                            return false;
+                        }
 
-                        // 2. Teleporta o jogador
-                        __instance.TeleportTo(teleportPosition, __instance.transform.rotation, true);
+                        // 2. So agora a pedra sai do inventario: teleporte recusado nao gasta a pedra
+                        __instance.GetInventory().RemoveItem(item, 1);
 
                         // 3. Força o jogo a entender que o item foi consumido com sucesso
                         __result = true;
