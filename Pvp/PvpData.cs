@@ -34,8 +34,32 @@ namespace Deadheim.Pvp
         public bool pvePermanent;
         /// <summary>Segundos UTC de quando virou PvE.</summary>
         public double pveSince;
+        /// <summary>Dia (UTC do servidor, dias desde 1970) do contador bountyPaidToday.</summary>
+        public int bountyPaidDay;
+        /// <summary>Moedas que este jogador ja pos em bounties no dia bountyPaidDay (BountyDailyCapPerPlayer).</summary>
+        public int bountyPaidToday;
 
         public float Ratio => deaths <= 0 ? kills : (float)kills / deaths;
+
+        /// <summary>
+        /// Conta <paramref name="amount"/> moedas de bounty pagas hoje, se couber no teto diario
+        /// (<paramref name="cap"/> 0 = sem teto). Dia novo zera o contador. Recusado, nada muda e
+        /// <paramref name="left"/> diz quanto ainda cabe hoje.
+        /// </summary>
+        public bool TryAddBountyPaid(int day, int amount, int cap, out int left)
+        {
+            if (bountyPaidDay != day)
+            {
+                bountyPaidDay = day;
+                bountyPaidToday = 0;
+            }
+            left = cap > 0 ? Math.Max(0, cap - bountyPaidToday) : int.MaxValue;
+            if (amount <= 0) return false;
+            if (cap > 0 && amount > left) return false;
+            bountyPaidToday += amount;
+            if (cap > 0) left = Math.Max(0, cap - bountyPaidToday);
+            return true;
+        }
 
         public bool IsPk => pkPermanent || pkLeft > 0d;
 
@@ -78,6 +102,18 @@ namespace Deadheim.Pvp
         public List<PvpBountyContribution> contributions = new List<PvpBountyContribution>();
     }
 
+    /// <summary>Contas de moeda que o teste sem o jogo confere.</summary>
+    internal static class PvpCoinMath
+    {
+        /// <summary>
+        /// Quanto o cliente devolve a si mesmo de um pedido de bounty: tirou <paramref name="taken"/>
+        /// do inventario antes de pedir e o servidor ficou com <paramref name="kept"/>. O servidor
+        /// nunca manda moeda numa recusa; so diz quanto ficou.
+        /// </summary>
+        public static int BountyRefund(int taken, int kept)
+            => Math.Max(0, taken - Math.Min(Math.Max(0, kept), Math.Max(0, taken)));
+    }
+
     internal sealed class PvpStoreData
     {
         public int version = PvpStoreFormat.Version;
@@ -93,7 +129,8 @@ namespace Deadheim.Pvp
     /// </summary>
     internal static class PvpStoreFormat
     {
-        public const int Version = 3;
+        // 4: teto diario de bounty (bountyPaidDay/bountyPaidToday) e o que veio com o 7.3.1.
+        public const int Version = 4;
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -110,7 +147,8 @@ namespace Deadheim.Pvp
                     "pkLeft", D(p.pkLeft), "pkPermanent", B(p.pkPermanent), "pkStreak", I(p.pkStreak),
                     "pkPenalty", I(p.pkPenalty), "pkKills", I(p.pkKills), "bountyReadyAt", D(p.bountyReadyAt),
                     "combatLogPending", B(p.combatLogPending), "pendingCoins", I(p.pendingCoins),
-                    "pvePermanent", B(p.pvePermanent), "pveSince", D(p.pveSince));
+                    "pvePermanent", B(p.pvePermanent), "pveSince", D(p.pveSince),
+                    "bountyPaidDay", I(p.bountyPaidDay), "bountyPaidToday", I(p.bountyPaidToday));
 
             foreach (PvpBountyRecord b in data.bounties)
             {
@@ -170,6 +208,8 @@ namespace Deadheim.Pvp
                             pendingCoins = GetInt(f, "pendingCoins"),
                             pvePermanent = GetBool(f, "pvePermanent"),
                             pveSince = GetDouble(f, "pveSince"),
+                            bountyPaidDay = GetInt(f, "bountyPaidDay"),
+                            bountyPaidToday = GetInt(f, "bountyPaidToday"),
                         });
                         break;
                     }

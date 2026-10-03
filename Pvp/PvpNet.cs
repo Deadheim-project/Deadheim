@@ -28,6 +28,8 @@ namespace Deadheim.Pvp
         public const string OpReward = "reward";
         public const string OpRankResult = "rankres";
         public const string OpPunish = "punish";
+        /// <summary>Resposta a um pedido de bounty (place/pay): quanto o servidor ficou. O resto o cliente devolve.</summary>
+        public const string OpBountyResult = "bountyres";
 
         private static bool _registered;
 

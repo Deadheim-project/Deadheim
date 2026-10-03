@@ -11,8 +11,12 @@ namespace Deadheim.Pvp
     /// corre com o alvo online; a partir de BountyUntilDeathAt so acaba com a morte dele.
     /// O alvo pode pagar o pote x BountyBuyoutMultiplier para a casa e se livrar.
     ///
-    /// Tudo decidido aqui no servidor. O cliente so tira as moedas do proprio inventario ao
-    /// pedir (o inventario do Valheim e do cliente); se o pedido e recusado, as moedas voltam.
+    /// Tudo decidido aqui no servidor. O cliente tira as moedas do proprio inventario ao pedir
+    /// (o inventario do Valheim e do cliente) e guarda quanto tirou pelo id do pedido; a resposta
+    /// diz quanto o servidor ficou e o cliente devolve o resto a si mesmo. O servidor nunca cria
+    /// moeda numa recusa ou troco: so o pote de uma bounty de verdade vira pagamento. Como o
+    /// servidor nao ve o inventario, o pote e confiado ao cliente; BountyDailyCapPerPlayer limita
+    /// quanto cada jogador poe por dia, e todo pagamento vai para o log.
     /// Sem recompensa por sobreviver: nada sai do nada, entao combinar morte nao gera ouro.
     /// </summary>
     internal static class PvpBounty
@@ -23,7 +27,6 @@ namespace Deadheim.Pvp
             public double LastTick;
         }
 
-        private const string Coins = "Coins";
         private static readonly Dictionary<long, Runtime> _runtime = new Dictionary<long, Runtime>();
         private static float _nextSaveMark;
 
@@ -89,40 +92,50 @@ namespace Deadheim.Pvp
 
         /// <summary>
         /// place &lt;alvo&gt; &lt;valor&gt; | pay &lt;valor&gt; | list. Em place e pay o cliente ja tirou
-        /// &lt;valor&gt; moedas do inventario: toda recusa devolve.
+        /// &lt;valor&gt; moedas do inventario: a resposta (Answer) diz quanto o servidor ficou.
         /// </summary>
-        public static void OnCommand(PvpPeer peer, string action, string target, int paid)
+        public static void OnCommand(PvpPeer peer, string action, string target, int paid, int request)
         {
             action = (action ?? string.Empty).Trim().ToLowerInvariant();
             switch (action)
             {
-                case "place": Place(peer, target, paid, false); break;
-                case "pay": Buyout(peer, paid); break;
+                case "place": Place(peer, target, paid, false, request); break;
+                case "pay": Buyout(peer, paid, request); break;
                 case "admin":
                     // Bounty paga pela casa: ferramenta de admin (e do teste solo). Pode ser em si mesmo.
-                    if (!PvpServer.IsAdminPeer(peer.PeerId)) { PvpNet.Message(peer.PeerId, "So admin."); return; }
-                    Place(peer, target, paid, true);
+                    if (!PvpServer.IsAdminPeer(peer.PeerId)) { Answer(peer, request, 0, "So admin."); return; }
+                    Place(peer, target, paid, true, request);
                     break;
                 default: List(peer); break;
             }
         }
 
-        private static void Refund(PvpPeer peer, int amount, string why)
+        /// <summary>
+        /// Resposta a um pedido place/pay: quanto o servidor ficou das moedas que o cliente tirou.
+        /// O cliente devolve a si mesmo o que sobra (PvpCoinMath.BountyRefund); o servidor nao
+        /// manda moeda nenhuma, entao um pedido forjado nao cria ouro.
+        /// </summary>
+        private static void Answer(PvpPeer peer, int request, int kept, string message)
         {
-            if (amount > 0) PvpServer.SendReward(peer.PeerId, Coins, amount, "Devolvido: " + why);
-            PvpNet.Message(peer.PeerId, why);
+            ZPackage pkg = PvpNet.Package(PvpNet.OpBountyResult);
+            pkg.Write(request);
+            pkg.Write(Math.Max(0, kept));
+            pkg.Write(message ?? string.Empty);
+            PvpNet.SendToClient(peer.PeerId, pkg);
         }
 
-        private static void Place(PvpPeer peer, string targetName, int paid, bool byHouse)
+        private static int Today => (int)Math.Floor(Now / 86400d);
+
+        private static void Place(PvpPeer peer, string targetName, int paid, bool byHouse, int request)
         {
             // A casa paga a bounty de admin: nada foi tirado do inventario, entao nada volta.
             if (byHouse) paid = Math.Max(0, paid);
-            void Refuse(string why) => Refund(peer, byHouse ? 0 : paid, why);
+            void Refuse(string why) => Answer(peer, request, 0, why);
 
             if (!PvpConfig.BountyEnabled.Value) { Refuse("A bounty esta desligada neste servidor."); return; }
             if (paid < PvpConfig.BountyMinimum.Value && !byHouse)
             {
-                Refund(peer, paid, $"A bounty minima e {PvpConfig.BountyMinimum.Value} moedas.");
+                Refuse($"A bounty minima e {PvpConfig.BountyMinimum.Value} moedas.");
                 return;
             }
 
@@ -136,14 +149,30 @@ namespace Deadheim.Pvp
             if (paid <= 0) { Refuse("Valor invalido."); return; }
 
             PvpBountyRecord bounty = Find(targetId);
-            if (bounty == null)
+            if (bounty == null && !byHouse)
             {
                 PvpPlayerRecord record = PvpStore.Player(targetId, name);
-                if (record.bountyReadyAt > Now && !byHouse)
+                if (record.bountyReadyAt > Now)
                 {
                     Refuse($"{name} acabou de sair de uma bounty. Outra so em {PvpClient.FormatDuration(record.bountyReadyAt - Now)}.");
                     return;
                 }
+            }
+
+            // Teto diario de quem paga: e o que limita um pote "pago" por um cliente modificado.
+            PvpPlayerRecord payer = byHouse ? null : PvpStore.Player(peer.PlayerId, peer.Name);
+            int cap = Math.Max(0, PvpConfig.BountyDailyCapPerPlayer.Value);
+            if (payer != null && !payer.TryAddBountyPaid(Today, paid, cap, out int leftToday))
+            {
+                PvpStore.MarkDirty();
+                Refuse($"Teto de bounty por dia: {cap} moedas por jogador. Hoje voce ainda pode colocar {leftToday}.");
+                Debug.LogWarning($"[Deadheim PvP] Bounty recusada pelo teto diario: {peer.Name} ({peer.PlayerId}) quis +{paid} " +
+                                 $"em {name} ({targetId}); ja colocou {payer.bountyPaidToday} hoje, teto {cap}.");
+                return;
+            }
+
+            if (bounty == null)
+            {
                 bounty = new PvpBountyRecord
                 {
                     targetId = targetId,
@@ -167,7 +196,7 @@ namespace Deadheim.Pvp
             string when = bounty.delayLeft > 0d ? $" Vira CACADO em {PvpClient.FormatDuration(bounty.delayLeft)}." : string.Empty;
             PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> vale " +
                              $"<color=#ffd700>{Payout(bounty.pot)}</color> moedas para quem matar ({length}).{when}", true);
-            PvpNet.Message(peer.PeerId, $"Voce colocou {paid} moedas na cabeca de {bounty.targetName}.");
+            Answer(peer, request, byHouse ? 0 : paid, $"Voce colocou {paid} moedas na cabeca de {bounty.targetName}.");
             if (PvpPeer.TryFindByPlayerId(targetId, out PvpPeer targetPeer))
             {
                 PvpNet.Message(targetPeer.PeerId, bounty.delayLeft > 0d
@@ -178,7 +207,8 @@ namespace Deadheim.Pvp
                 PvpServer.SendState(targetPeer);
             }
             Debug.Log($"[Deadheim PvP] Bounty: {(byHouse ? "casa (admin " + peer.Name + ")" : peer.Name)} ({peer.PlayerId}) +{paid} " +
-                      $"em {bounty.targetName} ({targetId}); pote={bounty.pot}.");
+                      $"em {bounty.targetName} ({targetId}); pote={bounty.pot}" +
+                      (payer != null ? $"; pago hoje por ele={payer.bountyPaidToday}" + (cap > 0 ? "/" + cap : string.Empty) : string.Empty) + ".");
         }
 
         internal static bool TryFindTarget(string name, out long id, out string resolvedName)
@@ -200,18 +230,23 @@ namespace Deadheim.Pvp
             return true;
         }
 
-        private static void Buyout(PvpPeer peer, int paid)
+        private static void Buyout(PvpPeer peer, int paid, int request)
         {
             PvpBountyRecord bounty = Find(peer.PlayerId);
-            if (bounty == null) { Refund(peer, paid, "Nao ha bounty na sua cabeca."); return; }
+            if (bounty == null) { Answer(peer, request, 0, "Nao ha bounty na sua cabeca."); return; }
             int cost = BuyoutCost(bounty.pot);
-            if (cost <= 0) { Refund(peer, paid, "Pagar a propria bounty esta desligado neste servidor."); return; }
-            if (paid < cost) { Refund(peer, paid, $"Para encerrar a sua bounty sao {cost} moedas."); return; }
+            if (cost <= 0) { Answer(peer, request, 0, "Pagar a propria bounty esta desligado neste servidor."); return; }
+            if (paid < cost) { Answer(peer, request, 0, $"Para encerrar a sua bounty sao {cost} moedas."); return; }
 
-            if (paid > cost) PvpServer.SendReward(peer.PeerId, Coins, paid - cost, "Troco da bounty");
+            // Pagou a mais (o pote mudou entre o pedido e a resposta): o servidor fica so com o custo
+            // e o cliente devolve o troco a si mesmo.
             Finish(bounty);
+            Answer(peer, request, cost, paid > cost
+                ? $"Bounty encerrada por {cost} moedas; o troco ({paid - cost}) voltou para voce."
+                : $"Bounty encerrada por {cost} moedas.");
             PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> pagou {cost} moedas e comprou a propria cabeca.");
-            Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} comprada por {cost} (pote {bounty.pot}, casa).");
+            Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} ({peer.PlayerId}) comprada por {cost}, pagos por {peer.Name} " +
+                      $"(pote {bounty.pot}, casa).");
         }
 
         private static void List(PvpPeer peer)

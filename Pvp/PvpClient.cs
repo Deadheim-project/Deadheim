@@ -18,6 +18,11 @@ namespace Deadheim.Pvp
         public static bool BountyUntilDeath { get; private set; }
         private static bool _punishPending;
 
+        // Pedidos de bounty (place/pay) ainda sem resposta: id -> moedas tiradas do inventario.
+        // A resposta diz quanto o servidor ficou; o resto volta daqui, nunca do servidor.
+        private static int _nextBountyRequest = 1;
+        private static readonly Dictionary<int, int> _bountyTaken = new Dictionary<int, int>();
+
         public static double BountyCooldownRemaining
             => Math.Max(0d, BountyCooldown - (PvpState.Now - _bountyCooldownAt));
 
@@ -55,6 +60,9 @@ namespace Deadheim.Pvp
                 }
                 case PvpNet.OpReward:
                     GiveReward(pkg.ReadString(), pkg.ReadInt(), pkg.ReadString());
+                    break;
+                case PvpNet.OpBountyResult:
+                    OnBountyResult(pkg.ReadInt(), pkg.ReadInt(), pkg.ReadString());
                     break;
                 case PvpNet.OpRankResult:
                 {
@@ -143,6 +151,23 @@ namespace Deadheim.Pvp
             BountyPot = 0;
             BountyUntilDeath = false;
             _punishPending = false;
+            // Sem resposta ate o logout (conexao caiu no meio): nao da para saber se o servidor
+            // ficou com as moedas, entao nada volta. Fica no log para o admin conferir.
+            foreach (KeyValuePair<int, int> pending in _bountyTaken)
+                Debug.LogWarning($"[Deadheim PvP] Pedido de bounty {pending.Key} ({pending.Value} moedas) ficou sem resposta do servidor.");
+            _bountyTaken.Clear();
+        }
+
+        /// <summary>Resposta do servidor a um pedido de bounty: devolve o que ele nao ficou.</summary>
+        private static void OnBountyResult(int request, int kept, string text)
+        {
+            if (_bountyTaken.TryGetValue(request, out int taken))
+            {
+                _bountyTaken.Remove(request);
+                int back = PvpCoinMath.BountyRefund(taken, kept);
+                if (back > 0) GiveReward("Coins", back, "Devolvido");
+            }
+            ShowMessage(text, true);
         }
 
         // -------------------------------------------------------------------- envio
@@ -174,10 +199,6 @@ namespace Deadheim.Pvp
             PvpNet.SendToServer(pkg);
         }
 
-        /// <summary>
-        /// Pedido de bounty. Em place/pay as moedas saem do inventario AQUI, antes de pedir
-        /// (o inventario e do cliente); se o servidor recusar, ele devolve.
-        /// </summary>
         /// <summary>join (virar PvE permanente) | admin-off &lt;jogador&gt;. Quem decide e o servidor.</summary>
         public static void SendPve(string action, string target)
         {
@@ -187,15 +208,23 @@ namespace Deadheim.Pvp
             PvpNet.SendToServer(pkg);
         }
 
+        /// <summary>
+        /// Pedido de bounty. Em place/pay as moedas saem do inventario AQUI, antes de pedir
+        /// (o inventario e do cliente), e ficam anotadas pelo id do pedido: a resposta
+        /// (OpBountyResult) diz quanto o servidor ficou e o resto volta daqui.
+        /// </summary>
         public static bool SendBounty(string action, string target, int amount, out string refusal, int houseAmount = 0)
         {
             refusal = null;
             if (amount > 0 && !TakeCoins(amount, out refusal)) return false;
+            int request = _nextBountyRequest++;
+            if (amount > 0) _bountyTaken[request] = amount;
             ZPackage pkg = PvpNet.Package(PvpNet.OpBounty);
             pkg.Write(action ?? string.Empty);
             pkg.Write(target ?? string.Empty);
             // Bounty de admin (paga pela casa): nenhuma moeda sai do inventario.
             pkg.Write(amount > 0 ? amount : houseAmount);
+            pkg.Write(request);
             PvpNet.SendToServer(pkg);
             return true;
         }

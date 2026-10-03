@@ -52,7 +52,15 @@ namespace Deadheim.Pvp
             {
                 case PvpNet.OpHello: OnHello(peer); break;
                 case PvpNet.OpDeath: OnDeath(peer, pkg); break;
-                case PvpNet.OpBounty: PvpBounty.OnCommand(peer, pkg.ReadString(), pkg.ReadString(), pkg.ReadInt()); break;
+                case PvpNet.OpBounty:
+                {
+                    string action = pkg.ReadString();
+                    string target = pkg.ReadString();
+                    int paid = pkg.ReadInt();
+                    int request = pkg.GetPos() < pkg.Size() ? pkg.ReadInt() : 0;
+                    PvpBounty.OnCommand(peer, action, target, paid, request);
+                    break;
+                }
                 case PvpNet.OpRank: SendRank(peer); break;
                 case PvpNet.OpPve: PvpPve.OnCommand(peer, pkg.ReadString(), pkg.ReadString()); break;
                 case PvpNet.OpAdmin: OnAdmin(peer, pkg.ReadString(), pkg.ReadString(), pkg.ReadDouble()); break;

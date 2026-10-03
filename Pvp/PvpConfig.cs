@@ -81,6 +81,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> HuntedNoWardDefense;
         public static ConfigEntry<int> BountyMinPlayers;
         public static ConfigEntry<bool> BountyArenaKillsCount;
+        public static ConfigEntry<int> BountyDailyCapPerPlayer;
 
         // PvE permanente
         public static ConfigEntry<bool> PveEnabled;
@@ -266,6 +267,10 @@ namespace Deadheim.Pvp
                 "Jogadores online (contando o alvo) para o tempo da bounty correr. Abaixo disso ele para.");
             BountyArenaKillsCount = Bind(config, bounty, "BountyArenaKillsCount", false,
                 "Matar o cacado dentro de uma arena paga a bounty.");
+            BountyDailyCapPerPlayer = Bind(config, bounty, "BountyDailyCapPerPlayer", 10000,
+                "Teto de moedas que cada jogador pode colocar em bounties por dia (dia UTC do servidor). O inventario e do " +
+                "cliente: o servidor confia no valor que ele diz ter pago, entao o teto limita o que um cliente modificado " +
+                "consegue por num pote sem pagar. Bounty de admin (paga pela casa) nao conta. 0 = sem teto.");
 
             const string pve = "PvP - PvE permanente";
             PveEnabled = Bind(config, pve, "PveEnabled", true,

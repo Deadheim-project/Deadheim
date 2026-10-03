@@ -24,6 +24,7 @@ internal static class Program
         {
             id = 403029348, name = "Solo", kills = 3, deaths = 12, pkLeft = 1234.5678, pkStreak = 2, pkPenalty = 1,
             pkKills = 7, bountyReadyAt = 1790000000.25, combatLogPending = true, pendingCoins = 750,
+            bountyPaidDay = 20363, bountyPaidToday = 4000,
         });
         data.players.Add(new PvpPlayerRecord { id = 424242, name = "Nome\tcom\ttab\nlinha", pkPermanent = true, pvePermanent = true, pveSince = 99.5 });
         data.players.Add(new PvpPlayerRecord { id = -77, name = "id negativo (Steam/Xbox)" });
@@ -42,7 +43,8 @@ internal static class Program
         Check("formato/campos-do-jogador", solo != null && solo.name == "Solo" && solo.kills == 3 && solo.deaths == 12
                                            && solo.pkLeft == 1234.5678 && solo.pkStreak == 2 && solo.pkPenalty == 1 && solo.pkKills == 7
                                            && solo.bountyReadyAt == 1790000000.25 && solo.combatLogPending && solo.pendingCoins == 750
-                                           && !solo.pkPermanent && !solo.pvePermanent,
+                                           && !solo.pkPermanent && !solo.pvePermanent
+                                           && solo.bountyPaidDay == 20363 && solo.bountyPaidToday == 4000,
             solo == null ? "sem Solo" : PvpStoreFormat.Write(new PvpStoreData { players = { solo } }));
         PvpPlayerRecord dummy = back.players.FirstOrDefault(p => p.id == 424242);
         Check("formato/pk-permanente-e-pve", dummy != null && dummy.pkPermanent && dummy.pvePermanent && dummy.pveSince == 99.5);
@@ -79,6 +81,23 @@ internal static class Program
         Check("pk/permanente-nao-expira", !permanent.TickPk(100d) && permanent.IsPk && permanent.pkLeft == 3d);
         PvpPlayerRecord overshoot = new PvpPlayerRecord { id = 3, pkLeft = 1d, pkStreak = 1 };
         Check("pk/passar-do-tempo-zera", overshoot.TickPk(9d) && overshoot.pkLeft == 0d && !overshoot.IsPk);
+
+        // C2: o servidor nao cria moeda numa recusa. O cliente tirou X e devolve o que o servidor nao ficou.
+        Check("bounty/recusa-devolve-tudo", PvpCoinMath.BountyRefund(5000, 0) == 5000);
+        Check("bounty/aceita-nao-devolve", PvpCoinMath.BountyRefund(5000, 5000) == 0);
+        Check("bounty/troco-da-compra", PvpCoinMath.BountyRefund(7500, 6000) == 1500);
+        Check("bounty/servidor-nao-faz-devolver-mais-que-tirou", PvpCoinMath.BountyRefund(1000, 99999) == 0
+                                                                  && PvpCoinMath.BountyRefund(1000, -5) == 1000
+                                                                  && PvpCoinMath.BountyRefund(0, 0) == 0);
+
+        // C2: teto diario de bounty por pagador.
+        PvpPlayerRecord payer = new PvpPlayerRecord { id = 9 };
+        Check("teto/cabe", payer.TryAddBountyPaid(100, 6000, 10000, out int left1) && left1 == 4000 && payer.bountyPaidToday == 6000, "resta=" + left1);
+        Check("teto/estoura-e-nada-muda", !payer.TryAddBountyPaid(100, 5000, 10000, out int left2) && left2 == 4000 && payer.bountyPaidToday == 6000, "resta=" + left2);
+        Check("teto/completa-exato", payer.TryAddBountyPaid(100, 4000, 10000, out int left3) && left3 == 0 && payer.bountyPaidToday == 10000);
+        Check("teto/dia-novo-zera", payer.TryAddBountyPaid(101, 3000, 10000, out int left4) && left4 == 7000 && payer.bountyPaidDay == 101 && payer.bountyPaidToday == 3000);
+        Check("teto/zero-e-sem-teto", payer.TryAddBountyPaid(101, 1000000, 0, out _) && payer.bountyPaidToday == 1003000);
+        Check("teto/valor-invalido-recusado", !payer.TryAddBountyPaid(101, 0, 0, out _) && !payer.TryAddBountyPaid(101, -10, 10000, out _));
 
         Console.WriteLine($"DONE pass={_pass} fail={_fail}");
         return _fail == 0 ? 0 : 1;
