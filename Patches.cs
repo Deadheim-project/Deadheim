@@ -348,6 +348,7 @@ namespace Deadheim
                 tempRemoved.Clear();
                 int invalidCount = 0;
                 HashSet<string> invalidPrefabs = s_reportedInvalidInstances ? null : new HashSet<string>();
+                List<ZDO> deadKeys = null;
                 foreach (var kvp in instances)
                 {
                     ZNetView view = kvp.Value;
@@ -355,6 +356,7 @@ namespace Deadheim
                     if (zdo == null)
                     {
                         invalidCount++;
+                        (deadKeys ??= new List<ZDO>()).Add(kvp.Key);
                         if (invalidPrefabs != null)
                         {
                             int prefabHash = kvp.Key.GetPrefab();
@@ -367,6 +369,13 @@ namespace Deadheim
                     if (zdo.TempRemoveEarmark != earmark)
                         tempRemoved.Add(view);
                 }
+
+                // A entrada morta sai do dicionario: enquanto ficasse, o CreateObjects achava que a ZDO
+                // ja tinha instancia e o objeto ficava invisivel ate relogar (B10). A ZDO volta a
+                // nascer no proximo CreateObjects, se ainda estiver por perto.
+                if (deadKeys != null)
+                    foreach (ZDO key in deadKeys)
+                        instances.Remove(key);
 
                 if (invalidCount > 0 && !s_reportedInvalidInstances)
                 {
