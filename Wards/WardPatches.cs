@@ -84,7 +84,9 @@ namespace Deadheim.Wards
 
         /// <summary>
         /// Ward sem combustivel para de proteger. Tambem libera portas e baus de dungeon,
-        /// que nao devem ficar presos atras de ward.
+        /// que nao devem ficar presos atras de ward: so o ward que cobre a peca mirada. Antes
+        /// mirar uma porta de dungeon desligava todos os wards daquele cliente, inclusive no
+        /// GetProtectingWard do dano que ele processa como dono das pecas (B16).
         /// </summary>
         [HarmonyPatch(typeof(PrivateArea), "IsEnabled")]
         public static class IsEnabledPatch
@@ -103,8 +105,10 @@ namespace Deadheim.Wards
                 if (player == null || !player.m_hovering) return;
 
                 Interactable hovered = player.m_hovering.GetComponentInParent<Interactable>();
-                if (hovered is Door door && IsDungeonPiece(door.gameObject)) __result = false;
-                else if (hovered is Container container && IsDungeonPiece(container.gameObject)) __result = false;
+                Component dungeonPiece = hovered is Door door && IsDungeonPiece(door.gameObject) ? door
+                    : hovered is Container container && IsDungeonPiece(container.gameObject) ? container
+                    : null;
+                if (dungeonPiece != null && __instance.IsInside(dungeonPiece.transform.position, 0f)) __result = false;
             }
         }
 

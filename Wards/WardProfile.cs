@@ -40,6 +40,11 @@ namespace Deadheim.Wards
         public const string VanillaWard = "guard_stone";
         public const string PlayerWard = "DeadheimWard";
         public const string AdminWard = "AdminWard";
+        public const string AdminWardSmall = "AdminWardSmall";
+
+        /// <summary>Raios dos wards de admin. Um lugar so: o clone (ClonedItems) e o Awake leem daqui.</summary>
+        public const float AdminWardRadius = 50f;
+        public const float AdminWardSmallRadius = 40f;
 
         /// <summary>
         /// O RaidWard territorial e do RaidSystem e nunca entra aqui. O RaidSystem tem
@@ -65,7 +70,16 @@ namespace Deadheim.Wards
             {
                 PrefabName = AdminWard,
                 Fuel = false, CountsToLimit = false, GuildAccess = false, Protects = true,
-                Radius = 50f,
+                // O clone punha 150 e o Awake trocava por 50 ao nascer; vale o que estava no ar.
+                Radius = AdminWardRadius,
+            },
+            new WardProfile
+            {
+                // Sem perfil o AdminWardSmall so tinha a protecao do vanilla (construir e abrir bau):
+                // nao segurava dano, terreno nem natureza.
+                PrefabName = AdminWardSmall,
+                Fuel = false, CountsToLimit = false, GuildAccess = false, Protects = true,
+                Radius = AdminWardSmallRadius,
             },
         };
 

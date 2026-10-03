@@ -283,7 +283,7 @@ namespace Deadheim
             piece.m_name = "Admin Ward small";
 
             PrivateArea area = piece.GetComponent<PrivateArea>();
-            area.m_radius = 40;
+            area.m_radius = Wards.WardProfiles.AdminWardSmallRadius;
             area.m_name = "AdminWardSmall";
 
             var comp = adminWard.GetComponentInChildren<MeshRenderer>();
@@ -308,7 +308,7 @@ namespace Deadheim
             piece.m_name = "Admin Ward";
 
             PrivateArea area = piece.GetComponent<PrivateArea>();
-            area.m_radius = 150;
+            area.m_radius = Wards.WardProfiles.AdminWardRadius;
             area.m_name = "AdminWard";
 
             var comp = adminWard.GetComponentInChildren<MeshRenderer>();
