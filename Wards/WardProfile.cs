@@ -15,6 +15,13 @@ namespace Deadheim.Wards
         public bool GuildAccess;
         public bool Protects;
 
+        /// <summary>
+        /// Ward de Territorio: fora da area segura do spawn, com combustivel e depois da ativacao, nada no
+        /// raio toma dano de quem nao tem acesso (DamagePercent nao vale). So o dono remove. Tem limite e
+        /// espacamento proprios.
+        /// </summary>
+        public bool Indestructible;
+
         /// <summary>Raio fixo, ou -1 para seguir o cfg (RadiusConfig, ou Plugin.WardRadius).</summary>
         public float Radius = -1f;
 
@@ -41,6 +48,10 @@ namespace Deadheim.Wards
         public const string PlayerWard = "DeadheimWard";
         public const string AdminWard = "AdminWard";
 
+        /// <summary>Ward de Territorio (indestrutivel fora do spawn), construida com o TerritoryToken (doacao).</summary>
+        public const string TerritoryWard = "DeadheimTerritoryWard";
+        public const string TerritoryToken = "TerritoryToken";
+
         /// <summary>
         /// O RaidWard territorial e do RaidSystem e nunca entra aqui. O RaidSystem tem
         /// suas proprias regras de horario, HP e conquista para ele.
@@ -60,6 +71,12 @@ namespace Deadheim.Wards
                 Fuel = true, CountsToLimit = true, GuildAccess = true, Protects = true,
                 // Sem isto o Awake aplicava o WardRadius (150) e o PlayerWardRadius nao valia.
                 RadiusConfig = () => PlayerWardRadius.Value,
+            },
+            new WardProfile
+            {
+                PrefabName = TerritoryWard,
+                Fuel = true, CountsToLimit = false, GuildAccess = true, Protects = true, Indestructible = true,
+                RadiusConfig = () => TerritoryWardRadius.Value,
             },
             new WardProfile
             {
@@ -87,8 +104,18 @@ namespace Deadheim.Wards
         public static ConfigEntry<bool> ProtectNatureOres;
         public static ConfigEntry<string> NatureOreDrops;
 
+        public static ConfigEntry<bool> TerritoryWardEnabled;
+        public static ConfigEntry<int> TerritoryWardRadius;
+        public static ConfigEntry<string> TerritoryWardCost;
+        public static ConfigEntry<bool> TerritoryTokenRecover;
+        public static ConfigEntry<int> TerritoryWardLimit;
+        public static ConfigEntry<float> TerritoryWardActivationMinutes;
+        public static ConfigEntry<float> TerritoryWardSpacing;
+
         private static GameObject _playerWardPrefab;
+        private static GameObject _territoryWardPrefab;
         private static bool _registeredInHammer;
+        private static bool _territoryRegisteredInHammer;
 
         /// <summary>
         /// Configs novas so. WardRadius, WardLimit, WardLimitVip, WardChargeDurationInSec,
@@ -137,13 +164,38 @@ namespace Deadheim.Wards
                 "CopperOre,TinOre,IronScrap,SilverOre,Obsidian,BlackMarble,FlametalOre,FlametalOreNew,CopperScrap,BronzeScrap,Grausten,SoftTissue",
                 "Itens que definem um veio de minerio para ProtectNatureOres."));
 
+            // Dentro do SafeArea ([Server config], 1500 m do spawn) a ward comum ja protege 100%:
+            // a Ward de Territorio e o que protege 100% fora dele.
+            const string territory = "Wards - Territorio";
+            TerritoryWardEnabled = Plugin.Synced(config.Bind(territory, "TerritoryWardEnabled", true,
+                "Ward de Territorio no martelo. Desligado, as que ja existem viram ward comum (DamagePercent)."));
+            TerritoryWardRadius = Plugin.Synced(config.Bind(territory, "TerritoryWardRadius", 20,
+                "Raio da Ward de Territorio em metros. Tudo dentro dele fica indestrutivel."));
+            TerritoryWardCost = Plugin.Synced(config.Bind(territory, "TerritoryWardCost", TerritoryToken + ":1,Stone:100,SurtlingCore:5",
+                "Custo no formato Item:Quantidade. O " + TerritoryToken + " e vendido por doacao (Loja Deadcoins)."));
+            TerritoryTokenRecover = Plugin.Synced(config.Bind(territory, "TerritoryTokenRecover", true,
+                "O dono recebe o " + TerritoryToken + " de volta ao remover a ward. Desligado, mudar de lugar custa outro token."));
+            TerritoryWardLimit = Plugin.Synced(config.Bind(territory, "TerritoryWardLimit", 1,
+                "Wards de Territorio por jogador. 0 = sem limite."));
+            TerritoryWardActivationMinutes = Plugin.Synced(config.Bind(territory, "TerritoryWardActivationMinutes", 60f,
+                "Minutos (com o servidor ligado) ate a ward nova ficar indestrutivel. Ate la ela vale como ward comum. " +
+                "E a recarga de mudar de lugar: impede plantar a ward no meio de um raid."));
+            TerritoryWardSpacing = Plugin.Synced(config.Bind(territory, "TerritoryWardSpacing", 2f,
+                "Distancia minima entre duas Wards de Territorio, de qualquer dono (guilda inclusive), em multiplos " +
+                "do raio. 2 = os raios nao se sobrepoem. 0 desliga."));
+
             // O WardRadius e ligado depois, em Plugin.Awake, que assina o mesmo ApplyRadii.
             PlayerWardRadius.SettingChanged += (_, __) => ApplyRadii();
-            PlayerWardCost.SettingChanged += (_, __) =>
-            {
-                Piece piece = _playerWardPrefab != null ? _playerWardPrefab.GetComponent<Piece>() : null;
-                if (piece != null) ApplyRequirements(piece);
-            };
+            TerritoryWardRadius.SettingChanged += (_, __) => ApplyRadii();
+            PlayerWardCost.SettingChanged += (_, __) => ApplyRequirements(_playerWardPrefab, PlayerWardCost.Value);
+            TerritoryWardCost.SettingChanged += (_, __) => ApplyRequirements(_territoryWardPrefab, TerritoryWardCost.Value);
+            TerritoryTokenRecover.SettingChanged += (_, __) => ApplyRequirements(_territoryWardPrefab, TerritoryWardCost.Value);
+        }
+
+        public static bool IsTerritoryWard(GameObject go)
+        {
+            WardProfile profile = For(go);
+            return profile != null && profile.Indestructible;
         }
 
         /// <summary>Raio novo no cfg vale tambem para os wards ja construidos.</summary>
@@ -197,6 +249,8 @@ namespace Deadheim.Wards
         {
             Prefabs.ZNetSceneReady += CreatePlayerWardPrefab;
             Prefabs.PiecesReady += RegisterPlayerWardPiece;
+            Prefabs.ZNetSceneReady += CreateTerritoryWardPrefab;
+            Prefabs.PiecesReady += RegisterTerritoryWardPiece;
         }
 
         private static void CreatePlayerWardPrefab()
@@ -225,7 +279,7 @@ namespace Deadheim.Wards
             {
                 piece.m_name = "Ward de Protecao";
                 piece.m_description = "Protege a area contra dano, terraformacao e roubo de plantacao. Membros da guild tem acesso automatico.";
-                ApplyRequirements(piece);
+                ApplyRequirements(_playerWardPrefab, PlayerWardCost.Value);
             }
 
             Debug.Log("[Wards] " + PlayerWard + " criado: raio=" + PlayerWardRadius.Value
@@ -243,10 +297,63 @@ namespace Deadheim.Wards
             Debug.Log("[Wards] " + PlayerWard + " adicionado ao martelo.");
         }
 
-        private static void ApplyRequirements(Piece piece)
+        /// <summary>
+        /// Sempre criada, mesmo com TerritoryWardEnabled desligado: as que ja estao no mundo precisam
+        /// do prefab para carregar. Desligado so tira do martelo e da indestrutibilidade.
+        /// </summary>
+        private static void CreateTerritoryWardPrefab()
         {
+            Prefabs.ZNetSceneReady -= CreateTerritoryWardPrefab;
+            if (_territoryWardPrefab != null) return;
+
+            _territoryWardPrefab = Prefabs.Clone(TerritoryWard, VanillaWard);
+            if (_territoryWardPrefab == null)
+            {
+                Debug.LogError("[Wards] guard_stone nao encontrado para clonar o " + TerritoryWard + ".");
+                return;
+            }
+
+            PrivateArea area = _territoryWardPrefab.GetComponent<PrivateArea>();
+            if (area != null)
+            {
+                area.m_radius = TerritoryWardRadius.Value;
+                area.m_name = "Territorio";
+                area.m_enabledByDefault = true;
+            }
+
+            Piece piece = _territoryWardPrefab.GetComponent<Piece>();
+            if (piece != null)
+            {
+                piece.m_name = "Ward de Territorio";
+                piece.m_description = "Fora da area segura do spawn, depois de ativada, nada no raio toma dano de quem nao tem " +
+                                      "acesso. Uma por jogador; so o dono remove. Usa combustivel como as outras.";
+                ApplyRequirements(_territoryWardPrefab, TerritoryWardCost.Value);
+            }
+
+            Debug.Log("[Wards] " + TerritoryWard + " criado: raio=" + TerritoryWardRadius.Value
+                      + ", ativa em " + TerritoryWardActivationMinutes.Value + " min, limite=" + TerritoryWardLimit.Value + ".");
+        }
+
+        private static void RegisterTerritoryWardPiece()
+        {
+            if (_territoryRegisteredInHammer || !TerritoryWardEnabled.Value) return;
+            if (_territoryWardPrefab == null) return;
+
+            // O TerritoryToken nasce no ObjectDB (ClonedItems); aqui ele ja existe com certeza.
+            ApplyRequirements(_territoryWardPrefab, TerritoryWardCost.Value);
+            Pieces.AddToHammer(_territoryWardPrefab, "Misc");
+            _territoryRegisteredInHammer = true;
+            Prefabs.PiecesReady -= RegisterTerritoryWardPiece;
+            Debug.Log("[Wards] " + TerritoryWard + " adicionado ao martelo.");
+        }
+
+        private static void ApplyRequirements(GameObject wardPrefab, string cost)
+        {
+            Piece piece = wardPrefab != null ? wardPrefab.GetComponent<Piece>() : null;
+            if (piece == null || cost == null) return;
+
             List<Piece.Requirement> requirements = new List<Piece.Requirement>();
-            foreach (string entry in PlayerWardCost.Value.Split(','))
+            foreach (string entry in cost.Split(','))
             {
                 string[] parts = entry.Split(':');
                 if (parts.Length != 2) continue;
@@ -260,7 +367,9 @@ namespace Deadheim.Wards
                     Debug.LogWarning("[Wards] Item de custo nao encontrado: " + itemName);
                     continue;
                 }
-                requirements.Add(new Piece.Requirement { m_resItem = item, m_amount = amount, m_recover = true });
+                // O token da base pode nao voltar ao remover (TerritoryTokenRecover): mudar a base custa outro.
+                bool recover = itemName != TerritoryToken || TerritoryTokenRecover.Value;
+                requirements.Add(new Piece.Requirement { m_resItem = item, m_amount = amount, m_recover = recover });
             }
 
             if (requirements.Count > 0) piece.m_resources = requirements.ToArray();

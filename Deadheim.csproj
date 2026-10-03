@@ -201,6 +201,9 @@
     <EmbeddedResource Include="assets\esqueletaoshield.png" />
     <EmbeddedResource Include="assets\esqueletaosword.png" />
     <EmbeddedResource Include="assets\garantiarefino.png" />
+    <EmbeddedResource Include="assets\portaltoken.png" />
+    <EmbeddedResource Include="assets\spawnertoken.png" />
+    <EmbeddedResource Include="assets\territorytoken.png" />
     <EmbeddedResource Include="assets\weaponkit1.png" />
     <EmbeddedResource Include="assets\weaponkit2.png" />
     <EmbeddedResource Include="assets\weaponkit3.png" />

@@ -102,9 +102,16 @@ function Write-ServerConfig([string]$mode, [string]$arena) {
     $cfg = @"
 [Server config]
 WardRadius = 12
+SafeArea = 0
 
 [Wards]
 PlayerWardRadius = 12
+
+[Wards - Territorio]
+TerritoryWardEnabled = true
+TerritoryWardRadius = 12
+TerritoryWardActivationMinutes = 60
+TerritoryWardSpacing = 2
 
 [PvP]
 Enabled = true

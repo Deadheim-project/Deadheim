@@ -15,8 +15,9 @@ namespace Deadheim
             int portalCount = GetCreatorPrefabCount("portal_wood".GetStableHashCode(), creatorId);
             // A contagem de wards mora em WardCore: e ela que sabe quais prefabs contam.
             int wardCount = Wards.WardCore.CountWardsOf(creatorId);
+            int territoryCount = Wards.WardCore.CountTerritoryWardsOf(creatorId);
 
-            return $"{portalCount},{wardCount}";
+            return $"{portalCount},{wardCount},{territoryCount}";
         }
 
         private static int GetCreatorPrefabCount(int prefabHash, long creatorId)
@@ -48,7 +49,7 @@ namespace Deadheim
             return stream.ToArray();
         }
 
-        private static Texture2D LoadTexture(string name)
+        public static Texture2D LoadTexture(string name)
         {
             Texture2D texture = new Texture2D(2, 2);
             byte[] imageBytes = ReadEmbeddedFileBytes("assets." + name);
@@ -74,5 +75,10 @@ namespace Deadheim
         }
 
         public static Sprite LoadSprite(string name, int width, int height) => Sprite.Create(LoadTexture(name), new Rect(0, 0, width, height), Vector2.zero);
+
+        /// <summary>Sprite do tamanho da propria imagem: um icone de 128 px nao e cortado em 64.</summary>
+        public static Sprite LoadSprite(string name) => SpriteOf(LoadTexture(name));
+
+        public static Sprite SpriteOf(Texture2D texture) => Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
     }
 }

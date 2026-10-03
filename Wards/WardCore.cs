@@ -16,6 +16,7 @@ namespace Deadheim.Wards
         private const string ZdoGuild = "dh_wardGuild";
         private const string ZdoFuel = "dh_wardFuel";
         private const string ZdoFuelTick = "dh_wardFuelTick";
+        public const string ZdoTerritorySince = "dh_territorySince";
 
         private static float _nextFuelTick;
         private static float _nextCountRefresh;
@@ -194,6 +195,72 @@ namespace Deadheim.Wards
             return drop != null ? drop.m_itemData.m_shared.m_name : null;
         }
 
+        // ------------------------------------------------------ ward de territorio
+
+        /// <summary>
+        /// Perto do spawn (SafeArea, 1500 m) ou numa zona segura do PvP: ali qualquer ward protege 100%,
+        /// entao a Ward de Territorio nao tem o que acrescentar.
+        /// </summary>
+        public static bool InFullProtectionZone(Vector3 point)
+            => Utils.DistanceXZ(point, Vector3.zero) <= Plugin.SafeArea.Value || Pvp.PvpZones.IsSafeArea(point);
+
+        /// <summary>Marca quando a Ward de Territorio nasceu (relogio do mundo). Roda no dono da ZDO.</summary>
+        public static void InitTerritory(PrivateArea area)
+        {
+            if (!WardProfiles.IsTerritoryWard(area != null ? area.gameObject : null)) return;
+
+            ZNetView nview = NView(area);
+            if (nview == null || !nview.IsOwner() || ZNet.instance == null) return;
+            if (nview.GetZDO().GetLong(ZdoTerritorySince, 0L) != 0L) return;
+            nview.GetZDO().Set(ZdoTerritorySince, ZNet.instance.GetTime().Ticks);
+        }
+
+        /// <summary>
+        /// Segundos ate a Ward de Territorio ficar indestrutivel; 0 = ja esta. Conta no relogio
+        /// do mundo, entao so passa com o servidor ligado. Sem a marca ainda, vale o prazo inteiro.
+        /// </summary>
+        public static double TerritoryActivationLeft(PrivateArea area)
+        {
+            double total = Math.Max(0f, WardProfiles.TerritoryWardActivationMinutes.Value) * 60d;
+            ZNetView nview = NView(area);
+            if (total <= 0d) return 0d;
+            if (nview == null || ZNet.instance == null) return total;
+
+            long since = nview.GetZDO().GetLong(ZdoTerritorySince, 0L);
+            if (since <= 0L) return total;
+
+            double elapsed = new TimeSpan(Math.Max(0L, ZNet.instance.GetTime().Ticks - since)).TotalSeconds;
+            return Math.Max(0d, total - elapsed);
+        }
+
+        /// <summary>Ward de Territorio ativa: o que ela cobre nao toma dano de quem nao tem acesso.</summary>
+        public static bool IsIndestructible(PrivateArea area)
+        {
+            if (!WardProfiles.TerritoryWardEnabled.Value) return false;
+            WardProfile profile = WardProfiles.For(area);
+            return profile != null && profile.Indestructible && TerritoryActivationLeft(area) <= 0d;
+        }
+
+        /// <summary>
+        /// Duas Wards de Territorio nao se sobrepoem, nem da mesma guilda: senao uma guilda juntava as
+        /// de todos os membros numa fortaleza indestrutivel so.
+        /// </summary>
+        public static bool HasTerritoryWardTooClose(Vector3 point, out PrivateArea blocking)
+        {
+            blocking = null;
+            float min = WardProfiles.TerritoryWardSpacing.Value * WardProfiles.TerritoryWardRadius.Value;
+            if (min <= 0f) return false;
+
+            foreach (PrivateArea area in PrivateArea.m_allAreas)
+            {
+                if (area == null || !WardProfiles.IsTerritoryWard(area.gameObject)) continue;
+                if (Utils.DistanceXZ(point, area.transform.position) >= min) continue;
+                blocking = area;
+                return true;
+            }
+            return false;
+        }
+
         // -------------------------------------------------------------- protecao
 
         /// <summary>
@@ -205,6 +272,7 @@ namespace Deadheim.Wards
             if (WardBridge.Governed(point)) return null;
 
             long playerId = player != null ? player.GetPlayerID() : 0L;
+            PrivateArea first = null;
 
             foreach (PrivateArea area in PrivateArea.m_allAreas)
             {
@@ -215,9 +283,12 @@ namespace Deadheim.Wards
                 if (!area.IsEnabled() || !area.IsInside(point, 0f)) continue;
                 if (playerId != 0L && IsPermittedIn(area, playerId)) continue;
 
-                return area;
+                // Ward comum dentro da Ward de Territorio: vale a mais forte, senao o ponto tomava
+                // DamagePercent so porque a ward comum veio antes na lista.
+                if (IsIndestructible(area)) return area;
+                if (first == null) first = area;
             }
-            return null;
+            return first;
         }
 
         /// <summary>Atalho dos patches: bloqueia, pisca o escudo e avisa o jogador local.</summary>
@@ -245,7 +316,7 @@ namespace Deadheim.Wards
                 if (area == null) continue;
 
                 WardProfile profile = WardProfiles.For(area);
-                if (profile == null || !profile.CountsToLimit) continue;
+                if (profile == null || (!profile.CountsToLimit && !profile.Indestructible)) continue;
                 if (IsPermittedIn(area, player)) continue;
                 if (Utils.DistanceXZ(point, area.transform.position) > area.m_radius * spacing) continue;
 
@@ -272,7 +343,15 @@ namespace Deadheim.Wards
             hashes.Add(WardProfiles.VanillaWard.GetStableHashCode());
             if (WardProfiles.PlayerWardEnabled.Value)
                 hashes.Add(WardProfiles.PlayerWard.GetStableHashCode());
+            return CountOf(playerId, hashes);
+        }
 
+        /// <summary>Servidor: Wards de Territorio deste jogador (limite proprio, TerritoryWardLimit).</summary>
+        public static int CountTerritoryWardsOf(long playerId)
+            => CountOf(playerId, new HashSet<int> { WardProfiles.TerritoryWard.GetStableHashCode() });
+
+        private static int CountOf(long playerId, HashSet<int> hashes)
+        {
             int count = 0;
             foreach (List<ZDO> sector in ZDOMan.instance.m_objectsBySector)
             {

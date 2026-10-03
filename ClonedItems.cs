@@ -22,14 +22,18 @@ namespace Deadheim
             public string Icon;
             // Valor de venda no mercador; null = o do item-base.
             public int? Value;
+            // No chao vira uma moeda com a arte do Icon, em vez do Thunderstone de onde o item e clonado.
+            public bool Coin;
         }
 
         private static readonly NativeItemDefinition[] NativeItems =
         {
-            new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = "Me compre para o Detalhes poder manter seu vício.", MaxStack = 10 },
-            new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = "Token used to build protected vanilla spawners.", MaxStack = 10 },
+            new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = "Me compre para o Detalhes poder manter seu vício.", MaxStack = 10, Icon = "portaltoken.png", Coin = true },
+            new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = "Token used to build protected vanilla spawners.", MaxStack = 10, Icon = "spawnertoken.png", Coin = true },
+            // Vendido por doacao (Loja Deadcoins): nao pode virar moeda no mercador.
+            new NativeItemDefinition { PrefabName = Wards.WardProfiles.TerritoryToken, Name = "Territory Token", Description = "Constrói a Ward de Território. Fora da área segura do spawn, depois de ativada, nada no raio dela toma dano de quem não tem acesso. Uma por jogador.", MaxStack = 10, Value = 0, Icon = "territorytoken.png", Coin = true },
             // Comprada com Deadcoins: nao pode virar moeda no mercador.
-            new NativeItemDefinition { PrefabName = Forja.GarantiaPrefab, Name = Forja.GarantiaNome, Description = "Na Forja de Potencial, garante o sucesso do refino: o item sobe de nível em vez de quebrar. Gasta junto com o ídolo, a cada tentativa.", MaxStack = 50, Icon = "garantiarefino.png", Value = 0 },
+            new NativeItemDefinition { PrefabName = Forja.GarantiaPrefab, Name = Forja.GarantiaNome, Description = "Na Forja de Potencial, garante o sucesso do refino: o item sobe de nível em vez de quebrar. Gasta junto com o ídolo, a cada tentativa.", MaxStack = 50, Icon = "garantiarefino.png", Value = 0, Coin = true },
             new NativeItemDefinition { PrefabName = "ArmorKit1", Name = "Basic Armor Kit I", Description = "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Guck", Icon = "armorkit1.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit2", Name = "Good Armor Kit II", Description = "Kit de itens utilizados para fabricar armaduras de refinadas de qualidade pertencente a era do ferro.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Blueberries", Icon = "armorkit2.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit3", Name = "Great Armor Kit III", Description = "Kit de itens utilizados para fabricar armaduras reluzentes beirando a perfeição, sua qualidade pertence a era da prata.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Amber", Icon = "armorkit3.png" },
@@ -119,12 +123,31 @@ namespace Deadheim
             return null;
         }
 
+        private static GameObject _templates;
+
+        /// <summary>
+        /// Pai inativo dos itens nativos: o Awake nao roda no modelo guardado, mas o modelo em si fica
+        /// ativo, entao o que o jogo instancia dele (item no chao, item vindo da rede) nasce ligado.
+        /// Antes o proprio modelo era SetActive(false): todo item instanciado dele nascia desligado, sem
+        /// Awake nem ZDO, invisivel e fora da rede. Soltar um Portal Token, uma Garantia ou um kit no
+        /// chao (ou o kit cair como carga na morte) sumia com o item.
+        /// </summary>
+        private static Transform Templates
+        {
+            get
+            {
+                if (_templates) return _templates.transform;
+                _templates = new GameObject("DeadheimNativeItems");
+                _templates.SetActive(false);
+                UnityEngine.Object.DontDestroyOnLoad(_templates);
+                return _templates.transform;
+            }
+        }
+
         private static GameObject CreateNativeItem(ObjectDB objectDb, GameObject basePrefab, NativeItemDefinition definition)
         {
-            GameObject item = UnityEngine.Object.Instantiate(basePrefab);
+            GameObject item = UnityEngine.Object.Instantiate(basePrefab, Templates, false);
             item.name = definition.PrefabName;
-            item.SetActive(false);
-            UnityEngine.Object.DontDestroyOnLoad(item);
 
             ItemDrop itemDrop = item.GetComponent<ItemDrop>();
             ItemDrop sourceDrop = basePrefab.GetComponent<ItemDrop>();
@@ -137,14 +160,45 @@ namespace Deadheim
             itemDrop.m_itemData.m_shared.m_name = definition.Name;
             itemDrop.m_itemData.m_shared.m_description = definition.Description;
             itemDrop.m_itemData.m_shared.m_maxStackSize = definition.MaxStack;
-            if (!string.IsNullOrWhiteSpace(definition.Icon))
-                itemDrop.m_itemData.m_shared.m_icons = new[] { Util.LoadSprite(definition.Icon, 64, 64) };
+            Texture2D art = string.IsNullOrWhiteSpace(definition.Icon) ? null : Util.LoadTexture(definition.Icon);
+            if (art != null)
+                itemDrop.m_itemData.m_shared.m_icons = new[] { Util.SpriteOf(art) };
             if (definition.Value.HasValue)
                 itemDrop.m_itemData.m_shared.m_value = definition.Value.Value;
             itemDrop.m_itemData.m_dropPrefab = item;
 
             ApplyMaterials(objectDb, item, definition.FirstMaterialPrefab, definition.SecondMaterialPrefab);
+            if (definition.Coin && art != null) ApplyCoinVisual(item, art);
             return item;
+        }
+
+        /// <summary>Diametro da moeda no chao, em metros.</summary>
+        private const float CoinSize = 0.3f;
+
+        /// <summary>
+        /// No chao o item vira uma moeda chata com a arte do icone, em vez do Thunderstone de onde foi
+        /// clonado. O colisor de pedra sai junto: com ele a moeda pousava de pe ou meio enterrada.
+        /// O sprite e sem luz e visivel dos dois lados, entao aparece de qualquer angulo e brilha um
+        /// pouco no escuro, como item magico.
+        /// </summary>
+        private static void ApplyCoinVisual(GameObject item, Texture2D art)
+        {
+            foreach (Renderer renderer in item.GetComponentsInChildren<Renderer>(true))
+                renderer.enabled = false;
+            foreach (Collider collider in item.GetComponentsInChildren<Collider>(true))
+                UnityEngine.Object.DestroyImmediate(collider);
+
+            BoxCollider box = item.AddComponent<BoxCollider>();
+            box.size = new Vector3(CoinSize, 0.04f, CoinSize);
+
+            art.wrapMode = TextureWrapMode.Clamp;
+            Sprite sprite = Sprite.Create(art, new Rect(0, 0, art.width, art.height), new Vector2(0.5f, 0.5f), art.width / CoinSize);
+            GameObject face = new GameObject("coin");
+            face.transform.SetParent(item.transform, false);
+            face.transform.localPosition = new Vector3(0f, 0.021f, 0f);
+            // O sprite nasce de pe (plano XY); 90 graus em X deita ele virado para cima.
+            face.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            face.AddComponent<SpriteRenderer>().sprite = sprite;
         }
 
         private static void ApplyMaterials(ObjectDB objectDb, GameObject item, string firstPrefab, string secondPrefab)

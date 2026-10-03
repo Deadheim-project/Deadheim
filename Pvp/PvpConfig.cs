@@ -304,7 +304,9 @@ namespace Deadheim.Pvp
             PvpCargoTypes = Bind(config, loot, "PvpCargoTypes", "Material,Consumable,Trophy,Fish",
                 "Tipos de item que contam como carga (ItemType do jogo): Material (minerio, metal, madeira...), " +
                 "Consumable (comida, hidromel), Trophy, Fish, Misc, Ammo...");
-            PvpCargoKeep = Bind(config, loot, "PvpCargoKeep", "PortalToken,ResetToken",
+            // Os itens nativos do Deadheim sao clones do Thunderstone (tipo Material): sem estar aqui,
+            // o que foi comprado com Deadcoins caia como carga na morte.
+            PvpCargoKeep = Bind(config, loot, "PvpCargoKeep", "PortalToken,ResetToken,SpawnerToken,TerritoryToken,GarantiaRefino",
                 "Itens (nome do prefab) que nunca caem como carga, mesmo sendo de um tipo de PvpCargoTypes.");
 
             const string tomb = "PvP - Tumba";
