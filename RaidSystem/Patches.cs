@@ -290,6 +290,9 @@ namespace RaidSystem
                 _wardAttackers.Clear();
                 _handledWardDestructions.Clear();
                 _adminRemovingDoors.Clear();
+                // O cadastro e a guilda sao do personagem: o menu nao mostra os do anterior (B17).
+                RaidSystemPlugin.LocalPlayerInfo = null;
+                RaidSystemPlugin.HasTeam = false;
             }
         }
 
@@ -378,6 +381,8 @@ namespace RaidSystem
             private static void Postfix(Player __instance, ref bool __result)
             {
                 if (__result || __instance == null) return;
+                // PvE permanente e imune ficam de fora mesmo na zona (B15): o Deadheim e quem decide.
+                if (Deadheim.Pvp.PvpBridge.IsPveOrImmune(__instance)) return;
                 if (Util.IsInPvpZone(__instance.transform.position)) __result = true;
             }
         }

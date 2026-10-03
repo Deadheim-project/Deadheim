@@ -129,6 +129,20 @@ namespace Deadheim
             }
         }
 
+        /// <summary>
+        /// Os contadores de ward e portal sao do personagem: o proximo nao herda os do anterior
+        /// (B17). 999 = ainda sem resposta do servidor, como no comeco do jogo.
+        /// </summary>
+        [HarmonyPatch(typeof(Game), nameof(Game.Logout))]
+        private class ZeraContadoresNoLogout
+        {
+            private static void Postfix()
+            {
+                Plugin.PlayerWardCount = 999;
+                Plugin.PlayerPortalCount = 999;
+            }
+        }
+
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
         [HarmonyPostfix]
         public static void Awake_Postfix(ref Player __instance)

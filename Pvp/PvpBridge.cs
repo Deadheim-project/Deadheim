@@ -43,6 +43,13 @@ namespace Deadheim.Pvp
         /// </summary>
         public static event Action<long, string, long, string, Vector3, bool, string> PlayerKilled;
 
+        /// <summary>
+        /// O jogador e PvE permanente ou esta imune (pelas bandeiras que ele publica): nada de fora
+        /// (o "Force PvP In Zones" do RaidSystem) deve ligar o PvP dele.
+        /// </summary>
+        public static bool IsPveOrImmune(Player player)
+            => player != null && (PvpState.FlagsOf(player) & (PvpFlags.Pve | PvpFlags.Immune)) != 0;
+
         internal static string Castle(Vector3 point) => Call(CastleAt, point, nameof(CastleAt));
 
         internal static string Owner(Vector3 point) => Call(CastleOwner, point, nameof(CastleOwner));
