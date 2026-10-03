@@ -141,7 +141,7 @@ namespace Deadheim.Pvp
             NoFriendlyFireTerritory = Bind(config, general, "NoFriendlyFireTerritory", true,
                 "Donos do mesmo territorio (quem tem permissao no mesmo ward) nao se ferem dentro dele.");
             ImmunityMinutes = Bind(config, general, "ImmunityMinutes", 10f,
-                "Minutos em que quem foi morto por jogador nao da nem recebe dano de jogador. PvE continua normal.");
+                "Minutos (de jogo aberto) em que quem foi morto por jogador nao da nem recebe dano de jogador. PvE continua normal.");
             CombatTagSeconds = Bind(config, general, "CombatTagSeconds", 30f,
                 "Segundos em combate depois de dar ou levar dano PvP. Em combate: zona segura nao protege e retreat nao funciona.");
             KillCreditSeconds = Bind(config, general, "KillCreditSeconds", 20f,
@@ -327,7 +327,7 @@ namespace Deadheim.Pvp
                 "Membros da guilda do dono tambem abrem a tumba (o dono precisa estar por perto).");
 
             RetreatCooldownMinutes = Bind(config, "PvP - Retreat", "RetreatCooldownMinutes", 30f,
-                "Minutos entre dois usos do /retreat. Em combate ou cacado o retreat nao funciona.");
+                "Minutos (de jogo aberto) entre dois usos do /retreat. Em combate ou cacado o retreat nao funciona.");
             RetreatBlockedByPveCombat = Bind(config, "PvP - Retreat", "RetreatBlockedByPveCombat", true,
                 "Luta com monstro (dar ou levar dano) tambem bloqueia o /retreat e a pedra de retorno por CombatTagSeconds. " +
                 "Portal continua seguindo CombatFromPve.");

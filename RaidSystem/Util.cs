@@ -247,16 +247,20 @@ namespace RaidSystem
             return start;
         }
 
+        /// <summary>
+        /// Fora do horario de raid? Pela hora do servidor: isto roda tambem no cliente dono da peca
+        /// atacada, e o relogio do Windows dele nao pode abrir a raid fora de hora.
+        /// </summary>
         public static bool IsRaidDisabledThisTime()
         {
-            return !GetGlobalHours().Contains(DateTime.UtcNow.Hour);
+            return !GetGlobalHours().Contains(Deadheim.RelogioServidor.UtcNow.Hour);
         }
 
         public static bool IsRaidDisabledThisTime(Vector3 position)
         {
             RaidZone zone = GetRaidZoneAt(position);
             if (zone?.AllowedHoursUtc != null && zone.AllowedHoursUtc.Count > 0)
-                return !zone.AllowedHoursUtc.Contains(DateTime.UtcNow.Hour);
+                return !zone.AllowedHoursUtc.Contains(Deadheim.RelogioServidor.UtcNow.Hour);
 
             return IsRaidDisabledThisTime();
         }

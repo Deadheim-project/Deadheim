@@ -27,7 +27,8 @@ namespace RaidSystem
         {
             RaidZone zone = Util.GetRaidZoneAt(pos);
             if (zone == null) return null;
-            if (RaidSystemPlugin.CastleRulesOnlyDuringRaid.Value == Toggle.On && !Util.IsRaidHour(zone, DateTime.UtcNow)) return null;
+            // Hora do servidor (no cliente, sem o relogio do Windows): adiantar a hora do PC nao abre a janela.
+            if (RaidSystemPlugin.CastleRulesOnlyDuringRaid.Value == Toggle.On && !Util.IsRaidHour(zone, Deadheim.RelogioServidor.UtcNow)) return null;
             return zone.Name;
         }
 
@@ -37,7 +38,7 @@ namespace RaidSystem
             if (RaidSystemPlugin.SafeAfterConquest.Value != Toggle.On) return false;
             RaidZone zone = Util.GetRaidZoneAt(pos);
             if (zone == null) return false;
-            DateTime? start = Util.CurrentWindowStartUtc(zone, DateTime.UtcNow);
+            DateTime? start = Util.CurrentWindowStartUtc(zone, Deadheim.RelogioServidor.UtcNow);
             if (start == null) return false;
             TerritoryInfo territory = Util.GetTerritoryAt(pos);
             return territory != null && territory.LastConquestTimestamp >= ToUnix(start.Value);

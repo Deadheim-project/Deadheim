@@ -1,6 +1,7 @@
 using BepInEx.Configuration;
 using Deadheim.Vanilla;
 using HarmonyLib;
+using System;
 using System.Globalization;
 using UnityEngine;
 
@@ -12,7 +13,12 @@ namespace Deadheim.Pvp
     /// </summary>
     internal static class PvpModule
     {
-        private const string KeyRetreatAt = "dh_retreatAt";
+        // Formato antigo (7.3.0 e antes): horario de parede do ultimo retreat. So lido, para converter.
+        private const string KeyRetreatAtLegacy = "dh_retreatAt";
+        // Segundos de recarga do /retreat que faltam, gravados no personagem.
+        private const string KeyRetreatLeft = "dh_retreatLeft";
+        // Fim da recarga no relogio monotonico (PvpState.Mono): adiantar a hora do Windows nao a zera.
+        private static double _retreatReadyAt;
 
         private static float _nextTick;
         private static float _coinsDefaultWeight = -1f;
@@ -77,19 +83,47 @@ namespace Deadheim.Pvp
 
             double cooldown = PvpConfig.RetreatCooldownMinutes.Value * 60d;
             if (cooldown <= 0d) return null;
-            if (player.m_customData.TryGetValue(KeyRetreatAt, out string raw)
-                && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double last))
-            {
-                double left = last + cooldown - PvpState.Now;
-                if (left > 0d) return "Retreat em recarga: " + PvpClient.FormatDuration(left) + ".";
-            }
-            return null;
+            double left = Math.Min(RetreatRemaining, cooldown);
+            return left > 0d ? "Retreat em recarga: " + PvpClient.FormatDuration(left) + "." : null;
         }
+
+        public static double RetreatRemaining => Math.Max(0d, _retreatReadyAt - PvpState.Mono);
 
         public static void MarkRetreatUsed(Player player)
         {
             if (player == null) return;
-            player.m_customData[KeyRetreatAt] = PvpState.Now.ToString("R", CultureInfo.InvariantCulture);
+            _retreatReadyAt = PvpState.Mono + Math.Max(0d, PvpConfig.RetreatCooldownMinutes.Value * 60d);
+            SaveRetreat(player);
+        }
+
+        /// <summary>
+        /// Recarga do /retreat gravada como segundos que faltam e descontada so com o jogo aberto.
+        /// O horario de parede do 7.3.0 zerava ao adiantar o relogio do Windows.
+        /// </summary>
+        private static void LoadRetreat(Player player)
+        {
+            _retreatReadyAt = 0d;
+            if (player == null) return;
+            double cooldown = Math.Max(0d, PvpConfig.RetreatCooldownMinutes.Value * 60d);
+            double left = 0d;
+            if (player.m_customData.TryGetValue(KeyRetreatLeft, out string raw)
+                && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double stored))
+                left = stored;
+            else if (player.m_customData.TryGetValue(KeyRetreatAtLegacy, out string legacy)
+                     && double.TryParse(legacy, NumberStyles.Float, CultureInfo.InvariantCulture, out double last))
+                left = last + cooldown - PvpState.Now;
+            player.m_customData.Remove(KeyRetreatAtLegacy);
+            left = Math.Min(left, cooldown);
+            _retreatReadyAt = left > 0d ? PvpState.Mono + left : 0d;
+            SaveRetreat(player);
+        }
+
+        private static void SaveRetreat(Player player)
+        {
+            if (player == null) return;
+            double left = RetreatRemaining;
+            if (left > 0d) player.m_customData[KeyRetreatLeft] = left.ToString("R", CultureInfo.InvariantCulture);
+            else player.m_customData.Remove(KeyRetreatLeft);
         }
 
         // -------------------------------------------------------------------- moeda
@@ -124,8 +158,24 @@ namespace Deadheim.Pvp
             {
                 if (__instance != Player.m_localPlayer) return;
                 PvpState.LoadFromPlayer(__instance);
+                LoadRetreat(__instance);
                 PvpClient.SendHello();
                 _nextTick = 0f;
+            }
+        }
+
+        /// <summary>
+        /// O perfil vai ser salvo (autosave, logout, respawn): grava o que falta de imunidade e de
+        /// recarga do retreat, que correm no relogio monotonico e nao no m_customData.
+        /// </summary>
+        [HarmonyPatch(typeof(Player), nameof(Player.Save))]
+        private static class SaveTimersPatch
+        {
+            private static void Prefix(Player __instance)
+            {
+                if (__instance == null || __instance != Player.m_localPlayer) return;
+                PvpState.SaveTimers(__instance);
+                SaveRetreat(__instance);
             }
         }
 
@@ -134,6 +184,14 @@ namespace Deadheim.Pvp
         {
             private static void Prefix()
             {
+                Player player = Player.m_localPlayer;
+                if (player != null)
+                {
+                    PvpState.SaveTimers(player);
+                    SaveRetreat(player);
+                }
+                _retreatReadyAt = 0d;
+                RelogioServidor.Esquecer();
                 PvpState.ResetSession();
                 PvpClient.ResetSession();
                 PvpHud.ResetSession();

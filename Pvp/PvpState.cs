@@ -40,10 +40,22 @@ namespace Deadheim.Pvp
         /// <summary>playerID de quem bateu por ultimo: o servidor le ao deslogar em combate.</summary>
         public static readonly int ZdoLastAttacker = "dh_lastPvpAttacker".GetStableHashCode();
 
-        private const string KeyImmuneUntil = "dh_pvpImmuneUntil";
+        // Formato antigo (7.3.0 e antes): horario de parede em que a imunidade acaba. So lido, para converter.
+        private const string KeyImmuneUntilLegacy = "dh_pvpImmuneUntil";
+        // Segundos de imunidade que faltam, gravados no personagem (m_customData).
+        private const string KeyImmuneLeft = "dh_pvpImmuneLeft";
 
-        // Relogio de parede em segundos UTC. So e comparado com ele mesmo, nesta maquina.
+        /// <summary>
+        /// Relogio de parede em segundos UTC. So no servidor (relogio confiavel) e para converter
+        /// dado antigo: no cliente, horario de parede e o que o jogador quiser (A3).
+        /// </summary>
         public static double Now => (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+
+        /// <summary>
+        /// Relogio monotonico do cliente, em segundos. Imunidade, PK, cacado e aviso de bounty
+        /// contam por ele: mudar a hora do Windows nao apaga marca nem estica imunidade.
+        /// </summary>
+        public static double Mono => Time.realtimeSinceStartupAsDouble;
 
         // ------------------------------------------------------- estado do jogador local
 
@@ -68,15 +80,15 @@ namespace Deadheim.Pvp
         public static PvpFlags Current { get; private set; }
         public static string ZoneLabel { get; private set; }
 
-        public static bool IsImmune => _immuneUntil > Now;
-        public static bool IsPk => _pkPermanent || _pkUntil > Now;
+        public static bool IsImmune => _immuneUntil > Mono;
+        public static bool IsPk => _pkPermanent || _pkUntil > Mono;
         public static bool IsPkPermanent => _pkPermanent;
         /// <summary>O que o PK perde ao morrer, pelo nivel atual (PkTiers).</summary>
         public static PvpConfig.PkPenalty PkPenalty => _pkPenalty;
-        public static bool IsHunted => _huntedForever || _huntedUntil > Now;
+        public static bool IsHunted => _huntedForever || _huntedUntil > Mono;
         /// <summary>Bounty sem fim: so acaba morrendo para jogador.</summary>
         public static bool IsHuntedForever => _huntedForever;
-        public static bool IsHuntPending => _huntPendingUntil > Now;
+        public static bool IsHuntPending => _huntPendingUntil > Mono;
         public static bool InCombat => Time.time < _combatUntil;
         public static bool IsAggressor => Time.time < _aggressorUntil;
         public static float AggressorRemaining => Mathf.Max(0f, _aggressorUntil - Time.time);
@@ -107,10 +119,10 @@ namespace Deadheim.Pvp
             => _pveCombatUntil = Time.time + Mathf.Max(0f, PvpConfig.CombatTagSeconds.Value);
         public static int PkCount => _pkCount;
 
-        public static double ImmuneRemaining => Math.Max(0d, _immuneUntil - Now);
-        public static double PkRemaining => Math.Max(0d, _pkUntil - Now);
-        public static double HuntedRemaining => Math.Max(0d, _huntedUntil - Now);
-        public static double HuntPendingRemaining => Math.Max(0d, _huntPendingUntil - Now);
+        public static double ImmuneRemaining => Math.Max(0d, _immuneUntil - Mono);
+        public static double PkRemaining => Math.Max(0d, _pkUntil - Mono);
+        public static double HuntedRemaining => Math.Max(0d, _huntedUntil - Mono);
+        public static double HuntPendingRemaining => Math.Max(0d, _huntPendingUntil - Mono);
         public static float CombatRemaining => Mathf.Max(0f, _combatUntil - Time.time);
 
         /// <summary>Zera tudo que nao deve sobreviver a um logout.</summary>
@@ -136,29 +148,53 @@ namespace Deadheim.Pvp
             PvpBosses.ResetSession();
         }
 
-        /// <summary>Imunidade vive no personagem (m_customData), entao relogar nao a apaga.</summary>
+        /// <summary>
+        /// Imunidade vive no personagem (m_customData), entao relogar nao a apaga. Gravada como
+        /// segundos que faltam e descontada so com o jogo aberto: o horario de parede do 7.3.0
+        /// deixava atrasar o relogio do Windows e ficar imune por meses.
+        /// </summary>
         public static void LoadFromPlayer(Player player)
         {
             _immuneUntil = 0d;
             if (player == null) return;
-            if (player.m_customData.TryGetValue(KeyImmuneUntil, out string raw)
-                && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double until))
-                _immuneUntil = until;
+            double left = 0d;
+            if (player.m_customData.TryGetValue(KeyImmuneLeft, out string raw)
+                && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double stored))
+                left = stored;
+            else if (player.m_customData.TryGetValue(KeyImmuneUntilLegacy, out string legacy)
+                     && double.TryParse(legacy, NumberStyles.Float, CultureInfo.InvariantCulture, out double until))
+                left = until - Now;
+            player.m_customData.Remove(KeyImmuneUntilLegacy);
+            // Nunca mais que uma imunidade inteira: um valor antigo de relogio torto nao vira meses.
+            left = Math.Min(left, Math.Max(0d, PvpConfig.ImmunityMinutes.Value * 60d));
+            _immuneUntil = left > 0d ? Mono + left : 0d;
+            SaveTimers(player);
         }
 
         public static void GrantImmunity(Player player, double seconds)
         {
-            _immuneUntil = seconds > 0d ? Now + seconds : 0d;
-            if (player != null)
-                player.m_customData[KeyImmuneUntil] = _immuneUntil.ToString("R", CultureInfo.InvariantCulture);
+            _immuneUntil = seconds > 0d ? Mono + seconds : 0d;
+            SaveTimers(player);
+        }
+
+        /// <summary>Grava no personagem o que falta de imunidade (antes de o perfil ser salvo, e ao mudar).</summary>
+        public static void SaveTimers(Player player)
+        {
+            if (player == null) return;
+            double left = ImmuneRemaining;
+            if (left > 0d) player.m_customData[KeyImmuneLeft] = left.ToString("R", CultureInfo.InvariantCulture);
+            else player.m_customData.Remove(KeyImmuneLeft);
         }
 
         public static void ClearImmunity(Player player) => GrantImmunity(player, 0d);
 
-        /// <summary>O servidor manda segundos restantes, nunca horario: relogios diferentes nao importam.</summary>
+        /// <summary>
+        /// O servidor manda segundos restantes, nunca horario: relogios diferentes nao importam. Daqui
+        /// em diante contam pelo relogio monotonico, que mudar a hora do Windows nao mexe.
+        /// </summary>
         public static void ApplyServerTimers(double pkRemaining, double huntPendingRemaining, double huntedRemaining, bool huntedUntilDeath = false)
         {
-            double now = Now;
+            double now = Mono;
             _pkUntil = pkRemaining > 0d ? now + pkRemaining : 0d;
             _huntPendingUntil = huntPendingRemaining > 0d ? now + huntPendingRemaining : 0d;
             _huntedUntil = huntedRemaining > 0d ? now + huntedRemaining : 0d;

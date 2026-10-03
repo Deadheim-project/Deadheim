@@ -24,7 +24,7 @@ namespace Deadheim.Pvp
         private static readonly Dictionary<int, int> _bountyTaken = new Dictionary<int, int>();
 
         public static double BountyCooldownRemaining
-            => Math.Max(0d, BountyCooldown - (PvpState.Now - _bountyCooldownAt));
+            => Math.Max(0d, BountyCooldown - (PvpState.Mono - _bountyCooldownAt));
 
         public static void Handle(string op, ZPackage pkg)
         {
@@ -42,8 +42,10 @@ namespace Deadheim.Pvp
                     BountyUntilDeath = pkg.ReadBool();
                     HuntPaused = pkg.ReadBool();
                     BountyCooldown = pkg.ReadDouble();
-                    _bountyCooldownAt = PvpState.Now;
+                    _bountyCooldownAt = PvpState.Mono;
                     PvpPve.ApplyLocal(pkg.ReadBool());
+                    // Hora do servidor: as janelas de raid do castelo (RaidSystem) contam por ela.
+                    if (pkg.GetPos() < pkg.Size()) RelogioServidor.Sincronizar(pkg.ReadDouble());
                     PvpState.ApplyServerTimers(pk, pending, hunted, BountyPot > 0 && BountyUntilDeath);
                     PvpState.ApplyPk(pkPermanent, (PvpConfig.PkPenalty)pkPenalty);
                     PvpState.ApplyPkCount(Player.m_localPlayer, pkCount);

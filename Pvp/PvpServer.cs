@@ -116,6 +116,7 @@ namespace Deadheim.Pvp
             pkg.Write(PvpBounty.IsPaused(peer.PlayerId));
             pkg.Write(Math.Max(0d, record.bountyReadyAt - Now));
             pkg.Write(record.pvePermanent);
+            pkg.Write(Now);
             PvpNet.SendToClient(peer.PeerId, pkg);
         }
 

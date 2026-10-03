@@ -153,6 +153,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <!-- Remetente de verdade de um RPC roteado (o "sender" do pacote e do cliente). Publico: o RaidSystem usa. -->
     <Compile Include="RemetenteRpc.cs" />
+    <!-- Hora UTC do servidor no cliente, sem o relogio do Windows. Publico: o RaidSystem usa. -->
+    <Compile Include="RelogioServidor.cs" />
     <Compile Include="Retreat.cs" />
     <Compile Include="RPC.cs" />
     <Compile Include="Smelters.cs" />
