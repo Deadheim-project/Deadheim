@@ -63,6 +63,16 @@ namespace Deadheim.Pvp
 
             if (_data == null) _data = new PvpStoreData();
             _dirty = false;
+
+            // Linha que nao deu para entender (editada a mao com espaco no lugar de TAB, por exemplo)
+            // sumiria no proximo save: antes de qualquer save, o arquivo como estava fica guardado (B9).
+            if (skipped > 0)
+            {
+                string backup = path + ".linhas-ignoradas-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+                try { File.Copy(path, backup, true); }
+                catch (Exception ex) { Debug.LogError($"[Deadheim PvP] Nao foi possivel guardar {backup}: {ex.Message}"); }
+                Debug.LogWarning($"[Deadheim PvP] {skipped} linha(s) de {path} ilegivel(is): o arquivo original ficou em {backup}.");
+            }
             Debug.Log($"[Deadheim PvP] Estado carregado de {path}: {_data.players.Count} jogador(es), " +
                       $"{_data.bounties.Count} bounty(ies)" + (skipped > 0 ? $", {skipped} linha(s) ignorada(s)" : string.Empty) + ".");
         }
@@ -96,6 +106,16 @@ namespace Deadheim.Pvp
         public static void SaveIfDirty()
         {
             if (_dirty) Save();
+        }
+
+        /// <summary>
+        /// Grava ja, sem esperar o minuto do Tick: depois de mexer em moeda (pendingCoins), um crash
+        /// nessa janela pagaria de novo no proximo login ou perderia o pagamento (B9).
+        /// </summary>
+        public static void SaveNow()
+        {
+            _dirty = true;
+            Save();
         }
 
         /// <summary>Descarta o que esta em memoria (logout do host, troca de mundo).</summary>

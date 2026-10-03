@@ -83,7 +83,7 @@ namespace Deadheim.Pvp
                 SendReward(peer.PeerId, "Coins", record.pendingCoins, "Moedas guardadas enquanto voce estava fora");
                 Debug.Log($"[Deadheim PvP] {peer.Name} recebeu {record.pendingCoins} moedas pendentes.");
                 record.pendingCoins = 0;
-                PvpStore.MarkDirty();
+                PvpStore.SaveNow();
             }
 
             if (record.combatLogPending)
@@ -409,7 +409,7 @@ namespace Deadheim.Pvp
                 return;
             }
             PvpStore.Player(playerId, name).pendingCoins += amount;
-            PvpStore.MarkDirty();
+            PvpStore.SaveNow();
         }
 
         private static void GiveCastleReward(long killerId, string killerName, PvpPeer victim, string castle, Vector3 position)
