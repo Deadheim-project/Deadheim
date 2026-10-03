@@ -17,9 +17,13 @@ que o servidor ja tem, em vez de duplicar:
 Config: secoes `PvP*` do `BepInEx/config/Detalhes.Deadheim.cfg`. Vale a do servidor
 (ServerSync); o cliente recebe ao conectar. **Salvar o cfg com o servidor ligado ja vale**: o
 arquivo e relido (`Shared/ConfigWatcher.cs`) e o ServerSync entrega o valor novo a quem esta
-conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.3.1**
+conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.4.0**
 (Deadheim), **2.2.2** (RaidSystem) e **2.1.1** (Hearthstone): as regras rodam no cliente de quem leva o golpe, entao um
-cliente sem elas seria alvo sem nenhuma protecao, e o protocolo do PvP mudou no 7.3.1.
+cliente sem elas seria alvo sem nenhuma protecao, o protocolo do PvP mudou no 7.3.1 e o 7.4.0 traz a Ward de Territorio.
+
+**Estado (2026-10-03):** o **7.4.0** (Ward de Territorio, icones e moeda dos tokens, item nativo
+que nao some mais ao cair no chao) entra sobre o 7.3.1 (correcoes da analise de bugs). Os itens nativos do
+Deadheim nunca caem como carga (`ClonedItems.IsNativeItem`), com ou sem `PvpCargoKeep`.
 
 ## Onde a regra e decidida
 
@@ -77,7 +81,7 @@ Uma regra so (`PvpRules.ClassifyDeath`), usada por tudo que reage a morte:
 | Conta no `/rank` (K/D) | sim, fora da arena | nao |
 | Conta no Ranking de Guerra (RaidSystem) | sim, entre guildas diferentes, fora da arena | nao |
 | Matador vira PK | sim, salvo arena / castelo em raid / alvo PK / alvo cacado / alvo agressor | - |
-| Saque | todas as moedas (`PvpCoinDropPercent`, 100) e metade da carga (`PvpCargoDropPercent`: minerio, metal, comida, trofeu) vao para o chao, fora da tumba, seja PK ou nao; o equipado fica na tumba (nao na arena) | tudo na tumba |
+| Saque | todas as moedas (`PvpCoinDropPercent`, 100) e metade da carga (`PvpCargoDropPercent`: minerio, metal, comida, trofeu) vao para o chao, fora da tumba, seja PK ou nao; o equipado fica na tumba (nao na arena). Tokens e o que se compra com Deadcoins nunca caem (`PvpCargoKeep`); um item que nao consegue cair fica na tumba | tudo na tumba |
 | Morte dentro de castelo | ninguem perde skill (atacante ou defensor) | perda normal |
 | Guilda dona mata invasor no castelo | ganha a recompensa do bioma | - |
 | Alvo de bounty morre | a bounty acaba; quem matou leva `BountyKillerSharePercent` do pote se o golpe final foi dele e ele nao e (nem foi nas ultimas `BountyAllyHours`) da guilda do alvo; senao o pote fica com a casa | a bounty continua |
@@ -95,7 +99,7 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 |---|---|---|
 | PvP para todos | Ligado fora das zonas seguras; o botao do inventario fica travado | `ForcePvp` |
 | Reducao de dano PvP | Dano de jogador em jogador x0.5, aplicado **depois da armadura** (a armadura do Valheim e quadratica: cortar o golpe cru pela metade tirava ~75% do dano de quem usa armadura) | `DamageMultiplier` |
-| Reducao de dano em ward | Jogador: dentro de ward **ligado e abastecido** onde voce tem permissao, o dano PvP que voce recebe e x0.5 de novo. Estrutura: ward de jogador segue o `[Wards] DamagePercent` (0 = invulneravel) e a RaidWard o `Ward Damage Reduction %` do RaidSystem | `WardDefenseMultiplier` |
+| Reducao de dano em ward | Jogador: dentro de ward **ligado e abastecido** onde voce tem permissao, o dano PvP que voce recebe e x0.5 de novo. Estrutura: ward de jogador segue o `[Wards] DamagePercent` (0 = invulneravel), a Ward de Territorio ativa nao deixa dano nenhum e a RaidWard segue o `Ward Damage Reduction %` do RaidSystem | `WardDefenseMultiplier` |
 | Dono do territorio sem FF | Mesma guilda nao se fere; e quem tem permissao no mesmo ward nao se fere dentro dele | `NoFriendlyFireGuild`, `NoFriendlyFireTerritory` |
 | Guilda ou party | Guilda do mod **Guilds** e grupo do mod **Groups** | `NoFriendlyFireGuild`, `NoFriendlyFireGroup` |
 | Morto por jogador | Fica **imune a PvP**: nao da nem leva dano de jogador; PvE normal. Conta so com o jogo aberto | `ImmunityMinutes` (10) |
@@ -118,7 +122,8 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Tumba por player | So o dono (e admin) abre a propria tumba | `TombstoneOwnerOnly`, `TombstoneGuildAccess` |
 | Tirar raids | Ataques aleatorios de monstros as bases (raids do vanilla) desligados. O RaidSystem continua: e o PvP de castelos | `DisableRandomEvents` |
 | Stagger no PvP | O cambalear de golpe de jogador em jogador pode ser reduzido | `StaggerMultiplier` |
-| Base raidavel | Fora da zona segura, o que o ward cobre toma `DamagePercent` do dano (padrao 25%); na zona segura (SafeArea, ilha inicial, SafeZones) e sempre 0. Wards sem limite por jogador | `[Wards] DamagePercent`, `[Server config] WardLimit` |
+| Base raidavel | Fora da zona segura, o que o ward cobre toma `DamagePercent` do dano (padrao 25%); na zona segura (`SafeArea`: 1500 m do spawn, ilha inicial, SafeZones) e sempre 0. Wards sem limite por jogador | `[Wards] DamagePercent`, `[Server config] WardLimit` |
+| Ward de Territorio | **Territory Token** (`TerritoryToken`), vendido por doacao na Loja Deadcoins, constroi a **Ward de Territorio** (`DeadheimTerritoryWard`, no martelo), 1 por jogador. Nos 1500 m do spawn (`[Server config] SafeArea`) a ward comum ja protege 100%, entao ali ela nem pode ser colocada; fora dali, abastecida e depois de `TerritoryWardActivationMinutes` (60 min com o servidor ligado), nada no raio (20 m) toma dano de quem nao tem acesso. Ate ativar, vale como ward comum: e a recarga de mudar de lugar, e impede plantar a ward no meio de um raid. Nao entra em zona de raid; fica a 2 raios de outra Ward de Territorio, mesmo da propria guilda. So o dono remove (a guilda tem acesso, mas nao desmonta); o token volta ao remover (`TerritoryTokenRecover`). Nao e zona segura de PvP: quem esta dentro ainda morre. O token e uma moeda vermelha com uma torre (no inventario e no chao) | `[Wards - Territorio]` |
 | Castelo | O castelo so e zona de guerra na janela de raid do RaidSystem; quando a RaidWard cai, vira zona segura ate a janela fechar. Guilda que segura o castelo a janela inteira ganha cargas de tributo e pontos de defesa | RaidSystem `3 - PvP`, `Defense Tribute Charges`, `Points Per Defense` |
 | PvE permanente | `/pve confirmar`: o jogador vira `PveTitle` (padrao Mercador) e sai do PvP para sempre, em todo lugar (arena e castelo inclusive); nao pode receber bounty. **Sem bonus**: sobe skill x0.5 e coleta 1x, enquanto quem joga PvP coleta 2x (arvore, pedra, minerio, colheita, drop de monstro). PK e quem tem bounty nao podem virar. Sem volta: so admin desfaz (`/pvpadmin pve <jogador>`) | `PveEnabled`, `PveTitle`, `PveSkillMultiplier`, `PveResourceRate`, `PvpResourceRate` |
 | Bonus de monstro so para aliados | O bonus de vida e dano do monstro por jogador perto (jogo e CreatureLevelControl) so conta quem luta e o grupo e a guilda dele: estranho passando perto nao deixa o monstro mais duro | `[Server config] MonsterScalingAlliesOnly` |
@@ -168,6 +173,10 @@ powershell -ExecutionPolicy Bypass -File Testing\run-pvp-test.ps1 -Root D:\tmp\p
 - Sem `-Solo`: dois clientes reais (Alfa e Bravo) em roteiro sincronizado. Precisa de
   memoria para servidor + dois clientes (uns 10 GB de commit livre).
 - `-Steps eu-bato,pk,arena`: roda so esses passos do solo (o setup sempre roda).
+- `-Admin -AdminId <SteamID64>`: o cliente vira admin. Precisam disso a bounty (`bounty`, `bounty-pagar`,
+  `bounty-expira`) e a parte do servidor do `pk-sem-protecao`; admin passa por cima de ward, entao rode so
+  esses passos assim. A pausa da bounty no proprio ward usa o ward que o passo `territorio` cria: rode os dois juntos.
+- Fotos de alguns passos (`ajustes`, `forja`, `tokens`) ficam em `<Root>otos`.
 
 `Testing/PvpSemJogo` testa sem o jogo o arquivo de estado (ida e volta, arquivo editado a mao, o
 JSON antigo), o relogio de PK, a devolucao e o teto da bounty, a entrega de item com inventario

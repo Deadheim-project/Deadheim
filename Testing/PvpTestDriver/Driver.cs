@@ -503,9 +503,9 @@ namespace PvpTestDriver
             if (!IsA) yield return ExpectDamage("atacante-seguro/bloqueado", 0f);
         }
 
-        private PrivateArea SpawnWard(Vector3 at, Player owner, Player permitted)
+        private PrivateArea SpawnWard(Vector3 at, Player owner, Player permitted, string prefabName = "guard_stone")
         {
-            GameObject prefab = ZNetScene.instance.GetPrefab("guard_stone");
+            GameObject prefab = ZNetScene.instance.GetPrefab(prefabName);
             Vector3 p = at;
             p.y = ZoneSystem.instance.GetSolidHeight(p);
             GameObject go = Instantiate(prefab, p, Quaternion.identity);

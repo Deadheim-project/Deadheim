@@ -22,10 +22,11 @@ namespace Deadheim
 
         public static void RPC_PortalAndTotemCountClient(long sender, ZPackage pkg)
         {
-            string counts = pkg.ReadString();
+            string[] counts = pkg.ReadString().Split(',');
 
-            Plugin.PlayerPortalCount = Convert.ToInt32(counts.Split(',')[0]);
-            Plugin.PlayerWardCount = Convert.ToInt32(counts.Split(',')[1]);
+            Plugin.PlayerPortalCount = Convert.ToInt32(counts[0]);
+            Plugin.PlayerWardCount = Convert.ToInt32(counts[1]);
+            Plugin.PlayerTerritoryWardCount = counts.Length > 2 ? Convert.ToInt32(counts[2]) : 999;
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]

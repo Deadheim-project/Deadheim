@@ -336,7 +336,7 @@ namespace Deadheim.Pvp
                     if (amount <= 0) continue;
 
                     Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.6f;
-                    ItemDrop.DropItem(item, amount, at, Quaternion.identity);
+                    if (!TryDrop(item, amount, at)) continue;
                     inventory.RemoveItem(item, amount);
                     dropped += amount;
                 }
@@ -364,13 +364,31 @@ namespace Deadheim.Pvp
                     if (equipped) player.UnequipItem(item, false);
 
                     Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.6f;
-                    ItemDrop.DropItem(item, item.m_stack, at, Quaternion.identity);
+                    if (!TryDrop(item, item.m_stack, at)) continue;
                     inventory.RemoveItem(item);
                     dropped++;
                 }
                 if (dropped > 0)
                     player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>PK: {dropped} item(ns) cairam no chao.</color>");
                 return dropped;
+            }
+
+            /// <summary>
+            /// Joga no chao e so entao o chamador tira do inventario. Um item que nao consegue cair fica
+            /// no inventario (vai para a tumba) em vez de derrubar o resto da morte: uma excecao aqui
+            /// pularia o SendDeath, e o servidor nunca saberia da morte (sem K/D, bounty nem PK).
+            /// </summary>
+            private static bool TryDrop(ItemDrop.ItemData item, int amount, Vector3 at)
+            {
+                try
+                {
+                    return ItemDrop.DropItem(item, amount, at, Quaternion.identity) != null;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[Deadheim PvP] {item.m_dropPrefab?.name} nao caiu no chao, fica na tumba: {ex.Message}");
+                    return false;
+                }
             }
 
             private static void Postfix(Player __instance)

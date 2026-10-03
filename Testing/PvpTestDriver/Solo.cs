@@ -117,6 +117,8 @@ namespace PvpTestDriver
                 Step("transporte", SoloTransport),
                 Step("montaria", SoloMount),
                 Step("ward-natureza", SoloWardNature),
+                Step("ward-territorio", SoloTerritoryWard),
+                Step("tokens", SoloTokens),
                 Step("monstro-aliados", SoloMonsterScaling),
                 Step("retreat", Retreat),
                 Step("rank", SoloRank),
@@ -441,7 +443,8 @@ namespace PvpTestDriver
             before = Me.transform.position;
             went = Me.TeleportTo(far, Me.transform.rotation, true);
             yield return Wait(1f);
-            Check("fuga/combate-pve-bloqueia-teleporte", !went && PvpHud.Compose(Me).Contains("(PvE)"), PvpHud.Compose(Me));
+            Check("fuga/combate-pve-bloqueia-teleporte", !went && PvpHud.Compose(Me).Contains("Luta com monstro"),
+                $"teleportou={went} hud={PvpHud.Compose(Me)}");
             Check("fuga/combate-pve-nao-tira-pvp-da-zona", (PvpState.Current & PvpFlags.Combat) == 0, $"flags={PvpState.Current}");
             ZNetScene.instance.Destroy(boar);
             SetServerConfig("CombatFromPve", "false");
@@ -1480,6 +1483,212 @@ namespace PvpTestDriver
             ZNetScene.instance.Destroy(inside.gameObject);
             ZNetScene.instance.Destroy(outside.gameObject);
             ZNetScene.instance.Destroy(ward.gameObject);
+        }
+
+        /// <summary>Golpe de jogador numa peca (o RPC vai para o dono da ZDO, aqui o proprio cliente).</summary>
+        private void StrikePiece(WearNTear wnt)
+        {
+            HitData hit = new HitData();
+            hit.m_damage.m_blunt = 40f;
+            hit.m_damage.m_slash = 40f;
+            hit.m_point = wnt.transform.position;
+            hit.SetAttacker(Me);
+            wnt.Damage(hit);
+        }
+
+        private IEnumerator SoloTerritoryWard()
+        {
+            const string W = "ward-territorio/";
+            yield return MoveTo(_wardB + Vector3.right * 3f);
+            if (PvpZones.IsSafeArea(_wardB)) Log("ward-territorio: _wardB caiu numa zona segura do PvP; o passo nao mede nada");
+
+            // Ward comum ANTES na lista: a de territorio tem que prevalecer mesmo assim.
+            PrivateArea common = SpawnWard(_wardB + Vector3.left * 2f, _dummy, null);
+            PrivateArea territory = SpawnWard(_wardB, _dummy, null, Deadheim.Wards.WardProfiles.TerritoryWard);
+            GameObject wall = Instantiate(ZNetScene.instance.GetPrefab("woodwall"), Ground(_wardB + Vector3.forward * 3f), Quaternion.identity);
+            WearNTear wnt = wall.GetComponent<WearNTear>();
+            // Parede solta no chao: sem isto o desgaste de suporte derrubava a peca no meio do passo.
+            wnt.m_noSupportWear = true;
+            wnt.m_noRoofWear = true;
+            yield return Wait(1f);
+
+            Check(W + "prefab", territory != null && Deadheim.Wards.WardProfiles.IsTerritoryWard(territory.gameObject));
+            Piece wardPiece = territory.GetComponent<Piece>();
+            bool tokenCost = wardPiece.m_resources != null && wardPiece.m_resources.Any(r =>
+                r.m_resItem != null && r.m_resItem.name == Deadheim.Wards.WardProfiles.TerritoryToken && r.m_recover);
+            Check(W + "custa-territory-token", tokenCost,
+                string.Join(",", (wardPiece.m_resources ?? new Piece.Requirement[0]).Select(r => r.m_resItem != null ? r.m_resItem.name + ":" + r.m_amount : "?")));
+            Check(W + "token-nao-cai-como-carga", PvpConfig.PvpCargoKeep.Value.Contains(Deadheim.Wards.WardProfiles.TerritoryToken)
+                && PvpConfig.PvpCargoKeep.Value.Contains(Forja.GarantiaPrefab), PvpConfig.PvpCargoKeep.Value);
+
+            // O teste roda perto do templo, entao o cfg dele zera o SafeArea (1500 m no servidor).
+            Check(W + "fora-da-area-segura", !Deadheim.Wards.WardCore.InFullProtectionZone(wall.transform.position),
+                $"SafeArea={Plugin.SafeArea.Value}");
+
+            // Recem colocada: ainda nao ativou e vale como ward comum (DamagePercent).
+            double left = Deadheim.Wards.WardCore.TerritoryActivationLeft(territory);
+            Check(W + "recem-colocada-inativa", !Deadheim.Wards.WardCore.IsIndestructible(territory) && left > 0d, $"faltam={left:0}s");
+            Check(W + "hover-ativa-em", territory.GetHoverText().Contains("ativa em"), territory.GetHoverText());
+            float before = wnt.GetHealthPercentage();
+            StrikePiece(wnt);
+            yield return Wait(1f);
+            Check(W + "inativa-toma-dano-de-ward-comum", wnt.GetHealthPercentage() < before,
+                $"antes={before} depois={wnt.GetHealthPercentage()} DamagePercent={Deadheim.Wards.WardProfiles.DamagePercent.Value}");
+
+            // Nos 1500 m do spawn a ward comum protege 100%, e la a de territorio nem pode ser colocada.
+            SetServerConfig("SafeArea", "1500");
+            yield return WaitFor(() => Plugin.SafeArea.Value == 1500, 20f);
+            Check(W + "spawn-e-area-segura", Deadheim.Wards.WardCore.InFullProtectionZone(wall.transform.position),
+                $"SafeArea={Plugin.SafeArea.Value} distancia={Utils.DistanceXZ(wall.transform.position, Vector3.zero):0}");
+            before = wnt.GetHealthPercentage();
+            StrikePiece(wnt);
+            yield return Wait(1f);
+            Check(W + "ward-comum-protege-100-no-spawn", Mathf.Approximately(before, wnt.GetHealthPercentage()),
+                $"antes={before} depois={wnt.GetHealthPercentage()}");
+            SetServerConfig("SafeArea", "0");
+            yield return WaitFor(() => Plugin.SafeArea.Value == 0, 20f);
+
+            // Ativa: o mundo de teste e novo demais para recuar a marca 1 h no relogio dele, entao a
+            // ativacao cai para 3 s pelo cfg (que tambem prova a recarga ao vivo) e volta a 60 no fim.
+            SetServerConfig("TerritoryWardActivationMinutes", "0.05");
+            yield return WaitFor(() => Deadheim.Wards.WardProfiles.TerritoryWardActivationMinutes.Value < 1f, 20f);
+            yield return WaitFor(() => Deadheim.Wards.WardCore.IsIndestructible(territory), 10f);
+            Check(W + "ativa", Deadheim.Wards.WardCore.IsIndestructible(territory),
+                $"faltam={Deadheim.Wards.WardCore.TerritoryActivationLeft(territory):0.0}s");
+            Check(W + "hover-indestrutivel", territory.GetHoverText().Contains("indestrutivel"), territory.GetHoverText());
+            Check(W + "prevalece-sobre-ward-comum",
+                Deadheim.Wards.WardCore.GetProtectingWard(wall.transform.position, Me) == territory);
+            before = wnt.GetHealthPercentage();
+            StrikePiece(wnt);
+            yield return Wait(1f);
+            Check(W + "indestrutivel-fora-do-spawn", Mathf.Approximately(before, wnt.GetHealthPercentage()),
+                $"antes={before} depois={wnt.GetHealthPercentage()}");
+
+            // Duas Wards de Territorio nao se sobrepoem (raio 12 no teste, espaco 2x = 24 m).
+            Check(W + "outra-perto-recusada", Deadheim.Wards.WardCore.HasTerritoryWardTooClose(_wardB + Vector3.right * 10f, out _));
+            Check(W + "outra-longe-livre", !Deadheim.Wards.WardCore.HasTerritoryWardTooClose(_wardB + Vector3.right * 200f, out _));
+
+            // So o dono remove. Sem bancada perto o vanilla ja recusaria: aqui so conta o dono.
+            wardPiece.m_craftingStation = null;
+            if (Deadheim.Vanilla.Admin.LocalPlayerIsAdmin())
+                Log("ward-territorio: cliente admin, a recusa a quem nao e dono nao vale para ele (pulado)");
+            else
+                Check(W + "outro-nao-remove", !Me.CheckCanRemovePiece(wardPiece));
+            wardPiece.m_creator = Me.GetPlayerID();
+            wardPiece.m_nview.GetZDO().Set(ZDOVars.s_creator, Me.GetPlayerID());
+            Check(W + "dono-remove", Me.CheckCanRemovePiece(wardPiece));
+            wardPiece.m_creator = DummyId;
+            wardPiece.m_nview.GetZDO().Set(ZDOVars.s_creator, DummyId);
+
+            // Desligada no servidor: as que existem viram ward comum.
+            SetServerConfig("TerritoryWardEnabled", "false");
+            yield return WaitFor(() => !Deadheim.Wards.WardProfiles.TerritoryWardEnabled.Value, 20f);
+            Check(W + "desligada-vira-ward-comum", !Deadheim.Wards.WardCore.IsIndestructible(territory));
+            SetServerConfig("TerritoryWardEnabled", "true");
+            yield return WaitFor(() => Deadheim.Wards.WardProfiles.TerritoryWardEnabled.Value, 20f);
+            Check(W + "religada", Deadheim.Wards.WardCore.IsIndestructible(territory));
+            SetServerConfig("TerritoryWardActivationMinutes", "60");
+            yield return WaitFor(() => Deadheim.Wards.WardProfiles.TerritoryWardActivationMinutes.Value >= 60f, 20f);
+
+            ZNetScene.instance.Destroy(wall);
+            ZNetScene.instance.Destroy(territory.gameObject);
+            ZNetScene.instance.Destroy(common.gameObject);
+        }
+
+        /// <summary>
+        /// Tokens e Garantia: icone proprio (nao o do Thunderstone), moeda chata no chao e item que de fato
+        /// cai quando solto. Tira duas fotos em fotos/: as moedas no chao e os icones no inventario.
+        /// </summary>
+        private IEnumerator SoloTokens()
+        {
+            string[] tokens = { "PortalToken", "SpawnerToken", Deadheim.Wards.WardProfiles.TerritoryToken, Forja.GarantiaPrefab };
+            Sprite stone = ObjectDB.instance.GetItemPrefab("Thunderstone")?.GetComponent<ItemDrop>()?.m_itemData.GetIcon();
+            foreach (string name in tokens)
+            {
+                GameObject prefab = ObjectDB.instance.GetItemPrefab(name);
+                if (prefab == null)
+                {
+                    Check("tokens/" + name + "/existe", false);
+                    continue;
+                }
+                Sprite icon = prefab.GetComponent<ItemDrop>().m_itemData.GetIcon();
+                Check("tokens/" + name + "/icone-proprio", icon != null && icon != stone && icon.texture != null && icon.texture.width >= 64,
+                    icon == null ? "sem icone" : $"{icon.texture?.width}x{icon.texture?.height}");
+                bool stoneHidden = prefab.GetComponentsInChildren<Renderer>(true).All(r => r is SpriteRenderer || !r.enabled);
+                SpriteRenderer face = prefab.GetComponentInChildren<SpriteRenderer>(true);
+                Check("tokens/" + name + "/moeda-no-chao", stoneHidden && face != null && face.sprite != null && prefab.GetComponent<BoxCollider>() != null,
+                    $"pedraEscondida={stoneHidden} face={(face != null)} colisor={(prefab.GetComponent<BoxCollider>() != null)}");
+            }
+
+            // Soltar do inventario: antes o modelo desligado fazia o item sumir (instancia sem Awake nem ZDO).
+            yield return MoveTo(_openA);
+            ClearGround(Me.transform.position);
+            GiveItem("PortalToken", 1);
+            ItemDrop.ItemData held = Me.GetInventory().GetAllItems().FirstOrDefault(i => i.m_dropPrefab != null && i.m_dropPrefab.name == "PortalToken");
+            Check("tokens/soltar-portal-token", held != null && Me.DropItem(Me.GetInventory(), held, 1));
+            yield return Wait(2f);
+            ItemDrop onGround = ItemDrop.s_instances.FirstOrDefault(d => d != null && d.m_itemData.m_dropPrefab != null
+                && d.m_itemData.m_dropPrefab.name == "PortalToken" && Utils.DistanceXZ(d.transform.position, Me.transform.position) < 8f);
+            Check("tokens/portal-token-no-chao", onGround != null && onGround.gameObject.activeInHierarchy && onGround.m_nview.IsValid(),
+                onGround == null ? "nao achei no chao" : $"ativo={onGround.gameObject.activeInHierarchy} rede={onGround.m_nview.IsValid()}");
+            if (onGround != null)
+                Check("tokens/moeda-deitada", Vector3.Dot(onGround.transform.up, Vector3.up) > 0.7f, $"up={onGround.transform.up}");
+            Check("tokens/pega-de-volta", onGround != null && Me.Pickup(onGround.gameObject, true, false)
+                && Me.GetInventory().CountItems(onGround.m_itemData.m_shared.m_name) == 1);
+            yield return Wait(0.5f);
+
+            // Fotos: as quatro moedas num piso de madeira (no mato a grama cobre), entre a camera e o
+            // personagem, perto do templo (aberto) e ao meio-dia; e os icones no inventario.
+            yield return MoveTo(_safe);
+            EnvMan.instance.m_debugTimeOfDay = true;
+            EnvMan.instance.m_debugTime = 0.5f;
+            yield return Wait(2f);
+            Transform cam = GameCamera.instance.transform;
+            Vector3 flat = Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized;
+            Vector3 spot = Ground(cam.position + flat * 2.6f) + Vector3.up * 0.2f;
+            var dropped = new List<GameObject>();
+            GameObject floor = Instantiate(ZNetScene.instance.GetPrefab("wood_floor"), spot, Quaternion.LookRotation(flat));
+            WearNTear floorWear = floor.GetComponent<WearNTear>();
+            if (floorWear != null) { floorWear.m_noSupportWear = true; floorWear.m_noRoofWear = true; }
+            dropped.Add(floor);
+            Vector3 side = Vector3.Cross(Vector3.up, flat);
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                Vector3 at = spot + side * ((i - 1.5f) * 0.42f) + Vector3.up * 0.5f;
+                GameObject coin = Instantiate(ObjectDB.instance.GetItemPrefab(tokens[i]), at, Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f));
+                // A 1 m do personagem a coleta automatica recolhia as moedas antes da foto.
+                coin.GetComponent<ItemDrop>().m_autoPickup = false;
+                dropped.Add(coin);
+            }
+            yield return Wait(3f);
+            bool drawn = dropped.Skip(1).All(go => go != null && go.GetComponentInChildren<SpriteRenderer>() is SpriteRenderer sr && sr.isVisible);
+            Check("tokens/moedas-desenhadas", drawn, string.Join(" ", dropped.Skip(1).Select(go =>
+                go == null ? "sumiu" : $"{go.name.Replace("(Clone)", "")}:visivel={go.GetComponentInChildren<SpriteRenderer>()?.isVisible} y={go.transform.position.y - spot.y:0.00}")));
+            yield return FotoTokens("chao");
+            foreach (string name in tokens) GiveItem(name, 3);
+            InventoryGui.instance.Show(null);
+            yield return Wait(1.5f);
+            yield return FotoTokens("inventario");
+            InventoryGui.instance.Hide();
+            EnvMan.instance.m_debugTimeOfDay = false;
+            foreach (string name in tokens)
+            {
+                string itemName = ObjectDB.instance.GetItemPrefab(name).GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+                Me.GetInventory().RemoveItem(itemName, Me.GetInventory().CountItems(itemName));
+            }
+            foreach (GameObject go in dropped)
+                if (go != null) ZNetScene.instance.Destroy(go);
+        }
+
+        private IEnumerator FotoTokens(string nome)
+        {
+            string pasta = Path.Combine(RootDir, "fotos");
+            Directory.CreateDirectory(pasta);
+            string arquivo = Path.Combine(pasta, $"tokens-{nome}.png");
+            yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(arquivo);
+            yield return Wait(0.5f);
+            Log("foto: " + arquivo);
         }
 
         private IEnumerator SoloTransport()

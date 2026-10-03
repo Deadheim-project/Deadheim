@@ -46,6 +46,7 @@ namespace Deadheim.Wards
                     if (__instance.m_areaMarker != null) __instance.m_areaMarker.m_radius = radius;
 
                     WardCore.InitFuel(__instance);
+                    WardCore.InitTerritory(__instance);
                     WardCore.StampGuild(__instance);
                 }
                 catch (Exception ex)
@@ -150,11 +151,24 @@ namespace Deadheim.Wards
 
                 float fuel = WardCore.GetFuel(__instance);
                 StringBuilder text = new StringBuilder(__result ?? string.Empty);
+                if (WardProfiles.IsTerritoryWard(__instance.gameObject)) text.Append(TerritoryStatus(__instance));
                 text.Append("\nCombustivel: " + Math.Round(fuel, 2) + "/" + Mathf.FloorToInt(WardCore.MaxFuel));
                 text.Append(fuel <= 0f
                     ? " <color=red>(desligado)</color>"
                     : "\n[Use " + WardProfiles.FuelItem.Value + " para abastecer]");
                 __result = text.ToString();
+            }
+
+            private static string TerritoryStatus(PrivateArea area)
+            {
+                if (!WardProfiles.TerritoryWardEnabled.Value)
+                    return "\nTerritorio <color=orange>desligado no servidor</color> (vale como ward comum)";
+
+                double left = WardCore.TerritoryActivationLeft(area);
+                string state = left > 0d
+                    ? "<color=yellow>ativa em " + Mathf.CeilToInt((float)(left / 60d)) + " min</color> (ate la, ward comum)"
+                    : "<color=#7CFC00>indestrutivel</color>";
+                return "\nTerritorio: " + state + "\nSo o dono remove";
             }
         }
 
@@ -184,7 +198,14 @@ namespace Deadheim.Wards
                     // raidavel e toma DamagePercent do dano.
                     // A versao antiga media a distancia do jogador local, o que estourava
                     // NullReference no servidor dedicado e bloqueava dano no mundo inteiro.
-                    if (Utils.DistanceXZ(pos, Vector3.zero) <= Plugin.SafeArea.Value || Pvp.PvpZones.IsSafeArea(pos))
+                    if (WardCore.InFullProtectionZone(pos))
+                    {
+                        ward.FlashShield(false);
+                        return false;
+                    }
+
+                    // Ward de Territorio ativa: indestrutivel tambem fora do spawn (la a ward comum e raidavel).
+                    if (WardCore.IsIndestructible(ward))
                     {
                         ward.FlashShield(false);
                         return false;
@@ -225,7 +246,7 @@ namespace Deadheim.Wards
                     if (piece == null || __instance == null) return true;
 
                     WardProfile profile = WardProfiles.For(piece.gameObject);
-                    if (profile == null || !profile.CountsToLimit) return true;
+                    if (profile == null || (!profile.CountsToLimit && !profile.Indestructible)) return true;
                     if (Admin.LocalPlayerIsAdmin()) return true;
 
                     Vector3 pos = __instance.m_placementGhost != null
@@ -245,15 +266,22 @@ namespace Deadheim.Wards
                         return false;
                     }
 
-                    // Limite 0 = sem limite: a base e raidavel, entao o limite nao protege nada.
-                    int limit = WardCore.GetWardLimit();
-                    if (limit > 0 && Plugin.PlayerWardCount < 999 && Plugin.PlayerWardCount >= limit)
+                    if (profile.Indestructible)
                     {
-                        __instance.Message(MessageHud.MessageType.Center, "Limite de wards atingido (" + limit + ").");
-                        return false;
+                        if (!PlaceTerritory(__instance, pos)) return false;
+                    }
+                    else
+                    {
+                        // Limite 0 = sem limite: a base e raidavel, entao o limite nao protege nada.
+                        int limit = WardCore.GetWardLimit();
+                        if (limit > 0 && Plugin.PlayerWardCount < 999 && Plugin.PlayerWardCount >= limit)
+                        {
+                            __instance.Message(MessageHud.MessageType.Center, "Limite de wards atingido (" + limit + ").");
+                            return false;
+                        }
                     }
 
-                    Minimap.instance?.AddPin(pos, Minimap.PinType.Boss, "WARD", true, false);
+                    Minimap.instance?.AddPin(pos, Minimap.PinType.Boss, profile.Indestructible ? "TERRITORIO" : "WARD", true, false);
                     WardCore.RequestWardCount();
                     return true;
                 }
@@ -262,6 +290,74 @@ namespace Deadheim.Wards
                     Debug.LogWarning("[Wards] Patch de colocacao falhou: " + ex.Message);
                     return true;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Regras so da Ward de Territorio: ligada no servidor, fora da area segura do spawn (la a ward
+        /// comum ja protege 100%, o token pago seria gasto a toa), longe de outra Ward de Territorio
+        /// (guilda inclusive) e dentro do limite por jogador, contado pelo servidor.
+        /// </summary>
+        private static bool PlaceTerritory(Player player, Vector3 pos)
+        {
+            if (!WardProfiles.TerritoryWardEnabled.Value)
+            {
+                player.Message(MessageHud.MessageType.Center, "A Ward de Territorio esta desligada no servidor.");
+                return false;
+            }
+
+            if (WardCore.InFullProtectionZone(pos))
+            {
+                player.Message(MessageHud.MessageType.Center,
+                    "Aqui a ward comum ja protege 100% (" + Plugin.SafeArea.Value + " m do spawn). Use o Territory Token fora dessa area.");
+                return false;
+            }
+
+            if (WardCore.HasTerritoryWardTooClose(pos, out PrivateArea other))
+            {
+                other.FlashShield(false);
+                player.Message(MessageHud.MessageType.Center, "Muito perto de outra Ward de Territorio.");
+                return false;
+            }
+
+            int limit = WardProfiles.TerritoryWardLimit.Value;
+            if (limit <= 0) return true;
+
+            // Sem a resposta do servidor nao da para saber se ja existe uma: pergunta e pede para tentar de novo.
+            if (Plugin.PlayerTerritoryWardCount >= 999)
+            {
+                WardCore.RequestWardCount();
+                player.Message(MessageHud.MessageType.Center, "Conferindo suas wards com o servidor. Tente de novo.");
+                return false;
+            }
+
+            if (Plugin.PlayerTerritoryWardCount >= limit)
+            {
+                player.Message(MessageHud.MessageType.Center,
+                    limit == 1 ? "Voce ja tem uma Ward de Territorio. Remova a antiga primeiro."
+                               : "Limite de Wards de Territorio atingido (" + limit + ").");
+                return false;
+            }
+
+            // Conta ja: o servidor so recontara em ate 10 s, e uma segunda colocacao nesse meio passaria.
+            Plugin.PlayerTerritoryWardCount++;
+            return true;
+        }
+
+        /// <summary>
+        /// So o dono remove a Ward de Territorio. A guilda tem acesso ao ward, e sem isto um
+        /// membro desmontava a de outro e ficava com o token.
+        /// </summary>
+        [HarmonyPatch(typeof(Player), "CheckCanRemovePiece")]
+        public static class RemoveTerritoryPatch
+        {
+            private static void Postfix(Player __instance, Piece piece, ref bool __result)
+            {
+                if (!__result || piece == null || !WardProfiles.IsTerritoryWard(piece.gameObject)) return;
+                if (piece.GetCreator() == __instance.GetPlayerID() || Admin.LocalPlayerIsAdmin()) return;
+
+                __result = false;
+                __instance.Message(MessageHud.MessageType.Center, "So o dono remove a Ward de Territorio.");
             }
         }
 

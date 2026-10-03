@@ -11,22 +11,23 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.3.1";
+        public const string Version = "7.4.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
         // IsAdminOnly do Jotunn: o servidor recusa quem nao tem o mod ou tem uma
         // versao abaixo da minima, e as configs de servidor valem as do servidor.
-        // Minimo 7.3.1: as regras de PvP rodam no cliente de quem leva o golpe, entao um
+        // Minimo 7.4.0: as regras de PvP rodam no cliente de quem leva o golpe, entao um
         // cliente sem o modulo de PvP seria alvo sem zona segura, imunidade ou reducao. O
         // protocolo do PvP mudou em 7.3.1 (bounty com id de pedido e resposta, causa no pacote
         // de morte, hora do servidor no estado), e as correcoes de cliente (relogio, pedra,
         // canal so do servidor) so valem se todo mundo estiver nela.
+        // 7.4.0 traz a Ward de Territorio (prefab novo) e a contagem dela no RPC de wards.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.3.1",
+            MinimumRequiredVersion = "7.4.0",
             ModRequired = true,
             IsLocked = true
         };
@@ -54,6 +55,8 @@ namespace Deadheim
 
         public static int PlayerWardCount = 999;
         public static int PlayerPortalCount = 999;
+        /// <summary>Wards de Territorio do jogador local, contadas pelo servidor. 999 = ainda sem resposta.</summary>
+        public static int PlayerTerritoryWardCount = 999;
 
         public static int maxPlayers = 50;
         public static List<ZRpc> validatedUsers = new List<ZRpc>();
