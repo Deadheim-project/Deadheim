@@ -26,14 +26,23 @@ namespace Deadheim
             Portal.NoBuild_Patch.UpdatePortalMaterials();
         }
 
+        // Pecas so de admin que sairam do martelo: voltam se a adminlist disser que o jogador e admin.
+        private static readonly List<GameObject> _hiddenAdminPieces = new List<GameObject>();
+
+        private static PieceTable HammerTable()
+        {
+            var hammer = ObjectDB.instance != null ? ObjectDB.instance.m_items.FirstOrDefault(x => x != null && x.name == "Hammer") : null;
+            return hammer != null ? hammer.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_buildPieces : null;
+        }
+
         public static void OnlyAdminPieces()
         {
-            var hammer = ObjectDB.instance.m_items.FirstOrDefault(x => x.name == "Hammer");
-            PieceTable table = hammer.GetComponent<ItemDrop>().m_itemData.m_shared.m_buildPieces;
+            PieceTable table = HammerTable();
+            if (table == null) return;
 
             foreach (string prefab in Plugin.OnlyAdminPieces.Value.Split(','))
             {
-                var item = Prefabs.Get(prefab);
+                var item = Prefabs.Get(prefab.Trim());
 
                 if (item is null) continue;
 
@@ -46,8 +55,24 @@ namespace Deadheim
 
                 if (Admin.LocalPlayerIsAdmin()) continue;
 
-                table.m_pieces.Remove(item);
+                if (table.m_pieces.Remove(item) && !_hiddenAdminPieces.Contains(item)) _hiddenAdminPieces.Add(item);
             }
+        }
+
+        /// <summary>
+        /// A config do servidor chega antes da adminlist (Patches.ReenviaAdminList manda a lista so
+        /// depois do RPC_CharacterID), entao OnlyAdminPieces tirava as pecas do martelo do proprio
+        /// admin pela sessao inteira (B2). Quando a lista chega e diz admin, as pecas voltam.
+        /// </summary>
+        public static void RestoreAdminPieces()
+        {
+            if (_hiddenAdminPieces.Count == 0 || !Admin.LocalPlayerIsAdmin()) return;
+            PieceTable table = HammerTable();
+            if (table == null) return;
+            foreach (GameObject item in _hiddenAdminPieces)
+                if (item != null && !table.m_pieces.Contains(item)) table.m_pieces.Add(item);
+            _hiddenAdminPieces.Clear();
+            Player.m_localPlayer?.UpdateAvailablePiecesList();
         }
 
         public static void NerfRunicCape()

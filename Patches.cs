@@ -119,6 +119,16 @@ namespace Deadheim
             }
         }
 
+        /// <summary>A adminlist chegou no cliente: as pecas so de admin voltam ao martelo do admin.</summary>
+        [HarmonyPatch(typeof(ZNet), "RPC_AdminList")]
+        private class AdminListChegou
+        {
+            private static void Postfix(ZNet __instance)
+            {
+                if (!__instance.IsServer()) ItemService.RestoreAdminPieces();
+            }
+        }
+
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
         [HarmonyPostfix]
         public static void Awake_Postfix(ref Player __instance)
