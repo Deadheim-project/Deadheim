@@ -528,12 +528,29 @@ namespace Deadheim.Pvp
             }
         }
 
-        /// <summary>Admin puxando alguem (RPC_TeleportTo) nao e fuga.</summary>
+        /// <summary>
+        /// Admin puxando alguem (RPC_TeleportTo) nao e fuga. So vale se quem mandou for admin ou o
+        /// proprio servidor: antes qualquer RPC_TeleportTo liberava, e um cliente modificado (ou de
+        /// um amigo) puxava o cacado para longe. O servidor reescreve o remetente de todo RPC que
+        /// repassa (RemetenteRpc), entao o sender aqui e o de verdade.
+        /// </summary>
         [HarmonyPatch(typeof(Character), "RPC_TeleportTo")]
         private static class AdminTeleportPatch
         {
-            private static void Prefix() => _teleportByAdmin = true;
+            private static void Prefix(long sender) => _teleportByAdmin = SenderIsAdmin(sender);
             private static void Finalizer() => _teleportByAdmin = false;
+        }
+
+        /// <summary>O peer que mandou o RPC e o servidor ou um admin da adminlist (que o cliente recebe).</summary>
+        private static bool SenderIsAdmin(long sender)
+        {
+            ZNet net = ZNet.instance;
+            if (net == null || ZRoutedRpc.instance == null) return false;
+            if (sender == ZRoutedRpc.instance.GetServerPeerID()) return true;
+            foreach (ZNet.PlayerInfo info in net.GetPlayerList())
+                if (!info.m_characterID.IsNone() && info.m_characterID.UserID == sender)
+                    return net.PlayerIsAdmin(info.m_userInfo.m_id);
+            return false;
         }
 
         // ----------------------------------------------------- pedra do retorno (Hearthstone)

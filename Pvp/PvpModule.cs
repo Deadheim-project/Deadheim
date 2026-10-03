@@ -70,7 +70,8 @@ namespace Deadheim.Pvp
         public static string TeleportRefusal(bool pveBlocks = false)
         {
             if (!PvpConfig.Active) return null;
-            if (PvpState.IsHunted) return "Cacado nao pode teleportar.";
+            // A mesma regra do portal (HuntedCanUsePortals), que a descricao da config promete para a pedra e o retreat.
+            if (PvpState.IsHunted && !PvpConfig.HuntedCanUsePortals.Value) return "Cacado nao pode teleportar.";
             if (PvpState.InEscapeCombat) return $"Em combate! Aguarde {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
             if (pveBlocks && PvpState.InPveCombat) return $"Em combate com monstro! Aguarde {Mathf.CeilToInt(PvpState.PveCombatRemaining)}s.";
             return null;
