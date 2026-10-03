@@ -1,0 +1,390 @@
+Mono path[0] = 'C:/Program Files (x86)/Steam/steamapps/common/Valheim dedicated server/valheim_server_Data/Managed'
+Mono config path = 'C:/Program Files (x86)/Steam/steamapps/common/Valheim dedicated server/MonoBleedingEdge/etc'
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+Initialize engine version: 6000.0.75f1 (26349cd2a5c8)
+[Subsystems] Discovering subsystems at path C:/Program Files (x86)/Steam/steamapps/common/Valheim dedicated server/valheim_server_Data/UnitySubsystems
+Forcing GfxDevice: Null
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+NullGfxDevice:
+    Version:  NULL 1.0 [1.0]
+    Renderer: Null Device
+    Vendor:   Unity Technologies
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.091 seconds
+- Finished resetting the current domain, in  0.001 seconds
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Microsoft Media Foundation video decoding to texture disabled: graphics device is Null, only Direct3D 11 and Direct3D 12 (only on desktop) are supported for hardware-accelerated video decoding.
+[Message:   BepInEx] BepInEx 5.4.23.5 - valheim_server (26/09/2026 05:20:06)
+[Message:   BepInEx] User is running BepInExPack Valheim version 5.4.2351
+[Info   :   BepInEx] Running under Unity v6000.0.75.2503836
+[Info   :   BepInEx] CLR runtime version: 4.0.30319.42000
+[Info   :   BepInEx] Supports SRE: True
+[Info   :   BepInEx] System platform: Bits64, Windows
+[Message:   BepInEx] Preloader started
+[Info   :   BepInEx] Loaded 1 patcher method from [BepInEx.Preloader 5.4.23.5]
+[Info   :   BepInEx] 1 patcher plugin loaded
+[Info   :   BepInEx] Patching [UnityEngine.CoreModule] with [BepInEx.Chainloader]
+[Message:   BepInEx] Preloader finished
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+09/30/2026 11:21:47: Loaded localization file #0 - 'localization' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #1 - 'localization_extra' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #2 - 'heightmap_message' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #3 - 'localization_witch' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #6 - 'localization_captions' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #9 - 'localization_ps' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #11 - 'localization_xbox' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #12 - 'localization_switch' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #0 - 'localization' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #1 - 'localization_extra' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #2 - 'heightmap_message' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #3 - 'localization_witch' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #6 - 'localization_captions' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #9 - 'localization_ps' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #11 - 'localization_xbox' language: 'English'
+09/30/2026 11:21:47: Loaded localization file #12 - 'localization_switch' language: 'English'
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+09/30/2026 11:21:51: Loaded localization file #0 - 'localization' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #1 - 'localization_extra' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #2 - 'heightmap_message' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #3 - 'localization_witch' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #6 - 'localization_captions' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #9 - 'localization_ps' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #11 - 'localization_xbox' language: 'English'
+09/30/2026 11:21:51: Loaded localization file #12 - 'localization_switch' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #0 - 'localization' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #1 - 'localization_extra' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #2 - 'heightmap_message' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #3 - 'localization_witch' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #6 - 'localization_captions' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #9 - 'localization_ps' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #11 - 'localization_xbox' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #12 - 'localization_switch' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #0 - 'localization' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #1 - 'localization_extra' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #2 - 'heightmap_message' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #3 - 'localization_witch' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #6 - 'localization_captions' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #9 - 'localization_ps' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #11 - 'localization_xbox' language: 'English'
+09/30/2026 11:21:52: Loaded localization file #12 - 'localization_switch' language: 'English'
+UnloadTime: 0.207100 ms
+09/30/2026 11:21:54: Set background loading budget to Low
+09/30/2026 11:21:55: Loading first scene!
+09/30/2026 11:21:55: Preferences initialized! Activating first scene!
+Unloading 5 Unused Serialized files (Serialized files now loaded: 9)
+UnloadTime: 0.053300 ms
+09/30/2026 11:21:55: Loading: Starting to load scene: start.unity (169d7618616154c03be07e9ad3af5893)
+09/30/2026 11:21:55: Set background loading budget to Normal
+Unloading 40 unused Assets to reduce memory usage. Loaded Objects now: 5323.
+Total: 23.065200 ms (FindLiveObjects: 0.187200 ms CreateObjectMapping: 0.161100 ms MarkObjects: 22.658400 ms  DeleteObjects: 0.058200 ms)
+
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '') is missing!
+AsyncResourceUpload failed.
+AsyncResourceUpload failed.
+The referenced script on this Behaviour (Game Object '') is missing!
+The referenced script on this Behaviour (Game Object '') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+09/30/2026 11:21:59: Set background loading budget to High
+09/30/2026 11:21:59: GPU Device: 0000:0000 (Unknown)
+Unloading 2 Unused Serialized files (Serialized files now loaded: 20)
+09/30/2026 11:21:59: Loading: Done, Total time: -4,3013189
+09/30/2026 11:22:00: Set background loading budget to Low
+UnloadTime: 5.974800 ms
+HDR Render Texture not supported, disabling HDR on reflection probe.
+This custom render path shader needs to have at least 1 passes.
+Could not find material Hidden/VideoDecode. Make sure the Video shaders are included in your build, in the Built-in Shader Settings section of the Graphics Settings.
+Could not find video decode shader pass YCbCr_To_RGB1 in shader <not found>
+Could not find video decode shader pass YCbCrA_To_RGBAFull in shader <not found>
+Could not find video decode shader pass YCbCrA_To_RGBA in shader <not found>
+Could not find video decode shader pass Flip_RGBA_To_RGBA in shader <not found>
+Could not find video decode shader pass Flip_RGBASplit_To_RGBA in shader <not found>
+Could not find video decode shader pass Flip_NV12_To_RGB1 in shader <not found>
+Could not find video decode shader pass Flip_NV12_To_RGBA in shader <not found>
+This custom render path shader needs to have at least 1 passes.
+Could not find material Hidden/VideoComposite. Make sure the Video shaders are included in your build, in the Built-in Shader Settings section of the Graphics Settings.
+Could not find video decode shader pass Default in shader <not found>
+09/30/2026 11:22:00: Missing audio clip in music respawn
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+09/30/2026 11:22:00: Setting -savedir to: C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\saves-server
+09/30/2026 11:22:00: Setting -logfile to: C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\server-unity.log
+09/30/2026 11:22:00: Get create world PvpTest
+09/30/2026 11:22:00: SaveSystem.Reload for World is done [10ms]
+09/30/2026 11:22:00: Using environment steamid 892970
+09/30/2026 11:22:00: Using steam APPID:892970
+Setting breakpad minidump AppID = 892970
+SteamInternal_SetMinidumpSteamID:  Caching Steam ID:  76561197960265728 [API loaded no]
+09/30/2026 11:22:00: Server ID 90071992547409920
+09/30/2026 11:22:00: Authentication:k_ESteamNetworkingAvailability_Waiting
+09/30/2026 11:22:00: Steam game server initialized
+09/30/2026 11:22:00: Valheim version: 1.0.16 (network version 40)
+09/30/2026 11:22:00: Worldgenerator version setup:2
+09/30/2026 11:22:00: Console: Valheim 1.0.16 (network version 40)
+09/30/2026 11:22:00: Console: 
+09/30/2026 11:22:00: Console: type "help" - for commands
+09/30/2026 11:22:00: Console: 
+09/30/2026 11:22:00: Render threading mode:SingleThreaded
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+[AmplifyOcclusion] System does not support CopyTexture. CacheAware will be disabled.
+09/30/2026 11:22:00: Builder started
+09/30/2026 11:22:00: Loaded localization file #0 - 'localization' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #1 - 'localization_extra' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #2 - 'heightmap_message' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #3 - 'localization_witch' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #6 - 'localization_captions' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #9 - 'localization_ps' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #11 - 'localization_xbox' language: 'English'
+09/30/2026 11:22:00: Loaded localization file #12 - 'localization_switch' language: 'English'
+[Deadheim] ObjectDB ainda não possui um item-base válido; registro dos itens adiado.
+09/30/2026 11:22:01: SaveSystem.Reload for Character is done [0ms]
+09/30/2026 11:22:01: Sending PlayFab login request (attempt 1)
+09/30/2026 11:22:01: Login postponed until ID has been set.
+The shader Hidden/Dof/DepthOfFieldHdr (UnityEngine.Shader) on effect Main Camera (UnityStandardAssets.ImageEffects.DepthOfField) is not supported on this platform!
+The image effect Main Camera (UnityStandardAssets.ImageEffects.DepthOfField) has been disabled as it's not supported on the current platform.
+09/30/2026 11:22:01: Missing attach item: 371857150  ob:Player(Clone)  joint:Helmet_attach
+09/30/2026 11:22:01: Missing attach item: 371857150  ob:Player(Clone)  joint:Helmet_attach
+09/30/2026 11:22:01: Starting music menu
+Unloading 107452 unused Assets to reduce memory usage. Loaded Objects now: 279561.
+Total: 197.120300 ms (FindLiveObjects: 19.576600 ms CreateObjectMapping: 68.409000 ms MarkObjects: 78.387400 ms  DeleteObjects: 30.746900 ms)
+
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+Unloading 3 Unused Serialized files (Serialized files now loaded: 23)
+UnloadTime: 15.959000 ms
+HDR Render Texture not supported, disabling HDR on reflection probe.
+HDR Render Texture not supported, disabling HDR on reflection probe.
+09/30/2026 11:22:01: Audioman already exist, destroying self
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+09/30/2026 11:22:01: Console: Valheim 1.0.16 (network version 40)
+09/30/2026 11:22:01: Console: 
+09/30/2026 11:22:01: Console: type "help" - for commands
+09/30/2026 11:22:01: Console: 
+09/30/2026 11:22:01: isModded: True
+09/30/2026 11:22:01: Zonesystem Awake 84231
+09/30/2026 11:22:01: DungeonDB Awake 84231
+09/30/2026 11:22:01: Worldgenerator version setup:2
+Registered 'Azumatt.AzuAntiCheat ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.Deadheim ConfigSync' RPC - waiting for incoming connections
+Registered 'Guilds ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.RaidSystem ConfigSync' RPC - waiting for incoming connections
+Registered 'CL&LC ConfigSync' RPC - waiting for incoming connections
+Registered 'Groups ConfigSync' RPC - waiting for incoming connections
+Registered 'org.bepinex.plugins.servercharacters ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.VipList ConfigSync' RPC - waiting for incoming connections
+[Wards] DeadheimWard criado: raio=12, dano=0%.
+[RaidSystem] RaidWard created: scale=3, HP=10000
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+09/30/2026 11:22:04: Console: /w [text] - Whisper
+09/30/2026 11:22:04: Console: /s [text] - Shout
+09/30/2026 11:22:04: Console: /die - Kill yourself
+09/30/2026 11:22:04: Console: /resetspawn - Reset spawn point
+09/30/2026 11:22:04: Console: /[emote]
+09/30/2026 11:22:04: Console: Emotes: wave, sit, challenge, cheer, nonono, thumbsup, point, blowkiss, bow, cower, cry, despair, flex, comehere, headbang, kneel, laugh, roar, shrug, dance, relax, toast, rest, vibe, loveyou
+09/30/2026 11:22:04: Console: 
+[Wards] DeadheimWard adicionado ao martelo.
+[RaidSystem] RaidWard added to hammer.
+[AmplifyOcclusion] System does not support CopyTexture. CacheAware will be disabled.
+Unloading 305 unused Assets to reduce memory usage. Loaded Objects now: 282905.
+Total: 128.737100 ms (FindLiveObjects: 13.745800 ms CreateObjectMapping: 46.407100 ms MarkObjects: 67.932500 ms  DeleteObjects: 0.651400 ms)
+
+[RaidSystem] RPCs registered.
+09/30/2026 11:22:04: Zonesystem Start 84231
+09/30/2026 11:22:04: Added 3 locations, 0 vegetations, 0 environments, 0 biome env-setups, 0 clutter  from main
+09/30/2026 11:22:04: Added 2 locations, 0 vegetations, 2 environments, 0 biome env-setups, 0 clutter  from main
+09/30/2026 11:22:04: Added 27 locations, 25 vegetations, 5 environments, 1 biome env-setups, 3 clutter  from main
+09/30/2026 11:22:04: Added 4 locations, 0 vegetations, 1 environments, 0 biome env-setups, 0 clutter  from main
+09/30/2026 11:22:04: Added 25 locations, 33 vegetations, 8 environments, 2 biome env-setups, 2 clutter  from main
+09/30/2026 11:22:04: Added 25 locations, 35 vegetations, 12 environments, 1 biome env-setups, 2 clutter  from main
+09/30/2026 11:22:04: DungeonDB Start 84231
+09/30/2026 11:22:04: ZRpc timeout set to 30s 
+09/30/2026 11:22:04: Loading: ZNet Start
+09/30/2026 11:22:04: ZNet.LoadWorld: PvpTest (PvpTest), save number 0
+09/30/2026 11:22:04:   missing C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\saves-server/worlds_local/PvpTest/_main.0.db2
+09/30/2026 11:22:10: Loading: Placed 0/1-2 of 'Fortress Mountain' altbiome. (Valid, sectors: 0, combos: 2)
+09/30/2026 11:22:10: Setting up generating loading indicator
+09/30/2026 11:22:11: Game server connected
+[AmplifyOcclusion] GBuffer Normals only available in Camera Deferred Shading mode. Switched to Camera source.
+09/30/2026 11:22:11: Loading: Generating locations
+09/30/2026 11:22:11: Failed to place all SwampRuin2, placed 8 out of 30 with 0 tries in 00:00:00.0284785
+09/30/2026 11:22:11: Failed to place all FireHole, placed 63 out of 75 with 0 tries in 00:00:00.0146052
+[Deadheim PvP] Zona segura inicial: centro=(5,1) raio=30 modo=Radius celulas=9 (~0,01 km2) biomas: Meadows 100%
+[Deadheim PvP] Templo inicial em x=5 z=1. Zona segura inicial: centro=(5,1) raio=30 modo=Radius celulas=9 (~0,01 km2) biomas: Meadows 100% templo_seguro=True calculo=4ms
+09/30/2026 11:22:13: Location GoblinCamp2 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 196 out of 200 with 0)
+09/30/2026 11:22:13: Failed to place all GoblinCamp2, placed 196 out of 200 with 0 tries in 00:00:01.3300126
+09/30/2026 11:22:15: Location Crypt4 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 197 out of 200 with 0)
+09/30/2026 11:22:15: Failed to place all Crypt4, placed 197 out of 200 with 0 tries in 00:00:00.9082813
+09/30/2026 11:22:18: Location Runestone_Mountains took more than 0,5 seconds to place, check spawn conditions to improve! (placed 91 out of 100 with 0)
+09/30/2026 11:22:18: Failed to place all Runestone_Mountains, placed 91 out of 100 with 0 tries in 00:00:00.6243593
+09/30/2026 11:22:18: Location TarPit1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 74 out of 100 with 0)
+09/30/2026 11:22:18: Failed to place all TarPit1, placed 74 out of 100 with 0 tries in 00:00:00.5223975
+09/30/2026 11:22:19: Location TarPit2 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 13 out of 16 with 0)
+09/30/2026 11:22:19: Failed to place all TarPit2, placed 13 out of 16 with 0 tries in 00:00:00.5422753
+09/30/2026 11:22:19: Location TarPit3 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 93 out of 100 with 0)
+09/30/2026 11:22:19: Failed to place all TarPit3, placed 93 out of 100 with 0 tries in 00:00:00.5093777
+09/30/2026 11:22:21: Location Mistlands_Giant1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 250 out of 250 with 0)
+09/30/2026 11:22:23: Failed to place all MorgenHole3, placed 33 out of 40 with 0 tries in 00:00:00.3731340
+09/30/2026 11:22:24: Location NorthVillage took more than 0,5 seconds to place, check spawn conditions to improve! (placed 53 out of 135 with 0)
+09/30/2026 11:22:24: Failed to place all NorthVillage, placed 53 out of 135 with 0 tries in 00:00:01.1738051
+09/30/2026 11:22:26: Failed to place all WoodVillage2, placed 2 out of 15 with 0 tries in 00:00:00.2633569
+09/30/2026 11:22:26: Failed to place all StoneTowerRuins08_sunk, placed 3 out of 10 with 0 tries in 00:00:00.3974021
+09/30/2026 11:22:27: Failed to place all StoneTowerRuins09_sunk, placed 4 out of 10 with 0 tries in 00:00:00.3863621
+09/30/2026 11:22:27: Failed to place all StoneTowerRuins10_sunk, placed 1 out of 10 with 0 tries in 00:00:00.3747655
+09/30/2026 11:22:28: Failed to place all SwampHut1_1, placed 11 out of 50 with 0 tries in 00:00:00.2913632
+09/30/2026 11:22:28: Failed to place all SwampHut2_1, placed 2 out of 50 with 0 tries in 00:00:00.2956035
+09/30/2026 11:22:28: Failed to place all SwampHut3_1, placed 0 out of 50 with 0 tries in 00:00:00.2944079
+09/30/2026 11:22:28: Failed to place all StoneTowerRuins05_leet, placed 0 out of 10 with 0 tries in 00:00:00.2952367
+09/30/2026 11:22:28: Failed to place all GoblinCamp2_1, placed 0 out of 5 with 0 tries in 00:00:00.0225228
+09/30/2026 11:22:30: Location GoblinHut01 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 9 out of 30 with 0)
+09/30/2026 11:22:30: Failed to place all GoblinHut01, placed 9 out of 30 with 0 tries in 00:00:01.1728176
+09/30/2026 11:22:31: Location GoblinHut02 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 5 out of 30 with 0)
+09/30/2026 11:22:31: Failed to place all GoblinHut02, placed 5 out of 30 with 0 tries in 00:00:01.2201616
+09/30/2026 11:22:32: Location GoblinHut03 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 1 out of 20 with 0)
+09/30/2026 11:22:32: Failed to place all GoblinHut03, placed 1 out of 20 with 0 tries in 00:00:01.2511386
+09/30/2026 11:22:33: Location TarPit1_1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 0 out of 50 with 0)
+09/30/2026 11:22:33: Failed to place all TarPit1_1, placed 0 out of 50 with 0 tries in 00:00:00.5590593
+09/30/2026 11:22:33: Location TarPit2_1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 0 out of 20 with 0)
+09/30/2026 11:22:33: Failed to place all TarPit2_1, placed 0 out of 20 with 0 tries in 00:00:00.5700106
+09/30/2026 11:22:34: Location TarPit3_1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 0 out of 100 with 0)
+09/30/2026 11:22:34: Failed to place all TarPit3_1, placed 0 out of 100 with 0 tries in 00:00:00.5680727
+09/30/2026 11:22:34: There are 14 that take a long time to generate (over 0,5 sec). Total slow location time is 11,5 seconds that could be saved on world gen!
+09/30/2026 11:22:34: Registering lobby
+09/30/2026 11:22:34: Opened Steam server
+09/30/2026 11:22:34: Loading: Done. Total seconds sinze ZNet start: 29,3610842, Genloc duration: 23246,7531 ms, (Total genloc time: 00:00:23.4286503, locations: 183, iterations: 0)
+09/30/2026 11:23:12: Got status changed msg k_ESteamNetworkingConnectionState_Connecting
+09/30/2026 11:23:12: New connection
+09/30/2026 11:23:12: Accepting connection k_EResultOK
+09/30/2026 11:23:12: Connecting to Steamworks.SteamNetworkingIdentity
+09/30/2026 11:23:12: Got status changed msg k_ESteamNetworkingConnectionState_Connected
+09/30/2026 11:23:12: Connected
+09/30/2026 11:23:12: Got connection SteamID 76561198053330247
+Sending AzuAntiCheat version 5.1.1 and minimum version 5.1.1 to the client.
+Sending Detalhes.Deadheim version 7.1.0 and minimum version 7.0.0 to the client.
+Sending Guilds version 1.1.14 and minimum version 1.1.14 to the client.
+Sending RaidSystem version 2.1.0 and minimum version 2.1.0 to the client.
+Sending CL&LC version 5.0.5 and minimum version 5.0.5 to the client.
+Sending Groups version 1.2.12 and minimum version 1.2.12 to the client.
+Sending Server Characters version 1.4.17 and minimum version 1.4.17 to the client.
+Sending VipList version 1.0.0 and minimum version 1.0.0 to the client.
+Received Detalhes.Deadheim version 7.1.0 and minimum version 7.0.0 from the client.
+Received Server Characters version 1.4.17 and minimum version 1.4.17 from the client.
+Received VipList version 1.0.0 and minimum version 1.0.0 from the client.
+09/30/2026 11:23:12: Got handshake from client 76561198053330247
+09/30/2026 11:23:12: Semaphore type: ManualResetEventSlim
+09/30/2026 11:23:12: Network version check, their:40, mine:40
+09/30/2026 11:23:12: Checking for any blocked players in the historical player list...
+09/30/2026 11:23:12: Server: New peer connected,sending global keys
+09/30/2026 11:23:12: Placed location StartTemple in zone 0,0  duration 12,0717 ms
+09/30/2026 11:23:12: Placed location WoodHouse9 in zone -1,-4  duration 25,7248 ms
+09/30/2026 11:23:12: Placed location Dolmen02 in zone -4,-3  duration 0,5051 ms
+09/30/2026 11:23:12: Placed location ShipSetting01 in zone 0,-1  duration 3,0206 ms
+09/30/2026 11:23:13: Placed location Dolmen01 in zone -3,0  duration 1,5045 ms
+09/30/2026 11:23:13: Placed location Dolmen01 in zone 3,0  duration 0 ms
+09/30/2026 11:23:14: Placed location ShipSetting01 in zone 0,1  duration 2,5457 ms
+09/30/2026 11:23:14: Placed location WoodHouse10 in zone -1,-1  duration 9,8382 ms
+09/30/2026 11:23:14: Placed location WoodHouse2 in zone -4,-4  duration 13,2176 ms
+09/30/2026 11:23:14: Checking for any blocked players in the historical player list...
+09/30/2026 11:23:14: Placed location Dolmen02 in zone -3,-4  duration 1,0017 ms
+09/30/2026 11:23:14: Placed location WoodHouse8 in zone 1,-4  duration 6,4987 ms
+09/30/2026 11:23:14: Placed location Dolmen01 in zone -2,-4  duration 1,0055 ms
+09/30/2026 11:23:14: Placed location WoodHouse3 in zone 0,-4  duration 4,9622 ms
+09/30/2026 11:23:15: Placed location ShipSetting01 in zone 2,-4  duration 2,0188 ms
+09/30/2026 11:23:15: Placed location ShipSetting01 in zone -3,-3  duration 2,5045 ms
+09/30/2026 11:23:15: Placed location Runestone_Boars in zone 3,-4  duration 0 ms
+09/30/2026 11:23:15: Placed location WoodHouse4 in zone 4,-4  duration 4,5319 ms
+09/30/2026 11:23:15: Placed location ShipSetting01 in zone 4,-3  duration 3,0115 ms
+09/30/2026 11:23:15: Placed location WoodHouse2 in zone 0,-3  duration 19,9994 ms
+09/30/2026 11:23:15: Placed location Dolmen02 in zone 1,-3  duration 1,0101 ms
+09/30/2026 11:23:15: Placed location WoodHouse3 in zone 2,-3  duration 6,0287 ms
+09/30/2026 11:23:16: Placed location WoodHouse8 in zone 3,-3  duration 8,5836 ms
+09/30/2026 11:23:16: Placed location Dolmen01 in zone -3,-2  duration 2,0282 ms
+09/30/2026 11:23:16: Placed location WoodHouse12 in zone -1,-2  duration 3,6065 ms
+09/30/2026 11:23:16: Placed location Runestone_Meadows in zone -2,-2  duration 0 ms
+09/30/2026 11:23:16: Placed location Runestone_Meadows in zone 1,-2  duration 1,0002 ms
+09/30/2026 11:23:16: Placed location Dolmen03 in zone 2,-2  duration 0,9999 ms
+09/30/2026 11:23:16: Placed location Runestone_Meadows in zone 4,-2  duration 1,0103 ms
+09/30/2026 11:23:17: Placed location WoodHouse1 in zone -2,-1  duration 10,5624 ms
+09/30/2026 11:23:17: Placed location WoodHouse1 in zone 4,-1  duration 13,048 ms
+09/30/2026 11:23:18: Placed location WoodHouse12 in zone -4,0  duration 4,447 ms
+09/30/2026 11:23:18: Placed location Runestone_Meadows in zone -2,0  duration 1,0009 ms
+09/30/2026 11:23:18: Placed location WoodHouse6 in zone -1,0  duration 9,1423 ms
+09/30/2026 11:23:18: Placed location WoodHouse4 in zone 2,0  duration 8,0193 ms
+09/30/2026 11:23:18: Placed location WoodHouse3 in zone -4,1  duration 7,0224 ms
+09/30/2026 11:23:19: Placed location Dolmen03 in zone -1,1  duration 1,5034 ms
+09/30/2026 11:23:19: Placed location Dolmen01 in zone 1,1  duration 0 ms
+09/30/2026 11:23:19: Placed location WoodHouse7 in zone 3,1  duration 10,1205 ms
+09/30/2026 11:23:19: Placed location ShipSetting01 in zone 2,2  duration 1,9995 ms
+09/30/2026 11:23:19: Placed location WoodHouse2 in zone -3,2  duration 17,1646 ms
+09/30/2026 11:23:19: Placed location ShipSetting01 in zone -2,2  duration 2,9975 ms
+09/30/2026 11:23:19: Placed location Runestone_Meadows in zone -1,2  duration 0 ms
+09/30/2026 11:23:19: Placed location WoodHouse4 in zone 1,2  duration 7,0591 ms
+09/30/2026 11:23:20: Placed location WoodHouse11 in zone 0,2  duration 16,0341 ms
+09/30/2026 11:23:20: Placed location Runestone_Boars in zone -3,3  duration 0 ms
+09/30/2026 11:23:20: Placed location WoodHouse12 in zone -1,3  duration 3,529 ms
+09/30/2026 11:23:20: Placed location Runestone_Meadows in zone 1,3  duration 0 ms
+09/30/2026 11:23:21: Placed location Runestone_Meadows in zone 3,3  duration 0 ms
+09/30/2026 11:23:21: Placed location ShipSetting01 in zone -3,4  duration 6,0142 ms
+09/30/2026 11:23:21: Placed location Dolmen02 in zone -2,4  duration 0 ms
+09/30/2026 11:23:21: Placed location Dolmen02 in zone -1,4  duration 0,5018 ms
+09/30/2026 11:23:21: Placed location WoodHouse7 in zone 2,4  duration 10,0602 ms
+09/30/2026 11:23:28: Checking for any blocked players in the historical player list...
+09/30/2026 11:23:33: Got character ZDOID from Solo : 1691421442:16
+[Deadheim PvP] Estado carregado de C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\server\BepInEx\config\Deadheim\pvp-PvpTest.json: 0 jogador(es).
+[Deadheim PvP] Solo (1933475744) sincronizado.
+09/30/2026 11:23:39: Placed location WoodHouse6 in zone 5,-4  duration 11,3131 ms
+09/30/2026 11:23:39: Placed location Dolmen02 in zone 5,-1  duration 0,5089 ms
+09/30/2026 11:23:39: Placed location Dolmen01 in zone 5,0  duration 1,0224 ms
+09/30/2026 11:23:39: Placed location Dolmen02 in zone 5,1  duration 0,5062 ms
+09/30/2026 11:23:39: Placed location ShipSetting01 in zone 5,2  duration 3,0046 ms
+09/30/2026 11:23:39: Placed location Runestone_Boars in zone 5,3  duration 0 ms
+[Deadheim] Ajustes: 76561198053330247 mudou Detalhes.Deadheim [Server config] CartographyTableAmount: '100' -> '123'
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Ajustes: 76561198053330247 tentou mudar Detalhes.Deadheim [Server config] CartographyTableAmount para 'abc': Valor invalido para numero inteiro.
+[Deadheim] Ajustes: 76561198053330247 mudou Detalhes.Deadheim [PvP] KillFeed: 'true' -> 'false'
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Ajustes: 76561198053330247 mudou Detalhes.Deadheim [PvP] KillFeed: 'false' -> 'true'
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Ajustes: 76561198053330247 mudou Detalhes.Deadheim [Server config] CartographyTableAmount: '123' -> '100'
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.

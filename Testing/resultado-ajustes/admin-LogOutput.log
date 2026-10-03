@@ -1,0 +1,113 @@
+[Message:   BepInEx] BepInEx 5.4.23.5 - valheim (26/09/2026 02:33:37)
+[Message:   BepInEx] User is running BepInExPack Valheim version 5.4.2351
+[Info   :   BepInEx] Running under Unity v6000.0.75.2503836
+[Info   :   BepInEx] CLR runtime version: 4.0.30319.42000
+[Info   :   BepInEx] Supports SRE: True
+[Info   :   BepInEx] System platform: Bits64, Windows
+[Message:   BepInEx] Preloader started
+[Info   :   BepInEx] Loaded 1 patcher method from [BepInEx.Preloader 5.4.23.5]
+[Info   :   BepInEx] 1 patcher plugin loaded
+[Info   :   BepInEx] Patching [UnityEngine.CoreModule] with [BepInEx.Chainloader]
+[Message:   BepInEx] Preloader finished
+[Message:   BepInEx] Valheim Version: 1.0.16
+[Message:   BepInEx] Chainloader ready
+[Message:   BepInEx] Chainloader started
+[Info   :   BepInEx] 9 plugins to load
+[Info   :   BepInEx] Loading [AzuAntiCheat 5.1.1] (Azumatt.AzuAntiCheat)
+[Info   :AzuAntiCheat] Discord webhooks: 0 usable. Detections will be logged to the console only.
+[Info   :   BepInEx] Loading [VipList 1.0.0] (Detalhes.VipList)
+[Info   :   VipList] VipList API ready with 1 VIP(s).
+[Info   :   BepInEx] Loading [Detalhes.Deadheim 7.1.0] (Detalhes.Deadheim)
+[Info   :Detalhes.Deadheim] Conexão direta do Deadheim ativa para 127.0.0.1:2476
+[Info   :   BepInEx] Loading [PvpTestDriver 1.0.0] (Detalhes.PvpTestDriver)
+[Info   :PvpTestDriver] [PVPTEST] driver ativo: papel=S sync=C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\sync save=C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\chars-S
+[Info   :   BepInEx] Loading [Guilds 1.1.14] (org.bepinex.plugins.guilds)
+[Info   :   BepInEx] Loading [RaidSystem 2.1.0] (Detalhes.RaidSystem)
+[Info   :RaidSystem] Guilds mod active: True
+[Info   :RaidSystem] RaidSystem default config example written to C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\clientS\BepInEx\config\RaidSystem\RaidSystem.Default.cfg
+[Info   :RaidSystem] RaidSystem v2.1.0 loaded.
+[Info   :   BepInEx] Loading [Creature Level & Loot Control 5.0.5] (org.bepinex.plugins.creaturelevelcontrol)
+[Info   :   BepInEx] Loading [Groups 1.2.12] (org.bepinex.plugins.groups)
+[Info   :   BepInEx] Loading [Server Characters 1.4.17] (org.bepinex.plugins.servercharacters)
+[Message:   BepInEx] Chainloader startup complete (9 loaded, 0 skipped, 0 failed)
+[Info   :AzuAntiCheat] Memory baseline: 146 approved assembly locations recorded.
+[Info   :AzuAntiCheat] Native code baselines captured for 6 method(s).
+[Info   :AzuAntiCheat] Discord webhooks: 0 usable. Detections will be logged to the console only.
+[Info   :Detalhes.Deadheim] Sem vínculo para este servidor; abrindo criação de personagem (Cancelar volta para a seleção).
+[Info   :PvpTestDriver] [PVPTEST] criando personagem Solo
+[Message:AzuAntiCheat] Invoking version check
+[Message:AzuAntiCheat] Version check, server: 5.1.1,  mine: 5.1.1
+[Message:AzuAntiCheat] Received same version from server!
+[Message:AzuAntiCheat] AzuAntiCheat Version installed: 5.1.1 => Server Version: 5.1.1
+[Info   :AzuAntiCheat] Admin: True
+[Info   :AzuAntiCheat] Moderator: False
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: [76561198053330247, Steam_76561198053330247]
+[Info   :PvpTestDriver] [PVPTEST] spawn ok (solo)
+[Info   :PvpTestDriver] [PVPTEST] === setup
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/modulo-ativo 
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/templo templo=(4.62, 66.22, 0.66)
+[Info   :PvpTestDriver] [PVPTEST] posicoes: templo=(4.62, 0.00, 0.66) seguro=(24.62, 0.00, 0.66) aberto=(54.62, 0.00, 0.66) wardA=(81.12, 0.00, 15.88) wardB=(46.19, 0.00, 28.44) castelo=(-48.38, 0.00, -52.34) fatorMorte=0,05 janelaSemPerda=600s
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/raidsystem-ligado 
+[Info   :PvpTestDriver] [PVPTEST] ilha: centro=(5,1) raio=30 modo=Radius celulas=9 (~0,01 km2) biomas: Meadows 100%
+[Info   :PvpTestDriver] [PVPTEST] plugins: AzuAntiCheat 5.1.1, VipList 1.0.0, Detalhes.Deadheim 7.1.0, PvpTestDriver 1.0.0, Guilds 1.1.14, RaidSystem 2.1.0, Creature Level & Loot Control 5.0.5, Groups 1.2.12, Server Characters 1.4.17
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/arredor-do-templo-seguro Ilha Inicial
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/aberto-nao-seguro 
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/templo-e-arena 
+[Info   :PvpTestDriver] [PVPTEST] dummy criado em (56.62, 67.03, 0.66) id=424242 nome=Dummy
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/fora-de-cutscene eu=False dummy=False
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/pvp-ativo-no-aberto flags=None
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/hud <color=#ff5050>PvP ATIVO</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/servidor-recebeu-hello s\Werner\AppData\Local\Temp\deadheim-pvptest\server\BepInEx\config\Deadheim\pvp-PvpTest.json: 0 jogador(es). |[Deadheim PvP] Solo (1933475744) sincronizado. |09/30/2026 11:23:39: Placed location WoodHouse6 in zone 5,-4  duration 11,3131 ms |09/30/2026 11:23:39: Placed location Dolmen02 in zone 5,-1  duration 0,5089 ms |09/30/2026 11:23:39: Placed location Dolmen01 in zone 5,0  duration 1,0224 ms |
+[Info   :PvpTestDriver] [PVPTEST] === ajustes
+[Info   :PvpTestDriver] [PVPTEST] ajustes: admin=True tela=960x540
+[Info   :PvpTestDriver] [PVPTEST] ajustes: adminlist no cliente=[76561198053330247, Steam_76561198053330247] eu=Steam_76561198053330247
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/esc-volta-ao-menu (patch no Menu.Update) 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-abre 
+[Info   :PvpTestDriver] [PVPTEST] menu do ESC: dialogo=Menu [Continue 'Continue' y=384..407] [ManualSave 'Save' y=361..384] [CurrentPlayerList 'Player list' y=338..361] [Settings 'Settings' y=315..338] [Deadheim 'Deadheim' y=292..315] [Logout 'Log Out' y=269..292] [Exit 'Quit' y=246..269] 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-no-menu 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-texto Deadheim
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-sem-sobrepor 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-dentro-da-tela x=430..530 y=292..315 tela=960x540
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\fotos\ajustes-1-menu-esc.png
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/janela-abre 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-some-atras alfa=0
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/janela-dentro-da-tela x=215..745 y=95..445 tela=960x540
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/aba-servidor-so-admin 
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\fotos\ajustes-2-meus-ajustes.png
+[Info   :PvpTestDriver] [PVPTEST] meus ajustes: RaidSystem(3), Creature Level & Loot Control(3), Groups(9), Guilds(5)
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-tem-mods 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-sem-opcao-do-servidor 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-sem-config-de-servidor-do-deadheim 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-linha-da-tecla 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-edita PageUp -> PageDown
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-salva-no-cfg 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-status Salvo: Menu Key = PageDown
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\fotos\ajustes-3-meus-ajustes-editado.png
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-recusa-invalido Valor invalido para tecla.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-desfaz 
+[Info   :PvpTestDriver] [PVPTEST] servidor: Deadheim(90), RaidSystem(30), VipList(1), AzuAntiCheat(2), Creature Level & Loot Control(64), Groups(12), Guilds(13), Server Characters(14)
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/servidor-lista-mods 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/servidor-opcoes-do-deadheim 
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\fotos\ajustes-4-servidor.png
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-muda-e-o-servidor-sincroniza 100 -> 123
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-status Servidor: CartographyTableAmount = 123 (ja valendo)
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-salva-no-cfg-do-servidor 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/servidor-registra-quem-mudou [Deadheim] Ajustes: 76561198053330247 mudou Detalhes.Deadheim [Server config] CartographyTableAmount: '100' -> '123' |[Deadheim] Config recarregada de Detalhes.Deadheim.cfg. |
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\Werner\AppData\Local\Temp\deadheim-pvptest\fotos\ajustes-5-servidor-editado.png
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-invalido-recusado Servidor recusou: Valor invalido para numero inteiro.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-caixa-killfeed 
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-caixa-muda 
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-caixa-desfaz 
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-botao-padrao 100
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/admin-desfaz 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/voltar-fecha-a-janela 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/voltar-devolve-o-menu alfa=1
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-fechado-fecha-a-janela 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-fechado-devolve-o-menu alfa=1
+[Info   :PvpTestDriver] [PVPTEST] DONE pass=45 fail=0
