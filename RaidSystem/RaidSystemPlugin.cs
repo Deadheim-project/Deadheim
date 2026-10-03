@@ -13,17 +13,21 @@ namespace RaidSystem
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency("org.bepinex.plugins.guilds", BepInDependency.DependencyFlags.HardDependency)]
     // 7.0.0 traz o PvpBridge: castelos e abates classificados vem do modulo de PvP.
-    [BepInDependency("Detalhes.Deadheim", "7.2.0")]
+    // 7.3.1 traz RemetenteRpc (remetente de verdade), RelogioServidor (hora do servidor no
+    // cliente), Entrega (item sem duplicar nem sumir) e PvpBridge.KnownGuild/IsPveOrImmune.
+    [BepInDependency("Detalhes.Deadheim", "7.3.1")]
     public class RaidSystemPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "Detalhes.RaidSystem";
         public const string PluginName = "RaidSystem";
-        public const string PluginVersion = "2.2.1";
+        public const string PluginVersion = "2.2.2";
         public const string DefaultWebhookUrl = "";
         public static RaidSystemPlugin Instance { get; private set; }
         private Harmony _harmony;
 
-        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.2.0" };
+        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.2.2" };
+        // Minimo 2.2.2: o cliente passou a confiar so no servidor (sincronia, tributo, conquista)
+        // e a ler o horario de raid pela hora do servidor; cliente velho continuaria aberto a isso.
 
         public static readonly string ModPath = Path.GetDirectoryName(typeof(RaidSystemPlugin).Assembly.Location);
         public static readonly string FileDirectory = Path.Combine(Paths.ConfigPath, "RaidSystem");

@@ -14,7 +14,10 @@ namespace Hearthstone
 	public class Hearthstone : BaseUnityPlugin
 	{
 		public const string PluginGUID = "Detalhes.Hearthstone";
-		public const string Version = "2.1.0";
+		// 2.1.1: a pedra respeita a recusa do Deadheim (__runOriginal) e so gasta se teleportar;
+		// ponto de retorno gravado com ponto decimal. MinimumRequiredVersion = Version: todo
+		// cliente precisa da correcao, senao a pedra continua escapando de luta.
+		public const string Version = "2.1.1";
 
 		private Harmony harmony = new Harmony(PluginGUID);
 
