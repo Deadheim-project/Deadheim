@@ -95,12 +95,22 @@ namespace Deadheim.Pvp
 
         // --------------------------------------------------------------- recebimento
 
+        /// <summary>
+        /// O "sender" que chega aqui e o que o cliente escreveu no pacote: o vanilla nao confere.
+        /// Quem mandou e o dono da conexao (RemetenteRpc); um pacote que mente e tratado como da
+        /// conexao, e o log registra a tentativa.
+        /// </summary>
         private static void OnToServer(long sender, ZPackage pkg)
         {
             if (ZNet.instance == null || !ZNet.instance.IsServer()) return;
+            long declared = sender;
+            sender = RemetenteRpc.Real(declared, out bool forged);
             try
             {
                 string op = pkg.ReadString();
+                if (forged)
+                    Debug.LogWarning($"[Deadheim PvP] '{op}' com remetente forjado: o pacote diz {declared}, a conexao e de {sender}.");
+                if (sender == 0L) return;
                 PvpServer.Handle(sender, op, pkg);
             }
             catch (Exception ex)
@@ -109,8 +119,18 @@ namespace Deadheim.Pvp
             }
         }
 
+        /// <summary>
+        /// So o servidor fala por este canal. Com o RemetenteRpc o servidor reescreve o remetente
+        /// de todo RPC que repassa, entao um cliente modificado nao manda punicao, estado ou
+        /// recompensa a outro jogador se fingindo de servidor.
+        /// </summary>
         private static void OnToClient(long sender, ZPackage pkg)
         {
+            if (ZRoutedRpc.instance == null || sender != ZRoutedRpc.instance.GetServerPeerID())
+            {
+                Debug.LogWarning("[Deadheim PvP] Pacote do canal do servidor vindo de outro peer (" + sender + "); ignorado.");
+                return;
+            }
             try
             {
                 string op = pkg.ReadString();

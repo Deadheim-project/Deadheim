@@ -25,29 +25,6 @@ namespace Deadheim.Ajustes
 
         private static bool _registrado;
 
-        /// <summary>
-        /// A conexao cujo pacote esta sendo tratado agora. O "sender" de um RPC roteado vem
-        /// escrito pelo proprio cliente e o servidor nao confere, entao a checagem de admin
-        /// usa a conexao de verdade (o mesmo truque do ServerSync). Null = chamada local.
-        /// </summary>
-        private static ZRpc _conexaoAtual;
-
-        [HarmonyPatch(typeof(ZRpc), "HandlePackage")]
-        private static class ConexaoAtualPatch
-        {
-            private static void Prefix(ZRpc __instance, out ZRpc __state)
-            {
-                __state = _conexaoAtual;
-                _conexaoAtual = __instance;
-            }
-
-            private static Exception Finalizer(Exception __exception, ZRpc __state)
-            {
-                _conexaoAtual = __state;
-                return __exception;
-            }
-        }
-
         [HarmonyPatch(typeof(Game), "Start")]
         private static class RegistroPatch
         {
@@ -244,12 +221,13 @@ namespace Deadheim.Ajustes
 
         /// <summary>
         /// Admin pela adminlist.txt do servidor, a mesma lista que o ServerSync usa para
-        /// liberar config travada. Sem conexao (chamada local) so pode ser o host de um
-        /// mundo nao dedicado falando com o proprio servidor.
+        /// liberar config travada. O "sender" do pacote e escrito pelo cliente, entao vale a
+        /// conexao de verdade (RemetenteRpc). Sem conexao (chamada local) so pode ser o host
+        /// de um mundo nao dedicado falando com o proprio servidor.
         /// </summary>
         private static bool EhAdmin(out string quem)
         {
-            ZRpc conexao = _conexaoAtual;
+            ZRpc conexao = RemetenteRpc.ConexaoAtual;
             if (conexao == null)
             {
                 quem = "host";

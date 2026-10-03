@@ -80,7 +80,7 @@ static class Program
 
     static void Como(string host, long remetente) { _conexaoHost = host; _remetente = remetente; AjustesJanela.Limpar(); }
 
-    static object ConexaoAtual() => AccessTools.Field(typeof(AjustesRede), "_conexaoAtual").GetValue(null);
+    static object ConexaoAtual() => Deadheim.RemetenteRpc.ConexaoAtual;
 
     static int Main()
     {
@@ -133,9 +133,11 @@ static class Program
 
         // ------------------------------------------------------ patches e registro
         var harmony = new Harmony("teste.ajustes");
-        // So as classes de patch do AjustesRede (o PatchAll do assembly tropecaria no FakePlugin, que e da Unity).
-        foreach (Type tipoPatch in typeof(AjustesRede).GetNestedTypes(BindingFlags.NonPublic))
-            if (tipoPatch.GetCustomAttributes(typeof(HarmonyPatch), false).Length > 0) harmony.CreateClassProcessor(tipoPatch).Patch();
+        // So as classes de patch do AjustesRede e do RemetenteRpc (o PatchAll do assembly tropecaria no FakePlugin, que e da Unity).
+        foreach (Type dono in new[] { typeof(AjustesRede), typeof(Deadheim.RemetenteRpc) })
+            foreach (Type tipoPatch in dono.GetNestedTypes(BindingFlags.NonPublic))
+                if (tipoPatch.GetCustomAttributes(typeof(HarmonyPatch), false).Length > 0) harmony.CreateClassProcessor(tipoPatch).Patch();
+        Deadheim.RemetenteRpc.Aviso = texto => Debug.Linhas.Add("WARN " + texto);
         var patchHandle = Harmony.GetPatchInfo(AccessTools.Method(typeof(ZRpc), "HandlePackage"));
         Check("patch no ZRpc.HandlePackage (prefix + finalizer)", patchHandle != null && patchHandle.Prefixes.Count == 1 && patchHandle.Finalizers.Count == 1);
         AccessTools.Method(typeof(Game), "Start").Invoke(new Game(), null);
@@ -218,6 +220,45 @@ static class Program
         Check("mod com 400 opcoes chega inteiro (comprimido)", AjustesJanela.Itens?.Count == 400 && AjustesJanela.Itens[399].Valor == "598.5");
         var descricao = AjustesJanela.Itens?[0].Descricao ?? "";
         Check("descricao longa e cortada em 500", descricao.Length == 500 && descricao.EndsWith("..."), descricao.Length.ToString());
+
+        // ------------------------------------------- remetente de verdade (C1)
+        // O "sender" de um RPC roteado vem escrito no pacote pelo cliente. O servidor reescreve
+        // com o dono da conexao antes de o jogo ler, e o handler le o de verdade.
+        var conexaoJogador = new ZRpc { Socket = new FakeSocket { Host = Jogador } };
+        var conexaoAdmin = new ZRpc { Socket = new FakeSocket { Host = Admin } };
+        ZNet.instance.Peers.Add(new ZNetPeer { m_rpc = conexaoJogador, m_uid = JogadorId, m_socket = conexaoJogador.Socket });
+        ZNet.instance.Peers.Add(new ZNetPeer { m_rpc = conexaoAdmin, m_uid = AdminId, m_socket = conexaoAdmin.Socket });
+        ZPackage Roteado(long remetente)
+        {
+            var p = new ZPackage();
+            p.Write(4242L);         // m_msgID
+            p.Write(remetente);     // m_senderPeerID, escrito pelo cliente
+            p.Write(ServidorId);    // m_targetPeerID
+            return new ZPackage(p.GetArray());
+        }
+        var rotear = AccessTools.Method(typeof(ZRoutedRpc), "RPC_RoutedRPC");
+        int forjadosAntes = Deadheim.RemetenteRpc.Forjados;
+        rotear.Invoke(ZRoutedRpc.instance, new object[] { conexaoJogador, Roteado(AdminId) });
+        Check("remetente forjado (jogador dizendo ser o admin) vira o da conexao", ZRoutedRpc.instance.UltimoRemetente == JogadorId,
+            "lido=" + ZRoutedRpc.instance.UltimoRemetente);
+        Check("remetente forjado contado e avisado no log", Deadheim.RemetenteRpc.Forjados == forjadosAntes + 1
+            && Debug.Linhas.Any(l => l.StartsWith("WARN") && l.Contains("remetente forjado") && l.Contains(Jogador)));
+        rotear.Invoke(ZRoutedRpc.instance, new object[] { conexaoAdmin, Roteado(AdminId) });
+        Check("remetente honesto passa intacto", ZRoutedRpc.instance.UltimoRemetente == AdminId && Deadheim.RemetenteRpc.Forjados == forjadosAntes + 1);
+        rotear.Invoke(ZRoutedRpc.instance, new object[] { new ZRpc { Socket = new FakeSocket { Host = "x" } }, Roteado(AdminId) });
+        Check("conexao sem peer: o pacote nao e mexido", ZRoutedRpc.instance.UltimoRemetente == AdminId);
+        ZNet.instance.Server = false;
+        rotear.Invoke(ZRoutedRpc.instance, new object[] { conexaoJogador, Roteado(AdminId) });
+        Check("no cliente nada e reescrito (so o servidor conhece as conexoes)", ZRoutedRpc.instance.UltimoRemetente == AdminId);
+        ZNet.instance.Server = true;
+
+        long peerDentro = 0;
+        var conexaoPeer = new ZRpc { Socket = conexaoJogador.Socket, OnPackage = _ => peerDentro = Deadheim.RemetenteRpc.PeerId() };
+        ZNet.instance.Peers[0].m_rpc = conexaoPeer;
+        AccessTools.Method(typeof(ZRpc), "HandlePackage").Invoke(conexaoPeer, new object[] { new ZPackage() });
+        Check("PeerId dentro do pacote = dono da conexao", peerDentro == JogadorId, "peer=" + peerDentro);
+        Check("PeerId fora de pacote = o proprio servidor (chamada local)", Deadheim.RemetenteRpc.PeerId() == ZRoutedRpc.instance.m_id);
+        ZNet.instance.Peers.Clear();
 
         // --------------------------------------------------- host nao dedicado
         ZNet.instance.Dedicated = false;

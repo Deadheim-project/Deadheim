@@ -12,7 +12,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Stubs.cs;Program.cs" />
-    <Compile Include="..\..\Ajustes\AjustesDados.cs;..\..\Ajustes\AjustesRede.cs" />
+    <Compile Include="..\..\Ajustes\AjustesDados.cs;..\..\Ajustes\AjustesRede.cs;..\..\RemetenteRpc.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />

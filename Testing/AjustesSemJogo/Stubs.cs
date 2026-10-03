@@ -22,6 +22,8 @@ public class ZPackage
     public bool ReadBool() => _reader.ReadBoolean();
     public byte[] ReadByteArray() => _reader.ReadBytes(_reader.ReadInt32());
     public byte[] GetArray() => _stream.ToArray();
+    public int GetPos() => (int)_stream.Position;
+    public void SetPos(int pos) => _stream.Position = pos;
 }
 
 public interface ISocket { string GetHostName(); }
@@ -36,14 +38,23 @@ public class ZRpc
     private void HandlePackage(ZPackage package) => OnPackage(package);
 }
 
+public class ZNetPeer
+{
+    public ZRpc m_rpc;
+    public long m_uid;
+    public ISocket m_socket;
+}
+
 public class ZNet
 {
     public static ZNet instance;
     public bool Server = true, Dedicated = true;
     public HashSet<string> Admins = new HashSet<string>();
+    public readonly List<ZNetPeer> Peers = new List<ZNetPeer>();
     public bool IsServer() => Server;
     public bool IsDedicated() => Dedicated;
     public bool IsAdmin(string host) => Admins.Contains(host);
+    public List<ZNetPeer> GetPeers() => Peers;
 }
 
 public class ZRoutedRpc
@@ -51,6 +62,15 @@ public class ZRoutedRpc
     public static ZRoutedRpc instance;
     public static long Everybody = 0;
     public long ServerId = 1;
+    public long m_id = 1;
+    /// <summary>O remetente que o handler do jogo leu do ultimo pacote (RPC_RoutedRPC).</summary>
+    public long UltimoRemetente;
+    // Mesmo nome e visibilidade do jogo: o RemetenteRpc reescreve o remetente antes desta leitura.
+    private void RPC_RoutedRPC(ZRpc rpc, ZPackage pkg)
+    {
+        pkg.ReadLong();
+        UltimoRemetente = pkg.ReadLong();
+    }
     public readonly Dictionary<string, Delegate> Handlers = new Dictionary<string, Delegate>();
     public readonly List<string> Sent = new List<string>();
     public Action<long, string, ZPackage> Router;
