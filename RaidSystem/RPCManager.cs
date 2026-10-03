@@ -1,5 +1,6 @@
 using HarmonyLib;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -18,7 +19,8 @@ namespace RaidSystem
 
         public static void RPC_FullSyncResponse(long sender, ZPackage pkg)
         {
-            if (ZNet.instance.IsServer()) return;
+            // Donos de castelo falsos mudariam portas e regras de castelo no cliente da vitima.
+            if (ZNet.instance.IsServer() || !Util.FromServer(sender)) return;
             string json = pkg.ReadString(); if (string.IsNullOrEmpty(json)) return;
             DataStore.Deserialize(json);
             var lp = Player.m_localPlayer;
@@ -34,12 +36,26 @@ namespace RaidSystem
             GUI.LoadMenu();
         }
 
+        /// <summary>
+        /// Cadastro do jogador no menu do RaidSystem. Quem e o jogador vem da conexao (o remetente
+        /// ja e o de verdade): o playerId, o nick e a conta do pacote nao valem, senao um cliente
+        /// cadastrava outro jogador com nick e descricao que quisesse.
+        /// </summary>
         public static void RPC_UpdatePlayerData(long sender, ZPackage pkg)
         {
             if (!ZNet.instance.IsServer()) return;
             string nick = pkg.ReadString(), steamId = pkg.ReadString(), playerId = pkg.ReadString(), desc = pkg.ReadString(), teamId = pkg.ReadString();
-            if (long.TryParse(playerId, out long parsedPlayerId))
-                teamId = GuildsIntegration.GetPlayerTeam(parsedPlayerId);
+            if (!Util.TryResolveSender(sender, out long realId, out string realName, out string account))
+            {
+                Debug.LogWarning($"[RaidSystem] Cadastro de um peer sem personagem ({sender}); ignorado.");
+                return;
+            }
+            if (playerId != realId.ToString())
+                Debug.LogWarning($"[RaidSystem] Cadastro com o playerId {playerId} vindo de {realName} ({realId}); vale o da conexao.");
+            playerId = realId.ToString();
+            if (!string.IsNullOrEmpty(realName)) nick = realName;
+            if (!string.IsNullOrEmpty(account)) steamId = account;
+            teamId = GuildsIntegration.GetPlayerTeam(realId);
             if (string.IsNullOrEmpty(teamId)) return;
 
             string previousTeam = null;
@@ -74,7 +90,7 @@ namespace RaidSystem
 
         public static void RPC_ScoresResponse(long sender, ZPackage pkg)
         {
-            if (ZNet.instance.IsServer()) return;
+            if (ZNet.instance.IsServer() || !Util.FromServer(sender)) return;
             var scores = ScoreManager.DeserializeScores(pkg.ReadString());
             var d = DataStore.Load(); d.Scores.Clear(); d.Scores.AddRange(scores);
             GUI.UpdateScoreboard();
@@ -82,7 +98,7 @@ namespace RaidSystem
 
         public static void RPC_ConquestNotification(long sender, ZPackage pkg)
         {
-            if (ZNet.instance.IsServer()) return;
+            if (ZNet.instance.IsServer() || !Util.FromServer(sender)) return;
             string nick = pkg.ReadString(), team = pkg.ReadString(), zone = pkg.ReadString();
             float x = pkg.ReadSingle(), z = pkg.ReadSingle();
             string loc = string.IsNullOrEmpty(zone) ? $"X:{(int)x} Z:{(int)z}" : zone;
@@ -92,8 +108,9 @@ namespace RaidSystem
 
         /// <summary>
         /// Destruicao de RaidWard reportada por quem era dono da ZDO. A conquista e decidida
-        /// aqui, no servidor: a guild e re-derivada do playerId em vez de vir do pacote, e a
-        /// zona e o horario sao revalidados, para um cliente nao forjar conquista.
+        /// aqui, no servidor: a guild e re-derivada do playerId em vez de vir do pacote, a zona e
+        /// o horario sao revalidados, a ward tem que ter sumido de verdade no servidor e o
+        /// atacante tem que estar conectado e perto. Senao um cliente conquistava com o pacote.
         /// </summary>
         public static void RPC_WardDestroyed(long sender, ZPackage pkg)
         {
@@ -115,9 +132,48 @@ namespace RaidSystem
             if (_recentWardReports.TryGetValue(key, out float last) && Time.time - last <= 10f) return;
             _recentWardReports[key] = Time.time;
 
+            if (RaidSystemPlugin.Instance == null) return;
+            RaidSystemPlugin.Instance.StartCoroutine(ConfirmWardDestroyed(sender, pid, nick, pos, rot, key));
+        }
+
+        /// <summary>
+        /// O relato pode sair antes de a peca ser destruida (dano letal, Patches.HandleWardDestroyed):
+        /// a ZDO some no servidor logo depois. Espera ate 10 s a ward sumir; se ela continua de pe,
+        /// o relato e falso e nada acontece (nem conquista, nem outra RaidWard por cima).
+        /// </summary>
+        private static IEnumerator ConfirmWardDestroyed(long sender, string pid, string nick, Vector3 pos, Quaternion rot, string key)
+        {
+            for (float waited = 0f; waited <= 10f; waited += 0.5f)
+            {
+                if (Util.FindStandingRaidWard(pos) == null)
+                {
+                    Conquer(pid, nick, pos, rot);
+                    yield break;
+                }
+                yield return new WaitForSeconds(0.5f);
+            }
+            _recentWardReports.Remove(key);
+            Debug.LogWarning($"[RaidSystem] RaidWard reportada como destruida em X:{(int)pos.x} Z:{(int)pos.z} pelo peer {sender}, " +
+                             "mas continua de pe no servidor; relato ignorado.");
+        }
+
+        private static void Conquer(string pid, string nick, Vector3 pos, Quaternion rot)
+        {
             string teamId = null;
             if (!Util.IsRaidDisabledThisTime(pos) && long.TryParse(pid, out long playerId) && playerId != 0L)
-                teamId = GuildsIntegration.GetPlayerTeam(playerId);
+            {
+                // O atacante que o dono da ZDO viu tem que estar conectado e perto da ward: ao alcance
+                // de catapulta (SiegeAttributionRadius) com folga.
+                ZNetPeer attacker = Util.FindPeerByPlayerId(playerId);
+                float reach = Mathf.Max(200f, RaidSystemPlugin.SiegeAttributionRadius.Value + 50f);
+                if (attacker == null)
+                    Debug.LogWarning($"[RaidSystem] Conquista recusada: o atacante {nick} ({pid}) nao esta conectado.");
+                else if (Utils.DistanceXZ(attacker.m_refPos, pos) > reach)
+                    Debug.LogWarning($"[RaidSystem] Conquista recusada: o atacante {nick} ({pid}) esta a " +
+                                     $"{Utils.DistanceXZ(attacker.m_refPos, pos):0} m da ward.");
+                else
+                    teamId = GuildsIntegration.GetPlayerTeam(playerId);
+            }
 
             if (!string.IsNullOrEmpty(teamId))
                 HandleConquest(pid, nick, teamId, pos);
@@ -222,8 +278,9 @@ namespace RaidSystem
 
         public static void RPC_GrantTribute(long sender, ZPackage pkg)
         {
+            // Item no inventario so por ordem do servidor.
             Player lp = Player.m_localPlayer;
-            if (lp == null) return;
+            if (lp == null || !Util.FromServer(sender)) return;
 
             int count = pkg.ReadInt();
             var received = new List<string>();

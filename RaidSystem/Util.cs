@@ -157,6 +157,77 @@ namespace RaidSystem
             return zdo != null ? zdo.GetLong(ZDOVars.s_playerID, 0L) : 0L;
         }
 
+        /// <summary>
+        /// O RPC veio do servidor? No cliente, tudo que muda dono de castelo, placar ou inventario
+        /// so pode vir dele. O Deadheim (RemetenteRpc) reescreve no servidor o remetente de todo
+        /// RPC repassado, entao um cliente nao consegue se passar pelo servidor.
+        /// </summary>
+        public static bool FromServer(long sender)
+            => ZRoutedRpc.instance != null && sender == ZRoutedRpc.instance.GetServerPeerID();
+
+        /// <summary>
+        /// Jogador do peer que mandou o RPC (o sender ja e o da conexao, ver FromServer): playerId,
+        /// nome e conta. O host de um mundo nao dedicado responde pelo jogador local. false = sem personagem.
+        /// </summary>
+        public static bool TryResolveSender(long sender, out long playerId, out string name, out string account)
+        {
+            playerId = 0L;
+            name = null;
+            account = null;
+            if (ZNet.instance == null || ZDOMan.instance == null) return false;
+            ZNetPeer peer = ZNet.instance.GetPeer(sender);
+            if (peer != null && !peer.m_characterID.IsNone())
+            {
+                ZDO zdo = ZDOMan.instance.GetZDO(peer.m_characterID);
+                if (zdo == null) return false;
+                playerId = zdo.GetLong(ZDOVars.s_playerID, 0L);
+                name = zdo.GetString(ZDOVars.s_playerName, peer.m_playerName);
+                account = peer.m_socket?.GetHostName();
+                return playerId != 0L;
+            }
+            if (sender == ZRoutedRpc.instance?.GetServerPeerID() && Player.m_localPlayer != null)
+            {
+                playerId = Player.m_localPlayer.GetPlayerID();
+                name = Player.m_localPlayer.GetPlayerName();
+                return playerId != 0L;
+            }
+            return false;
+        }
+
+        /// <summary>Peer online com este playerId, ou null.</summary>
+        public static ZNetPeer FindPeerByPlayerId(long playerId)
+        {
+            if (playerId == 0L || ZNet.instance == null || ZDOMan.instance == null) return null;
+            foreach (ZNetPeer peer in ZNet.instance.GetPeers())
+            {
+                if (peer == null || peer.m_characterID.IsNone()) continue;
+                ZDO zdo = ZDOMan.instance.GetZDO(peer.m_characterID);
+                if (zdo != null && zdo.GetLong(ZDOVars.s_playerID, 0L) == playerId) return peer;
+            }
+            return null;
+        }
+
+        private static readonly int RaidWardHash = "RaidWard".GetStableHashCode();
+
+        /// <summary>
+        /// RaidWard de pe (ZDO com vida) a ate <paramref name="radius"/> metros do ponto, vista pelo
+        /// servidor, que tem todas as ZDOs. Null = nao ha ward ali (destruida ou nunca existiu).
+        /// </summary>
+        public static ZDO FindStandingRaidWard(Vector3 position, float radius = 3f)
+        {
+            if (ZDOMan.instance == null) return null;
+            List<ZDO> zdos = new List<ZDO>();
+            ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(position), SimulationDistance.OriginalDistance, zdos);
+            foreach (ZDO zdo in zdos)
+            {
+                if (zdo == null || !zdo.IsValid() || zdo.GetPrefab() != RaidWardHash) continue;
+                if (Utils.DistanceXZ(zdo.GetPosition(), position) > radius) continue;
+                // Sem s_health gravado a peca esta com a vida cheia do prefab.
+                if (zdo.GetFloat(ZDOVars.s_health, 1f) > 0f) return zdo;
+            }
+            return null;
+        }
+
         public static TerritoryInfo GetTerritoryAt(Vector3 pos)
         {
             RaidZone zone = GetRaidZoneAt(pos);
@@ -291,6 +362,13 @@ namespace RaidSystem
             if (prefab == null)
             {
                 Debug.LogWarning("[RaidSystem] RaidWard prefab not found for respawn.");
+                yield break;
+            }
+
+            // Nunca duas RaidWards no mesmo lugar: se ja tem uma de pe ali, nao nasce outra.
+            if (FindStandingRaidWard(position) != null)
+            {
+                Debug.LogWarning($"[RaidSystem] RaidWard respawn at X:{position.x:F0} Z:{position.z:F0} skipped: a ward is already standing there.");
                 yield break;
             }
 
