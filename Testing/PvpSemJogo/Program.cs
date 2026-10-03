@@ -57,6 +57,7 @@ internal static class Program
             id = 403029348, name = "Solo", kills = 3, deaths = 12, pkLeft = 1234.5678, pkStreak = 2, pkPenalty = 1,
             pkKills = 7, bountyReadyAt = 1790000000.25, combatLogPending = true, pendingCoins = 750,
             bountyPaidDay = 20363, bountyPaidToday = 4000, guild = "Lobos", prevGuild = "Ursos", prevGuildUntil = 1790000123.5,
+            castleRewardDay = 20363, castleRewardToday = 175,
         });
         data.players.Add(new PvpPlayerRecord { id = 424242, name = "Nome\tcom\ttab\nlinha", pkPermanent = true, pvePermanent = true, pveSince = 99.5 });
         data.players.Add(new PvpPlayerRecord { id = -77, name = "id negativo (Steam/Xbox)" });
@@ -64,6 +65,7 @@ internal static class Program
         bounty.contributions.Add(new PvpBountyContribution { id = 0, name = "casa", amount = 1000 });
         bounty.contributions.Add(new PvpBountyContribution { id = 424242, name = "Dummy", amount = 1500 });
         data.bounties.Add(bounty);
+        data.defenses.Add(new PvpDefenseRecord { killer = 403029348, victim = 424242, at = 1790000456.75 });
 
         string text = PvpStoreFormat.Write(data);
         PvpStoreData back = PvpStoreFormat.Read(text, out int skipped);
@@ -77,7 +79,8 @@ internal static class Program
                                            && solo.bountyReadyAt == 1790000000.25 && solo.combatLogPending && solo.pendingCoins == 750
                                            && !solo.pkPermanent && !solo.pvePermanent
                                            && solo.bountyPaidDay == 20363 && solo.bountyPaidToday == 4000
-                                           && solo.guild == "Lobos" && solo.prevGuild == "Ursos" && solo.prevGuildUntil == 1790000123.5,
+                                           && solo.guild == "Lobos" && solo.prevGuild == "Ursos" && solo.prevGuildUntil == 1790000123.5
+                                           && solo.castleRewardDay == 20363 && solo.castleRewardToday == 175,
             solo == null ? "sem Solo" : PvpStoreFormat.Write(new PvpStoreData { players = { solo } }));
         PvpPlayerRecord dummy = back.players.FirstOrDefault(p => p.id == 424242);
         Check("formato/pk-permanente-e-pve", dummy != null && dummy.pkPermanent && dummy.pvePermanent && dummy.pveSince == 99.5);
@@ -88,6 +91,8 @@ internal static class Program
         Check("formato/contribuicoes", back.bounties.Count == 1 && back.bounties[0].contributions.Count == 2
                                        && back.bounties[0].contributions.Any(c => c.id == 0 && c.amount == 1000 && c.name == "casa")
                                        && back.bounties[0].contributions.Any(c => c.id == 424242 && c.amount == 1500));
+        Check("formato/defesa-de-castelo", back.defenses.Count == 1 && back.defenses[0].killer == 403029348
+                                          && back.defenses[0].victim == 424242 && back.defenses[0].at == 1790000456.75);
         Check("formato/escrever-de-novo-da-o-mesmo-texto", PvpStoreFormat.Write(back) == text);
 
         // Arquivo editado a mao ou de versao mais nova: o que sobra e ignorado, o que falta e padrao.
@@ -199,6 +204,17 @@ internal static class Program
         Check("guilda/janela-zero-so-a-de-agora", !PvpPlayerRecord.SharedGuildWithin(amigo, alvo, 1001d, 0d)
                                                   && PvpPlayerRecord.SharedGuildWithin(new PvpPlayerRecord { guild = "lobos" }, alvo, 0d, 0d));
         Check("guilda/sem-guilda-nunca-e-aliado", !PvpPlayerRecord.SharedGuildWithin(new PvpPlayerRecord(), new PvpPlayerRecord(), 0d, dia));
+
+        // B7: teto diario da recompensa de defesa de castelo, por defensor.
+        PvpPlayerRecord def = new PvpPlayerRecord { id = 60 };
+        Check("defesa/paga-inteira", def.TakeCastleReward(10, 150, 500) == 150 && def.castleRewardToday == 150);
+        Check("defesa/paga-ate-o-teto", def.TakeCastleReward(10, 250, 500) == 250 && def.TakeCastleReward(10, 250, 500) == 100
+                                       && def.castleRewardToday == 500, "hoje=" + def.castleRewardToday);
+        Check("defesa/teto-cheio-nao-paga", def.TakeCastleReward(10, 25, 500) == 0 && def.castleRewardToday == 500);
+        Check("defesa/dia-novo-zera", def.TakeCastleReward(11, 25, 500) == 25 && def.castleRewardDay == 11 && def.castleRewardToday == 25);
+        Check("defesa/zero-e-sem-teto", def.TakeCastleReward(11, 100000, 0) == 100000);
+        PvpStoreData badDefense = PvpStoreFormat.Read("defense\tkiller=0\tvictim=5\tat=1\ndefense\tkiller=5\tvictim=6\tat=2\n", out int badSkipped);
+        Check("formato/defesa-sem-matador-pulada", badSkipped == 1 && badDefense.defenses.Count == 1 && badDefense.defenses[0].at == 2d);
 
         Console.WriteLine($"DONE pass={_pass} fail={_fail}");
         return _fail == 0 ? 0 : 1;

@@ -67,6 +67,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<string> CastleRewardItem;
         public static ConfigEntry<string> CastleRewardByBiome;
         public static ConfigEntry<float> CastleRewardCooldownMinutes;
+        public static ConfigEntry<int> CastleRewardDailyCap;
 
         // ------------------------------------------------------------------ bounty
         public static ConfigEntry<bool> BountyEnabled;
@@ -84,6 +85,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<int> BountyMinPlayers;
         public static ConfigEntry<bool> BountyArenaKillsCount;
         public static ConfigEntry<int> BountyDailyCapPerPlayer;
+        public static ConfigEntry<float> BountyAllyHours;
 
         // PvE permanente
         public static ConfigEntry<bool> PveEnabled;
@@ -244,7 +246,10 @@ namespace Deadheim.Pvp
                 "Meadows:25,BlackForest:50,Swamp:75,Mountain:100,Plains:150,Mistlands:200,AshLands:250,DeepNorth:250,Ocean:50",
                 "Quantidade da recompensa de defesa por bioma do castelo. Bioma:Quantidade,...");
             CastleRewardCooldownMinutes = Bind(config, castle, "CastleRewardCooldownMinutes", 1440f,
-                "Minutos ate o mesmo invasor render recompensa de novo para o mesmo defensor.");
+                "Minutos ate o mesmo invasor render recompensa de novo para o mesmo defensor. Fica salvo: o restart nao zera.");
+            CastleRewardDailyCap = Bind(config, castle, "CastleRewardDailyCap", 500,
+                "Teto de recompensa de defesa (em unidades de CastleRewardItem) que cada defensor recebe por dia (UTC do " +
+                "servidor). A recompensa e criada do nada: o teto limita duas contas combinando 'defesas'. 0 = sem teto.");
 
             const string bounty = "PvP - Bounty";
             BountyEnabled = Bind(config, bounty, "BountyEnabled", true,
@@ -279,6 +284,10 @@ namespace Deadheim.Pvp
                 "Teto de moedas que cada jogador pode colocar em bounties por dia (dia UTC do servidor). O inventario e do " +
                 "cliente: o servidor confia no valor que ele diz ter pago, entao o teto limita o que um cliente modificado " +
                 "consegue por num pote sem pagar. Bounty de admin (paga pela casa) nao conta. 0 = sem teto.");
+            BountyAllyHours = Bind(config, bounty, "BountyAllyHours", 24f,
+                "A bounty nao paga quem e da guilda do alvo, nem quem foi da mesma guilda que ele nestas ultimas horas: " +
+                "o alvo nao entrega o pote a um amigo. So paga golpe final de jogador (queda ou fogo depois de um golpe " +
+                "nao). Nesses casos a bounty acaba e o pote fica com a casa. 0 = so a guilda de agora.");
 
             const string pve = "PvP - PvE permanente";
             PveEnabled = Bind(config, pve, "PveEnabled", true,

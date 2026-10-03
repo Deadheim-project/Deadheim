@@ -279,6 +279,12 @@ namespace Deadheim.Pvp
 
         // ------------------------------------------------------------------- morte
 
+        /// <summary>
+        /// O alvo morreu para um jogador: a bounty acaba. So paga golpe final de jogador e a quem nao
+        /// e (nem foi nas ultimas BountyAllyHours) da guilda do alvo; senao o alvo entregava o pote a um
+        /// amigo (morrer de queda logo depois de um golpe dele, ou para um da guilda). O pote nao pago
+        /// fica com a casa.
+        /// </summary>
         public static void OnDeath(PvpPeer victim, long killerId, string killerName, bool arena, PvpRules.DeathCause cause)
         {
             PvpBountyRecord bounty = Find(victim.PlayerId);
@@ -286,11 +292,33 @@ namespace Deadheim.Pvp
             if (arena && !PvpConfig.BountyArenaKillsCount.Value) return;
 
             int payout = Payout(bounty.pot);
+            string refusal = PayoutRefusal(victim, killerId, killerName, cause);
             Finish(bounty);
+            if (refusal != null)
+            {
+                PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> morreu, mas a bounty " +
+                                 $"nao paga: {refusal}. O pote fica com a casa.", true);
+                Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} sem pagamento a {killerName} ({killerId}): {refusal}; casa={bounty.pot}.");
+                return;
+            }
             PvpServer.PayCoins(killerId, killerName, payout, "Bounty de " + bounty.targetName);
             PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{killerName}</color> cacou <color=#ffb347>{bounty.targetName}</color> " +
                              $"e levou <color=#ffd700>{payout}</color> moedas!", true);
             Debug.Log($"[Deadheim PvP] Bounty paga: {killerName} ({killerId}) +{payout} por {bounty.targetName}; casa={bounty.pot - payout}.");
+        }
+
+        private static string PayoutRefusal(PvpPeer victim, long killerId, string killerName, PvpRules.DeathCause cause)
+        {
+            if (cause != PvpRules.DeathCause.PlayerDirect) return "o golpe final nao foi de jogador";
+            // Guilda dos dois na hora da morte (o servidor ja a guarda a cada 10 s; aqui, a de agora).
+            PvpPlayerRecord target = PvpServer.RefreshGuild(victim.PlayerId, victim.Name);
+            PvpPlayerRecord killer = PvpPeer.TryFindByPlayerId(killerId, out _)
+                ? PvpServer.RefreshGuild(killerId, killerName)
+                : PvpStore.Player(killerId, killerName);
+            double window = Math.Max(0d, PvpConfig.BountyAllyHours.Value) * 3600d;
+            return PvpPlayerRecord.SharedGuildWithin(killer, target, Now, window)
+                ? $"{killerName} e ou foi da guilda do alvo nas ultimas {PvpConfig.BountyAllyHours.Value:0.#} h"
+                : null;
         }
 
         // -------------------------------------------------------------------- tick

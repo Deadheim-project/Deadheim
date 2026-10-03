@@ -14,11 +14,13 @@ namespace Deadheim.Pvp
     /// </summary>
     internal static class PvpServer
     {
-        private static readonly Dictionary<string, double> _defenseRewardAt = new Dictionary<string, double>();
         private static readonly Dictionary<long, float> _pendingHello = new Dictionary<long, float>();
         private static float _nextTick;
 
         private static double Now => PvpState.Now;
+
+        /// <summary>Dia UTC do servidor (dias desde 1970), para os tetos diarios.</summary>
+        private static int Today => (int)Math.Floor(Now / 86400d);
 
         public static bool IsServer => ZNet.instance != null && ZNet.instance.IsServer();
 
@@ -420,19 +422,34 @@ namespace Deadheim.Pvp
             string item = PvpConfig.CastleRewardItem.Value;
             if (amount <= 0 || string.IsNullOrEmpty(item)) return;
 
-            string key = killerId + ":" + victim.PlayerId;
+            // Cooldown por par (defensor, invasor) e teto diario por defensor, os dois no PvpStore: o
+            // restart nao zera, e duas contas combinando "defesas" rendem no maximo o teto por dia (B7).
             double cooldown = PvpConfig.CastleRewardCooldownMinutes.Value * 60d;
-            if (_defenseRewardAt.TryGetValue(key, out double last) && Now - last < cooldown)
+            List<PvpDefenseRecord> defenses = PvpStore.Data.defenses;
+            defenses.RemoveAll(d => Now - d.at >= cooldown);
+            PvpDefenseRecord last = defenses.Find(d => d.killer == killerId && d.victim == victim.PlayerId);
+            bool online = PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer);
+            if (last != null)
             {
-                if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer peer))
-                    PvpNet.Message(peer.PeerId, $"{victim.Name} ja rendeu recompensa de defesa ha pouco tempo.", false);
+                if (online) PvpNet.Message(killerPeer.PeerId, $"{victim.Name} ja rendeu recompensa de defesa ha pouco tempo.", false);
                 return;
             }
-            _defenseRewardAt[key] = Now;
 
-            if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer))
-                SendReward(killerPeer.PeerId, item, amount, $"Defesa do castelo {castle} ({biome})");
-            Debug.Log($"[Deadheim PvP] Recompensa de defesa: {killerName} +{amount} {item} ({biome}, castelo {castle}).");
+            PvpPlayerRecord defender = PvpStore.Player(killerId, killerName);
+            int cap = Math.Max(0, PvpConfig.CastleRewardDailyCap.Value);
+            int granted = defender.TakeCastleReward(Today, amount, cap);
+            defenses.Add(new PvpDefenseRecord { killer = killerId, victim = victim.PlayerId, at = Now });
+            PvpStore.SaveNow();
+            if (granted <= 0)
+            {
+                if (online) PvpNet.Message(killerPeer.PeerId, $"Teto de recompensa de defesa de hoje atingido ({cap} {item}).", false);
+                Debug.Log($"[Deadheim PvP] Recompensa de defesa de {killerName} por {victim.Name} barrada pelo teto diario ({cap}).");
+                return;
+            }
+
+            if (online) SendReward(killerPeer.PeerId, item, granted, $"Defesa do castelo {castle} ({biome})");
+            Debug.Log($"[Deadheim PvP] Recompensa de defesa: {killerName} +{granted} {item} ({biome}, castelo {castle}); " +
+                      $"hoje {defender.castleRewardToday}" + (cap > 0 ? "/" + cap : string.Empty) + ".");
         }
 
         public static void SendReward(long peerId, string prefab, int amount, string reason)
@@ -770,7 +787,6 @@ namespace Deadheim.Pvp
                 if (IsServer) PvpStore.Unload();
                 PvpBounty.Reset();
                 _pendingHello.Clear();
-                _defenseRewardAt.Clear();
                 _pendingDeaths.Clear();
                 _lastDeathAt.Clear();
                 _seen.Clear();

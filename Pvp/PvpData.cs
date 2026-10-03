@@ -43,6 +43,10 @@ namespace Deadheim.Pvp
         /// <summary>Guilda anterior e ate quando (segundos UTC do servidor) ele foi dela.</summary>
         public string prevGuild;
         public double prevGuildUntil;
+        /// <summary>Dia (UTC do servidor) do contador castleRewardToday.</summary>
+        public int castleRewardDay;
+        /// <summary>Recompensa de defesa de castelo ja recebida no dia castleRewardDay (CastleRewardDailyCap).</summary>
+        public int castleRewardToday;
 
         public float Ratio => deaths <= 0 ? kills : (float)kills / deaths;
 
@@ -61,6 +65,24 @@ namespace Deadheim.Pvp
             }
             guild = guildNow;
             return true;
+        }
+
+        /// <summary>
+        /// Recompensa de defesa de castelo dentro do teto diario (<paramref name="cap"/> 0 = sem teto):
+        /// devolve quanto pode ser pago agora (ate <paramref name="amount"/>, 0 se o teto ja foi) e conta.
+        /// Dia novo zera o contador.
+        /// </summary>
+        public int TakeCastleReward(int day, int amount, int cap)
+        {
+            if (castleRewardDay != day)
+            {
+                castleRewardDay = day;
+                castleRewardToday = 0;
+            }
+            if (amount <= 0) return 0;
+            int granted = cap > 0 ? Math.Min(amount, Math.Max(0, cap - castleRewardToday)) : amount;
+            castleRewardToday += granted;
+            return granted;
         }
 
         /// <summary>Guildas do jogador agora e nas ultimas <paramref name="windowSeconds"/> (a anterior, se saiu ha pouco).</summary>
@@ -119,6 +141,17 @@ namespace Deadheim.Pvp
             pkStreak = 0;
             pkPenalty = 0;
         }
+    }
+
+    /// <summary>
+    /// Ultima recompensa de defesa de castelo que <see cref="victim"/> rendeu a <see cref="killer"/>
+    /// (segundos UTC do servidor). Gravada para o CastleRewardCooldownMinutes sobreviver ao restart.
+    /// </summary>
+    internal sealed class PvpDefenseRecord
+    {
+        public long killer;
+        public long victim;
+        public double at;
     }
 
     internal sealed class PvpBountyContribution
@@ -189,6 +222,7 @@ namespace Deadheim.Pvp
         public int version = PvpStoreFormat.Version;
         public List<PvpPlayerRecord> players = new List<PvpPlayerRecord>();
         public List<PvpBountyRecord> bounties = new List<PvpBountyRecord>();
+        public List<PvpDefenseRecord> defenses = new List<PvpDefenseRecord>();
     }
 
     /// <summary>
@@ -219,7 +253,8 @@ namespace Deadheim.Pvp
                     "combatLogPending", B(p.combatLogPending), "pendingCoins", I(p.pendingCoins),
                     "pvePermanent", B(p.pvePermanent), "pveSince", D(p.pveSince),
                     "bountyPaidDay", I(p.bountyPaidDay), "bountyPaidToday", I(p.bountyPaidToday),
-                    "guild", S(p.guild), "prevGuild", S(p.prevGuild), "prevGuildUntil", D(p.prevGuildUntil));
+                    "guild", S(p.guild), "prevGuild", S(p.prevGuild), "prevGuildUntil", D(p.prevGuildUntil),
+                    "castleRewardDay", I(p.castleRewardDay), "castleRewardToday", I(p.castleRewardToday));
 
             foreach (PvpBountyRecord b in data.bounties)
             {
@@ -229,6 +264,9 @@ namespace Deadheim.Pvp
                 foreach (PvpBountyContribution c in b.contributions)
                     Line(text, "contrib", "target", L(b.targetId), "id", L(c.id), "name", S(c.name), "amount", I(c.amount));
             }
+
+            foreach (PvpDefenseRecord d in data.defenses)
+                Line(text, "defense", "killer", L(d.killer), "victim", L(d.victim), "at", D(d.at));
             return text.ToString();
         }
 
@@ -284,6 +322,8 @@ namespace Deadheim.Pvp
                             guild = NullIfEmpty(GetString(f, "guild")),
                             prevGuild = NullIfEmpty(GetString(f, "prevGuild")),
                             prevGuildUntil = GetDouble(f, "prevGuildUntil"),
+                            castleRewardDay = GetInt(f, "castleRewardDay"),
+                            castleRewardToday = GetInt(f, "castleRewardToday"),
                         });
                         break;
                     }
@@ -315,6 +355,15 @@ namespace Deadheim.Pvp
                             name = GetString(f, "name") ?? string.Empty,
                             amount = GetInt(f, "amount"),
                         });
+                        break;
+                    }
+
+                    case "defense":
+                    {
+                        long killer = GetLong(f, "killer");
+                        long victim = GetLong(f, "victim");
+                        if (killer == 0L || victim == 0L) { skipped++; break; }
+                        data.defenses.Add(new PvpDefenseRecord { killer = killer, victim = victim, at = GetDouble(f, "at") });
                         break;
                     }
 
