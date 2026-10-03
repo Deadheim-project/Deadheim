@@ -1,3 +1,4 @@
+using Deadheim.Shared;
 using Deadheim.Vanilla;
 using HarmonyLib;
 using System;
@@ -187,7 +188,10 @@ namespace Deadheim.Pvp
 
             Player player = Player.m_localPlayer;
             string action = args.Length > 1 ? args[1].ToLowerInvariant() : "zona";
-            float minutes = args.Length > 2 && float.TryParse(args[2], out float value) ? value : 1f;
+            // Minutos com ponto ou virgula, sem depender do idioma do Windows ("1.5" virava 15 em pt-BR).
+            // Sem numero nao ha padrao: "/pvpadmin pk Fulano" marcava o proprio admin por 1 min.
+            float minutes = 0f;
+            bool hasMinutes = args.Length > 2 && Numeros.TryLer(args[2], out minutes);
 
             switch (action)
             {
@@ -204,6 +208,7 @@ namespace Deadheim.Pvp
                     break;
                 }
                 case "imune":
+                    if (!hasMinutes) { context.AddString("pvpadmin imune <minutos> (0 tira a imunidade)"); break; }
                     PvpState.GrantImmunity(player, minutes * 60d);
                     context.AddString($"Imune por {minutes} min.");
                     break;
@@ -215,6 +220,11 @@ namespace Deadheim.Pvp
                 case "pk":
                 {
                     // /pvpadmin pk <min> [jogador]: o servidor marca (min > 0), torna permanente (-1) ou limpa (0).
+                    if (!hasMinutes)
+                    {
+                        context.AddString("pvpadmin pk <minutos> [jogador]: minutos > 0 marca, 0 limpa, -1 permanente. Sem jogador, e voce.");
+                        break;
+                    }
                     string target = args.Length > 3 ? string.Join(" ", args.Args, 3, args.Length - 3) : string.Empty;
                     PvpClient.SendAdmin("pk", target, minutes);
                     context.AddString($"PK de {(target.Length > 0 ? target : "voce")}: " +
