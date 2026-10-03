@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="..\..\Pvp\PvpData.cs" />
+    <Compile Include="..\..\Shared\Numeros.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />

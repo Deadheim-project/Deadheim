@@ -2,6 +2,7 @@
 // gravava so o "version" e perdia jogadores e bounties a cada restart: aqui o arquivo vai e
 // volta campo por campo.
 using Deadheim.Pvp;
+using Deadheim.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -162,6 +163,24 @@ internal static class Program
         Check("entrega/parte-cabe-resto-no-chao", half.Total == 100 && dropped == 75 && ground.Sum() == 75 && ground.All(n => n <= 50),
             $"inventario={half.Total} chao={string.Join("+", ground)}");
         Check("entrega/nada-a-entregar", PvpCoinMath.Deliver(0, 50, n => n, n => throw new Exception("nao devia cair")) == 0);
+
+        // B5/B6: numero gravado com ponto e lido com ponto ou virgula, em qualquer idioma do Windows.
+        System.Globalization.CultureInfo original = System.Globalization.CultureInfo.CurrentCulture;
+        foreach (string culture in new[] { "pt-BR", "en-US", "de-DE" })
+        {
+            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(culture);
+            Check($"numero/{culture}/ponto", Numeros.TryLer("1.5", out float a) && a == 1.5f, a.ToString());
+            Check($"numero/{culture}/virgula", Numeros.TryLer("1,5", out float b) && b == 1.5f, b.ToString());
+            Check($"numero/{culture}/escreve-com-ponto", Numeros.Escrever(-123.45f) == "-123.45", Numeros.Escrever(-123.45f));
+            Check($"numero/{culture}/ida-e-volta", Numeros.TryLer(Numeros.Escrever(1234.5678f), out float c) && c == 1234.5678f);
+            // Coordenada gravada pelo formato antigo com a cultura do PC (ToString() sem cultura) num Windows pt-BR.
+            Check($"numero/{culture}/coordenada-antiga-pt-br", Numeros.TryLer("-1234,56", out float d) && Math.Abs(d - -1234.56f) < 0.001f, d.ToString());
+        }
+        System.Threading.Thread.CurrentThread.CurrentCulture = original;
+        Check("numero/inteiro", Numeros.TryLer(" 30 ", out float e) && e == 30f);
+        Check("numero/negativo-permanente", Numeros.TryLer("-1", out float f) && f == -1f);
+        Check("numero/nome-nao-e-numero", !Numeros.TryLer("Fulano", out _) && !Numeros.TryLer("", out _) && !Numeros.TryLer(null, out _));
+        Check("numero/nan-e-infinito-recusados", !Numeros.TryLer("NaN", out _) && !Numeros.TryLer("Infinity", out _));
 
         Console.WriteLine($"DONE pass={_pass} fail={_fail}");
         return _fail == 0 ? 0 : 1;

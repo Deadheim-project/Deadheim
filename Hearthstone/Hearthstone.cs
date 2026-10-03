@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
+using Deadheim.Shared;
 using HarmonyLib;
 using ItemManager;
 using ServerSync;
@@ -101,17 +102,23 @@ namespace Hearthstone
 		public static Vector3 GetHearthStonePosition()
 		{
 			// Verifica se o dicionário customData tem a chave antes de tentar ler
-			if (Player.m_localPlayer == null || !Player.m_localPlayer.m_customData.ContainsKey("positionX"))
+			Player player = Player.m_localPlayer;
+			if (player == null
+				|| !player.m_customData.TryGetValue("positionX", out string rawX)
+				|| !player.m_customData.TryGetValue("positionY", out string rawY)
+				|| !player.m_customData.TryGetValue("positionZ", out string rawZ))
 			{
 				return Vector3.zero;
 			}
 
-			Vector3 vector = default(Vector3);
-			vector.x = float.Parse(Player.m_localPlayer.m_customData["positionX"]);
-			vector.y = float.Parse(Player.m_localPlayer.m_customData["positionY"]);
-			vector.z = float.Parse(Player.m_localPlayer.m_customData["positionZ"]);
-
-			return vector;
+			// Ponto ou virgula: o formato antigo gravava com a cultura do PC, e o mesmo personagem
+			// (ServerCharacters) aberto num Windows de outro idioma lia "123,45" como 12345.
+			if (!Numeros.TryLer(rawX, out float x) || !Numeros.TryLer(rawY, out float y) || !Numeros.TryLer(rawZ, out float z))
+			{
+				Debug.LogWarning($"[Hearthstone] Ponto de retorno ilegivel ({rawX}; {rawY}; {rawZ}): defina de novo na cama.");
+				return Vector3.zero;
+			}
+			return new Vector3(x, y, z);
 		}
 
 		public static void SetHearthStonePosition()
@@ -121,9 +128,10 @@ namespace Hearthstone
 			Vector3 position = Player.m_localPlayer.transform.position;
 
 			// Grava diretamente no m_customData (cria a chave se não existir, atualiza se existir)
-			Player.m_localPlayer.m_customData["positionX"] = position.x.ToString();
-			Player.m_localPlayer.m_customData["positionY"] = position.y.ToString();
-			Player.m_localPlayer.m_customData["positionZ"] = position.z.ToString();
+			// Sempre com ponto (InvariantCulture): o mesmo valor vale em qualquer idioma do Windows.
+			Player.m_localPlayer.m_customData["positionX"] = Numeros.Escrever(position.x);
+			Player.m_localPlayer.m_customData["positionY"] = Numeros.Escrever(position.y);
+			Player.m_localPlayer.m_customData["positionZ"] = Numeros.Escrever(position.z);
 		}
 	}
 }

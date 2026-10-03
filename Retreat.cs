@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using Deadheim.Shared;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,19 +9,27 @@ namespace Deadheim
     [HarmonyPatch]
     public class Retreat
     {
+        /// <summary>
+        /// Ponto de retorno (o mesmo da pedra do mod Hearthstone: chaves positionX/Y/Z). Lido com
+        /// ponto ou virgula: o formato antigo gravava com a cultura do PC, e o personagem no
+        /// servidor (ServerCharacters) aberto num Windows de outro idioma lia "123,45" como 12345.
+        /// Ilegivel = sem ponto.
+        /// </summary>
         public static Vector3 GetHearthStonePosition()
         {
-            if (Player.m_localPlayer == null || !Player.m_localPlayer.m_customData.ContainsKey("positionX"))
+            Player player = Player.m_localPlayer;
+            if (player == null
+                || !player.m_customData.TryGetValue("positionX", out string rawX)
+                || !player.m_customData.TryGetValue("positionY", out string rawY)
+                || !player.m_customData.TryGetValue("positionZ", out string rawZ))
+                return Vector3.zero;
+
+            if (!Numeros.TryLer(rawX, out float x) || !Numeros.TryLer(rawY, out float y) || !Numeros.TryLer(rawZ, out float z))
             {
+                Debug.LogWarning($"[Deadheim] Ponto de retreat ilegivel ({rawX}; {rawY}; {rawZ}): defina de novo na cama.");
                 return Vector3.zero;
             }
-
-            return new Vector3
-            {
-                x = float.Parse(Player.m_localPlayer.m_customData["positionX"]),
-                y = float.Parse(Player.m_localPlayer.m_customData["positionY"]),
-                z = float.Parse(Player.m_localPlayer.m_customData["positionZ"])
-            };
+            return new Vector3(x, y, z);
         }
 
 		[HarmonyPatch(typeof(Terminal), nameof(Terminal.InitTerminal))]
@@ -62,8 +71,12 @@ namespace Deadheim
                         return;
                     }
 
-                    Player.m_localPlayer.TeleportTo(teleportPosition, Player.m_localPlayer.transform.rotation, true);
-                    Pvp.PvpModule.MarkRetreatUsed(Player.m_localPlayer);
+                    // TeleportTo devolve false se ja estiver teleportando, na recarga do vanilla ou se o
+                    // PvP recusar: a recarga do retreat so conta quando o teleporte sai (B3).
+                    if (Player.m_localPlayer.TeleportTo(teleportPosition, Player.m_localPlayer.transform.rotation, true))
+                        Pvp.PvpModule.MarkRetreatUsed(Player.m_localPlayer);
+                    else
+                        args.Context.AddString("O teleporte nao saiu agora; tente de novo em instantes.");
 
                 }));			
 			}
@@ -101,9 +114,9 @@ namespace Deadheim
             if (Player.m_localPlayer == null) return;
 
             Vector3 position = Player.m_localPlayer.transform.position;
-            Player.m_localPlayer.m_customData["positionX"] = position.x.ToString();
-            Player.m_localPlayer.m_customData["positionY"] = position.y.ToString();
-            Player.m_localPlayer.m_customData["positionZ"] = position.z.ToString();
+            Player.m_localPlayer.m_customData["positionX"] = Numeros.Escrever(position.x);
+            Player.m_localPlayer.m_customData["positionY"] = Numeros.Escrever(position.y);
+            Player.m_localPlayer.m_customData["positionZ"] = Numeros.Escrever(position.z);
         }
     }
 }

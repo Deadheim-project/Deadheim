@@ -50,6 +50,7 @@
          nenhuma compilacao pega, so aparece com um cliente conectado. -->
     <Compile Include="ThirdParty\ConfigSync.cs" />
     <Compile Include="Shared\ConfigWatcher.cs" />
+    <Compile Include="Shared\Numeros.cs" />
     <Compile Include="Hearthstone\Hearthstone.cs" />
     <Compile Include="Hearthstone\Patches.cs" />
   </ItemGroup>

@@ -149,6 +149,8 @@
     <!-- ServerSync do fonte: sincroniza a config de servidor e confere a versao do cliente. -->
     <Compile Include="ThirdParty\ConfigSync.cs" />
     <Compile Include="Shared\ConfigWatcher.cs" />
+    <!-- Numero gravado com ponto e lido com ponto ou virgula (retreat, /pvpadmin). Tambem no Hearthstone. -->
+    <Compile Include="Shared\Numeros.cs" />
     <Compile Include="Portal.cs" />
     <!-- Item do servidor para o jogador local sem duplicar nem sumir. Publico: o RaidSystem usa. -->
     <Compile Include="Entrega.cs" />
