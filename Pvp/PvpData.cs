@@ -112,6 +112,37 @@ namespace Deadheim.Pvp
         /// </summary>
         public static int BountyRefund(int taken, int kept)
             => Math.Max(0, taken - Math.Min(Math.Max(0, kept), Math.Max(0, taken)));
+
+        /// <summary>
+        /// Entrega <paramref name="amount"/> unidades em pedacos de no maximo <paramref name="maxStack"/>.
+        /// <paramref name="tryAdd"/>(n) poe ate n no inventario e devolve quanto entrou DE FATO: o
+        /// AddItem do jogo completa primeiro as pilhas que ja existem e, sem espaco livre, devolve
+        /// false com essa parte ja dentro. Jogar o pedaco inteiro no chao duplicava (M1); confiar no
+        /// CanAddItem e mandar tudo num AddItem(prefab, n) cortava na pilha e sumia o resto (M2).
+        /// O que nao entrou vai para <paramref name="drop"/>(n), em pilhas de no maximo maxStack.
+        /// Devolve quanto foi para o chao.
+        /// </summary>
+        public static int Deliver(int amount, int maxStack, Func<int, int> tryAdd, Action<int> drop)
+        {
+            if (amount <= 0) return 0;
+            maxStack = Math.Max(1, maxStack);
+            int left = amount;
+            while (left > 0)
+            {
+                int chunk = Math.Min(left, maxStack);
+                int added = Math.Max(0, Math.Min(chunk, tryAdd(chunk)));
+                left -= added;
+                if (added < chunk) break;
+            }
+            int dropped = left;
+            while (left > 0)
+            {
+                int pile = Math.Min(left, maxStack);
+                drop(pile);
+                left -= pile;
+            }
+            return dropped;
+        }
     }
 
     internal sealed class PvpStoreData

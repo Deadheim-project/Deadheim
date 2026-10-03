@@ -3,6 +3,7 @@
 // volta campo por campo.
 using Deadheim.Pvp;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 internal static class Program
@@ -15,6 +16,36 @@ internal static class Program
         if (ok) _pass++;
         else _fail++;
         Console.WriteLine((ok ? "PASS " : "FAIL ") + name + (ok || detail.Length == 0 ? "" : "  (" + detail + ")"));
+    }
+
+    /// <summary>
+    /// Inventario de mentira com a regra do Inventory.AddItem do jogo: completa as pilhas que ja
+    /// existem e depois ocupa um slot vazio; sem slot, para no meio com a parte ja dentro.
+    /// </summary>
+    private sealed class FakeInventory
+    {
+        public int Slots;
+        public int MaxStack;
+        public readonly List<int> Stacks = new List<int>();
+        public int Total => Stacks.Sum();
+
+        public int Add(int n)
+        {
+            int added = 0;
+            for (int i = 0; i < Stacks.Count && added < n; i++)
+            {
+                int put = Math.Min(MaxStack - Stacks[i], n - added);
+                Stacks[i] += put;
+                added += put;
+            }
+            while (added < n && Stacks.Count < Slots)
+            {
+                int put = Math.Min(MaxStack, n - added);
+                Stacks.Add(put);
+                added += put;
+            }
+            return added;
+        }
     }
 
     private static int Main()
@@ -98,6 +129,39 @@ internal static class Program
         Check("teto/dia-novo-zera", payer.TryAddBountyPaid(101, 3000, 10000, out int left4) && left4 == 7000 && payer.bountyPaidDay == 101 && payer.bountyPaidToday == 3000);
         Check("teto/zero-e-sem-teto", payer.TryAddBountyPaid(101, 1000000, 0, out _) && payer.bountyPaidToday == 1003000);
         Check("teto/valor-invalido-recusado", !payer.TryAddBountyPaid(101, 0, 0, out _) && !payer.TryAddBountyPaid(101, -10, 10000, out _));
+
+        // M1: pagamento com o inventario sem slot livre e uma pilha de 4000/5000. Antes, 1000 entravam
+        // na pilha e o pedaco inteiro (5000) caia no chao: 1000 moedas duplicadas.
+        FakeInventory full = new FakeInventory { Slots = 1, MaxStack = 5000 };
+        full.Stacks.Add(4000);
+        List<int> ground = new List<int>();
+        int dropped = PvpCoinMath.Deliver(6000, 5000, full.Add, ground.Add);
+        Check("entrega/inventario-cheio-nao-duplica", full.Total == 5000 && dropped == 5000 && ground.Sum() == 5000
+                                                     && full.Total + ground.Sum() == 4000 + 6000,
+            $"inventario={full.Total} chao={string.Join("+", ground)}");
+
+        // M2: 9 cargas de tier 1 = 135 RoundLog com pilha de 50. Antes AddItem(prefab, 135) punha 50 e 85 sumiam.
+        FakeInventory roomy = new FakeInventory { Slots = 40, MaxStack = 50 };
+        ground.Clear();
+        dropped = PvpCoinMath.Deliver(135, 50, roomy.Add, ground.Add);
+        Check("entrega/mais-que-uma-pilha-entra-inteiro", roomy.Total == 135 && dropped == 0 && ground.Count == 0
+                                                         && roomy.Stacks.SequenceEqual(new[] { 50, 50, 35 }),
+            $"pilhas={string.Join(",", roomy.Stacks)}");
+
+        // Sem espaco nenhum: tudo no chao, em pilhas de no maximo uma pilha do item.
+        FakeInventory none = new FakeInventory { Slots = 0, MaxStack = 5000 };
+        ground.Clear();
+        dropped = PvpCoinMath.Deliver(12000, 5000, none.Add, ground.Add);
+        Check("entrega/sem-espaco-tudo-no-chao-em-pilhas", dropped == 12000 && ground.SequenceEqual(new[] { 5000, 5000, 2000 }),
+            string.Join(",", ground));
+
+        // Cabe uma parte: o resto vai inteiro para o chao, nada some.
+        FakeInventory half = new FakeInventory { Slots = 2, MaxStack = 50 };
+        ground.Clear();
+        dropped = PvpCoinMath.Deliver(175, 50, half.Add, ground.Add);
+        Check("entrega/parte-cabe-resto-no-chao", half.Total == 100 && dropped == 75 && ground.Sum() == 75 && ground.All(n => n <= 50),
+            $"inventario={half.Total} chao={string.Join("+", ground)}");
+        Check("entrega/nada-a-entregar", PvpCoinMath.Deliver(0, 50, n => n, n => throw new Exception("nao devia cair")) == 0);
 
         Console.WriteLine($"DONE pass={_pass} fail={_fail}");
         return _fail == 0 ? 0 : 1;

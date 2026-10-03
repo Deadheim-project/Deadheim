@@ -93,7 +93,10 @@ namespace Deadheim.Pvp
             Debug.Log("[Deadheim PvP] " + text);
         }
 
-        /// <summary>Recompensa no inventario; o que nao couber cai no chao, aos pes.</summary>
+        /// <summary>
+        /// Recompensa no inventario; o que nao couber cai no chao, aos pes (Entrega). O AddItem do
+        /// jogo completa pilhas e pode parar no meio: jogar o pedaco inteiro no chao duplicava moeda.
+        /// </summary>
         public static void GiveReward(string prefabName, int amount, string reason)
         {
             Player player = Player.m_localPlayer;
@@ -107,20 +110,8 @@ namespace Deadheim.Pvp
                 return;
             }
 
-            int left = amount;
-            int maxStack = Mathf.Max(1, drop.m_itemData.m_shared.m_maxStackSize);
-            Inventory inventory = player.GetInventory();
-            while (left > 0)
-            {
-                int chunk = Mathf.Min(left, maxStack);
-                if (!inventory.AddItem(prefab, chunk))
-                {
-                    ItemDrop dropped = UnityEngine.Object.Instantiate(prefab,
-                        player.transform.position + player.transform.forward + Vector3.up, Quaternion.identity).GetComponent<ItemDrop>();
-                    if (dropped != null) dropped.SetStack(chunk);
-                }
-                left -= chunk;
-            }
+            int onGround = Entrega.ParaJogador(player, prefab, amount);
+            if (onGround > 0) Debug.Log($"[Deadheim PvP] Inventario cheio: {onGround} de {amount} {prefabName} cairam no chao.");
 
             string itemName = Localization.instance != null
                 ? Localization.instance.Localize(drop.m_itemData.m_shared.m_name)

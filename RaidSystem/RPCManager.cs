@@ -237,29 +237,14 @@ namespace RaidSystem
                     ? ObjectDB.instance.GetItemPrefab(prefabName) : null;
                 if (prefab == null) continue;
 
-                // O que nao couber cai no chao, nunca some.
-                if (lp.GetInventory().CanAddItem(prefab, amount))
-                    lp.GetInventory().AddItem(prefab, amount);
-                else
-                    DropOnGround(lp, prefab, amount);
-
-                received.Add($"{amount}x {prefabName}");
+                // O que nao couber cai no chao, em pilhas. AddItem(prefab, n) corta em uma pilha
+                // (9 cargas de tier 1 = ~135 RoundLog, pilha de 50: 85 sumiam).
+                int onGround = Deadheim.Entrega.ParaJogador(lp, prefab, amount);
+                received.Add($"{amount}x {prefabName}" + (onGround > 0 ? $" ({onGround} no chao)" : string.Empty));
             }
 
             lp.Message(MessageHud.MessageType.Center,
                 received.Count > 0 ? "Tributo: " + string.Join(", ", received) : "Nada a resgatar.");
-        }
-
-        private static void DropOnGround(Player player, GameObject prefab, int amount)
-        {
-            Vector3 pos = player.transform.position + player.transform.forward * 1.5f + Vector3.up;
-            GameObject go = UnityEngine.Object.Instantiate(prefab, pos, Quaternion.identity);
-            ItemDrop drop = go.GetComponent<ItemDrop>();
-            if (drop != null && drop.m_itemData != null)
-            {
-                drop.m_itemData.m_stack = Mathf.Min(amount, drop.m_itemData.m_shared.m_maxStackSize);
-                drop.Save();
-            }
         }
 
         public static void SendPlayerRegistration(string desc = "")
