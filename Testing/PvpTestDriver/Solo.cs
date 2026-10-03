@@ -218,6 +218,23 @@ namespace PvpTestDriver
         private void IStrikeDummy(float damage)
             => _dummy.m_nview.InvokeRPC("RPC_Damage", HitFrom(Me, _dummy, damage));
 
+        /// <summary>
+        /// O jogador local golpeia o Dummy pelo caminho de um golpe de verdade (T1). Primeiro o filtro
+        /// que o vanilla aplica em Attack (corpo a corpo), Projectile e Aoe antes de o golpe sair:
+        /// atacante jogador com PvP desligado so acerta inimigo, pelo BaseAI.IsEnemy (que o Deadheim
+        /// patcheia para o protegido alcancar PK e cacado). Depois Character.Damage, onde roda a
+        /// checagem do atacante (AttackerDamagePatch), e so entao o RPC. Devolve false se o vanilla
+        /// nem deixaria o golpe sair. O IStrikeDummy pelo RPC pulava tudo isso e passava mesmo com o
+        /// recurso quebrado no jogo.
+        /// </summary>
+        private bool IStrikeDummyAsAttacker(float damage)
+        {
+            // A mesma condicao de Attack.cs e Projectile.cs para o alvo ser pulado.
+            if (Me.IsPlayer() && !Me.IsPVPEnabled() && !BaseAI.IsEnemy(Me, _dummy)) return false;
+            _dummy.Damage(HitFrom(Me, _dummy, damage));
+            return true;
+        }
+
         private void Heal()
         {
             Me.SetHealth(Me.GetMaxHealth());
@@ -572,6 +589,22 @@ namespace PvpTestDriver
             yield return ExpectDummyDamage("zona-segura/protegido-nao-ataca", before, 0f);
             Check("zona-segura/atacante-recusa", PvpRules.Check(Me, _dummy) == PvpRules.Verdict.AttackerProtected,
                 PvpRules.Check(Me, _dummy).ToString());
+            // E pelo caminho do atacante: o vanilla nem deixa o golpe sair (PvP desligado, alvo nao e inimigo).
+            before = _dummy.GetHealth();
+            Check("zona-segura/vanilla-pula-o-golpe", !IStrikeDummyAsAttacker(Hit));
+            yield return ExpectDummyDamage("zona-segura/protegido-nao-ataca-pelo-atacante", before, 0f);
+
+            // Protegido alcanca o PK (PkNoSafeZone) por um golpe de verdade: o filtro do vanilla so deixa
+            // porque o BaseAI.IsEnemy diz que o PK e inimigo do jogador local (A2).
+            SetDummy(true, PvpFlags.Pk);
+            yield return Wait(0.3f);
+            before = _dummy.GetHealth();
+            bool sent = IStrikeDummyAsAttacker(Hit);
+            Check("zona-segura/protegido-alcanca-pk", sent && BaseAI.IsEnemy(Me, _dummy), $"golpe={sent} meuPvp={Me.IsPVPEnabled()}");
+            yield return ExpectDummyDamage("zona-segura/protegido-fere-pk", before, Hit * PvpConfig.DamageMultiplier.Value);
+            SetDummy(true, PvpFlags.None);
+            // Bater no PK pos o jogador em combate: o resto do roteiro conta com ele protegido de novo.
+            yield return Wait(CombatWait);
         }
 
         private IEnumerator SoloAttackerProtected()
@@ -727,6 +760,9 @@ namespace PvpTestDriver
             float before = _dummy.GetHealth();
             IStrikeDummy(Hit);
             yield return ExpectDummyDamage("imunidade/nao-causa", before, 0f);
+            before = _dummy.GetHealth();
+            Check("imunidade/vanilla-pula-o-golpe", !IStrikeDummyAsAttacker(Hit));
+            yield return ExpectDummyDamage("imunidade/nao-causa-pelo-atacante", before, 0f);
         }
 
         private IEnumerator SoloPk()
@@ -1028,6 +1064,10 @@ namespace PvpTestDriver
             float before = _dummy.GetHealth();
             IStrikeDummy(Hit);
             yield return ExpectDummyDamage("chefes/fraco-nao-fere-forte", before, 0f);
+            // Pelo atacante: o golpe sai (PvP ligado), e o Character.Damage barra pela faixa.
+            before = _dummy.GetHealth();
+            IStrikeDummyAsAttacker(Hit);
+            yield return ExpectDummyDamage("chefes/fraco-nao-fere-forte-pelo-atacante", before, 0f);
 
             SetDummyTier(1);
             yield return Wait(0.3f);

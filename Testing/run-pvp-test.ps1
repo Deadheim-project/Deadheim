@@ -68,6 +68,8 @@ $deadheimDll = Join-Path $repo 'bin\Release\Deadheim.dll'
 $vipDll = Join-Path $repo 'bin\Release\VipList.dll'
 $driverDll = Join-Path $PSScriptRoot 'PvpTestDriver\bin\Release\PvpTestDriver.dll'
 $raidDll = Join-Path $repo 'bin\Release\RaidSystem.dll'
+# A pedra do Hearthstone: o passo retreat consome a pedra de verdade (o bloqueio em luta depende dos dois mods).
+$hearthDll = Join-Path $repo 'bin\Release\Hearthstone.dll'
 
 # Terceiros do pacote PvP achados no perfil do launcher.
 $packDlls = @()
@@ -82,7 +84,7 @@ $antiCheat = $packDlls | Where-Object { (Split-Path $_ -Leaf) -eq 'AzuAnticheat.
 $castleOffset = 53
 $castleRadius = 30
 
-foreach ($f in @($deadheimDll, $vipDll, $driverDll, $raidDll, $GuildsDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
+foreach ($f in @($deadheimDll, $vipDll, $driverDll, $raidDll, $hearthDll, $GuildsDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
     if (-not (Test-Path $f)) { throw "Nao encontrei $f" }
 }
 
@@ -235,10 +237,10 @@ $prefsBackup = "$Root\valheim-prefs.reg"
 try {
     # ------------------------------------------------------------ servidor: mundo e templo
     Write-Step "Montando arvores BepInEx em $Root"
-    New-BepInExTree "$Root\server" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll) + $packDlls)
-    New-BepInExTree "$Root\clientA" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll) + $packDlls)
-    New-BepInExTree "$Root\clientB" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll) + $packDlls)
-    New-BepInExTree "$Root\clientS" (@($deadheimDll, $vipDll, $raidDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\server" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll) + $packDlls)
+    New-BepInExTree "$Root\clientA" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\clientB" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\clientS" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
     if ($antiCheat) {
         # AzuAntiCheat: a whitelist do servidor e o espelho das pastas de plugin do cliente.
         $whitelist = "$Root\server\BepInEx\config\AzuAntiCheat_Whitelist"

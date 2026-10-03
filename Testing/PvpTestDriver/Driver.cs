@@ -855,8 +855,59 @@ namespace PvpTestDriver
                 PvpModule.MarkRetreatUsed(Me);
                 refusal = PvpModule.RetreatRefusal(Me);
                 Check("retreat/cooldown", refusal != null && refusal.Contains("recarga"), refusal);
+                Check("retreat/recarga-gravada-como-tempo-restante", Me.m_customData.ContainsKey("dh_retreatLeft")
+                                                                     && !Me.m_customData.ContainsKey("dh_retreatAt"));
+                yield return HearthstoneStone();
             }
             yield break;
+        }
+
+        /// <summary>
+        /// A pedra do mod Hearthstone de verdade (T2): consumir o item com o mod carregado. Em luta
+        /// (com monstro ou com jogador) a pedra nao pode teleportar nem sumir: no HarmonyX o prefixo
+        /// do Hearthstone roda mesmo com o Deadheim recusando, e so nao gasta porque le
+        /// __runOriginal (A1). Fora de luta ela teleporta para o ponto e gasta uma.
+        /// </summary>
+        private IEnumerator HearthstoneStone()
+        {
+            GameObject prefab = ObjectDB.instance.GetItemPrefab("Hearthstone");
+            Check("pedra/mod-hearthstone-carregado", prefab != null);
+            if (prefab == null) yield break;
+            if (!Me.IsTeleportable(false))
+            {
+                Log("SKIP pedra: o inventario tem item que nao teleporta (o Hearthstone recusaria por isso, nao pela luta)");
+                yield break;
+            }
+
+            yield return Wait(CombatWait);
+            Vector3 home = Me.transform.position;
+            Deadheim.Retreat.SetHearthStonePosition();
+            yield return MoveTo(home + Vector3.forward * 30f);
+            string name = prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+            Me.GetInventory().AddItem(prefab, 2);
+            int stones = CountItem(Me, "Hearthstone");
+
+            foreach (bool pvp in new[] { false, true })
+            {
+                string what = pvp ? "combate-pvp" : "luta-com-monstro";
+                if (pvp) PvpState.MarkCombat();
+                else PvpState.MarkPveCombat();
+                Vector3 before = Me.transform.position;
+                bool used = Me.ConsumeItem(Me.GetInventory(), Me.GetInventory().GetItem(name));
+                yield return Wait(1.5f);
+                Check($"pedra/bloqueada-em-{what}", !used && !Me.IsTeleporting() && CountItem(Me, "Hearthstone") == stones
+                                                   && Utils.DistanceXZ(Me.transform.position, before) < 3f,
+                    $"usou={used} pedras={CountItem(Me, "Hearthstone")}/{stones} andou={Utils.DistanceXZ(Me.transform.position, before):0.0}");
+                yield return Wait(CombatWait);
+            }
+
+            bool went = Me.ConsumeItem(Me.GetInventory(), Me.GetInventory().GetItem(name));
+            float until = Time.time + 20f;
+            while (Time.time < until && (Me.IsTeleporting() || Utils.DistanceXZ(Me.transform.position, home) > 3f)) yield return Wait(0.5f);
+            Check("pedra/fora-de-luta-teleporta-e-gasta-uma", went && CountItem(Me, "Hearthstone") == stones - 1
+                                                             && Utils.DistanceXZ(Me.transform.position, home) < 3f,
+                $"usou={went} pedras={CountItem(Me, "Hearthstone")}/{stones} distancia={Utils.DistanceXZ(Me.transform.position, home):0.0}");
+            Me.GetInventory().RemoveItem(name, CountItem(Me, "Hearthstone"));
         }
 
         private IEnumerator Rank()
