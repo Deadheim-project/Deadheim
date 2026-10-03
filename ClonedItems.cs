@@ -41,6 +41,16 @@ namespace Deadheim
         };
 
         private static readonly Dictionary<string, GameObject> RegisteredNativeItems = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+
+        private static readonly HashSet<string> NativeItemNames =
+            new HashSet<string>(NativeItems.Select(definition => definition.PrefabName), StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Item criado aqui (tokens, Garantia de Refino, kits). Sao clones do Thunderstone, tipo
+        /// Material, e a maioria e comprada: a carga da morte por jogador nunca os leva.
+        /// </summary>
+        internal static bool IsNativeItem(string prefabName)
+            => !string.IsNullOrEmpty(prefabName) && NativeItemNames.Contains(prefabName);
         private static readonly string[] NativeItemBasePrefabs = { "Thunderstone", "Coins", "Amber", "Wood" };
         private static readonly MethodInfo UpdateObjectDbRegisters = AccessTools.Method(typeof(ObjectDB), "UpdateRegisters");
         private static readonly MethodInfo MemberwiseCloneMethod = AccessTools.Method(typeof(object), "MemberwiseClone");

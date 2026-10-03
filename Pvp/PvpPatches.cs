@@ -326,7 +326,8 @@ namespace Deadheim.Pvp
                     if (item?.m_shared == null || item.m_dropPrefab == null || item.m_stack <= 0) continue;
                     if (player.IsItemEquiped(item) || !types.Contains(item.m_shared.m_itemType)) continue;
                     string prefab = item.m_dropPrefab.name;
-                    if (prefab == "Coins" || keep.Contains(prefab)) continue;
+                    // Itens do Deadheim (tokens, Garantia, kits) sao Material mas nunca sao carga (M6).
+                    if (prefab == "Coins" || keep.Contains(prefab) || ClonedItems.IsNativeItem(prefab)) continue;
 
                     float exact = item.m_stack * percent / 100f;
                     int amount = Mathf.FloorToInt(exact);
