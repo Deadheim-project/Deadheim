@@ -38,8 +38,47 @@ namespace Deadheim.Pvp
         public int bountyPaidDay;
         /// <summary>Moedas que este jogador ja pos em bounties no dia bountyPaidDay (BountyDailyCapPerPlayer).</summary>
         public int bountyPaidToday;
+        /// <summary>Guilda em que o servidor viu o jogador por ultimo (null = sem guilda).</summary>
+        public string guild;
+        /// <summary>Guilda anterior e ate quando (segundos UTC do servidor) ele foi dela.</summary>
+        public string prevGuild;
+        public double prevGuildUntil;
 
         public float Ratio => deaths <= 0 ? kills : (float)kills / deaths;
+
+        /// <summary>
+        /// Guilda vista agora pelo servidor. Trocou: a de antes vira prevGuild ate <paramref name="now"/>.
+        /// Um "sem guilda" de passagem nao apaga a anterior. Devolve true se mudou.
+        /// </summary>
+        public bool UpdateGuild(string guildNow, double now)
+        {
+            if (string.IsNullOrEmpty(guildNow)) guildNow = null;
+            if (string.Equals(guild, guildNow, StringComparison.OrdinalIgnoreCase)) return false;
+            if (guild != null)
+            {
+                prevGuild = guild;
+                prevGuildUntil = now;
+            }
+            guild = guildNow;
+            return true;
+        }
+
+        /// <summary>Guildas do jogador agora e nas ultimas <paramref name="windowSeconds"/> (a anterior, se saiu ha pouco).</summary>
+        public IEnumerable<string> GuildsWithin(double now, double windowSeconds)
+        {
+            if (guild != null) yield return guild;
+            if (prevGuild != null && windowSeconds > 0d && now - prevGuildUntil <= windowSeconds) yield return prevGuild;
+        }
+
+        /// <summary>Os dois foram da mesma guilda agora ou dentro da janela.</summary>
+        public static bool SharedGuildWithin(PvpPlayerRecord a, PvpPlayerRecord b, double now, double windowSeconds)
+        {
+            if (a == null || b == null) return false;
+            foreach (string mine in a.GuildsWithin(now, windowSeconds))
+                foreach (string theirs in b.GuildsWithin(now, windowSeconds))
+                    if (string.Equals(mine, theirs, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
 
         /// <summary>
         /// Conta <paramref name="amount"/> moedas de bounty pagas hoje, se couber no teto diario
@@ -179,7 +218,8 @@ namespace Deadheim.Pvp
                     "pkPenalty", I(p.pkPenalty), "pkKills", I(p.pkKills), "bountyReadyAt", D(p.bountyReadyAt),
                     "combatLogPending", B(p.combatLogPending), "pendingCoins", I(p.pendingCoins),
                     "pvePermanent", B(p.pvePermanent), "pveSince", D(p.pveSince),
-                    "bountyPaidDay", I(p.bountyPaidDay), "bountyPaidToday", I(p.bountyPaidToday));
+                    "bountyPaidDay", I(p.bountyPaidDay), "bountyPaidToday", I(p.bountyPaidToday),
+                    "guild", S(p.guild), "prevGuild", S(p.prevGuild), "prevGuildUntil", D(p.prevGuildUntil));
 
             foreach (PvpBountyRecord b in data.bounties)
             {
@@ -241,6 +281,9 @@ namespace Deadheim.Pvp
                             pveSince = GetDouble(f, "pveSince"),
                             bountyPaidDay = GetInt(f, "bountyPaidDay"),
                             bountyPaidToday = GetInt(f, "bountyPaidToday"),
+                            guild = NullIfEmpty(GetString(f, "guild")),
+                            prevGuild = NullIfEmpty(GetString(f, "prevGuild")),
+                            prevGuildUntil = GetDouble(f, "prevGuildUntil"),
                         });
                         break;
                     }
@@ -306,6 +349,8 @@ namespace Deadheim.Pvp
 
         private static string GetString(Dictionary<string, string> f, string key)
             => f.TryGetValue(key, out string value) ? value : null;
+
+        private static string NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? null : value;
 
         private static long GetLong(Dictionary<string, string> f, string key)
             => f.TryGetValue(key, out string value) && long.TryParse(value.Trim(), NumberStyles.Integer, Inv, out long n) ? n : 0L;

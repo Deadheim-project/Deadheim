@@ -43,8 +43,10 @@ namespace RaidSystem
         {
             if (ZNet.instance == null || !ZNet.instance.IsServer() || arena) return;
 
-            string killerTeam = GuildsIntegration.GetPlayerTeam(killerId);
-            string deadTeam = GuildsIntegration.GetPlayerTeam(victimId);
+            // Quem deslogou em combate ja saiu: o Guilds nao resolve mais, mas o Deadheim lembra a
+            // ultima guilda em que o viu (B8).
+            string killerTeam = GuildsIntegration.GetPlayerTeam(killerId) ?? Deadheim.Pvp.PvpBridge.KnownGuild(killerId);
+            string deadTeam = GuildsIntegration.GetPlayerTeam(victimId) ?? Deadheim.Pvp.PvpBridge.KnownGuild(victimId);
             if (string.IsNullOrEmpty(killerTeam) || string.IsNullOrEmpty(deadTeam)
                 || string.Equals(killerTeam, deadTeam, StringComparison.OrdinalIgnoreCase))
             {

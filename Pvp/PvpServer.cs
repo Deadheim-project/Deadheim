@@ -644,10 +644,35 @@ namespace Deadheim.Pvp
             return seen.PlayerId != 0L;
         }
 
+        private static float _nextGuildRefresh;
+
         private static void RememberPeers()
         {
+            bool refreshGuilds = Time.time >= _nextGuildRefresh;
+            if (refreshGuilds) _nextGuildRefresh = Time.time + 10f;
             foreach (ZNetPeer peer in ZNet.instance.GetPeers())
-                if (peer != null && peer.IsReady() && TryRead(peer, out SeenPeer seen)) _seen[peer.m_uid] = seen;
+            {
+                if (peer == null || !peer.IsReady() || !TryRead(peer, out SeenPeer seen)) continue;
+                _seen[peer.m_uid] = seen;
+                if (refreshGuilds) RefreshGuild(seen.PlayerId, seen.Name);
+            }
+        }
+
+        /// <summary>
+        /// Guilda de quem esta online, pelo resolvedor do RaidSystem (Guilds). Fica no PvpStore: o
+        /// logout em combate entra no Ranking de Guerra (PvpBridge.KnownGuild) e a bounty sabe quem
+        /// foi da guilda do alvo nas ultimas horas.
+        /// </summary>
+        internal static PvpPlayerRecord RefreshGuild(long playerId, string name)
+        {
+            PvpPlayerRecord record = PvpStore.Player(playerId, name);
+            string before = record.guild;
+            if (record.UpdateGuild(Wards.WardBridge.GuildOf(playerId), Now))
+            {
+                PvpStore.MarkDirty();
+                Debug.Log($"[Deadheim PvP] Guilda de {record.name} ({playerId}): {before ?? "-"} -> {record.guild ?? "-"}.");
+            }
+            return record;
         }
 
         /// <summary>

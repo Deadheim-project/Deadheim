@@ -56,7 +56,7 @@ internal static class Program
         {
             id = 403029348, name = "Solo", kills = 3, deaths = 12, pkLeft = 1234.5678, pkStreak = 2, pkPenalty = 1,
             pkKills = 7, bountyReadyAt = 1790000000.25, combatLogPending = true, pendingCoins = 750,
-            bountyPaidDay = 20363, bountyPaidToday = 4000,
+            bountyPaidDay = 20363, bountyPaidToday = 4000, guild = "Lobos", prevGuild = "Ursos", prevGuildUntil = 1790000123.5,
         });
         data.players.Add(new PvpPlayerRecord { id = 424242, name = "Nome\tcom\ttab\nlinha", pkPermanent = true, pvePermanent = true, pveSince = 99.5 });
         data.players.Add(new PvpPlayerRecord { id = -77, name = "id negativo (Steam/Xbox)" });
@@ -76,7 +76,8 @@ internal static class Program
                                            && solo.pkLeft == 1234.5678 && solo.pkStreak == 2 && solo.pkPenalty == 1 && solo.pkKills == 7
                                            && solo.bountyReadyAt == 1790000000.25 && solo.combatLogPending && solo.pendingCoins == 750
                                            && !solo.pkPermanent && !solo.pvePermanent
-                                           && solo.bountyPaidDay == 20363 && solo.bountyPaidToday == 4000,
+                                           && solo.bountyPaidDay == 20363 && solo.bountyPaidToday == 4000
+                                           && solo.guild == "Lobos" && solo.prevGuild == "Ursos" && solo.prevGuildUntil == 1790000123.5,
             solo == null ? "sem Solo" : PvpStoreFormat.Write(new PvpStoreData { players = { solo } }));
         PvpPlayerRecord dummy = back.players.FirstOrDefault(p => p.id == 424242);
         Check("formato/pk-permanente-e-pve", dummy != null && dummy.pkPermanent && dummy.pvePermanent && dummy.pveSince == 99.5);
@@ -181,6 +182,23 @@ internal static class Program
         Check("numero/negativo-permanente", Numeros.TryLer("-1", out float f) && f == -1f);
         Check("numero/nome-nao-e-numero", !Numeros.TryLer("Fulano", out _) && !Numeros.TryLer("", out _) && !Numeros.TryLer(null, out _));
         Check("numero/nan-e-infinito-recusados", !Numeros.TryLer("NaN", out _) && !Numeros.TryLer("Infinity", out _));
+
+        // B8/B12: a guilda que o servidor lembra, e quem foi da mesma guilda nas ultimas horas.
+        PvpPlayerRecord g = new PvpPlayerRecord { id = 50 };
+        Check("guilda/sem-guilda-nao-muda", !g.UpdateGuild(null, 100d) && g.guild == null && g.prevGuild == null);
+        Check("guilda/entrou", g.UpdateGuild("Lobos", 100d) && g.guild == "Lobos" && g.prevGuild == null);
+        Check("guilda/mesma-sem-diferenciar-maiusculas", !g.UpdateGuild("LOBOS", 110d) && g.guild == "Lobos");
+        Check("guilda/trocou-lembra-a-anterior", g.UpdateGuild("Ursos", 200d) && g.guild == "Ursos" && g.prevGuild == "Lobos" && g.prevGuildUntil == 200d);
+        Check("guilda/saida-de-passagem-nao-apaga", g.UpdateGuild(null, 300d) && g.prevGuild == "Ursos" && g.UpdateGuild("Ursos", 301d)
+                                                    && g.prevGuild == "Ursos" && g.guild == "Ursos", $"{g.guild}/{g.prevGuild}");
+        PvpPlayerRecord alvo = new PvpPlayerRecord { id = 51, guild = "Lobos" };
+        PvpPlayerRecord amigo = new PvpPlayerRecord { id = 52, guild = "Ursos", prevGuild = "Lobos", prevGuildUntil = 1000d };
+        double dia = 24 * 3600d;
+        Check("guilda/saiu-ha-pouco-ainda-e-aliado", PvpPlayerRecord.SharedGuildWithin(amigo, alvo, 1000d + 3600d, dia));
+        Check("guilda/saiu-ha-mais-de-24h-nao-e", !PvpPlayerRecord.SharedGuildWithin(amigo, alvo, 1000d + dia + 1d, dia));
+        Check("guilda/janela-zero-so-a-de-agora", !PvpPlayerRecord.SharedGuildWithin(amigo, alvo, 1001d, 0d)
+                                                  && PvpPlayerRecord.SharedGuildWithin(new PvpPlayerRecord { guild = "lobos" }, alvo, 0d, 0d));
+        Check("guilda/sem-guilda-nunca-e-aliado", !PvpPlayerRecord.SharedGuildWithin(new PvpPlayerRecord(), new PvpPlayerRecord(), 0d, dia));
 
         Console.WriteLine($"DONE pass={_pass} fail={_fail}");
         return _fail == 0 ? 0 : 1;

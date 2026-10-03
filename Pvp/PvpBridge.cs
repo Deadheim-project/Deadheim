@@ -44,6 +44,17 @@ namespace Deadheim.Pvp
         public static event Action<long, string, long, string, Vector3, bool, string> PlayerKilled;
 
         /// <summary>
+        /// Servidor: a ultima guilda em que o PvP viu o jogador (atualizada a cada 10 s com ele
+        /// online). Serve para quem ja saiu do jogo: deslogar em combate entra no Ranking de Guerra
+        /// com a guilda de quem saiu, que o Guilds ja nao resolve. Null fora do servidor.
+        /// </summary>
+        public static string KnownGuild(long playerId)
+        {
+            if (playerId == 0L || ZNet.instance == null || !ZNet.instance.IsServer()) return null;
+            return PvpStore.Data.players.Find(p => p.id == playerId)?.guild;
+        }
+
+        /// <summary>
         /// O jogador e PvE permanente ou esta imune (pelas bandeiras que ele publica): nada de fora
         /// (o "Force PvP In Zones" do RaidSystem) deve ligar o PvP dele.
         /// </summary>
