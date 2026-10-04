@@ -328,7 +328,7 @@ namespace Deadheim.Pvp
                 "Consumable (comida, hidromel), Trophy, Fish, Misc, Ammo...");
             PvpCargoKeep = Bind(config, loot, "PvpCargoKeep", "PortalToken,ResetToken",
                 "Itens (nome do prefab) que nunca caem como carga, mesmo sendo de um tipo de PvpCargoTypes. Os itens do " +
-                "proprio Deadheim (PortalToken, SpawnerToken, GarantiaRefino, kits) ja ficam de fora sem estar aqui.");
+                "proprio Deadheim (DeadToken, os tokens antigos, GarantiaRefino, kits) ja ficam de fora sem estar aqui.");
 
             const string tomb = "PvP - Tumba";
             TombstoneOwnerOnly = Bind(config, tomb, "TombstoneOwnerOnly", true,

@@ -169,13 +169,67 @@ def territory():
     return finish(img, 'territorytoken.png')
 
 
+# ------------------------------------------------------------------ Dead Token
+def dead():
+    """O token unico: valknut de ouro (o no dos mortos de Odin) num campo escuro com brilho de alma.
+
+    Tres triangulos entrelacados como os aneis de Borromeo: 1 passa por cima do 0, o 2 por cima
+    do 1 e o 0 por cima do 2. Cada triangulo e desenhado na propria camada e o 0 volta por cima
+    so onde cruza com o 2.
+    """
+    img = coin((34, 74, 84, 255), (5, 10, 16, 255))
+    R, off, width = 106, 46, 22
+
+    def raw(k):
+        # Centros num triangulo de ponta para baixo: com eles de ponta para cima, os lados de dois
+        # triangulos caiam na mesma reta e o no sumia.
+        a = math.radians(90 + 120 * k)
+        cx, cy = math.cos(a) * off, math.sin(a) * off
+        return [(cx + math.cos(math.radians(t)) * R, cy + math.sin(math.radians(t)) * R) for t in (-90, 30, 150)]
+
+    # Centraliza a figura pela caixa que ela ocupa.
+    pts = [p for k in range(3) for p in raw(k)]
+    mx = (min(p[0] for p in pts) + max(p[0] for p in pts)) / 2
+    my = (min(p[1] for p in pts) + max(p[1] for p in pts)) / 2
+
+    def triangle(k):
+        return [(C + x - mx, C + y - my) for x, y in raw(k)]
+
+    def stroke(points):
+        layer = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        closed = points + [points[0], points[1]]
+        d.line(closed, fill=(62, 34, 6, 255), width=width + 12, joint='curve')
+        d.line(closed, fill=(240, 188, 72, 255), width=width, joint='curve')
+        d.line(closed, fill=(255, 238, 176, 255), width=width // 3, joint='curve')
+        return layer
+
+    layers = [stroke(triangle(k)) for k in range(3)]
+    knot = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    for layer in layers:
+        knot = Image.alpha_composite(knot, layer)
+    over = ImageChops.multiply(layers[0].split()[3], layers[2].split()[3])
+    top = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    top.paste(layers[0], (0, 0), over)
+    knot = Image.alpha_composite(knot, top)
+
+    knot = glow(knot, (90, 230, 255), blur=16, strength=2)
+    img = Image.alpha_composite(img, knot)
+    return finish(img, 'deadtoken.png')
+
+
+TOKENS = {'portal': portal, 'spawner': spawner, 'territory': territory, 'dead': dead}
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    tiles = [portal(), spawner(), territory()]
-    # Folha de previa: os tres em 128 e em 64 (tamanho do inventario), em fundo escuro.
-    sheet = Image.new('RGBA', (3 * 140 + 3 * 72 + 20, 150), (38, 34, 30, 255))
+    # Sem nomes depois da pasta, desenha todos: python gerar-tokens.py assets dead
+    names = sys.argv[2:] or list(TOKENS)
+    tiles = [TOKENS[n]() for n in names]
+    # Folha de previa: cada um em 128 e em 64 (tamanho do inventario), em fundo escuro.
+    n = len(tiles)
+    sheet = Image.new('RGBA', (n * 140 + n * 72 + 20, 150), (38, 34, 30, 255))
     for i, t in enumerate(tiles):
         sheet.alpha_composite(t, (10 + i * 140, 11))
-        sheet.alpha_composite(t.resize((64, 64), Image.LANCZOS), (10 + 3 * 140 + i * 72, 43))
+        sheet.alpha_composite(t.resize((64, 64), Image.LANCZOS), (10 + n * 140 + i * 72, 43))
     sheet.save(os.path.join(OUT, 'previa.png'))
     print('previa ok')

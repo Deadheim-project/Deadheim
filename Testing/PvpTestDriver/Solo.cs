@@ -536,8 +536,8 @@ namespace PvpTestDriver
             GiveItem("Coins", 1000);
             GiveItem("Wood", 20);
             GiveItem("CookedMeat", 4);
-            bool token = ObjectDB.instance.GetItemPrefab("PortalToken") != null;
-            if (token) GiveItem("PortalToken", 2);
+            bool token = ObjectDB.instance.GetItemPrefab(DeadToken.Prefab) != null;
+            if (token) GiveItem(DeadToken.Prefab, 2);
             GiveAndEquip("SwordBronze");
             int coins = Mathf.FloorToInt(1000 * PvpConfig.PvpCoinDropPercent.Value / 100f);
             int wood = Mathf.FloorToInt(20 * PvpConfig.PvpCargoDropPercent.Value / 100f);
@@ -550,7 +550,7 @@ namespace PvpTestDriver
             Check("saque/carga-material", GroundCount("Wood", deathAt) == wood, $"madeira={GroundCount("Wood", deathAt)} esperado={wood}");
             Check("saque/carga-comida", GroundCount("CookedMeat", deathAt) == meat, $"carne={GroundCount("CookedMeat", deathAt)} esperado={meat}");
             Check("saque/equipado-fica-na-tumba", GroundCount("SwordBronze", deathAt) == 0, "espada=" + GroundCount("SwordBronze", deathAt));
-            if (token) Check("saque/token-nunca-cai", GroundCount("PortalToken", deathAt) == 0, "token=" + GroundCount("PortalToken", deathAt));
+            if (token) Check("saque/token-nunca-cai", GroundCount(DeadToken.Prefab, deathAt) == 0, "token=" + GroundCount(DeadToken.Prefab, deathAt));
             string log = ServerLogSinceMark();
             Check("saque/servidor-sabe", log.Contains($"moedasNoChao={coins} cargaNoChao="), Tail(log));
             ClearGround(deathAt);
@@ -1515,11 +1515,11 @@ namespace PvpTestDriver
             Check(W + "prefab", territory != null && Deadheim.Wards.WardProfiles.IsTerritoryWard(territory.gameObject));
             Piece wardPiece = territory.GetComponent<Piece>();
             bool tokenCost = wardPiece.m_resources != null && wardPiece.m_resources.Any(r =>
-                r.m_resItem != null && r.m_resItem.name == Deadheim.Wards.WardProfiles.TerritoryToken && r.m_recover);
-            Check(W + "custa-territory-token", tokenCost,
+                r.m_resItem != null && r.m_resItem.name == DeadToken.Prefab && r.m_amount == DeadToken.CustoTerritorio && r.m_recover);
+            Check(W + "custa-dead-token", tokenCost,
                 string.Join(",", (wardPiece.m_resources ?? new Piece.Requirement[0]).Select(r => r.m_resItem != null ? r.m_resItem.name + ":" + r.m_amount : "?")));
-            Check(W + "token-nao-cai-como-carga", PvpConfig.PvpCargoKeep.Value.Contains(Deadheim.Wards.WardProfiles.TerritoryToken)
-                && PvpConfig.PvpCargoKeep.Value.Contains(Forja.GarantiaPrefab), PvpConfig.PvpCargoKeep.Value);
+            // A carga da morte deixa de fora todo item do Deadheim pelo codigo (M6), nao pela lista do cfg.
+            Check(W + "token-nao-cai-como-carga", ClonedItems.IsNativeItem(DeadToken.Prefab) && ClonedItems.IsNativeItem(Forja.GarantiaPrefab));
 
             // O teste roda perto do templo, entao o cfg dele zera o SafeArea (1500 m no servidor).
             Check(W + "fora-da-area-segura", !Deadheim.Wards.WardCore.InFullProtectionZone(wall.transform.position),
@@ -1596,12 +1596,14 @@ namespace PvpTestDriver
         }
 
         /// <summary>
-        /// Tokens e Garantia: icone proprio (nao o do Thunderstone), moeda chata no chao e item que de fato
-        /// cai quando solto. Tira duas fotos em fotos/: as moedas no chao e os icones no inventario.
+        /// Dead Token, tokens antigos e Garantia: icone proprio (nao o do Thunderstone), moeda no chao e
+        /// item que de fato cai quando solto. Os tokens antigos viram Dead Token ao entrar no inventario.
+        /// Tira duas fotos em fotos/: as moedas no chao e os icones no inventario.
         /// </summary>
         private IEnumerator SoloTokens()
         {
-            string[] tokens = { "PortalToken", "SpawnerToken", Deadheim.Wards.WardProfiles.TerritoryToken, Forja.GarantiaPrefab };
+            string[] antigos = { "PortalToken", "SpawnerToken", Deadheim.Wards.WardProfiles.TerritoryToken };
+            string[] tokens = new[] { DeadToken.Prefab }.Concat(antigos).Concat(new[] { Forja.GarantiaPrefab }).ToArray();
             Sprite stone = ObjectDB.instance.GetItemPrefab("Thunderstone")?.GetComponent<ItemDrop>()?.m_itemData.GetIcon();
             foreach (string name in tokens)
             {
@@ -1620,25 +1622,67 @@ namespace PvpTestDriver
                     $"pedraEscondida={stoneHidden} face={(face != null)} colisor={(prefab.GetComponent<BoxCollider>() != null)}");
             }
 
+            // Dead Token: moeda grossa (faces e borda), clonada das moedas e sem valor no mercador.
+            GameObject dead = ObjectDB.instance.GetItemPrefab(DeadToken.Prefab);
+            ItemDrop.ItemData.SharedData deadShared = dead?.GetComponent<ItemDrop>().m_itemData.m_shared;
+            int camadas = dead != null ? dead.GetComponentsInChildren<SpriteRenderer>(true).Length : 0;
+            Check("tokens/dead-token/moeda-grossa", camadas > 2, "camadas=" + camadas);
+            Check("tokens/dead-token/sem-valor-no-mercador", deadShared != null && deadShared.m_value == 0, "valor=" + deadShared?.m_value);
+            Check("tokens/dead-token/pilha", deadShared != null && deadShared.m_maxStackSize >= 10 * DeadToken.CustoTerritorio,
+                "pilha=" + deadShared?.m_maxStackSize);
+
+            // Os custos usam o Dead Token na quantidade do preco.
+            Piece portal = ZNetScene.instance.GetPrefab("portal_wood")?.GetComponent<Piece>();
+            Check("tokens/portal-custa-dead-token", portal != null && portal.m_resources.Any(r => r.m_resItem != null
+                    && r.m_resItem.name == DeadToken.Prefab && r.m_amount == DeadToken.CustoPortal),
+                portal == null ? "sem portal" : string.Join(",", portal.m_resources.Select(r => r.m_resItem?.name + ":" + r.m_amount)));
+            Piece spawner = ZNetScene.instance.GetPrefab("BuildableGreydwarfNestSpawner")?.GetComponent<Piece>();
+            Check("tokens/spawner-custa-dead-token", spawner != null && spawner.m_resources.Any(r => r.m_resItem != null
+                    && r.m_resItem.name == DeadToken.Prefab && r.m_amount == DeadToken.CustoSpawner),
+                spawner == null ? "sem spawner" : string.Join(",", spawner.m_resources.Select(r => r.m_resItem?.name + ":" + r.m_amount)));
+
+            // Token antigo que entra no inventario (personagem carregado, compra, bau) vira Dead Token.
+            Inventory inventory = Me.GetInventory();
+            inventory.RemoveItem(DeadToken.Nome, inventory.CountItems(DeadToken.Nome));
+            inventory.AddItem(ObjectDB.instance.GetItemPrefab("PortalToken"), 2);
+            inventory.AddItem(ObjectDB.instance.GetItemPrefab("SpawnerToken"), 1);
+            inventory.AddItem(ObjectDB.instance.GetItemPrefab(Deadheim.Wards.WardProfiles.TerritoryToken), 1);
+            int esperado = 2 * DeadToken.CustoPortal + DeadToken.CustoSpawner + DeadToken.CustoTerritorio;
+            int sobrou = inventory.GetAllItems().Count(i => i.m_dropPrefab != null && antigos.Contains(i.m_dropPrefab.name));
+            Check("tokens/antigos-viram-dead-token", inventory.CountItems(DeadToken.Nome) == esperado && sobrou == 0,
+                $"dead={inventory.CountItems(DeadToken.Nome)} esperado={esperado} antigos={sobrou}");
+            inventory.RemoveItem(DeadToken.Nome, inventory.CountItems(DeadToken.Nome));
+
             // Soltar do inventario: antes o modelo desligado fazia o item sumir (instancia sem Awake nem ZDO).
             yield return MoveTo(_openA);
             ClearGround(Me.transform.position);
-            GiveItem("PortalToken", 1);
-            ItemDrop.ItemData held = Me.GetInventory().GetAllItems().FirstOrDefault(i => i.m_dropPrefab != null && i.m_dropPrefab.name == "PortalToken");
-            Check("tokens/soltar-portal-token", held != null && Me.DropItem(Me.GetInventory(), held, 1));
+            GiveItem(DeadToken.Prefab, 1);
+            ItemDrop.ItemData held = inventory.GetAllItems().FirstOrDefault(i => i.m_dropPrefab != null && i.m_dropPrefab.name == DeadToken.Prefab);
+            Check("tokens/soltar-dead-token", held != null && Me.DropItem(inventory, held, 1));
             yield return Wait(2f);
             ItemDrop onGround = ItemDrop.s_instances.FirstOrDefault(d => d != null && d.m_itemData.m_dropPrefab != null
-                && d.m_itemData.m_dropPrefab.name == "PortalToken" && Utils.DistanceXZ(d.transform.position, Me.transform.position) < 8f);
-            Check("tokens/portal-token-no-chao", onGround != null && onGround.gameObject.activeInHierarchy && onGround.m_nview.IsValid(),
+                && d.m_itemData.m_dropPrefab.name == DeadToken.Prefab && Utils.DistanceXZ(d.transform.position, Me.transform.position) < 8f);
+            Check("tokens/dead-token-no-chao", onGround != null && onGround.gameObject.activeInHierarchy && onGround.m_nview.IsValid(),
                 onGround == null ? "nao achei no chao" : $"ativo={onGround.gameObject.activeInHierarchy} rede={onGround.m_nview.IsValid()}");
+            // A moeda tem arte dos dois lados: de face para cima ou para baixo, vale deitada.
             if (onGround != null)
-                Check("tokens/moeda-deitada", Vector3.Dot(onGround.transform.up, Vector3.up) > 0.7f, $"up={onGround.transform.up}");
+                Check("tokens/moeda-deitada", Mathf.Abs(Vector3.Dot(onGround.transform.up, Vector3.up)) > 0.7f, $"up={onGround.transform.up}");
             Check("tokens/pega-de-volta", onGround != null && Me.Pickup(onGround.gameObject, true, false)
-                && Me.GetInventory().CountItems(onGround.m_itemData.m_shared.m_name) == 1);
+                && inventory.CountItems(DeadToken.Nome) == 1);
             yield return Wait(0.5f);
 
-            // Fotos: as quatro moedas num piso de madeira (no mato a grama cobre), entre a camera e o
-            // personagem, perto do templo (aberto) e ao meio-dia; e os icones no inventario.
+            // Token antigo que ainda estava no chao vira Dead Token ao ser pego.
+            GameObject velho = Instantiate(ObjectDB.instance.GetItemPrefab(Deadheim.Wards.WardProfiles.TerritoryToken),
+                Me.transform.position + Me.transform.forward + Vector3.up, Quaternion.identity);
+            yield return Wait(1f);
+            Check("tokens/antigo-do-chao-vira-dead-token", velho != null && Me.Pickup(velho, true, false)
+                && inventory.CountItems(DeadToken.Nome) == 1 + DeadToken.CustoTerritorio, "dead=" + inventory.CountItems(DeadToken.Nome));
+            inventory.RemoveItem(DeadToken.Nome, inventory.CountItems(DeadToken.Nome));
+            yield return Wait(0.5f);
+
+            // Fotos: as moedas num piso de madeira (no mato a grama cobre), entre a camera e o
+            // personagem, perto do templo (aberto) e ao meio-dia; e os icones no inventario (os
+            // tokens antigos ja aparecem la como pilhas de Dead Token).
             yield return MoveTo(_safe);
             EnvMan.instance.m_debugTimeOfDay = true;
             EnvMan.instance.m_debugTime = 0.5f;
@@ -1654,7 +1698,7 @@ namespace PvpTestDriver
             Vector3 side = Vector3.Cross(Vector3.up, flat);
             for (int i = 0; i < tokens.Length; i++)
             {
-                Vector3 at = spot + side * ((i - 1.5f) * 0.42f) + Vector3.up * 0.5f;
+                Vector3 at = spot + side * ((i - (tokens.Length - 1) / 2f) * 0.42f) + Vector3.up * 0.5f;
                 GameObject coin = Instantiate(ObjectDB.instance.GetItemPrefab(tokens[i]), at, Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f));
                 // A 1 m do personagem a coleta automatica recolhia as moedas antes da foto.
                 coin.GetComponent<ItemDrop>().m_autoPickup = false;

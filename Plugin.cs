@@ -184,7 +184,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             ResetWorldDay = Synced(Config.Bind("Server config", "ResetWorldDay", false,
             new ConfigDescription("ResetWorldDay")));
 
-            PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:50,GreydwarfEye:30,SurtlingCore:5",
+            PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", DeadToken.Prefab + ":" + DeadToken.CustoPortal + ",FineWood:50,GreydwarfEye:30,SurtlingCore:5",
     new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
 
             CartographyTableAmount = Synced(Config.Bind("Server config", "CartographyTableAmount", 0,

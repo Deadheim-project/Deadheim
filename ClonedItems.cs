@@ -24,14 +24,24 @@ namespace Deadheim
             public int? Value;
             // No chao vira uma moeda com a arte do Icon, em vez do Thunderstone de onde o item e clonado.
             public bool Coin;
+            // Moeda grossa, com borda de ouro, em vez do disco chato.
+            public bool ThickCoin;
+            // Item-base proprio; null (ou ausente no jogo) = o comum, NativeItemBasePrefabs.
+            public string BasePrefab;
+            // Peso; null = o do item-base.
+            public float? Weight;
         }
 
         private static readonly NativeItemDefinition[] NativeItems =
         {
-            new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = "Me compre para o Detalhes poder manter seu vício.", MaxStack = 10, Icon = "portaltoken.png", Coin = true },
-            new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = "Token used to build protected vanilla spawners.", MaxStack = 10, Icon = "spawnertoken.png", Coin = true },
-            // Vendido por doacao (Loja Deadcoins): nao pode virar moeda no mercador.
-            new NativeItemDefinition { PrefabName = Wards.WardProfiles.TerritoryToken, Name = "Territory Token", Description = "Constrói a Ward de Território. Fora da área segura do spawn, depois de ativada, nada no raio dela toma dano de quem não tem acesso. Uma por jogador.", MaxStack = 10, Value = 0, Icon = "territorytoken.png", Coin = true },
+            // Vendido por doacao (Loja Deadcoins): nao pode virar moeda no mercador. Clonado das
+            // moedas, nao do Thunderstone: no chao e uma moeda de verdade.
+            new NativeItemDefinition { PrefabName = DeadToken.Prefab, Name = DeadToken.Nome, Description = $"Moeda do Deadheim para construções pagas: portal ({DeadToken.CustoPortal}), spawner ({DeadToken.CustoSpawner}) e Ward de Território ({DeadToken.CustoTerritorio}). Volta ao desmontar.", MaxStack = 100, Value = 0, Weight = 0.1f, Icon = "deadtoken.png", Coin = true, ThickCoin = true, BasePrefab = "Coins" },
+            // Tokens antigos: viram Dead Token ao entrar no inventario (DeadToken.ConverterAntigos).
+            // Continuam registrados para o que esta no chao, num bau ou na loja nao sumir.
+            new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = $"Token antigo: vira {DeadToken.CustoPortal} {DeadToken.Nome} no inventário.", MaxStack = 10, Icon = "portaltoken.png", Coin = true },
+            new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = $"Token antigo: vira {DeadToken.CustoSpawner} {DeadToken.Nome} no inventário.", MaxStack = 10, Icon = "spawnertoken.png", Coin = true },
+            new NativeItemDefinition { PrefabName = Wards.WardProfiles.TerritoryToken, Name = "Territory Token", Description = $"Token antigo: vira {DeadToken.CustoTerritorio} {DeadToken.Nome} no inventário.", MaxStack = 10, Value = 0, Icon = "territorytoken.png", Coin = true },
             // Comprada com Deadcoins: nao pode virar moeda no mercador.
             new NativeItemDefinition { PrefabName = Forja.GarantiaPrefab, Name = Forja.GarantiaNome, Description = "Na Forja de Potencial, garante o sucesso do refino: o item sobe de nível em vez de quebrar. Gasta junto com o ídolo, a cada tentativa.", MaxStack = 50, Icon = "garantiarefino.png", Value = 0, Coin = true },
             new NativeItemDefinition { PrefabName = "ArmorKit1", Name = "Basic Armor Kit I", Description = "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Guck", Icon = "armorkit1.png" },
@@ -50,8 +60,9 @@ namespace Deadheim
             new HashSet<string>(NativeItems.Select(definition => definition.PrefabName), StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Item criado aqui (tokens, Garantia de Refino, kits). Sao clones do Thunderstone, tipo
-        /// Material, e a maioria e comprada: a carga da morte por jogador nunca os leva.
+        /// Item criado aqui (Dead Token, tokens antigos, Garantia de Refino, kits). Sao clones de um
+        /// item do jogo (Thunderstone; o Dead Token das moedas), e a maioria e comprada: a carga da
+        /// morte por jogador nunca os leva.
         /// </summary>
         internal static bool IsNativeItem(string prefabName)
             => !string.IsNullOrEmpty(prefabName) && NativeItemNames.Contains(prefabName);
@@ -94,7 +105,8 @@ namespace Deadheim
 
                 try
                 {
-                    GameObject item = CreateNativeItem(objectDb, basePrefab, definition);
+                    GameObject source = (definition.BasePrefab != null ? ValidBasePrefab(objectDb, definition.BasePrefab) : null) ?? basePrefab;
+                    GameObject item = CreateNativeItem(objectDb, source, definition);
                     objectDb.m_items.Add(item);
                     RegisteredNativeItems[definition.PrefabName] = item;
                 }
@@ -120,17 +132,22 @@ namespace Deadheim
             // conter os prefabs; por isso ela é consultada antes de GetItemPrefab.
             foreach (string prefabName in NativeItemBasePrefabs)
             {
-                GameObject prefab = objectDb.m_items.FirstOrDefault(item =>
-                    item != null && string.Equals(item.name, prefabName, StringComparison.Ordinal));
-                if (prefab == null)
-                    prefab = objectDb.GetItemPrefab(prefabName);
-
-                ItemDrop itemDrop = prefab?.GetComponent<ItemDrop>();
-                if (itemDrop?.m_itemData?.m_shared != null)
-                    return prefab;
+                GameObject prefab = ValidBasePrefab(objectDb, prefabName);
+                if (prefab != null) return prefab;
             }
 
             return null;
+        }
+
+        private static GameObject ValidBasePrefab(ObjectDB objectDb, string prefabName)
+        {
+            GameObject prefab = objectDb.m_items.FirstOrDefault(item =>
+                item != null && string.Equals(item.name, prefabName, StringComparison.Ordinal));
+            if (prefab == null)
+                prefab = objectDb.GetItemPrefab(prefabName);
+
+            ItemDrop itemDrop = prefab?.GetComponent<ItemDrop>();
+            return itemDrop?.m_itemData?.m_shared != null ? prefab : null;
         }
 
         private static GameObject _templates;
@@ -175,40 +192,110 @@ namespace Deadheim
                 itemDrop.m_itemData.m_shared.m_icons = new[] { Util.SpriteOf(art) };
             if (definition.Value.HasValue)
                 itemDrop.m_itemData.m_shared.m_value = definition.Value.Value;
+            if (definition.Weight.HasValue)
+                itemDrop.m_itemData.m_shared.m_weight = definition.Weight.Value;
             itemDrop.m_itemData.m_dropPrefab = item;
 
             ApplyMaterials(objectDb, item, definition.FirstMaterialPrefab, definition.SecondMaterialPrefab);
-            if (definition.Coin && art != null) ApplyCoinVisual(item, art);
+            if (definition.Coin && art != null) ApplyCoinVisual(item, art, definition.ThickCoin);
             return item;
         }
 
         /// <summary>Diametro da moeda no chao, em metros.</summary>
         private const float CoinSize = 0.3f;
 
+        /// <summary>Espessura da moeda grossa, em metros.</summary>
+        private const float ThickCoinHeight = 0.03f;
+
+        /// <summary>Discos da borda da moeda grossa: com poucos, de perto ela parece uma pilha.</summary>
+        private const int ThickCoinLayers = 10;
+
+        /// <summary>Cor da borda embaixo; sobe ate o ouro cheio no alto (a luz vem de cima).</summary>
+        private static readonly Color ThickCoinEdgeDark = new Color(0.45f, 0.4f, 0.36f);
+
+        private static Texture2D _coinEdge;
+
+        /// <summary>
+        /// Disco de ouro liso do tamanho da moeda desenhada no icone (raio 240 de 256 no
+        /// assets/gerar-tokens.py): as camadas dele fazem a borda da moeda grossa.
+        /// </summary>
+        private static Texture2D CoinEdge
+        {
+            get
+            {
+                if (_coinEdge) return _coinEdge;
+                const int size = 64;
+                float c = (size - 1) / 2f, r = size / 2f * 240f / 256f;
+                Color gold = new Color32(214, 160, 66, 255);
+                Color[] pixels = new Color[size * size];
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                    {
+                        Color p = gold;
+                        p.a = Mathf.Clamp01(r - Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c)) + 0.5f);
+                        pixels[y * size + x] = p;
+                    }
+                _coinEdge = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+                _coinEdge.SetPixels(pixels);
+                _coinEdge.Apply();
+                return _coinEdge;
+            }
+        }
+
         /// <summary>
         /// No chao o item vira uma moeda chata com a arte do icone, em vez do Thunderstone de onde foi
         /// clonado. O colisor de pedra sai junto: com ele a moeda pousava de pe ou meio enterrada.
         /// O sprite e sem luz e visivel dos dois lados, entao aparece de qualquer angulo e brilha um
         /// pouco no escuro, como item magico.
+        ///
+        /// A moeda grossa tem a arte em cima e embaixo e, entre elas, discos de ouro que fazem a
+        /// borda. Sao todos sprites: o jogo os desenha do mais longe para o mais perto da camera,
+        /// entao vista de cima a face cobre os discos e so a borda aparece.
         /// </summary>
-        private static void ApplyCoinVisual(GameObject item, Texture2D art)
+        private static void ApplyCoinVisual(GameObject item, Texture2D art, bool thick)
         {
             foreach (Renderer renderer in item.GetComponentsInChildren<Renderer>(true))
                 renderer.enabled = false;
             foreach (Collider collider in item.GetComponentsInChildren<Collider>(true))
                 UnityEngine.Object.DestroyImmediate(collider);
+            // A moeda grossa vem das moedas do jogo: a escala delas mudaria o tamanho do disco.
+            if (thick) item.transform.localScale = Vector3.one;
 
             BoxCollider box = item.AddComponent<BoxCollider>();
-            box.size = new Vector3(CoinSize, 0.04f, CoinSize);
+            box.size = new Vector3(CoinSize, thick ? ThickCoinHeight : 0.04f, CoinSize);
 
             art.wrapMode = TextureWrapMode.Clamp;
-            Sprite sprite = Sprite.Create(art, new Rect(0, 0, art.width, art.height), new Vector2(0.5f, 0.5f), art.width / CoinSize);
-            GameObject face = new GameObject("coin");
-            face.transform.SetParent(item.transform, false);
-            face.transform.localPosition = new Vector3(0f, 0.021f, 0f);
+            Sprite face = CoinSprite(art);
+            if (!thick)
+            {
+                AddCoinLayer(item, "coin", face, 0.021f, Color.white);
+                return;
+            }
+
+            float half = ThickCoinHeight / 2f;
+            AddCoinLayer(item, "coin-baixo", face, -half, Color.white);
+            Sprite edge = CoinSprite(CoinEdge);
+            for (int i = 1; i < ThickCoinLayers; i++)
+            {
+                float t = i / (float)ThickCoinLayers;
+                AddCoinLayer(item, "coin-borda", edge, Mathf.Lerp(-half, half, t), Color.Lerp(ThickCoinEdgeDark, Color.white, t));
+            }
+            AddCoinLayer(item, "coin", face, half, Color.white);
+        }
+
+        private static Sprite CoinSprite(Texture2D texture)
+            => Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), texture.width / CoinSize);
+
+        private static void AddCoinLayer(GameObject item, string name, Sprite sprite, float height, Color color)
+        {
+            GameObject layer = new GameObject(name);
+            layer.transform.SetParent(item.transform, false);
+            layer.transform.localPosition = new Vector3(0f, height, 0f);
             // O sprite nasce de pe (plano XY); 90 graus em X deita ele virado para cima.
-            face.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            face.AddComponent<SpriteRenderer>().sprite = sprite;
+            layer.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            SpriteRenderer renderer = layer.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.color = color;
         }
 
         private static void ApplyMaterials(ObjectDB objectDb, GameObject item, string firstPrefab, string secondPrefab)
@@ -424,8 +511,8 @@ namespace Deadheim
             {
                 new Piece.Requirement
                 {
-                    m_resItem = ObjectDB.instance?.GetItemPrefab("SpawnerToken")?.GetComponent<ItemDrop>(),
-                    m_amount = 1,
+                    m_resItem = ObjectDB.instance?.GetItemPrefab(DeadToken.Prefab)?.GetComponent<ItemDrop>(),
+                    m_amount = DeadToken.CustoSpawner,
                     m_recover = true
                 }
             };
@@ -452,7 +539,7 @@ namespace Deadheim
 
             if (icon != null) return icon;
 
-            return ObjectDB.instance?.GetItemPrefab("SpawnerToken")?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
+            return ObjectDB.instance?.GetItemPrefab(DeadToken.Prefab)?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
         }
 
         private static void AddNomTameableWolf()
