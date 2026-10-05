@@ -1720,6 +1720,9 @@ namespace PvpTestDriver
             yield return MoveTo(_safe);
             EnvMan.instance.m_debugTimeOfDay = true;
             EnvMan.instance.m_debugTime = 0.5f;
+            // Olhando para baixo, o piso entre a camera e o personagem entra no quadro. Com a camera
+            // na horizontal (personagem recem-nascido) ele ficava cortado na borda de baixo.
+            Me.m_lookPitch = 30f;
             yield return Wait(2f);
             Transform cam = GameCamera.instance.transform;
             Vector3 flat = Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized;
