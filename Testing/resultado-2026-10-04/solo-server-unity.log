@@ -1,0 +1,527 @@
+Mono path[0] = 'D:/ValheimDedicatedServer/valheim_server_Data/Managed'
+Mono config path = 'D:/ValheimDedicatedServer/MonoBleedingEdge/etc'
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+Initialize engine version: 6000.0.75f1 (26349cd2a5c8)
+[Subsystems] Discovering subsystems at path D:/ValheimDedicatedServer/valheim_server_Data/UnitySubsystems
+Forcing GfxDevice: Null
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+NullGfxDevice:
+    Version:  NULL 1.0 [1.0]
+    Renderer: Null Device
+    Vendor:   Unity Technologies
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.135 seconds
+- Finished resetting the current domain, in  0.002 seconds
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Microsoft Media Foundation video decoding to texture disabled: graphics device is Null, only Direct3D 11 and Direct3D 12 (only on desktop) are supported for hardware-accelerated video decoding.
+[Message:   BepInEx] BepInEx 5.4.23.5 - valheim_server (04/10/2026 20:54:42)
+[Message:   BepInEx] User is running BepInExPack Valheim version 5.4.2351
+[Info   :   BepInEx] Running under Unity v6000.0.75.2503836
+[Info   :   BepInEx] CLR runtime version: 4.0.30319.42000
+[Info   :   BepInEx] Supports SRE: True
+[Info   :   BepInEx] System platform: Bits64, Windows
+[Message:   BepInEx] Preloader started
+[Info   :   BepInEx] Loaded 1 patcher method from [BepInEx.Preloader 5.4.23.5]
+[Info   :   BepInEx] 1 patcher plugin loaded
+[Info   :   BepInEx] Patching [UnityEngine.CoreModule] with [BepInEx.Chainloader]
+[Message:   BepInEx] Preloader finished
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+10/04/2026 23:26:46: Loaded localization file #0 - 'localization' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #1 - 'localization_extra' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #2 - 'heightmap_message' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #3 - 'localization_witch' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #6 - 'localization_captions' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #9 - 'localization_ps' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #11 - 'localization_xbox' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #12 - 'localization_switch' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #0 - 'localization' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #1 - 'localization_extra' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #2 - 'heightmap_message' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #3 - 'localization_witch' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #6 - 'localization_captions' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #9 - 'localization_ps' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #11 - 'localization_xbox' language: 'English'
+10/04/2026 23:26:46: Loaded localization file #12 - 'localization_switch' language: 'English'
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+10/04/2026 23:26:53: Loaded localization file #0 - 'localization' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #1 - 'localization_extra' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #2 - 'heightmap_message' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #3 - 'localization_witch' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #6 - 'localization_captions' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #9 - 'localization_ps' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #11 - 'localization_xbox' language: 'English'
+10/04/2026 23:26:53: Loaded localization file #12 - 'localization_switch' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #0 - 'localization' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #1 - 'localization_extra' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #2 - 'heightmap_message' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #3 - 'localization_witch' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #6 - 'localization_captions' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #9 - 'localization_ps' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #11 - 'localization_xbox' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #12 - 'localization_switch' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #0 - 'localization' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #1 - 'localization_extra' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #2 - 'heightmap_message' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #3 - 'localization_witch' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #6 - 'localization_captions' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #9 - 'localization_ps' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #11 - 'localization_xbox' language: 'English'
+10/04/2026 23:26:54: Loaded localization file #12 - 'localization_switch' language: 'English'
+UnloadTime: 0.252800 ms
+10/04/2026 23:26:57: Set background loading budget to Low
+10/04/2026 23:26:57: Loading first scene!
+10/04/2026 23:26:57: Preferences initialized! Activating first scene!
+Unloading 5 Unused Serialized files (Serialized files now loaded: 10)
+UnloadTime: 0.069000 ms
+10/04/2026 23:26:58: Loading: Starting to load scene: start.unity (169d7618616154c03be07e9ad3af5893)
+10/04/2026 23:26:58: Set background loading budget to Normal
+Unloading 40 unused Assets to reduce memory usage. Loaded Objects now: 5362.
+Total: 36.210400 ms (FindLiveObjects: 0.290500 ms CreateObjectMapping: 0.321800 ms MarkObjects: 35.544300 ms  DeleteObjects: 0.053300 ms)
+
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '') is missing!
+AsyncResourceUpload failed.
+AsyncResourceUpload failed.
+The referenced script on this Behaviour (Game Object '') is missing!
+The referenced script on this Behaviour (Game Object '') is missing!
+10/04/2026 23:27:02: Set background loading budget to High
+10/04/2026 23:27:02: GPU Device: 0000:0000 (Unknown)
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+Unloading 2 Unused Serialized files (Serialized files now loaded: 21)
+10/04/2026 23:27:03: Loading: Done, Total time: -5,5163942
+10/04/2026 23:27:04: Set background loading budget to Low
+UnloadTime: 8.180700 ms
+HDR Render Texture not supported, disabling HDR on reflection probe.
+This custom render path shader needs to have at least 1 passes.
+Could not find material Hidden/VideoDecode. Make sure the Video shaders are included in your build, in the Built-in Shader Settings section of the Graphics Settings.
+Could not find video decode shader pass YCbCr_To_RGB1 in shader <not found>
+Could not find video decode shader pass YCbCrA_To_RGBAFull in shader <not found>
+Could not find video decode shader pass YCbCrA_To_RGBA in shader <not found>
+Could not find video decode shader pass Flip_RGBA_To_RGBA in shader <not found>
+Could not find video decode shader pass Flip_RGBASplit_To_RGBA in shader <not found>
+Could not find video decode shader pass Flip_NV12_To_RGB1 in shader <not found>
+Could not find video decode shader pass Flip_NV12_To_RGBA in shader <not found>
+This custom render path shader needs to have at least 1 passes.
+Could not find material Hidden/VideoComposite. Make sure the Video shaders are included in your build, in the Built-in Shader Settings section of the Graphics Settings.
+Could not find video decode shader pass Default in shader <not found>
+10/04/2026 23:27:04: Missing audio clip in music respawn
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+10/04/2026 23:27:04: Setting -savedir to: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\saves-server
+10/04/2026 23:27:04: Setting -logfile to: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\server-unity.log
+10/04/2026 23:27:04: Get create world PvpTest
+10/04/2026 23:27:04: SaveSystem.Reload for World is done [13ms]
+10/04/2026 23:27:04: Using environment steamid 892970
+10/04/2026 23:27:04: Using steam APPID:892970
+Setting breakpad minidump AppID = 892970
+SteamInternal_SetMinidumpSteamID:  Caching Steam ID:  76561197960265728 [API loaded no]
+10/04/2026 23:27:04: Server ID 90071992547409920
+10/04/2026 23:27:04: Authentication:k_ESteamNetworkingAvailability_Waiting
+10/04/2026 23:27:04: Steam game server initialized
+10/04/2026 23:27:04: Valheim version: 1.0.16 (network version 40)
+10/04/2026 23:27:04: Worldgenerator version setup:2
+10/04/2026 23:27:04: Console: Valheim 1.0.16 (network version 40)
+10/04/2026 23:27:04: Console: 
+10/04/2026 23:27:04: Console: type "help" - for commands
+10/04/2026 23:27:04: Console: 
+10/04/2026 23:27:04: Render threading mode:SingleThreaded
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+[AmplifyOcclusion] System does not support CopyTexture. CacheAware will be disabled.
+WebInterfaceAPI threw: System.Net.Sockets.SocketException (0x80004005): Normalmente é permitida apenas uma utilização de cada endereço de soquete (protocolo/endereço de rede/porta).
+10/04/2026 23:27:04: Builder started
+10/04/2026 23:27:04: Loaded localization file #0 - 'localization' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #1 - 'localization_extra' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #2 - 'heightmap_message' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #3 - 'localization_witch' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #4 - 'localization_ashlands' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #5 - 'localization_deepnorth' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #6 - 'localization_captions' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #7 - 'localization_warriortitles' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #8 - 'localization_combatupdate' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #9 - 'localization_ps' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #10 - 'localization_celebrationupdate' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #11 - 'localization_xbox' language: 'English'
+10/04/2026 23:27:04: Loaded localization file #12 - 'localization_switch' language: 'English'
+[Deadheim] ObjectDB ainda não possui um item-base válido; registro dos itens adiado.
+10/04/2026 23:27:05: SaveSystem.Reload for Character is done [1ms]
+10/04/2026 23:27:05: Sending PlayFab login request (attempt 1)
+10/04/2026 23:27:05: Login postponed until ID has been set.
+The shader Hidden/Dof/DepthOfFieldHdr (UnityEngine.Shader) on effect Main Camera (UnityStandardAssets.ImageEffects.DepthOfField) is not supported on this platform!
+The image effect Main Camera (UnityStandardAssets.ImageEffects.DepthOfField) has been disabled as it's not supported on the current platform.
+The shader Hidden/SunShaftsComposite (UnityEngine.Shader) on effect Main Camera (UnityStandardAssets.ImageEffects.SunShafts) is not supported on this platform!
+The shader Hidden/SimpleClear (UnityEngine.Shader) on effect Main Camera (UnityStandardAssets.ImageEffects.SunShafts) is not supported on this platform!
+The image effect Main Camera (UnityStandardAssets.ImageEffects.SunShafts) has been disabled as it's not supported on the current platform.
+10/04/2026 23:27:05: Missing attach item: 371857150  ob:Player(Clone)  joint:Helmet_attach
+10/04/2026 23:27:05: Missing attach item: 371857150  ob:Player(Clone)  joint:Helmet_attach
+[Hearthstone] Config recarregada de Detalhes.Hearthstone.cfg.
+10/04/2026 23:27:05: Starting music menu
+Unloading 107452 unused Assets to reduce memory usage. Loaded Objects now: 279596.
+Total: 204.322900 ms (FindLiveObjects: 20.504600 ms CreateObjectMapping: 74.908400 ms MarkObjects: 76.333500 ms  DeleteObjects: 32.576000 ms)
+
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+The referenced script on this Behaviour (Game Object '<null>') is missing!
+Unloading 3 Unused Serialized files (Serialized files now loaded: 24)
+UnloadTime: 17.490700 ms
+HDR Render Texture not supported, disabling HDR on reflection probe.
+HDR Render Texture not supported, disabling HDR on reflection probe.
+10/04/2026 23:27:05: Audioman already exist, destroying self
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+src\clientdll\cminterface.cpp (2257) : !BLoggedOn()
+10/04/2026 23:27:05: Console: Valheim 1.0.16 (network version 40)
+10/04/2026 23:27:05: Console: 
+10/04/2026 23:27:05: Console: type "help" - for commands
+10/04/2026 23:27:05: Console: 
+10/04/2026 23:27:05: isModded: True
+10/04/2026 23:27:05: Zonesystem Awake 5921
+10/04/2026 23:27:05: DungeonDB Awake 5921
+10/04/2026 23:27:05: Worldgenerator version setup:2
+[Deadheim PvP] Estado carregado de C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\server\BepInEx\config\Deadheim\pvp-PvpTest.txt: 0 jogador(es), 0 bounty(ies).
+Registered 'Azumatt.AzuAntiCheat ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.Deadheim ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.Hearthstone ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.Hearthstone ItemManager ConfigSync' RPC - waiting for incoming connections
+Registered 'Guilds ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.RaidSystem ConfigSync' RPC - waiting for incoming connections
+Registered 'CL&LC ConfigSync' RPC - waiting for incoming connections
+Registered 'Groups ConfigSync' RPC - waiting for incoming connections
+Registered 'org.bepinex.plugins.servercharacters ConfigSync' RPC - waiting for incoming connections
+Registered 'Detalhes.VipList ConfigSync' RPC - waiting for incoming connections
+[Wards] DeadheimWard criado: raio=12, dano=25%.
+[Wards] DeadheimTerritoryWard criado: raio=12, ativa em 60 min, limite=1.
+[RaidSystem] RaidWard created: scale=3, HP=10000
+OnGUI function detected on MonoBehaviour, but not called, because IMGUI module is stripped.
+10/04/2026 23:27:08: Console: /w [text] - Whisper
+10/04/2026 23:27:08: Console: /s [text] - Shout
+10/04/2026 23:27:08: Console: /die - Kill yourself
+10/04/2026 23:27:08: Console: /resetspawn - Reset spawn point
+10/04/2026 23:27:08: Console: /[emote]
+10/04/2026 23:27:08: Console: Emotes: wave, sit, challenge, cheer, nonono, thumbsup, point, blowkiss, bow, cower, cry, despair, flex, comehere, headbang, kneel, laugh, roar, shrug, dance, relax, toast, rest, vibe, loveyou
+10/04/2026 23:27:08: Console: 
+[Wards] DeadheimWard adicionado ao martelo.
+[Wards] DeadheimTerritoryWard adicionado ao martelo.
+[RaidSystem] RaidWard added to hammer.
+[AmplifyOcclusion] System does not support CopyTexture. CacheAware will be disabled.
+Unloading 305 unused Assets to reduce memory usage. Loaded Objects now: 283275.
+Total: 139.819800 ms (FindLiveObjects: 15.369300 ms CreateObjectMapping: 49.344300 ms MarkObjects: 74.196100 ms  DeleteObjects: 0.909900 ms)
+
+[RaidSystem] RPCs registered.
+10/04/2026 23:27:09: Zonesystem Start 5921
+10/04/2026 23:27:09: Added 3 locations, 0 vegetations, 0 environments, 0 biome env-setups, 0 clutter  from main
+10/04/2026 23:27:09: Added 2 locations, 0 vegetations, 2 environments, 0 biome env-setups, 0 clutter  from main
+10/04/2026 23:27:09: Added 27 locations, 25 vegetations, 5 environments, 1 biome env-setups, 3 clutter  from main
+10/04/2026 23:27:09: Added 4 locations, 0 vegetations, 1 environments, 0 biome env-setups, 0 clutter  from main
+10/04/2026 23:27:09: Added 25 locations, 33 vegetations, 8 environments, 2 biome env-setups, 2 clutter  from main
+10/04/2026 23:27:09: Added 25 locations, 35 vegetations, 12 environments, 1 biome env-setups, 2 clutter  from main
+10/04/2026 23:27:09: DungeonDB Start 5921
+10/04/2026 23:27:09: ZRpc timeout set to 30s 
+10/04/2026 23:27:09: Loading: ZNet Start
+10/04/2026 23:27:09: ZNet.LoadWorld: PvpTest (PvpTest), save number 0
+10/04/2026 23:27:09:   missing C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\saves-server/worlds_local/PvpTest/_main.0.db2
+10/04/2026 23:27:16: Loading: Placed 0/1-2 of 'Fortress Mountain' altbiome. (Valid, sectors: 0, combos: 2)
+10/04/2026 23:27:16: Setting up generating loading indicator
+The shader Hidden/Dof/DepthOfFieldHdr (UnityEngine.Shader) on effect Main Camera (UnityStandardAssets.ImageEffects.DepthOfField) is not supported on this platform!
+The image effect Main Camera (UnityStandardAssets.ImageEffects.DepthOfField) has been disabled as it's not supported on the current platform.
+The shader Hidden/SunShaftsComposite (UnityEngine.Shader) on effect Main Camera (UnityStandardAssets.ImageEffects.SunShafts) is not supported on this platform!
+The shader Hidden/SimpleClear (UnityEngine.Shader) on effect Main Camera (UnityStandardAssets.ImageEffects.SunShafts) is not supported on this platform!
+The image effect Main Camera (UnityStandardAssets.ImageEffects.SunShafts) has been disabled as it's not supported on the current platform.
+[RaidSystem] Janela de raid aberta em CasteloTeste (desde 02:00 UTC).
+10/04/2026 23:27:16: Game server connected
+[AmplifyOcclusion] GBuffer Normals only available in Camera Deferred Shading mode. Switched to Camera source.
+10/04/2026 23:27:16: Loading: Generating locations
+[Deadheim PvP] Zona segura inicial: centro=(-5,0) raio=30 modo=Radius celulas=9 (~0,01 km2) biomas: Meadows 100%
+[Deadheim PvP] Templo inicial em x=-5 z=0. Zona segura inicial: centro=(-5,0) raio=30 modo=Radius celulas=9 (~0,01 km2) biomas: Meadows 100% templo_seguro=True calculo=19ms
+10/04/2026 23:27:18: Failed to place all SwampRuin2, placed 21 out of 30 with 0 tries in 00:00:00.2815531
+10/04/2026 23:27:21: Location GoblinCamp2 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 200 out of 200 with 0)
+10/04/2026 23:27:24: Location Crypt4 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 196 out of 200 with 0)
+10/04/2026 23:27:24: Failed to place all Crypt4, placed 196 out of 200 with 0 tries in 00:00:01.2258520
+10/04/2026 23:27:25: Location StoneTowerRuins05 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 42 out of 50 with 0)
+10/04/2026 23:27:25: Failed to place all StoneTowerRuins05, placed 42 out of 50 with 0 tries in 00:00:00.6204504
+10/04/2026 23:27:28: Location AbandonedLogCabin04 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 44 out of 50 with 0)
+10/04/2026 23:27:28: Failed to place all AbandonedLogCabin04, placed 44 out of 50 with 0 tries in 00:00:00.7598823
+10/04/2026 23:27:28: Location MountainWell1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 15 out of 25 with 0)
+10/04/2026 23:27:28: Failed to place all MountainWell1, placed 15 out of 25 with 0 tries in 00:00:00.7003286
+10/04/2026 23:27:29: Location Runestone_Mountains took more than 0,5 seconds to place, check spawn conditions to improve! (placed 50 out of 100 with 0)
+10/04/2026 23:27:29: Failed to place all Runestone_Mountains, placed 50 out of 100 with 0 tries in 00:00:00.5655770
+10/04/2026 23:27:30: Location TarPit1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 73 out of 100 with 0)
+10/04/2026 23:27:30: Failed to place all TarPit1, placed 73 out of 100 with 0 tries in 00:00:00.5747465
+10/04/2026 23:27:31: Location TarPit2 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 12 out of 16 with 0)
+10/04/2026 23:27:31: Failed to place all TarPit2, placed 12 out of 16 with 0 tries in 00:00:00.5772791
+10/04/2026 23:27:32: Failed to place all MountainCave02, placed 103 out of 120 with 0 tries in 00:00:00.4471330
+10/04/2026 23:27:33: Location Mistlands_Excavation2 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 40 out of 40 with 0)
+10/04/2026 23:27:34: Location Mistlands_Giant1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 241 out of 250 with 0)
+10/04/2026 23:27:34: Failed to place all Mistlands_Giant1, placed 241 out of 250 with 0 tries in 00:00:00.6903765
+10/04/2026 23:27:36: Location VoltureNest took more than 0,5 seconds to place, check spawn conditions to improve! (placed 350 out of 350 with 0)
+10/04/2026 23:27:37: Failed to place all MorgenHole3, placed 3 out of 40 with 0 tries in 00:00:00.3843809
+10/04/2026 23:27:39: Location NorthVillage took more than 0,5 seconds to place, check spawn conditions to improve! (placed 55 out of 135 with 0)
+10/04/2026 23:27:39: Failed to place all NorthVillage, placed 55 out of 135 with 0 tries in 00:00:01.4117248
+10/04/2026 23:27:40: Failed to place all WoodVillage2, placed 1 out of 15 with 0 tries in 00:00:00.3268122
+10/04/2026 23:27:41: Failed to place all SwampHut1_1, placed 17 out of 50 with 0 tries in 00:00:00.3882130
+10/04/2026 23:27:42: Failed to place all SwampHut2_1, placed 2 out of 50 with 0 tries in 00:00:00.4015222
+10/04/2026 23:27:42: Failed to place all SwampHut3_1, placed 0 out of 50 with 0 tries in 00:00:00.3932799
+10/04/2026 23:27:43: Failed to place all StoneTowerRuins05_leet, placed 0 out of 10 with 0 tries in 00:00:00.3151517
+10/04/2026 23:27:43: Failed to place all GoblinCamp2_1, placed 0 out of 5 with 0 tries in 00:00:00.0286867
+10/04/2026 23:27:43: Location GoblinHut01 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 30 out of 30 with 0)
+10/04/2026 23:27:45: Location GoblinHut02 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 16 out of 30 with 0)
+10/04/2026 23:27:45: Failed to place all GoblinHut02, placed 16 out of 30 with 0 tries in 00:00:01.3765618
+10/04/2026 23:27:46: Location GoblinHut03 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 2 out of 20 with 0)
+10/04/2026 23:27:46: Failed to place all GoblinHut03, placed 2 out of 20 with 0 tries in 00:00:01.3368936
+10/04/2026 23:27:47: Location TarPit1_1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 0 out of 50 with 0)
+10/04/2026 23:27:47: Failed to place all TarPit1_1, placed 0 out of 50 with 0 tries in 00:00:00.6236023
+10/04/2026 23:27:47: Location TarPit2_1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 0 out of 20 with 0)
+10/04/2026 23:27:47: Failed to place all TarPit2_1, placed 0 out of 20 with 0 tries in 00:00:00.7081063
+10/04/2026 23:27:48: Location TarPit3_1 took more than 0,5 seconds to place, check spawn conditions to improve! (placed 2 out of 100 with 0)
+10/04/2026 23:27:48: Failed to place all TarPit3_1, placed 2 out of 100 with 0 tries in 00:00:00.6828494
+10/04/2026 23:27:48: There are 18 that take a long time to generate (over 0,5 sec). Total slow location time is 16,0 seconds that could be saved on world gen!
+10/04/2026 23:27:48: Registering lobby
+10/04/2026 23:27:48: Opened Steam server
+10/04/2026 23:27:48: Loading: Done. Total seconds sinze ZNet start: 38,9674803, Genloc duration: 32047,2731 ms, (Total genloc time: 00:00:32.2468405, locations: 183, iterations: 0)
+10/04/2026 23:28:32: Got status changed msg k_ESteamNetworkingConnectionState_Connecting
+10/04/2026 23:28:32: New connection
+10/04/2026 23:28:32: Accepting connection k_EResultOK
+10/04/2026 23:28:32: Connecting to Steamworks.SteamNetworkingIdentity
+10/04/2026 23:28:32: Got status changed msg k_ESteamNetworkingConnectionState_Connected
+10/04/2026 23:28:32: Connected
+10/04/2026 23:28:32: Got connection SteamID 76561198053330247
+Sending AzuAntiCheat version 5.2.0 and minimum version 5.2.0 to the client.
+Sending Detalhes.Deadheim version 7.5.0 and minimum version 7.5.0 to the client.
+Sending Hearthstone version 2.1.1 and minimum version 2.1.1 to the client.
+Sending Detalhes.Hearthstone ItemManager version 2.1.1 and minimum version 0.0.0 to the client.
+Sending Guilds version 1.1.14 and minimum version 1.1.14 to the client.
+Sending RaidSystem version 2.2.2 and minimum version 2.2.2 to the client.
+Sending CL&LC version 5.0.6 and minimum version 5.0.6 to the client.
+Sending Groups version 1.2.12 and minimum version 1.2.12 to the client.
+Sending Server Characters version 1.4.17 and minimum version 1.4.17 to the client.
+Sending VipList version 1.0.0 and minimum version 1.0.0 to the client.
+Received Detalhes.Deadheim version 7.5.0 and minimum version 7.5.0 from the client.
+Received Server Characters version 1.4.17 and minimum version 1.4.17 from the client.
+Received VipList version 1.0.0 and minimum version 1.0.0 from the client.
+10/04/2026 23:28:32: Got handshake from client 76561198053330247
+10/04/2026 23:28:32: Semaphore type: ManualResetEventSlim
+10/04/2026 23:28:32: Network version check, their:40, mine:40
+10/04/2026 23:28:32: Checking for any blocked players in the historical player list...
+10/04/2026 23:28:32: Server: New peer connected,sending global keys
+10/04/2026 23:28:33: Placed location StartTemple in zone 0,0  duration 10,6135 ms
+10/04/2026 23:28:33: Checking for any blocked players in the historical player list...
+10/04/2026 23:28:34: Placed location ShipSetting01 in zone -4,-4  duration 15,8995 ms
+10/04/2026 23:28:34: Placed location Dolmen02 in zone -2,-4  duration 1,5882 ms
+10/04/2026 23:28:34: Placed location Dolmen02 in zone -1,-3  duration 0,505 ms
+10/04/2026 23:28:34: Placed location WoodHouse8 in zone 4,-3  duration 9,1084 ms
+10/04/2026 23:28:34: Placed location ShipSetting01 in zone 4,-2  duration 2,0164 ms
+10/04/2026 23:28:35: Placed location WoodHouse11 in zone 1,-4  duration 22,0496 ms
+10/04/2026 23:28:35: Placed location ShipSetting01 in zone 4,-4  duration 1,5096 ms
+10/04/2026 23:28:35: Placed location Runestone_Meadows in zone -3,-3  duration 0 ms
+10/04/2026 23:28:35: Placed location Runestone_Meadows in zone 1,-3  duration 0 ms
+10/04/2026 23:28:35: Placed location Dolmen01 in zone 2,-3  duration 0 ms
+10/04/2026 23:28:35: Placed location WoodHouse4 in zone 3,-3  duration 7,0734 ms
+10/04/2026 23:28:36: Placed location ShipSetting01 in zone 2,-2  duration 3,5743 ms
+10/04/2026 23:28:36: Placed location WoodHouse7 in zone -1,-2  duration 13,9361 ms
+10/04/2026 23:28:36: Placed location Runestone_Boars in zone 3,-2  duration 0,5058 ms
+10/04/2026 23:28:37: Placed location WoodHouse3 in zone 0,-1  duration 8,0589 ms
+10/04/2026 23:28:37: Placed location Dolmen01 in zone 4,-1  duration 1,5067 ms
+10/04/2026 23:28:37: Placed location Eikthyrnir in zone 3,-1  duration 0,5055 ms
+10/04/2026 23:28:37: Placed location ShipSetting01 in zone 4,0  duration 2,5086 ms
+10/04/2026 23:28:38: Placed location Runestone_Meadows in zone -1,0  duration 0 ms
+10/04/2026 23:28:38: Placed location WoodHouse8 in zone 1,0  duration 7,6219 ms
+10/04/2026 23:28:38: Placed location Runestone_Meadows in zone 3,0  duration 0 ms
+10/04/2026 23:28:38: Placed location Runestone_Meadows in zone 0,1  duration 0 ms
+10/04/2026 23:28:39: Placed location Dolmen01 in zone 3,1  duration 0 ms
+10/04/2026 23:28:39: Placed location ShipSetting01 in zone -1,2  duration 1,5197 ms
+10/04/2026 23:28:39: Placed location Dolmen01 in zone 3,2  duration 1,5095 ms
+10/04/2026 23:28:39: Placed location Dolmen02 in zone 4,2  duration 1,0076 ms
+10/04/2026 23:28:40: Placed location WoodHouse7 in zone 0,3  duration 16,2877 ms
+10/04/2026 23:28:40: Placed location Dolmen01 in zone 1,3  duration 1,5118 ms
+10/04/2026 23:28:40: Placed location Dolmen01 in zone 2,3  duration 1,5163 ms
+10/04/2026 23:28:40: Placed location WoodHouse8 in zone 3,3  duration 5,0503 ms
+10/04/2026 23:28:41: Placed location Runestone_Boars in zone -1,4  duration 0 ms
+10/04/2026 23:28:41: Placed location Dolmen01 in zone 0,4  duration 1,0004 ms
+10/04/2026 23:28:41: Placed location ShipSetting01 in zone 1,4  duration 3,4607 ms
+10/04/2026 23:28:41: Placed location Dolmen02 in zone 4,4  duration 1,0024 ms
+10/04/2026 23:28:41: Placed location WoodHouse9 in zone 2,4  duration 16,7635 ms
+10/04/2026 23:28:44: Placed location Runestone_Meadows in zone 5,-4  duration 0 ms
+10/04/2026 23:28:44: Placed location Dolmen01 in zone 5,-2  duration 1,0025 ms
+10/04/2026 23:28:44: Placed location Dolmen02 in zone 5,-1  duration 0 ms
+10/04/2026 23:28:45: Placed location WoodHouse4 in zone 5,1  duration 12,7372 ms
+10/04/2026 23:28:45: Placed location Dolmen02 in zone 5,2  duration 2,0009 ms
+10/04/2026 23:28:45: Placed location Runestone_Meadows in zone 5,3  duration 0,5033 ms
+10/04/2026 23:28:45: Checking for any blocked players in the historical player list...
+10/04/2026 23:28:52: Got character ZDOID from Solo : 2088736493:5
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+10/04/2026 23:31:01: Placed location Eikthyrnir in zone -3,-5  duration 0 ms
+10/04/2026 23:31:01: Placed location Dolmen01 in zone -2,-5  duration 1,0003 ms
+10/04/2026 23:31:01: Placed location Runestone_Meadows in zone 1,-5  duration 0 ms
+10/04/2026 23:31:02: Placed location Runestone_Boars in zone 3,-5  duration 0 ms
+10/04/2026 23:31:02: Placed location Runestone_Meadows in zone -5,-1  duration 0 ms
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=CasteloTeste defesaDoCastelo=True vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=7 pos=(-58,-53)
+[Deadheim PvP] Recompensa de defesa: Dummy +25 Coins (Meadows, castelo CasteloTeste); hoje 25/500.
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:31:04: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao.
+[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao.
+10/04/2026 23:31:13: Got character ZDOID from Solo : 0:0
+10/04/2026 23:31:13: Got character ZDOID from Solo : 2088736493:46
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK 5m00s (tempo online), sequencia 1, perda=Skills (contador de PK: 1).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:31:26: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #1]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #1]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:31:35: Got character ZDOID from Solo : 0:0
+10/04/2026 23:31:35: Got character ZDOID from Solo : 2088736493:52
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK 10m00s (tempo online), sequencia 2, perda=Skills (contador de PK: 2).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:31:43: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #2]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #2]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:31:53: Got character ZDOID from Solo : 0:0
+10/04/2026 23:31:53: Got character ZDOID from Solo : 2088736493:58
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK 1h00m (tempo online), sequencia 3, perda=Unequipped (contador de PK: 3).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:32:05: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #3]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #3]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:32:14: Got character ZDOID from Solo : 0:0
+10/04/2026 23:32:15: Got character ZDOID from Solo : 2088736493:64
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK 1h00m (tempo online), sequencia 4, perda=Unequipped (contador de PK: 4).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:32:26: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #4]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #4]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:32:35: Got character ZDOID from Solo : 0:0
+10/04/2026 23:32:35: Got character ZDOID from Solo : 2088736493:70
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK PERMANENTE (ate ser morto por um jogador), sequencia 5, perda=All (contador de PK: 5).
+10/04/2026 23:32:47: Console: <color=#c0c0c0>[PvP]</color> <color=#ff3030>Dummy virou PK PERMANENTE</color> e aparece no mapa ate ser morto.
+[Deadheim PvP] <color=#ff3030>Dummy virou PK PERMANENTE</color> e aparece no mapa ate ser morto.
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:32:47: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #5]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #5]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:32:57: Got character ZDOID from Solo : 0:0
+10/04/2026 23:32:57: Got character ZDOID from Solo : 2088736493:80
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK PERMANENTE (ate ser morto por um jogador), sequencia 6, perda=All (contador de PK: 6).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:33:10: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #6]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #6]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:33:20: Got character ZDOID from Solo : 0:0
+10/04/2026 23:33:20: Got character ZDOID from Solo : 2088736493:90
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=True moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy matou Solo, que era agressor: legitima defesa, sem PK.
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:33:55: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:34:05: Got character ZDOID from Solo : 0:0
+10/04/2026 23:34:05: Got character ZDOID from Solo : 2088736493:105
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=True castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(-3,0)
+10/04/2026 23:34:39: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> na arena.
+[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> na arena.
+10/04/2026 23:34:48: Got character ZDOID from Solo : 0:0
+10/04/2026 23:34:48: Got character ZDOID from Solo : 2088736493:126
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por PvE causa=Pve arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+10/04/2026 23:35:09: Got character ZDOID from Solo : 0:0
+10/04/2026 23:35:09: Got character ZDOID from Solo : 2088736493:129
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por PvE causa=Pve arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+10/04/2026 23:35:23: Got character ZDOID from Solo : 0:0
+10/04/2026 23:35:23: Got character ZDOID from Solo : 2088736493:136
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerCredit arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK PERMANENTE (ate ser morto por um jogador), sequencia 7, perda=All (contador de PK: 7).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:35:35: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #7]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #7]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:35:44: Got character ZDOID from Solo : 0:0
+10/04/2026 23:35:44: Got character ZDOID from Solo : 2088736493:142
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerCredit arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=0 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK PERMANENTE (ate ser morto por um jogador), sequencia 8, perda=All (contador de PK: 8).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:36:04: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #8]</color> matou <color=#ffb347>Solo</color>.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #8]</color> matou <color=#ffb347>Solo</color>.
+10/04/2026 23:36:13: Got character ZDOID from Solo : 0:0
+10/04/2026 23:36:13: Got character ZDOID from Solo : 2088736493:147
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=- defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=1000 cargaNoChao=12 pos=(45,0)
+[Deadheim PvP] Dummy (424242) agora e PK PERMANENTE (ate ser morto por um jogador), sequencia 9, perda=All (contador de PK: 9).
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:36:24: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #9]</color> matou <color=#ffb347>Solo</color> e deixou 1000 moedas e 12 itens no chao.
+[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #9]</color> matou <color=#ffb347>Solo</color> e deixou 1000 moedas e 12 itens no chao.
+10/04/2026 23:36:34: Got character ZDOID from Solo : 0:0
+10/04/2026 23:36:34: Got character ZDOID from Solo : 2088736493:159
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim PvP] Morte: Solo por Dummy causa=PlayerDirect arena=False castelo=CasteloTeste defesaDoCastelo=False vitimaPK=False vitimaCacada=False vitimaAgressora=False moedasNoChao=0 cargaNoChao=3 pos=(-58,-53)
+[RaidSystem] Abate de Dummy em Solo fora do Ranking de Guerra (guilds: - x -).
+10/04/2026 23:36:41: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao.
+[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao.
+10/04/2026 23:36:50: Got character ZDOID from Solo : 0:0
+10/04/2026 23:36:50: Got character ZDOID from Solo : 2088736493:167
+[Deadheim PvP] Solo (2108358631) sincronizado.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+10/04/2026 23:37:16:  Connections 1 ZDOS:16107  sent:0 recv:36
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+[Deadheim] Config recarregada de Detalhes.Deadheim.cfg.
+10/04/2026 23:39:35: Console: <color=#c0c0c0>[PvP]</color> <color=#9acd32>Solo virou Mercador</color> (PvE permanente): nao luta mais com jogadores.
+[Deadheim PvP] <color=#9acd32>Solo virou Mercador</color> (PvE permanente): nao luta mais com jogadores.
+[Deadheim PvP] Solo (2108358631) virou PvE permanente.
+[Deadheim] Ajustes: 76561198053330247 pediu 'mods' sem ser admin.
+[Deadheim] Ajustes: 76561198053330247 pediu 'definir' sem ser admin.

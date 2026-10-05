@@ -1,0 +1,561 @@
+[Message:   BepInEx] BepInEx 5.4.23.5 - valheim (04/10/2026 13:59:54)
+[Message:   BepInEx] User is running BepInExPack Valheim version 5.4.2351
+[Info   :   BepInEx] Running under Unity v6000.0.75.2503836
+[Info   :   BepInEx] CLR runtime version: 4.0.30319.42000
+[Info   :   BepInEx] Supports SRE: True
+[Info   :   BepInEx] System platform: Bits64, Windows
+[Message:   BepInEx] Preloader started
+[Info   :   BepInEx] Loaded 1 patcher method from [BepInEx.Preloader 5.4.23.5]
+[Info   :   BepInEx] 1 patcher plugin loaded
+[Info   :   BepInEx] Patching [UnityEngine.CoreModule] with [BepInEx.Chainloader]
+[Message:   BepInEx] Preloader finished
+[Message:   BepInEx] Valheim Version: 1.0.16
+[Message:   BepInEx] Chainloader ready
+[Message:   BepInEx] Chainloader started
+[Info   :   BepInEx] 10 plugins to load
+[Info   :   BepInEx] Loading [AzuAntiCheat 5.2.0] (Azumatt.AzuAntiCheat)
+[Info   :AzuAntiCheat] Discord webhooks: 0 usable. Detections will be logged to the console only.
+[Info   :   BepInEx] Loading [VipList 1.0.0] (Detalhes.VipList)
+[Info   :   VipList] VipList API ready with 1 VIP(s).
+[Info   :   BepInEx] Loading [Detalhes.Deadheim 7.5.0] (Detalhes.Deadheim)
+[Info   :Detalhes.Deadheim] Conexão direta do Deadheim ativa para 127.0.0.1:2486
+[Info   :   BepInEx] Loading [Hearthstone 2.1.1] (Detalhes.Hearthstone)
+[Info   :   BepInEx] Loading [PvpTestDriver 1.0.0] (Detalhes.PvpTestDriver)
+[Info   :PvpTestDriver] [PVPTEST] driver ativo: papel=S sync=C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\sync save=C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\chars-S
+[Info   :   BepInEx] Loading [Guilds 1.1.14] (org.bepinex.plugins.guilds)
+[Info   :   BepInEx] Loading [RaidSystem 2.2.2] (Detalhes.RaidSystem)
+[Info   :RaidSystem] Guilds mod active: True
+[Info   :RaidSystem] RaidSystem default config example written to C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\clientS\BepInEx\config\RaidSystem\RaidSystem.Default.cfg
+[Info   :RaidSystem] RaidSystem v2.2.2 loaded.
+[Info   :   BepInEx] Loading [Creature Level & Loot Control 5.0.6] (org.bepinex.plugins.creaturelevelcontrol)
+[Info   :   BepInEx] Loading [Groups 1.2.12] (org.bepinex.plugins.groups)
+[Info   :   BepInEx] Loading [Server Characters 1.4.17] (org.bepinex.plugins.servercharacters)
+[Message:   BepInEx] Chainloader startup complete (10 loaded, 0 skipped, 0 failed)
+[Info   :AzuAntiCheat] Memory baseline: 147 approved assembly locations recorded.
+[Info   :AzuAntiCheat] Native code baselines captured for 6 method(s).
+[Info   :AzuAntiCheat] Discord webhooks: 0 usable. Detections will be logged to the console only.
+[Info   :Detalhes.Deadheim] Sem vínculo para este servidor; abrindo criação de personagem (Cancelar volta para a seleção).
+[Info   :PvpTestDriver] [PVPTEST] criando personagem Solo
+[Message:AzuAntiCheat] Invoking version check
+[Message:AzuAntiCheat] Version check, server: 5.2.0,  mine: 5.2.0
+[Message:AzuAntiCheat] Received same version from server!
+[Message:AzuAntiCheat] AzuAntiCheat Version installed: 5.2.0 => Server Version: 5.2.0
+[Info   :AzuAntiCheat] Admin: False
+[Info   :AzuAntiCheat] Moderator: False
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] spawn ok (solo)
+[Info   :PvpTestDriver] [PVPTEST] === setup
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/modulo-ativo 
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/templo templo=(-4.70, 45.41, 0.28)
+[Info   :PvpTestDriver] [PVPTEST] posicoes: templo=(-4.70, 0.00, 0.28) seguro=(15.30, 0.00, 0.28) aberto=(45.30, 0.00, 0.28) wardA=(73.30, 0.00, 0.28) wardB=(59.97, 0.00, 27.06) castelo=(-57.70, 0.00, -52.72) fatorMorte=0,05 janelaSemPerda=600s
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/raidsystem-ligado 
+[Info   :PvpTestDriver] [PVPTEST] ilha: centro=(-5,0) raio=30 modo=Radius celulas=9 (~0,01 km2) biomas: Meadows 100%
+[Info   :PvpTestDriver] [PVPTEST] plugins: AzuAntiCheat 5.2.0, VipList 1.0.0, Detalhes.Deadheim 7.5.0, Hearthstone 2.1.1, PvpTestDriver 1.0.0, Guilds 1.1.14, RaidSystem 2.2.2, Creature Level & Loot Control 5.0.6, Groups 1.2.12, Server Characters 1.4.17
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/arredor-do-templo-seguro Ilha Inicial
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/aberto-nao-seguro 
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/templo-e-arena 
+[Info   :PvpTestDriver] [PVPTEST] dummy criado em (47.30, 59.33, 0.28) id=424242 nome=Dummy
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/fora-de-cutscene eu=False dummy=False
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/pvp-ativo-no-aberto flags=None
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/hud <color=#ff5050>PvP ATIVO</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS setup/servidor-recebeu-hello one 5,1  duration 12,7372 ms |10/04/2026 23:28:45: Placed location Dolmen02 in zone 5,2  duration 2,0009 ms |10/04/2026 23:28:45: Placed location Runestone_Meadows in zone 5,3  duration 0,5033 ms |10/04/2026 23:28:45: Checking for any blocked players in the historical player list... |10/04/2026 23:28:52: Got character ZDOID from Solo : 2088736493:5 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] === eu-bato
+[Info   :PvpTestDriver] [PVPTEST] dummy antes: vida=1000 max=1000 pvp=True dono=True cutscene=False morto=False teleporte=False voo=False deus=False regra=Allow euPvp=True
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:5 achado=True dano=10 vida=1000
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=5 vida=995
+[Info   :PvpTestDriver] [PVPTEST] PASS eu-bato/dano-x0.5 esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] === dummy-bate
+[Info   :PvpTestDriver] [PVPTEST] PASS dummy-bate/dano-x0.5 esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] PASS dummy-bate/em-combate flags=Combat
+[Info   :PvpTestDriver] [PVPTEST] PASS dummy-bate/icone-em-combate restante=5,0s
+[Info   :PvpTestDriver] [PVPTEST] === armadura
+[Info   :PvpTestDriver] [PVPTEST] armadura=24 golpe=40 vanilla=16,67 esperado=8,33 corteAntesDaArmadura=4,17
+[Info   :PvpTestDriver] [PVPTEST] PASS armadura/equipada armadura=24
+[Info   :PvpTestDriver] [PVPTEST] PASS armadura/corte-depois-da-armadura esperado=8,33 recebido=8,33
+[Info   :PvpTestDriver] [PVPTEST] === zona-segura
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/protegido flags=Protected
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/hud <color=#7CFC00>ZONA SEGURA: Ilha Inicial</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/buff flags=Protected
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/bloqueia-dano esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:5 achado=True dano=10 vida=995
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/protegido-nao-ataca esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/atacante-recusa AttackerProtected
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/vanilla-pula-o-golpe 
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/protegido-nao-ataca-pelo-atacante esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:5 achado=True dano=10 vida=995
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=5 vida=990
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/protegido-alcanca-pk golpe=True meuPvp=False
+[Info   :PvpTestDriver] [PVPTEST] PASS zona-segura/protegido-fere-pk esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] === atacante-protegido
+[Info   :PvpTestDriver] [PVPTEST] PASS atacante-protegido/tag Dummy <color=#7CFC00>[SEGURO]</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS atacante-protegido/bloqueado esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] === combate
+[Info   :PvpTestDriver] [PVPTEST] PASS combate/zona-segura-nao-protege flags=Combat
+[Info   :PvpTestDriver] [PVPTEST] PASS combate/buff-com-contagem Em combate 4,1s
+[Info   :PvpTestDriver] [PVPTEST] PASS combate/zona-segura-sem-buff 
+[Info   :PvpTestDriver] [PVPTEST] PASS combate/leva-dano-na-zona-segura esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] PASS combate/protegido-depois flags=Protected
+[Info   :PvpTestDriver] [PVPTEST] PASS combate/buff-some 
+[Info   :PvpTestDriver] [PVPTEST] PASS combate/bloqueado-depois esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] === fuga
+[Info   :PvpTestDriver] [PVPTEST] PASS fuga/teleporte-bloqueado-em-combate teleportou=False andou=0,0
+[Info   :PvpTestDriver] [PVPTEST] PASS fuga/teleporte-livre-fora-de-combate teleportou=True distancia=0,0
+[Info   :PvpTestDriver] [PVPTEST] PASS fuga/icone-some-fora-de-combate 
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: CombatFromPve = true (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS fuga/combate-pve-ligado-pelo-cfg 
+[Info   :PvpTestDriver] [PVPTEST] PASS fuga/combate-pve-bloqueia-teleporte teleportou=False hud=<color=#ff5050>PvP ATIVO</color>  |  <color=#ffb347>Luta com monstro 5s</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS fuga/combate-pve-nao-tira-pvp-da-zona flags=None
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: CombatFromPve = false (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS fuga/combate-pve-desligado-de-novo 
+[Info   :PvpTestDriver] [PVPTEST] === guilda
+[Info   :PvpTestDriver] [PVPTEST] PASS guilda/mod-guilds-carregado 
+[Info   :PvpTestDriver] [PVPTEST] PASS guilda/sem-guilda-de-verdade guilda=
+[Info   :PvpTestDriver] [PVPTEST] PASS guilda/mesma-guilda 
+[Info   :PvpTestDriver] [PVPTEST] PASS guilda/sem-fogo-amigo esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:5 achado=True dano=10 vida=990
+[Info   :PvpTestDriver] [PVPTEST] PASS guilda/sem-fogo-amigo-2 esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS guilda/outra-guilda-leva-dano esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] === grupo
+[Info   :PvpTestDriver] [PVPTEST] PASS grupo/mod-groups-carregado 
+[Info   :PvpTestDriver] [PVPTEST] PASS grupo/mesmo-grupo 
+[Info   :PvpTestDriver] [PVPTEST] PASS grupo/sem-fogo-amigo esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS grupo/fora-do-grupo-leva-dano esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] === territorio
+[Info   :PvpTestDriver] [PVPTEST] ward em (73.30, 65.40, 0.28) dono=Solo permitido=Dummy raio=12
+[Info   :PvpTestDriver] [PVPTEST] PASS territorio/meu 
+[Info   :PvpTestDriver] [PVPTEST] PASS territorio/compartilhado 
+[Info   :PvpTestDriver] [PVPTEST] PASS territorio/donos-sem-fogo-amigo esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS territorio/dummy-virou-invasor 
+[Info   :PvpTestDriver] [PVPTEST] PASS territorio/defensor-leva-menos esperado=2,5 recebido=2,5
+[Info   :PvpTestDriver] [PVPTEST] === castelo-invasor
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=0:0 achado=False dano=100 vida=990
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=100 vida=890
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo/zona castelo=CasteloTeste dono=Lobos
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo/imunidade-nao-vale flags=Combat, Castle
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo/hud <color=#ff8c00>Castelo: CasteloTeste</color>  |  <color=#ffb347>Em combate 2s</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo/imune-leva-dano esperado=5 recebido=5
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: castelo: invasor
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-invasor/sem-perda-de-skill skill=50
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-invasor/sem-imunidade flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-invasor/nao-abre-janela-sem-perda desdeAMorte=1601 janela=600
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-invasor/defensor-ganha-recompensa olor=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao. |[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao. |10/04/2026 23:31:13: Got character ZDOID from Solo : 0:0 |10/04/2026 23:31:13: Got character ZDOID from Solo : 2088736493:46 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-invasor/defensor-nao-vira-pk olor=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao. |[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao. |10/04/2026 23:31:13: Got character ZDOID from Solo : 0:0 |10/04/2026 23:31:13: Got character ZDOID from Solo : 2088736493:46 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-invasor/raidsystem-recebeu-o-abate olor=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao. |[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> defendendo o castelo CasteloTeste e deixou 7 itens no chao. |10/04/2026 23:31:13: Got character ZDOID from Solo : 0:0 |10/04/2026 23:31:13: Got character ZDOID from Solo : 2088736493:46 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] === imunidade
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: imunidade
+[Info   :PvpTestDriver] [PVPTEST] PASS imunidade/concedida-pela-morte-pvp flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] PASS imunidade/hud <color=#7fd4ff>IMUNE A PvP 1m46s</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS imunidade/buff-com-contagem Imune a PvP 105,7s
+[Info   :PvpTestDriver] [PVPTEST] PASS imunidade/nao-recebe esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:52 achado=True dano=10 vida=890
+[Info   :PvpTestDriver] [PVPTEST] PASS imunidade/nao-causa esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS imunidade/vanilla-pula-o-golpe 
+[Info   :PvpTestDriver] [PVPTEST] PASS imunidade/nao-causa-pelo-atacante esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] === pk
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/marcado flags=Pk
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/hud <color=#ff5050>PvP ATIVO</color>  |  <color=#ff3030>PK 4m59s</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/contador-no-hud <color=#ff5050>PvP ATIVO</color>  |  <color=#ff3030>PK 4m59s (x3)</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/contador-na-zdo 
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/buff-com-contador PK x3 298,6s
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: pk
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/servidor-marca-o-matador c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #2]</color> matou <color=#ffb347>Solo</color>. |[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #2]</color> matou <color=#ffb347>Solo</color>. |10/04/2026 23:31:53: Got character ZDOID from Solo : 0:0 |10/04/2026 23:31:53: Got character ZDOID from Solo : 2088736493:58 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/perda-em-dobro antes=50 depois=45 esperado=45
+[Info   :PvpTestDriver] [PVPTEST] PASS pk/marca-some-ao-morrer flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] === pk-niveis
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: pk-niveis-1
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: pk-niveis-2
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: pk-perda-desequipado
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-perda/desequipado-no-chao madeira=20
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-perda/equipado-nao-cai espada=0
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-perda/permanente-no-hud <color=#ff5050>PvP ATIVO</color>  |  <color=#ff3030>PK PERMANENTE</color>
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: pk-perda-tudo
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-perda/tudo-no-chao madeira=20 espada=1
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-perda/permanente-sai-morto-por-jogador flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-niveis/sobe-para-perda-de-itens c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #6]</color> matou <color=#ffb347>Solo</color>. |[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #6]</color> matou <color=#ffb347>Solo</color>. |10/04/2026 23:33:20: Got character ZDOID from Solo : 0:0 |10/04/2026 23:33:20: Got character ZDOID from Solo : 2088736493:90 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-niveis/chega-ao-permanente c0c0>[PvP]</color> <color=#ffb347>Dummy</color> <color=#ff5050>[PK #6]</color> matou <color=#ffb347>Solo</color>. |[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #6]</color> matou <color=#ffb347>Solo</color>. |10/04/2026 23:33:20: Got character ZDOID from Solo : 0:0 |10/04/2026 23:33:20: Got character ZDOID from Solo : 2088736493:90 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] === pk-sem-protecao
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-sem-protecao/marcado flags=Arena admin=False
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-sem-protecao/zona-segura-nao-protege flags=Pk
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-sem-protecao/leva-dano-na-ilha esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-sem-protecao/protegido-pode-atacar-pk Allow
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-sem-protecao/protegido-fere-pk esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] PASS pk-sem-protecao/imune-nao-ataca esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] SKIP pk-sem-protecao/morte-pve: precisa de admin (-Admin)
+[Info   :PvpTestDriver] [PVPTEST] === agressor
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:90 achado=True dano=10 vida=890
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=5 vida=885
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/marcado flags=Combat, Aggressor
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/hud <color=#ff5050>PvP ATIVO</color>  |  <color=#ff7a3d>AGRESSOR</color>  |  <color=#ffb347>Em combate 6s</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/buff 
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/pausa-em-combate antes=599,9 depois=599,9 combate=True
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/volta-a-correr-fora-de-combate antes=599,9 depois=595,5
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/dura-dez-minutos resta=595
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: agressor
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/legitima-defesa-sem-pk ra (guilds: - x -). |10/04/2026 23:33:55: Console: <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color>. |[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color>. |10/04/2026 23:34:05: Got character ZDOID from Solo : 0:0 |10/04/2026 23:34:05: Got character ZDOID from Solo : 2088736493:105 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/marca-some-ao-morrer flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:105 achado=True dano=10 vida=885
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=5 vida=880
+[Info   :PvpTestDriver] [PVPTEST] PASS agressor/revidar-e-defesa flags=Combat
+[Info   :PvpTestDriver] [PVPTEST] === chefes
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/sem-chefe nivel=0
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/anciao-no-perfil-e-nivel-2 nivel=2
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/de-volta-a-zero nivel=0
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/regra BossGap / BossGap
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/nome-mostra-outra-faixa Dummy <color=#a0a0a0>[outra faixa]</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/forte-nao-fere-fraco esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=2088736493:105 achado=True dano=10 vida=880
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/fraco-nao-fere-forte esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/fraco-nao-fere-forte-pelo-atacante esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/um-de-diferenca-luta esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=0:0 achado=False dano=57,15177 vida=880
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=57,15177 vida=822,8482
+[Info   :PvpTestDriver] [PVPTEST] PASS chefes/arena-ignora-a-faixa esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] === arena
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=0:0 achado=False dano=57,249 vida=822,8482
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=57,249 vida=765,5992
+[Info   :PvpTestDriver] [PVPTEST] PASS arena/dentro-e-imune-ainda-luta flags=Combat, Arena
+[Info   :PvpTestDriver] [PVPTEST] PASS arena/hud <color=#ff8c00>Arena: ArenaTeste</color>  |  <color=#ffb347>Em combate 3s</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS arena/imunidade-ignorada esperado=5 recebido=5
+[Info   :PvpTestDriver] [PVPTEST] PASS arena/fogo-amigo-liberado esperado=5 recebido=5
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: arena
+[Info   :PvpTestDriver] [PVPTEST] PASS arena/sem-perda-de-skill skill=50
+[Info   :PvpTestDriver] [PVPTEST] PASS arena/sem-imunidade flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] PASS arena/nao-abre-janela-sem-perda desdeAMorte=1601 janela=600
+[Info   :PvpTestDriver] [PVPTEST] === bounty
+[Info   :PvpTestDriver] [PVPTEST] SKIP bounty: precisa de admin (rode com -Admin -Steps bounty,bounty-pagar,bounty-expira)
+[Info   :PvpTestDriver] [PVPTEST] === bounty-pagar
+[Info   :PvpTestDriver] [PVPTEST] SKIP bounty-pagar: precisa de admin (rode com -Admin -Steps bounty,bounty-pagar,bounty-expira)
+[Info   :PvpTestDriver] [PVPTEST] === bounty-expira
+[Info   :PvpTestDriver] [PVPTEST] SKIP bounty-expira: precisa de admin (rode com -Admin -Steps bounty,bounty-pagar,bounty-expira)
+[Info   :PvpTestDriver] [PVPTEST] === morte-pve-x-pvp
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/queda-perde-skill-normal skill=47,5
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/queda-sem-imunidade flags=Arena
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/mob-sem-imunidade flags=Arena
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] PASS pvp/queda-apos-golpe-conta-como-jogador imune=True flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] PASS pvp/veneno-dura-mais-que-o-credito veneno=45,2s credito=5s
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] PASS pvp/morte-por-veneno-de-jogador-conta-como-jogador imune=True flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] === saque
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: saque
+[Info   :PvpTestDriver] [PVPTEST] PASS saque/moedas-no-chao no-chao=1000 esperado=1000
+[Info   :PvpTestDriver] [PVPTEST] PASS saque/carga-material madeira=10 esperado=10
+[Info   :PvpTestDriver] [PVPTEST] PASS saque/carga-comida carne=2 esperado=2
+[Info   :PvpTestDriver] [PVPTEST] PASS saque/equipado-fica-na-tumba espada=0
+[Info   :PvpTestDriver] [PVPTEST] PASS saque/token-nunca-cai token=0
+[Info   :PvpTestDriver] [PVPTEST] PASS saque/servidor-sabe tou <color=#ffb347>Solo</color> e deixou 1000 moedas e 12 itens no chao. |[Deadheim PvP] <color=#ffb347>Dummy</color> <color=#ff5050>[PK #9]</color> matou <color=#ffb347>Solo</color> e deixou 1000 moedas e 12 itens no chao. |10/04/2026 23:36:34: Got character ZDOID from Solo : 0:0 |10/04/2026 23:36:34: Got character ZDOID from Solo : 2088736493:159 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] === castelo-defensor
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=0:0 achado=False dano=100 vida=765,5992
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=100 vida=665,5992
+[Info   :Detalhes.Deadheim] Personagem vinculado a este servidor pelo Deadheim.
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] RPC_AdminList recebido: []
+[Info   :PvpTestDriver] [PVPTEST] PASS renasceu 
+[Info   :PvpTestDriver] [PVPTEST] morte: castelo: defensor
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-defensor/sem-perda-de-skill skill=50
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-defensor/sem-imunidade flags=Arena
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-defensor/invasor-sem-recompensa my</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao. |[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao. |10/04/2026 23:36:50: Got character ZDOID from Solo : 0:0 |10/04/2026 23:36:50: Got character ZDOID from Solo : 2088736493:167 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] PASS castelo-defensor/invasor-nao-vira-pk my</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao. |[Deadheim PvP] <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao. |10/04/2026 23:36:50: Got character ZDOID from Solo : 0:0 |10/04/2026 23:36:50: Got character ZDOID from Solo : 2088736493:167 |[Deadheim PvP] Solo (2108358631) sincronizado. |
+[Info   :PvpTestDriver] [PVPTEST] === tumba
+[Info   :PvpTestDriver] [PVPTEST] PASS tumba/alheia-trancada abriu=False
+[Info   :PvpTestDriver] [PVPTEST] PASS tumba/hover Here rests Dummy
+[<color=yellow><b>E</b></color>] Open
+<color=#ff5050>Trancada: so o dono abre</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS tumba/dono-abre 
+[Info   :PvpTestDriver] [PVPTEST] === transporte
+[Info   :PvpTestDriver] [PVPTEST] PASS transporte/barco-toma-dano-de-jogador antes=0,9648072 depois=0,7107379
+[Info   :PvpTestDriver] [PVPTEST] PASS transporte/barco-nao-e-abrigo volumes=1 flags=None
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ShipsSafe = true (mudou=True)
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ShipsInvulnerable = true (mudou=True)
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ShipSafeMinSpeed = 0 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS config/recarga-chega-no-cliente ShipsSafe=True ShipSafeMinSpeed=0
+[Info   :PvpTestDriver] [PVPTEST] PASS config/servidor-recarregou [Deadheim] Config recarregada de Detalhes.Deadheim.cfg. |
+[Info   :PvpTestDriver] [PVPTEST] PASS transporte/barco-protege-com-shipssafe volumes=1 flags=Protected
+[Info   :PvpTestDriver] [PVPTEST] PASS transporte/barco-bloqueia-dano esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS transporte/barco-invulneravel-com-shipsinvulnerable antes=0,7107379 depois=0,7107379
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ShipsSafe = false (mudou=True)
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ShipsInvulnerable = false (mudou=True)
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ShipSafeMinSpeed = 1 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS config/recarga-volta ShipsSafe=False ShipSafeMinSpeed=1
+[Info   :PvpTestDriver] [PVPTEST] === montaria
+[Info   :PvpTestDriver] [PVPTEST] PASS montaria/estamina-da-sela-do-cfg max=240 corrida=1
+[Info   :PvpTestDriver] [PVPTEST] PASS montaria/com-sela-toma-dano-de-jogador antes=1000 depois=975
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: TransportsInvulnerable = true (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS montaria/invulneravel-com-transportsinvulnerable antes=975 depois=975 cfg=True
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: TransportsInvulnerable = false (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS montaria/sem-sela-toma-dano antes=975 depois=950
+[Info   :PvpTestDriver] [PVPTEST] === ward-natureza
+[Info   :PvpTestDriver] [PVPTEST] ward em (59.97, 53.22, 27.06) dono=Dummy permitido=- raio=12
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-natureza/arvore-dentro-protegida antes=80 depois=80
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-natureza/arvore-fora-cai antes=80 depois=60
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-natureza/estanho-e-veio 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-natureza/arvore-nao-e-veio 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-natureza/veio-livre-no-ward 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-natureza/arvore-trancada-no-ward 
+[Info   :PvpTestDriver] [PVPTEST] === ward-territorio
+[Info   :PvpTestDriver] [PVPTEST] ward em (57.97, 53.09, 27.06) dono=Dummy permitido=- raio=12
+[Info   :PvpTestDriver] [PVPTEST] ward em (59.97, 53.22, 27.06) dono=Dummy permitido=- raio=12
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/prefab 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/custa-dead-token DeadToken:5,Stone:100,SurtlingCore:5
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/token-nao-cai-como-carga 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/fora-da-area-segura SafeArea=0
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/recem-colocada-inativa faltam=3599s
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/hover-ativa-em Territorio ( Active )
+Owner:
+Permitted: 
+Territorio: <color=yellow>ativa em 60 min</color> (ate la, ward comum)
+So o dono remove
+Combustivel: 1/10
+[Use Resin para abastecer]
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/inativa-toma-dano-de-ward-comum antes=1 depois=0,95 DamagePercent=25
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: SafeArea = 1500 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/spawn-e-area-segura SafeArea=1500 distancia=67
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/ward-comum-protege-100-no-spawn antes=0,95 depois=0,95
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: SafeArea = 0 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: TerritoryWardActivationMinutes = 0.05 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/ativa faltam=0,0s
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/hover-indestrutivel Territorio ( Active )
+Owner:
+Permitted: 
+Territorio: <color=#7CFC00>indestrutivel</color>
+So o dono remove
+Combustivel: 1/10
+[Use Resin para abastecer]
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/prevalece-sobre-ward-comum 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/indestrutivel-fora-do-spawn antes=0,95 depois=0,95
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/outra-perto-recusada 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/outra-longe-livre 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/outro-nao-remove 
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/dono-remove 
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: TerritoryWardEnabled = false (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/desligada-vira-ward-comum 
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: TerritoryWardEnabled = true (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS ward-territorio/religada 
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: TerritoryWardActivationMinutes = 60 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] === tokens
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/DeadToken/icone-proprio 128x128
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/DeadToken/moeda-no-chao pedraEscondida=True face=True colisor=True
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/PortalToken/icone-proprio 128x128
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/PortalToken/moeda-no-chao pedraEscondida=True face=True colisor=True
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/SpawnerToken/icone-proprio 128x128
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/SpawnerToken/moeda-no-chao pedraEscondida=True face=True colisor=True
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/TerritoryToken/icone-proprio 128x128
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/TerritoryToken/moeda-no-chao pedraEscondida=True face=True colisor=True
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/GarantiaRefino/icone-proprio 64x64
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/GarantiaRefino/moeda-no-chao pedraEscondida=True face=True colisor=True
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/dead-token/moeda-grossa camadas=11
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/dead-token/sem-valor-no-mercador valor=0
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/dead-token/pilha pilha=100
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/portal-custa-dead-token DeadToken:1,FineWood:50,GreydwarfEye:30,SurtlingCore:5
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/spawner-custa-dead-token DeadToken:1
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/antigos-viram-dead-token dead=8 esperado=8 antigos=0
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/soltar-dead-token 
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/dead-token-no-chao ativo=True rede=True
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/moeda-deitada up=(-0.32, 0.95, 0.00)
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/pega-de-volta 
+[Info   :PvpTestDriver] [PVPTEST] FAIL tokens/antigo-do-chao-vira-dead-token dead=6
+[Info   :PvpTestDriver] [PVPTEST] PASS tokens/moedas-desenhadas DeadToken:visivel=True y=0,11 PortalToken:visivel=True y=0,12 SpawnerToken:visivel=True y=0,12 TerritoryToken:visivel=True y=0,12 GarantiaRefino:visivel=True y=0,12
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\tokens-chao.png
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\tokens-inventario.png
+[Info   :PvpTestDriver] [PVPTEST] === monstro-aliados
+[Info   :PvpTestDriver] [PVPTEST] PASS monstro/jogo-conta-o-dummy 
+[Info   :PvpTestDriver] [PVPTEST] PASS monstro/estranho-nao-conta jogadores=1
+[Info   :PvpTestDriver] [PVPTEST] PASS monstro/guilda-conta jogadores=2
+[Info   :PvpTestDriver] [PVPTEST] PASS monstro/grupo-conta jogadores=2
+[Info   :PvpTestDriver] [PVPTEST] PASS monstro/chave-do-grupo-na-zdo 
+[Info   :PvpTestDriver] [PVPTEST] PASS monstro/golpe-com-estranho-sem-bonus estranho=20,00 aliado=15,38
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: MonsterScalingAlliesOnly = false (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS monstro/desligado-conta-todo-mundo desligado=15,38 aliado=15,38
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: MonsterScalingAlliesOnly = true (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] === retreat
+[Info   :PvpTestDriver] [PVPTEST] PASS retreat/bloqueado-em-combate Em combate! Aguarde 6s.
+[Info   :PvpTestDriver] [PVPTEST] PASS retreat/livre-fora-de-combate 
+[Info   :PvpTestDriver] [PVPTEST] PASS retreat/bloqueado-em-luta-com-monstro Em combate com monstro! Aguarde 6s.
+[Info   :PvpTestDriver] [PVPTEST] PASS retreat/buff-luta-com-monstro Luta com monstro
+[Info   :PvpTestDriver] [PVPTEST] PASS retreat/livre-depois-da-luta-com-monstro 
+[Info   :PvpTestDriver] [PVPTEST] PASS retreat/cooldown Retreat em recarga: 30m00s.
+[Info   :PvpTestDriver] [PVPTEST] PASS retreat/recarga-gravada-como-tempo-restante 
+[Info   :PvpTestDriver] [PVPTEST] PASS pedra/mod-hearthstone-carregado 
+[Info   :PvpTestDriver] [PVPTEST] PASS pedra/bloqueada-em-luta-com-monstro usou=False pedras=1/1 andou=0,0
+[Info   :PvpTestDriver] [PVPTEST] PASS pedra/bloqueada-em-combate-pvp usou=False pedras=1/1 andou=0,0
+[Info   :PvpTestDriver] [PVPTEST] PASS pedra/fora-de-luta-teleporta-e-gasta-uma usou=True pedras=0/1 distancia=0,0
+[Info   :PvpTestDriver] [PVPTEST] === rank
+[Info   :PvpTestDriver] [PVPTEST] comando: /rank
+[Info   :PvpTestDriver] [PVPTEST] PASS rank/minha-linha Voce:  2. <color=#ffd700>Solo</color>  K 0  D 12  K/D 0,00
+[Info   :PvpTestDriver] [PVPTEST] PASS rank/dummy <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao. / <color=#ffd700>--- Ranking PvP (K/D) ---</color> /  1. Dummy  K 12  D 0  K/D 12,00  <color=#ff5050>PK 9</color> /  2. <color=#ffd700>Solo</color>  K 0  D 12  K/D 0,00 / Voce:  2. <color=#ffd700>Solo</color>  K 0  D 12  K/D 0,00
+[Info   :PvpTestDriver] [PVPTEST] PASS rank/contador-de-pk <color=#c0c0c0>[PvP]</color> <color=#ffb347>Dummy</color> matou <color=#ffb347>Solo</color> no castelo CasteloTeste e deixou 3 itens no chao. / <color=#ffd700>--- Ranking PvP (K/D) ---</color> /  1. Dummy  K 12  D 0  K/D 12,00  <color=#ff5050>PK 9</color> /  2. <color=#ffd700>Solo</color>  K 0  D 12  K/D 0,00 / Voce:  2. <color=#ffd700>Solo</color>  K 0  D 12  K/D 0,00
+[Info   :PvpTestDriver] [PVPTEST] === estado-salvo
+[Info   :PvpTestDriver] [PVPTEST] PASS estado-salvo/arquivo C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\server\BepInEx\config\Deadheim
+[Info   :PvpTestDriver] [PVPTEST] PASS estado-salvo/jogadores ntil=0	castleRewardDay=0	castleRewardToday=0|player	id=424242	name=Dummy	kills=12	deaths=0	pkLeft=3600	pkPermanent=1	pkStreak=9	pkPenalty=2	pkKills=9	bountyReadyAt=0	combatLogPending=0	pendingCoins=0	pvePermanent=0	pveSince=0	bountyPaidDay=0	bountyPaidToday=0	guild=	prevGuild=	prevGuildUntil=0	castleRewardDay=20731	castleRewardToday=25|defense	killer=424242	victim=2108358631	at=1791167464.3271461|
+[Info   :PvpTestDriver] [PVPTEST] PASS estado-salvo/abates-do-dummy ntil=0	castleRewardDay=0	castleRewardToday=0|player	id=424242	name=Dummy	kills=12	deaths=0	pkLeft=3600	pkPermanent=1	pkStreak=9	pkPenalty=2	pkKills=9	bountyReadyAt=0	combatLogPending=0	pendingCoins=0	pvePermanent=0	pveSince=0	bountyPaidDay=0	bountyPaidToday=0	guild=	prevGuild=	prevGuildUntil=0	castleRewardDay=20731	castleRewardToday=25|defense	killer=424242	victim=2108358631	at=1791167464.3271461|
+[Info   :PvpTestDriver] [PVPTEST] === coins
+[Info   :PvpTestDriver] [PVPTEST] PASS coins/peso-zero peso=0
+[Info   :PvpTestDriver] [PVPTEST] PASS coins/pilha-5000 pilha=5000
+[Info   :PvpTestDriver] [PVPTEST] === forja
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/item-garantia-existe Garantia de Refino
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/garantia-nao-vende-no-mercador valor=0
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/garantia-com-icone-proprio 
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/estacao-do-jogo 
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/receita-pede-idolo Upgrader2Weapon
+[Info   :PvpTestDriver] [PVPTEST] forja: idolo=Upgrader2Weapon chance=0,65 quebra=1
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/config-padrao ativa=True chance=1 teto=25 custo25=1
+[Info   :PvpTestDriver] [PVPTEST] forja: estacao '$piece_upgradestation' a 1,00 m (uso 1,7)
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/estoque-inicial garantias=10 idolos=20 arma=4
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/painel-na-forja estacao=$piece_upgradestation selecionou=True
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/painel-mostra-garantia <color=#9be564>Garantia de Refino: 100% de sucesso</color> (usa 1, tem 10)
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/botao-refinar-com-garantia 'Refinar com garantia' ativo=True
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\forja-1-painel-com-garantia.png
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/botao-sobe-com-garantia arma=5 garantias=9 idolos=19
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/chance-do-idolo-volta 0,65
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\forja-2-depois-de-refinar.png
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/garantia-sobe-sempre subiu=8/8 nivel=13
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/gasta-uma-por-nivel garantias=1 idolos=11
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: GarantiasPorNivel = 1:1,14:2 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/custo-por-nivel-chega-ao-vivo 13=1 14=2
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/faltam-garantias-barra arma=13 garantias=1 idolos=11
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/gasta-o-custo-do-nivel arma=14 garantias=2 idolos=10
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: GarantiasPorNivel = 1:1 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ChanceComGarantia = 0 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/chance-0-quebra-e-gasta arma= garantias=1 idolos=9
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: ChanceComGarantia = 1 (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/jogador-desliga-nao-gasta garantias=1 idolos=8 resultado=quebrou
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: GarantiaAtiva = false (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/servidor-desliga-nao-gasta garantias=1 idolos=7
+[Info   :PvpTestDriver] [PVPTEST] cfg do servidor: GarantiaAtiva = true (mudou=True)
+[Info   :Detalhes.Deadheim] Config do servidor recebida e aplicada.
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/teto-25-barra arma=25 garantias=1 idolos=7
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/teto-no-painel 'Nível máximo da Forja de Potencial: 25' ativo=False
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\forja-3-teto.png
+[Info   :PvpTestDriver] [PVPTEST] PASS forja/servidor-recarregou 
+[Info   :PvpTestDriver] [PVPTEST] === pve
+[Info   :PvpTestDriver] [PVPTEST] trace RPC_Damage(dummy) atacante=0:0 achado=False dano=14,96913 vida=665,5992
+[Info   :PvpTestDriver] [PVPTEST] trace ApplyDamage(dummy) dano=14,96913 vida=650,6301
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/pvp-coleta-na-taxa-do-pvp taxa=2 esperado=2
+[Info   :PvpTestDriver] [PVPTEST] comando: /pve
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/so-explica-sem-confirmar 
+[Info   :PvpTestDriver] [PVPTEST] comando: /pve confirmar
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/virou flags=Pve
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/zdo 
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/sem-pvp 
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/hud <color=#9acd32>PvE PERMANENTE: Mercador</color>
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/buff-sem-contagem Mercador ttl=0
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/sem-bonus-de-skill pesca=5
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/skill-mais-devagar normal=0,7500 pve=0,3750
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/coleta-na-taxa-do-pve taxa=1 esperado=1
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/jogador-nao-fere esperado=0 recebido=0
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/nao-ataca AttackerProtected
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/arena-nao-liga-pvp flags=Arena, Pve
+[Info   :PvpTestDriver] [PVPTEST] PASS pve/servidor-guardou 10/04/2026 23:39:35: Console: <color=#c0c0c0>[PvP]</color> <color=#9acd32>Solo virou Mercador</color> (PvE permanente): nao luta mais com jogadores. |[Deadheim PvP] <color=#9acd32>Solo virou Mercador</color> (PvE permanente): nao luta mais com jogadores. |[Deadheim PvP] Solo (2108358631) virou PvE permanente. |
+[Info   :PvpTestDriver] [PVPTEST] === ajustes
+[Info   :PvpTestDriver] [PVPTEST] ajustes: admin=False tela=960x540
+[Info   :PvpTestDriver] [PVPTEST] ajustes: adminlist no cliente=[] eu=Steam_76561198053330247
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/esc-volta-ao-menu (patch no Menu.Update) 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-abre 
+[Info   :PvpTestDriver] [PVPTEST] menu do ESC: dialogo=Menu [Continue 'Continue' y=384..407] [ManualSave 'Save' y=361..384] [CurrentPlayerList 'Player list' y=338..361] [Settings 'Settings' y=315..338] [Deadheim 'Deadheim' y=292..315] [Logout 'Log Out' y=269..292] [Exit 'Quit' y=246..269] 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-no-menu 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-texto Deadheim
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-sem-sobrepor 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/botao-dentro-da-tela x=430..530 y=292..315 tela=960x540
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\ajustes-1-menu-esc.png
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/janela-abre 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-some-atras alfa=0
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/janela-dentro-da-tela x=215..745 y=95..445 tela=960x540
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/aba-servidor-so-admin 
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\ajustes-2-meus-ajustes.png
+[Info   :PvpTestDriver] [PVPTEST] meus ajustes: Deadheim(1), RaidSystem(2), Creature Level & Loot Control(3), Groups(9), Guilds(5)
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-tem-mods 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-sem-opcao-do-servidor 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-sem-config-de-servidor-do-deadheim 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-sem-webhook-do-raidsystem 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-linha-da-tecla 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-edita PageUp -> PageDown
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-salva-no-cfg 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-status Salvo: Menu Key = PageDown
+[Info   :PvpTestDriver] [PVPTEST] foto: C:\Users\werne\AppData\Local\Temp\deadheim-pvptest-driver\fotos\ajustes-3-meus-ajustes-editado.png
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-recusa-invalido Valor invalido para tecla.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/meus-desfaz 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/jogador-negado So admins do servidor (adminlist.txt) podem mexer na config do servidor.
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/jogador-nao-muda-o-servidor valor=0
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/servidor-registra-a-tentativa [Deadheim] Ajustes: 76561198053330247 pediu 'mods' sem ser admin. |[Deadheim] Ajustes: 76561198053330247 pediu 'definir' sem ser admin. |
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/voltar-fecha-a-janela 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/voltar-devolve-o-menu alfa=1
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-fechado-fecha-a-janela 
+[Info   :PvpTestDriver] [PVPTEST] PASS ajustes/menu-fechado-devolve-o-menu alfa=1
+[Info   :PvpTestDriver] [PVPTEST] DONE pass=303 fail=1

@@ -71,16 +71,16 @@ ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; max-width
 
 <main class="wrap">
   <header>
-    <div class="stamp">4 de outubro de 2026 · branch feat/pontuacoes</div>
+    <div class="stamp">5 de outubro de 2026 · branch claude/teste-driver</div>
     <h1>Estado do Deadheim</h1>
-    <p class="lead">O 7.4.0 tem tag e passou no teste dentro do jogo. Na feat/pontuacoes está o Dead Token, ainda sem versão nova nem tag. O PC de desenvolvimento foi formatado e as ferramentas foram reinstaladas.</p>
+    <p class="lead">O 7.5.0 (Dead Token) está pronto e testado na branch claude/teste-driver, com o pacote em dist/. Falta mesclar na feat/pontuacoes e no main, criar a tag v7.5.0 e enviar ao GitHub, o que publica a release.</p>
   </header>
 
   <section class="summary" aria-label="Resumo">
-    <div class="box"><b>No código (feat/pontuacoes)</b><span>Deadheim 7.4.0 + Dead Token</span><small>RaidSystem 2.2.2 · Hearthstone 2.1.1</small></div>
+    <div class="box"><b>No código (claude/teste-driver)</b><span>Deadheim 7.5.0</span><small>RaidSystem 2.2.2 · Hearthstone 2.1.1</small></div>
     <div class="box"><b>No ar (DatHost)</b><span>não conferido</span><small>A última anotação (30/09) era 7.1.0.</small></div>
     <div class="box"><b>Último tag</b><span>v7.4.0</span><small>main e origin/main em <code>d214e9f</code></small></div>
-    <div class="box"><b>Teste no jogo</b><span>163 / 0</span><small>Roteiro solo até o passo montaria, 04/10 (o cliente fechou ali)</small></div>
+    <div class="box"><b>Teste no jogo (7.5.0)</b><span>303 / 1</span><small>A falha era do teste e foi corrigida (tokens 32/0); admin 68/0</small></div>
   </section>
 
   <section>
@@ -90,8 +90,9 @@ ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; max-width
       <li class="step done"><span class="dot"></span><div><h3>7.4.0: Ward de Território</h3><p>TerritoryToken, ward indestrutível fora do spawn, ícones e moeda dos tokens. Tag <code>v7.4.0</code>.</p></div><span class="pill">Feito</span></li>
       <li class="step done"><span class="dot"></span><div><h3>Teste dentro do jogo</h3><p>Primeira rodada depois do 7.3.1 e do 7.4.0: nenhum bug do mod. As falhas eram do roteiro de teste e foram corrigidas na branch <code>claude/teste-driver</code>. Bounty e ajustes como admin também passaram.</p></div><span class="pill">Feito</span></li>
       <li class="step done"><span class="dot"></span><div><h3>Dead Token</h3><p>Um token único para portal, spawner e Ward de Território; os tokens antigos viram Dead Token no inventário. Commit <code>6d157ce</code>, passos tokens, ward-territorio e saque 58/0 no jogo.</p></div><span class="pill">Feito</span></li>
-      <li class="step"><span class="dot"></span><div><h3>Versão, merge no main e tag</h3><p>O Dead Token ainda está como 7.4.0 no código. Falta subir a versão, mesclar a feat/pontuacoes no main e criar a tag.</p></div><span class="pill">Pendente</span></li>
-      <li class="step"><span class="dot"></span><div><h3>Teste com dois clientes</h3><p>O roteiro A/B (<code>run-pvp-test.ps1</code> sem <code>-Solo</code>) cobre o que o solo não cobre: PK e recompensa entregues ao matador online, convite de clã, mapa do colega. Não rodou.</p></div><span class="pill">Pendente</span></li>
+      <li class="step done"><span class="dot"></span><div><h3>Versão 7.5.0 e pacote</h3><p>Versão e mínima 7.5.0 (cliente antigo não tem o Dead Token). <code>dist/Deadheim.zip</code> com a DLL 7.5.0. Resultado em <code>Testing/resultado-2026-10-04</code>.</p></div><span class="pill">Feito</span></li>
+      <li class="step"><span class="dot"></span><div><h3>Merge, tag e release</h3><p>Mesclar <code>claude/teste-driver</code> na feat/pontuacoes e no main, criar <code>v7.5.0</code> e enviar. A tag no GitHub dispara o workflow que publica o zip. Precisa do login no GitHub.</p></div><span class="pill">Pendente</span></li>
+      <li class="step"><span class="dot"></span><div><h3>Teste com dois clientes</h3><p>O roteiro A/B (<code>run-pvp-test.ps1</code> sem <code>-Solo</code>) precisa de uma segunda conta Steam: com uma só, o servidor recusa o segundo cliente (<code>invalid session ticket</code>).</p></div><span class="pill">Precisa de outra conta</span></li>
       <li class="step user"><span class="dot"></span><div><h3>Deploy no DatHost</h3><p>Você roda o deploy de produção.</p></div><span class="pill">Com você</span></li>
     </ol>
   </section>
@@ -132,7 +133,7 @@ ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; max-width
     <div class="scroll"><table>
       <thead><tr><th>Branch</th><th>Conteúdo</th><th>Situação</th></tr></thead>
       <tbody>
-        <tr><td class="mono">claude/teste-driver</td><td>Correções do roteiro de teste (ponto seguro, agressor, bounty) e detecção do jogo no <code>run-pvp-test.ps1</code></td><td>A mesclar na feat/pontuacoes</td></tr>
+        <tr><td class="mono">claude/teste-driver</td><td>Dead Token, versão 7.5.0, pacote em dist/, correções do roteiro de teste e detecção do jogo no <code>run-pvp-test.ps1</code></td><td>A mesclar na feat/pontuacoes e no main</td></tr>
         <tr><td class="mono">backup/pre-rebase-2026-09-01</td><td>Backup antigo da tela de criação de personagem</td><td>Não mesclado (backup)</td></tr>
       </tbody>
     </table></div>
