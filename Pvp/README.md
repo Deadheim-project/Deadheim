@@ -17,12 +17,13 @@ que o servidor ja tem, em vez de duplicar:
 Config: secoes `PvP*` do `BepInEx/config/Detalhes.Deadheim.cfg`. Vale a do servidor
 (ServerSync); o cliente recebe ao conectar. **Salvar o cfg com o servidor ligado ja vale**: o
 arquivo e relido (`Shared/ConfigWatcher.cs`) e o ServerSync entrega o valor novo a quem esta
-conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.4.0**
+conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.5.0**
 (Deadheim), **2.2.2** (RaidSystem) e **2.1.1** (Hearthstone): as regras rodam no cliente de quem leva o golpe, entao um
-cliente sem elas seria alvo sem nenhuma protecao, o protocolo do PvP mudou no 7.3.1 e o 7.4.0 traz a Ward de Territorio.
+cliente sem elas seria alvo sem nenhuma protecao, o protocolo do PvP mudou no 7.3.1, o 7.4.0 traz a Ward de Territorio e o 7.5.0 o Dead Token.
 
-**Estado (2026-10-03):** o **7.4.0** (Ward de Territorio, icones e moeda dos tokens, item nativo
-que nao some mais ao cair no chao) entra sobre o 7.3.1 (correcoes da analise de bugs). Os itens nativos do
+**Estado (2026-10-04):** o **7.5.0** traz o Dead Token, um token unico para as construcoes pagas (os
+tokens antigos viram Dead Token no inventario), sobre o **7.4.0** (Ward de Territorio, icones e moeda dos
+tokens, item nativo que nao some mais ao cair no chao) e o 7.3.1 (correcoes da analise de bugs). Os itens nativos do
 Deadheim nunca caem como carga (`ClonedItems.IsNativeItem`), com ou sem `PvpCargoKeep`.
 
 ## Onde a regra e decidida
