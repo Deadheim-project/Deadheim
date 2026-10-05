@@ -1706,6 +1706,8 @@ namespace PvpTestDriver
             // Token antigo que ainda estava no chao vira Dead Token ao ser pego.
             GameObject velho = Instantiate(ObjectDB.instance.GetItemPrefab(Deadheim.Wards.WardProfiles.TerritoryToken),
                 Me.transform.position + Me.transform.forward + Vector3.up, Quaternion.identity);
+            // A 1 m a coleta automatica as vezes pegava antes do Pickup, e o check falhava com a conta certa.
+            velho.GetComponent<ItemDrop>().m_autoPickup = false;
             yield return Wait(1f);
             Check("tokens/antigo-do-chao-vira-dead-token", velho != null && Me.Pickup(velho, true, false)
                 && inventory.CountItems(DeadToken.Nome) == 1 + DeadToken.CustoTerritorio, "dead=" + inventory.CountItems(DeadToken.Nome));
