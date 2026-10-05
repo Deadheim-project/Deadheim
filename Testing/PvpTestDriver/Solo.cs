@@ -301,6 +301,18 @@ namespace PvpTestDriver
             PvpGuilds.TestOverride = null;
         }
 
+        /// <summary>
+        /// Esquece quem bateu no jogador local (PvpState._hitMeAt, M3). Revidar em quem bateu ha menos
+        /// de AggressorSeconds e legitima defesa, entao um golpe do Dummy num passo anterior impedia a
+        /// marca de agressor no passo seguinte.
+        /// </summary>
+        private void ForgetHitsOnMe()
+        {
+            FieldInfo field = typeof(PvpState).GetField("_hitMeAt", BindingFlags.NonPublic | BindingFlags.Static);
+            if (field?.GetValue(null) is System.Collections.IDictionary hits) hits.Clear();
+            else Check("teste/esquece-golpes", false, "PvpState._hitMeAt nao encontrado");
+        }
+
         private IEnumerator DummyKillsMe(string what)
         {
             Player dead = Me;
@@ -486,6 +498,7 @@ namespace PvpTestDriver
         private IEnumerator SoloAggressor()
         {
             ClearAllProtection();
+            ForgetHitsOnMe();
             yield return MoveTo(_openA);
             MoveDummy(_openB);
             yield return Wait(CombatWait);
@@ -515,6 +528,23 @@ namespace PvpTestDriver
             string log = ServerLogSinceMark();
             Check("agressor/legitima-defesa-sem-pk", log.Contains("legitima defesa") && !log.Contains($"{DummyName} ({DummyId}) agora e PK"), Tail(log));
             Check("agressor/marca-some-ao-morrer", !PvpState.IsAggressor, $"flags={PvpState.Current}");
+
+            // Revidar em quem acabou de bater e defesa, mesmo antes de a marca dele chegar pela ZDO (M3).
+            // O Dummy nunca ganha a marca (o driver nao roda o MarkAttack dele): e o caso em que o
+            // revide, sem a M3, viraria agressor.
+            ClearAllProtection();
+            ForgetHitsOnMe();
+            yield return MoveTo(_openA);
+            MoveDummy(_openB);
+            yield return Wait(CombatWait);
+            Heal();
+            DummyStrikesMe(Hit);
+            yield return Wait(0.6f);
+            _dummy.Damage(HitFrom(Me, _dummy, Hit));
+            yield return Wait(0.6f);
+            Check("agressor/revidar-e-defesa", !PvpState.IsAggressor && (PvpState.Current & PvpFlags.Aggressor) == 0, $"flags={PvpState.Current}");
+            ClearAllProtection();
+            ForgetHitsOnMe();
             PvpState.ClearImmunity(Me);
         }
 
@@ -1247,6 +1277,8 @@ namespace PvpTestDriver
             MarkServerLog();
             yield return MoveTo(_wardA + Vector3.right * 2f);
             MoveDummy(_wardA - Vector3.right * 2f);
+            // O ward e o do passo territorio; com -Steps sem ele, a bounty poe o proprio.
+            if (_myWard == null) _myWard = SpawnWard(_wardA, Me, null);
             yield return Wait(3f);
             Check("bounty/pausada-no-proprio-ward", PvpClient.HuntPaused && PvpHud.Compose(Me).Contains("pausado"), PvpHud.Compose(Me));
             string pause = ServerLogSinceMark();

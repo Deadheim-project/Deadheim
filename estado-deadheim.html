@@ -1,4 +1,4 @@
-<title>Estado do Deadheim</title>
+﻿<title>Estado do Deadheim</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: coluna unica estreita, resumo no topo, esteira de etapas, depois tabelas de detalhe */
@@ -71,26 +71,27 @@ ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; max-width
 
 <main class="wrap">
   <header>
-    <div class="stamp">1 de outubro de 2026 · branch feat/pontuacoes</div>
+    <div class="stamp">4 de outubro de 2026 · branch feat/pontuacoes</div>
     <h1>Estado do Deadheim</h1>
-    <p class="lead">O código do 7.2.0 está pronto e commitado. Falta testar o PvE permanente no jogo, mesclar no main, fazer o release e o deploy.</p>
+    <p class="lead">O 7.4.0 tem tag e passou no teste dentro do jogo. Na feat/pontuacoes está o Dead Token, ainda sem versão nova nem tag. O PC de desenvolvimento foi formatado e as ferramentas foram reinstaladas.</p>
   </header>
 
   <section class="summary" aria-label="Resumo">
-    <div class="box"><b>No código</b><span>Deadheim 7.2.0</span><small>RaidSystem 2.2.0</small></div>
-    <div class="box"><b>No ar (DatHost)</b><span>Deadheim 7.1.0</span><small>Anotado em 30/09; não conferi hoje.</small></div>
-    <div class="box"><b>Último tag</b><span>v7.1.0</span><small>Não existe v7.2.0.</small></div>
-    <div class="box"><b>Árvore de trabalho</b><span>limpa</span><small>2 commits à frente do main</small></div>
+    <div class="box"><b>No código (feat/pontuacoes)</b><span>Deadheim 7.4.0 + Dead Token</span><small>RaidSystem 2.2.2 · Hearthstone 2.1.1</small></div>
+    <div class="box"><b>No ar (DatHost)</b><span>não conferido</span><small>A última anotação (30/09) era 7.1.0.</small></div>
+    <div class="box"><b>Último tag</b><span>v7.4.0</span><small>main e origin/main em <code>d214e9f</code></small></div>
+    <div class="box"><b>Teste no jogo</b><span>163 / 0</span><small>Roteiro solo até o passo montaria, 04/10 (o cliente fechou ali)</small></div>
   </section>
 
   <section>
     <h2>Do código ao servidor</h2>
     <ol class="steps">
-      <li class="step done"><span class="dot"></span><div><h3>Pontuações da temporada</h3><p>Bounty, PK por níveis e castelo por janela de raid. Commit <code>a55bc81</code>.</p></div><span class="pill">Feito</span></li>
-      <li class="step done"><span class="dot"></span><div><h3>PvE permanente</h3><p><code>/pve confirmar</code>, sem volta; só admin desfaz. Commit <code>2e0fe67</code>.</p></div><span class="pill">Feito</span></li>
-      <li class="step"><span class="dot"></span><div><h3>Teste do PvE no jogo</h3><p>O passo <code>pve</code> está no roteiro solo, mas ainda não rodou (<code>Testing/run-pvp-test.ps1 -Solo</code>). Bloqueia o release.</p></div><span class="pill">Pendente</span></li>
-      <li class="step"><span class="dot"></span><div><h3>Merge no main</h3><p>De <code>feat/pontuacoes</code> para o main, que está em <code>4a29010</code>.</p></div><span class="pill">Pendente</span></li>
-      <li class="step"><span class="dot"></span><div><h3>Tag e release</h3><p>Criar <code>v7.2.0</code> e publicar o pacote.</p></div><span class="pill">Pendente</span></li>
+      <li class="step done"><span class="dot"></span><div><h3>7.3.1: correções da análise de bugs</h3><p>C1–C3, A1–A4, M1–M8 e B1–B18 de <code>analise-bugs-2026-10-02.md</code>. Tag <code>v7.3.1</code>.</p></div><span class="pill">Feito</span></li>
+      <li class="step done"><span class="dot"></span><div><h3>7.4.0: Ward de Território</h3><p>TerritoryToken, ward indestrutível fora do spawn, ícones e moeda dos tokens. Tag <code>v7.4.0</code>.</p></div><span class="pill">Feito</span></li>
+      <li class="step done"><span class="dot"></span><div><h3>Teste dentro do jogo</h3><p>Primeira rodada depois do 7.3.1 e do 7.4.0: nenhum bug do mod. As falhas eram do roteiro de teste e foram corrigidas na branch <code>claude/teste-driver</code>. Bounty e ajustes como admin também passaram.</p></div><span class="pill">Feito</span></li>
+      <li class="step done"><span class="dot"></span><div><h3>Dead Token</h3><p>Um token único para portal, spawner e Ward de Território; os tokens antigos viram Dead Token no inventário. Commit <code>6d157ce</code>, passos tokens, ward-territorio e saque 58/0 no jogo.</p></div><span class="pill">Feito</span></li>
+      <li class="step"><span class="dot"></span><div><h3>Versão, merge no main e tag</h3><p>O Dead Token ainda está como 7.4.0 no código. Falta subir a versão, mesclar a feat/pontuacoes no main e criar a tag.</p></div><span class="pill">Pendente</span></li>
+      <li class="step"><span class="dot"></span><div><h3>Teste com dois clientes</h3><p>O roteiro A/B (<code>run-pvp-test.ps1</code> sem <code>-Solo</code>) cobre o que o solo não cobre: PK e recompensa entregues ao matador online, convite de clã, mapa do colega. Não rodou.</p></div><span class="pill">Pendente</span></li>
       <li class="step user"><span class="dot"></span><div><h3>Deploy no DatHost</h3><p>Você roda o deploy de produção.</p></div><span class="pill">Com você</span></li>
     </ol>
   </section>
@@ -100,14 +101,28 @@ ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; max-width
     <div class="scroll"><table>
       <thead><tr><th>Mod</th><th>Versão</th><th>Observação</th></tr></thead>
       <tbody>
-        <tr><td>Deadheim</td><td class="n">7.2.0</td><td>Cliente exige a mesma versão</td></tr>
-        <tr><td>RaidSystem</td><td class="n">2.2.0</td><td>Cliente exige a mesma versão</td></tr>
-        <tr><td>Hearthstone</td><td class="n">2.1.0</td><td>Igual ao servidor</td></tr>
-        <tr><td>NpcValheim</td><td class="n">0.1.51</td><td>Release v1.0.51</td></tr>
-        <tr><td>Velas · AdaptiveNet</td><td class="n">0.4.0</td><td>Igual ao servidor</td></tr>
+        <tr><td>Deadheim</td><td class="n">7.4.0</td><td>Cliente exige a mesma versão</td></tr>
+        <tr><td>RaidSystem</td><td class="n">2.2.2</td><td>Cliente exige a mesma versão; depende do Deadheim 7.3.1</td></tr>
+        <tr><td>Hearthstone</td><td class="n">2.1.1</td><td>Cliente exige a mesma versão</td></tr>
+        <tr><td>NpcValheim</td><td class="n">0.1.51</td><td>Anotação de 01/10, não conferida</td></tr>
+        <tr><td>Velas · AdaptiveNet</td><td class="n">0.4.0</td><td>Anotação de 01/10, não conferida</td></tr>
         <tr><td>VipList</td><td class="n">1.0.0</td><td>Aceita 1.0.0 ou mais</td></tr>
-        <tr><td>Guilds · Groups · ServerCharacters</td><td class="n">1.1.14 · 1.2.12 · 1.4.17</td><td>Terceiros</td></tr>
-        <tr><td>Creature Level &amp; Loot Control · AzuAntiCheat</td><td class="n">5.0.5 · 5.1.1</td><td>Terceiros</td></tr>
+        <tr><td>Guilds · Groups · ServerCharacters</td><td class="n">1.1.14 · 1.2.12 · 1.4.17</td><td>Terceiros (perfil do launcher em 04/10)</td></tr>
+        <tr><td>Creature Level &amp; Loot Control · AzuAntiCheat</td><td class="n">5.0.6 · 5.2.0</td><td>Terceiros (perfil do launcher em 04/10)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>PC de desenvolvimento</h2>
+    <p>O C: foi formatado em 04/10. O que foi reinstalado para compilar e testar:</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Ferramenta</th><th>Versão</th><th>Observação</th></tr></thead>
+      <tbody>
+        <tr><td>Git for Windows</td><td class="n">2.55.0</td><td><code>safe.directory</code> para D:\Deadheim e as worktrees (o usuário do Windows mudou)</td></tr>
+        <tr><td>.NET SDK</td><td class="n">10.0.401</td><td>Testes offline (projetos SDK)</td></tr>
+        <tr><td>.NET Framework Developer Pack</td><td class="n">4.8</td><td>Os quatro plugins compilam pelo MSBuild do Visual Studio</td></tr>
+        <tr><td>Servidor dedicado</td><td class="n">1.0.16</td><td><code>D:\ValheimDedicatedServer</code>, atualizado pelo SteamCMD (<code>D:\Tools\steamcmd</code>)</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -117,12 +132,11 @@ ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; max-width
     <div class="scroll"><table>
       <thead><tr><th>Branch</th><th>Conteúdo</th><th>Situação</th></tr></thead>
       <tbody>
-        <tr><td class="mono">claude/awesome-archimedes-8745a5</td><td>Teste da Forja de Potencial, 33 PASS</td><td>Sem push</td></tr>
-        <tr><td class="mono">claude/clever-meninsky-b906e2</td><td>Silencia o ArgumentNullException de ShieldDomeImageEffect no servidor</td><td>Não conferi se está no main</td></tr>
-        <tr><td class="mono">teste/ajustes-resultado</td><td>Resultado do teste da opção Deadheim no menu do ESC</td><td>Branch de teste</td></tr>
+        <tr><td class="mono">claude/teste-driver</td><td>Correções do roteiro de teste (ponto seguro, agressor, bounty) e detecção do jogo no <code>run-pvp-test.ps1</code></td><td>A mesclar na feat/pontuacoes</td></tr>
+        <tr><td class="mono">backup/pre-rebase-2026-09-01</td><td>Backup antigo da tela de criação de personagem</td><td>Não mesclado (backup)</td></tr>
       </tbody>
     </table></div>
   </section>
 
-  <p class="foot">Fonte: repositório local D:\Deadheim e o doc "Deadheim 1.0 — Referência do servidor". A versão no ar vem de anotação, não de consulta ao servidor.</p>
+  <p class="foot">Fonte: repositório local D:\Deadheim e os testes de 04/10. A versão no ar não foi consultada no servidor.</p>
 </main>

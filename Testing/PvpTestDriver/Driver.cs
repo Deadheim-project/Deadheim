@@ -243,20 +243,51 @@ namespace PvpTestDriver
             return center + new Vector3(minR, 0f, 0f);
         }
 
+        /// <summary>
+        /// Onde por o jogador perto de <paramref name="target"/>: no chao, nao em cima de arvore, pedra
+        /// ou casa. O GetSolidHeight devolve o topo do primeiro solido, e o FindLand so olha o relevo
+        /// gerado: num mundo novo o ponto do ward caiu em cima de algo alto e o personagem morria da
+        /// queda no passo territorio. Procura o ponto livre mais perto, ate 6 m; sem nenhum, o chao do alvo.
+        /// </summary>
+        private static Vector3 SafeSpot(Vector3 target)
+        {
+            ZoneSystem zones = ZoneSystem.instance;
+            for (float r = 0f; r <= 6f; r += 1.5f)
+            {
+                int steps = r == 0f ? 1 : 8;
+                for (int i = 0; i < steps; i++)
+                {
+                    Vector3 p = target + Quaternion.Euler(0f, i * 360f / steps, 0f) * Vector3.forward * r;
+                    if (!zones.GetGroundHeight(p, out float ground) || !zones.GetSolidHeight(p, out float solid, 1000)) continue;
+                    if (solid - ground > 0.5f) continue;
+                    p.y = solid + 0.3f;
+                    return p;
+                }
+            }
+            Vector3 fallback = target;
+            fallback.y = zones.GetGroundHeight(target) + 0.3f;
+            return fallback;
+        }
+
         private IEnumerator MoveTo(Vector3 target)
         {
             Player me = Me;
             if (me == null) yield break;
-            Vector3 p = target;
-            p.y = ZoneSystem.instance.GetSolidHeight(p) + 0.3f;
+            Vector3 p = SafeSpot(target);
             me.transform.position = p;
             if (me.m_body != null)
             {
                 me.m_body.position = p;
                 me.m_body.linearVelocity = Vector3.zero;
             }
-            me.m_maxAirAltitude = p.y;
-            yield return new WaitForSeconds(1.2f);
+            // Ate assentar, o teleporte nao conta como queda (a queda testada vem por HitData).
+            float until = Time.time + 1.2f;
+            while (Time.time < until)
+            {
+                if (me == null) yield break;
+                me.m_maxAirAltitude = me.transform.position.y;
+                yield return null;
+            }
         }
 
         private IEnumerator WaitOther(float timeout = 20f)

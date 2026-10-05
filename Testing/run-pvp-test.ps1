@@ -22,13 +22,17 @@
     Opcao Deadheim do menu do ESC (passo "ajustes", fotos em <Root>\fotos):
       ... -Solo -Steps ajustes           como jogador comum
       ... -Solo -Steps ajustes -Admin    como admin (a conta Steam logada entra na adminlist.txt)
+
+    Bounty (precisa de admin; sem -Admin os tres passos sao pulados):
+      ... -Solo -Admin -Steps bounty,bounty-pagar,bounty-expira
 #>
 param(
     [string]$Root = (Join-Path $env:TEMP 'deadheim-pvptest'),
     [int]$Port = 2476,
     [string]$Password = 'pvptest1',
-    [string]$ServerDir = 'C:\Program Files (x86)\Steam\steamapps\common\Valheim dedicated server',
-    [string]$ClientDir = 'C:\Program Files (x86)\Steam\steamapps\common\Valheim',
+    # Sem estes, procura nas bibliotecas da Steam (e o servidor tambem em D:\ValheimDedicatedServer).
+    [string]$ServerDir = '',
+    [string]$ClientDir = '',
     [string]$BepInExCore = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\core'),
     # O RaidSystem exige o Guilds; vem do perfil do launcher, o mesmo que os jogadores usam.
     [string]$GuildsDll = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\plugins\guilds\Guilds.dll'),
@@ -60,10 +64,35 @@ if ($Admin) {
         if (-not $activeUser) { throw 'Nao achei a conta do Steam (Steam aberto?). Passe -AdminId <SteamID64>.' }
         $AdminId = ([UInt64]76561197960265728 + [UInt64]$activeUser).ToString()
     }
-    if (($Steps | Where-Object { $_ -ne 'ajustes' }) -or -not $Steps) {
-        Write-Warning 'Com -Admin o cliente de teste e admin e os passos de PvP que dependem de ward/teleporte podem falhar. Use -Steps ajustes.'
+    # A bounty precisa de admin (a casa paga a bounty no proprio personagem).
+    $adminSteps = @('ajustes', 'bounty', 'bounty-pagar', 'bounty-expira')
+    if (($Steps | Where-Object { $_ -notin $adminSteps }) -or -not $Steps) {
+        Write-Warning "Com -Admin o cliente de teste e admin e os passos de PvP que dependem de ward/teleporte podem falhar. Use -Steps com $($adminSteps -join ', ')."
     }
 }
+
+# Pastas do jogo: sem -ClientDir/-ServerDir, procura nas bibliotecas da Steam (o PC formatado em
+# 04/10/2026 ficou com a biblioteca no D:). O servidor instalado pelo SteamCMD fica fora delas.
+function Get-SteamLibraries {
+    $steam = (Get-ItemProperty 'HKCU:\Software\Valve\Steam' -ErrorAction SilentlyContinue).SteamPath
+    if (-not $steam) { return @() }
+    $libs = @($steam -replace '/', '\')
+    $vdf = Join-Path $steam 'steamapps\libraryfolders.vdf'
+    if (Test-Path $vdf) {
+        foreach ($m in [regex]::Matches((Get-Content -Raw $vdf), '"path"\s+"([^"]+)"')) { $libs += $m.Groups[1].Value -replace '\\\\', '\' }
+    }
+    return $libs | Select-Object -Unique
+}
+
+function Find-GameDir([string]$folder, [string]$exe, [string[]]$extra) {
+    $candidates = @(Get-SteamLibraries | ForEach-Object { Join-Path $_ "steamapps\common\$folder" }) + $extra
+    return $candidates | Where-Object { $_ -and (Test-Path (Join-Path $_ $exe)) } | Select-Object -First 1
+}
+
+if (-not $ClientDir) { $ClientDir = Find-GameDir 'Valheim' 'valheim.exe' @() }
+if (-not $ServerDir) { $ServerDir = Find-GameDir 'Valheim dedicated server' 'valheim_server.exe' @('D:\ValheimDedicatedServer') }
+if (-not $ClientDir) { throw 'Nao achei o Valheim nas bibliotecas da Steam. Passe -ClientDir.' }
+if (-not $ServerDir) { throw 'Nao achei o servidor dedicado (bibliotecas da Steam ou D:\ValheimDedicatedServer). Passe -ServerDir.' }
 $deadheimDll = Join-Path $repo 'bin\Release\Deadheim.dll'
 $vipDll = Join-Path $repo 'bin\Release\VipList.dll'
 $driverDll = Join-Path $PSScriptRoot 'PvpTestDriver\bin\Release\PvpTestDriver.dll'
@@ -87,6 +116,31 @@ $castleRadius = 30
 foreach ($f in @($deadheimDll, $vipDll, $driverDll, $raidDll, $hearthDll, $GuildsDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
     if (-not (Test-Path $f)) { throw "Nao encontrei $f" }
 }
+
+# Cliente e servidor na mesma versao do jogo: senao o cliente fica parado no menu com versao
+# incompativel e o teste so acaba no tempo limite (aconteceu com servidor 0.221.12 e cliente 1.0.16).
+# A versao sai do construtor estatico de Version no assembly_valheim (Mono.Cecil do BepInEx).
+function Get-ValheimVersion([string]$managed) {
+    try {
+        Add-Type -Path "$BepInExCore\Mono.Cecil.dll" -ErrorAction Stop
+        $asm = [Mono.Cecil.AssemblyDefinition]::ReadAssembly("$managed\assembly_valheim.dll")
+        try {
+            $type = $asm.MainModule.Types | Where-Object { $_.Name -eq 'Version' } | Select-Object -First 1
+            $nums = @()
+            foreach ($i in ($type.Methods | Where-Object { $_.Name -eq '.cctor' }).Body.Instructions) {
+                if ("$($i.OpCode.Code)" -eq 'Stsfld') { break }
+                if ("$($i.OpCode.Code)" -like 'Ldc_I4*') { $nums += $(if ($null -ne $i.Operand) { $i.Operand } else { $i.OpCode.Name -replace '^ldc\.i4\.', '' }) }
+            }
+            return $nums -join '.'
+        } finally { $asm.Dispose() }
+    } catch { return $null }
+}
+$clientVersion = Get-ValheimVersion "$ClientDir\valheim_Data\Managed"
+$serverVersion = Get-ValheimVersion "$ServerDir\valheim_server_Data\Managed"
+if ($clientVersion -and $serverVersion -and $clientVersion -ne $serverVersion) {
+    throw "O servidor dedicado ($ServerDir) e $serverVersion e o cliente ($ClientDir) e $clientVersion. Atualize o servidor (Steam ou SteamCMD, app 896660)."
+}
+Write-Host "Valheim $clientVersion. Cliente: $ClientDir. Servidor: $ServerDir"
 
 New-Item -ItemType Directory -Force $Root | Out-Null
 $processes = @()
