@@ -53,9 +53,8 @@ namespace Deadheim.Wards
         public const float AdminWardRadius = 50f;
         public const float AdminWardSmallRadius = 40f;
 
-        /// <summary>Ward de Territorio (indestrutivel fora do spawn), construida com Dead Tokens (doacao).</summary>
+        /// <summary>Ward de Territorio (indestrutivel fora do spawn), construida com o TerritoryToken (doacao).</summary>
         public const string TerritoryWard = "DeadheimTerritoryWard";
-        /// <summary>Token antigo da Ward de Territorio: vira Dead Token (DeadToken.ConverterAntigos).</summary>
         public const string TerritoryToken = "TerritoryToken";
 
         /// <summary>
@@ -186,12 +185,10 @@ namespace Deadheim.Wards
                 "Ward de Territorio no martelo. Desligado, as que ja existem viram ward comum (DamagePercent)."));
             TerritoryWardRadius = Plugin.Synced(config.Bind(territory, "TerritoryWardRadius", 20,
                 "Raio da Ward de Territorio em metros. Tudo dentro dele fica indestrutivel."));
-            TerritoryWardCost = Plugin.Synced(config.Bind(territory, "TerritoryWardCost",
-                DeadToken.Prefab + ":" + DeadToken.CustoTerritorio + ",Stone:100,SurtlingCore:5",
-                "Custo no formato Item:Quantidade. O " + DeadToken.Prefab + " e vendido por doacao (Loja Deadcoins). " +
-                "O antigo " + TerritoryToken + ":1 ainda vale, como " + DeadToken.CustoTerritorio + " " + DeadToken.Prefab + "."));
+            TerritoryWardCost = Plugin.Synced(config.Bind(territory, "TerritoryWardCost", TerritoryToken + ":1,Stone:100,SurtlingCore:5",
+                "Custo no formato Item:Quantidade. O " + TerritoryToken + " e vendido por doacao (Loja Deadcoins)."));
             TerritoryTokenRecover = Plugin.Synced(config.Bind(territory, "TerritoryTokenRecover", true,
-                "O dono recebe os " + DeadToken.Prefab + " de volta ao remover a ward. Desligado, mudar de lugar custa os tokens de novo."));
+                "O dono recebe o " + TerritoryToken + " de volta ao remover a ward. Desligado, mudar de lugar custa outro token."));
             TerritoryWardLimit = Plugin.Synced(config.Bind(territory, "TerritoryWardLimit", 1,
                 "Wards de Territorio por jogador. 0 = sem limite."));
             TerritoryWardActivationMinutes = Plugin.Synced(config.Bind(territory, "TerritoryWardActivationMinutes", 60f,
@@ -356,7 +353,7 @@ namespace Deadheim.Wards
             if (_territoryRegisteredInHammer || !TerritoryWardEnabled.Value) return;
             if (_territoryWardPrefab == null) return;
 
-            // O DeadToken nasce no ObjectDB (ClonedItems); aqui ele ja existe com certeza.
+            // O TerritoryToken nasce no ObjectDB (ClonedItems); aqui ele ja existe com certeza.
             ApplyRequirements(_territoryWardPrefab, TerritoryWardCost.Value);
             Pieces.AddToHammer(_territoryWardPrefab, "Misc");
             _territoryRegisteredInHammer = true;
@@ -376,8 +373,7 @@ namespace Deadheim.Wards
                 if (parts.Length != 2) continue;
                 if (!int.TryParse(parts[1].Trim(), out int amount) || amount <= 0) continue;
 
-                // Token antigo no cfg ("TerritoryToken:1") vale como Dead Token.
-                string itemName = DeadToken.Custo(parts[0].Trim(), ref amount);
+                string itemName = parts[0].Trim();
                 GameObject prefab = Prefabs.Get(itemName);
                 ItemDrop item = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
                 if (item == null)
@@ -385,8 +381,8 @@ namespace Deadheim.Wards
                     Debug.LogWarning("[Wards] Item de custo nao encontrado: " + itemName);
                     continue;
                 }
-                // Os tokens da base podem nao voltar ao remover (TerritoryTokenRecover): mudar a base custa de novo.
-                bool recover = wardPrefab != _territoryWardPrefab || itemName != DeadToken.Prefab || TerritoryTokenRecover.Value;
+                // O token da base pode nao voltar ao remover (TerritoryTokenRecover): mudar a base custa outro.
+                bool recover = itemName != TerritoryToken || TerritoryTokenRecover.Value;
                 requirements.Add(new Piece.Requirement { m_resItem = item, m_amount = amount, m_recover = recover });
             }
 

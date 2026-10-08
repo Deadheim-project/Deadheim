@@ -1547,11 +1547,12 @@ namespace PvpTestDriver
             Check(W + "prefab", territory != null && Deadheim.Wards.WardProfiles.IsTerritoryWard(territory.gameObject));
             Piece wardPiece = territory.GetComponent<Piece>();
             bool tokenCost = wardPiece.m_resources != null && wardPiece.m_resources.Any(r =>
-                r.m_resItem != null && r.m_resItem.name == DeadToken.Prefab && r.m_amount == DeadToken.CustoTerritorio && r.m_recover);
-            Check(W + "custa-dead-token", tokenCost,
+                r.m_resItem != null && r.m_resItem.name == Deadheim.Wards.WardProfiles.TerritoryToken && r.m_amount == 1 && r.m_recover);
+            Check(W + "custa-territory-token", tokenCost,
                 string.Join(",", (wardPiece.m_resources ?? new Piece.Requirement[0]).Select(r => r.m_resItem != null ? r.m_resItem.name + ":" + r.m_amount : "?")));
             // A carga da morte deixa de fora todo item do Deadheim pelo codigo (M6), nao pela lista do cfg.
-            Check(W + "token-nao-cai-como-carga", ClonedItems.IsNativeItem(DeadToken.Prefab) && ClonedItems.IsNativeItem(Forja.GarantiaPrefab));
+            Check(W + "token-nao-cai-como-carga", ClonedItems.IsNativeItem(Deadheim.Wards.WardProfiles.TerritoryToken)
+                && ClonedItems.IsNativeItem(DeadToken.Prefab) && ClonedItems.IsNativeItem(Forja.GarantiaPrefab));
 
             // O teste roda perto do templo, entao o cfg dele zera o SafeArea (1500 m no servidor).
             Check(W + "fora-da-area-segura", !Deadheim.Wards.WardCore.InFullProtectionZone(wall.transform.position),
@@ -1628,9 +1629,10 @@ namespace PvpTestDriver
         }
 
         /// <summary>
-        /// Dead Token, tokens antigos e Garantia: icone proprio (nao o do Thunderstone), moeda no chao e
-        /// item que de fato cai quando solto. Os tokens antigos viram Dead Token ao entrar no inventario.
-        /// Tira duas fotos em fotos/: as moedas no chao e os icones no inventario.
+        /// Tokens, Dead Token e Garantia: icone proprio (nao o do Thunderstone), moeda no chao e item que
+        /// de fato cai quando solto. Cada construcao paga custa o proprio token, e o token fica como e no
+        /// inventario (o 7.5.0 convertia em Dead Token; o 7.5.1 tirou). Tira duas fotos em fotos/: as
+        /// moedas no chao e os icones no inventario.
         /// </summary>
         private IEnumerator SoloTokens()
         {
@@ -1660,30 +1662,31 @@ namespace PvpTestDriver
             int camadas = dead != null ? dead.GetComponentsInChildren<SpriteRenderer>(true).Length : 0;
             Check("tokens/dead-token/moeda-grossa", camadas > 2, "camadas=" + camadas);
             Check("tokens/dead-token/sem-valor-no-mercador", deadShared != null && deadShared.m_value == 0, "valor=" + deadShared?.m_value);
-            Check("tokens/dead-token/pilha", deadShared != null && deadShared.m_maxStackSize >= 10 * DeadToken.CustoTerritorio,
+            Check("tokens/dead-token/pilha", deadShared != null && deadShared.m_maxStackSize >= 10,
                 "pilha=" + deadShared?.m_maxStackSize);
 
-            // Os custos usam o Dead Token na quantidade do preco.
+            // Cada construcao paga custa o proprio token; nenhuma custa Dead Token.
             Piece portal = ZNetScene.instance.GetPrefab("portal_wood")?.GetComponent<Piece>();
-            Check("tokens/portal-custa-dead-token", portal != null && portal.m_resources.Any(r => r.m_resItem != null
-                    && r.m_resItem.name == DeadToken.Prefab && r.m_amount == DeadToken.CustoPortal),
+            Check("tokens/portal-custa-portal-token", portal != null && portal.m_resources.Any(r => r.m_resItem != null
+                    && r.m_resItem.name == "PortalToken" && r.m_amount == 1),
                 portal == null ? "sem portal" : string.Join(",", portal.m_resources.Select(r => r.m_resItem?.name + ":" + r.m_amount)));
             Piece spawner = ZNetScene.instance.GetPrefab("BuildableGreydwarfNestSpawner")?.GetComponent<Piece>();
-            Check("tokens/spawner-custa-dead-token", spawner != null && spawner.m_resources.Any(r => r.m_resItem != null
-                    && r.m_resItem.name == DeadToken.Prefab && r.m_amount == DeadToken.CustoSpawner),
+            Check("tokens/spawner-custa-spawner-token", spawner != null && spawner.m_resources.Any(r => r.m_resItem != null
+                    && r.m_resItem.name == "SpawnerToken" && r.m_amount == 1),
                 spawner == null ? "sem spawner" : string.Join(",", spawner.m_resources.Select(r => r.m_resItem?.name + ":" + r.m_amount)));
 
-            // Token antigo que entra no inventario (personagem carregado, compra, bau) vira Dead Token.
+            // O token que entra no inventario continua sendo ele mesmo (o 7.5.0 convertia em Dead Token).
             Inventory inventory = Me.GetInventory();
             inventory.RemoveItem(DeadToken.Nome, inventory.CountItems(DeadToken.Nome));
-            inventory.AddItem(ObjectDB.instance.GetItemPrefab("PortalToken"), 2);
-            inventory.AddItem(ObjectDB.instance.GetItemPrefab("SpawnerToken"), 1);
-            inventory.AddItem(ObjectDB.instance.GetItemPrefab(Deadheim.Wards.WardProfiles.TerritoryToken), 1);
-            int esperado = 2 * DeadToken.CustoPortal + DeadToken.CustoSpawner + DeadToken.CustoTerritorio;
-            int sobrou = inventory.GetAllItems().Count(i => i.m_dropPrefab != null && antigos.Contains(i.m_dropPrefab.name));
-            Check("tokens/antigos-viram-dead-token", inventory.CountItems(DeadToken.Nome) == esperado && sobrou == 0,
-                $"dead={inventory.CountItems(DeadToken.Nome)} esperado={esperado} antigos={sobrou}");
-            inventory.RemoveItem(DeadToken.Nome, inventory.CountItems(DeadToken.Nome));
+            foreach (string name in antigos) GiveItem(name, 2);
+            int ficaram = inventory.GetAllItems().Where(i => i.m_dropPrefab != null && antigos.Contains(i.m_dropPrefab.name)).Sum(i => i.m_stack);
+            Check("tokens/tokens-nao-viram-dead-token", ficaram == 2 * antigos.Length && inventory.CountItems(DeadToken.Nome) == 0,
+                $"tokens={ficaram} esperado={2 * antigos.Length} dead={inventory.CountItems(DeadToken.Nome)}");
+            foreach (string name in antigos)
+            {
+                string itemName = ObjectDB.instance.GetItemPrefab(name).GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+                inventory.RemoveItem(itemName, inventory.CountItems(itemName));
+            }
 
             // Soltar do inventario: antes o modelo desligado fazia o item sumir (instancia sem Awake nem ZDO).
             yield return MoveTo(_openA);
@@ -1701,22 +1704,11 @@ namespace PvpTestDriver
                 Check("tokens/moeda-deitada", Mathf.Abs(Vector3.Dot(onGround.transform.up, Vector3.up)) > 0.7f, $"up={onGround.transform.up}");
             Check("tokens/pega-de-volta", onGround != null && Me.Pickup(onGround.gameObject, true, false)
                 && inventory.CountItems(DeadToken.Nome) == 1);
-            yield return Wait(0.5f);
-
-            // Token antigo que ainda estava no chao vira Dead Token ao ser pego.
-            GameObject velho = Instantiate(ObjectDB.instance.GetItemPrefab(Deadheim.Wards.WardProfiles.TerritoryToken),
-                Me.transform.position + Me.transform.forward + Vector3.up, Quaternion.identity);
-            // A 1 m a coleta automatica as vezes pegava antes do Pickup, e o check falhava com a conta certa.
-            velho.GetComponent<ItemDrop>().m_autoPickup = false;
-            yield return Wait(1f);
-            Check("tokens/antigo-do-chao-vira-dead-token", velho != null && Me.Pickup(velho, true, false)
-                && inventory.CountItems(DeadToken.Nome) == 1 + DeadToken.CustoTerritorio, "dead=" + inventory.CountItems(DeadToken.Nome));
             inventory.RemoveItem(DeadToken.Nome, inventory.CountItems(DeadToken.Nome));
             yield return Wait(0.5f);
 
             // Fotos: as moedas num piso de madeira (no mato a grama cobre), entre a camera e o
-            // personagem, perto do templo (aberto) e ao meio-dia; e os icones no inventario (os
-            // tokens antigos ja aparecem la como pilhas de Dead Token).
+            // personagem, perto do templo (aberto) e ao meio-dia; e os icones no inventario.
             yield return MoveTo(_safe);
             EnvMan.instance.m_debugTimeOfDay = true;
             EnvMan.instance.m_debugTime = 0.5f;

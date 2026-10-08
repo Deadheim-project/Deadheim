@@ -34,14 +34,13 @@ namespace Deadheim
 
         private static readonly NativeItemDefinition[] NativeItems =
         {
-            // Vendido por doacao (Loja Deadcoins): nao pode virar moeda no mercador. Clonado das
-            // moedas, nao do Thunderstone: no chao e uma moeda de verdade.
-            new NativeItemDefinition { PrefabName = DeadToken.Prefab, Name = DeadToken.Nome, Description = $"Moeda do Deadheim para construções pagas: portal ({DeadToken.CustoPortal}), spawner ({DeadToken.CustoSpawner}) e Ward de Território ({DeadToken.CustoTerritorio}). Volta ao desmontar.", MaxStack = 100, Value = 0, Weight = 0.1f, Icon = "deadtoken.png", Coin = true, ThickCoin = true, BasePrefab = "Coins" },
-            // Tokens antigos: viram Dead Token ao entrar no inventario (DeadToken.ConverterAntigos).
-            // Continuam registrados para o que esta no chao, num bau ou na loja nao sumir.
-            new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = $"Token antigo: vira {DeadToken.CustoPortal} {DeadToken.Nome} no inventário.", MaxStack = 10, Icon = "portaltoken.png", Coin = true },
-            new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = $"Token antigo: vira {DeadToken.CustoSpawner} {DeadToken.Nome} no inventário.", MaxStack = 10, Icon = "spawnertoken.png", Coin = true },
-            new NativeItemDefinition { PrefabName = Wards.WardProfiles.TerritoryToken, Name = "Territory Token", Description = $"Token antigo: vira {DeadToken.CustoTerritorio} {DeadToken.Nome} no inventário.", MaxStack = 10, Value = 0, Icon = "territorytoken.png", Coin = true },
+            new NativeItemDefinition { PrefabName = "PortalToken", Name = "Portal Token", Description = "Me compre para o Detalhes poder manter seu vício.", MaxStack = 10, Icon = "portaltoken.png", Coin = true },
+            new NativeItemDefinition { PrefabName = "SpawnerToken", Name = "Spawner Token", Description = "Token used to build protected vanilla spawners.", MaxStack = 10, Icon = "spawnertoken.png", Coin = true },
+            // Vendido por doacao (Loja Deadcoins): nao pode virar moeda no mercador.
+            new NativeItemDefinition { PrefabName = Wards.WardProfiles.TerritoryToken, Name = "Territory Token", Description = "Constrói a Ward de Território. Fora da área segura do spawn, depois de ativada, nada no raio dela toma dano de quem não tem acesso. Uma por jogador.", MaxStack = 10, Value = 0, Icon = "territorytoken.png", Coin = true },
+            // Ainda sem uso: nenhuma construcao custa Dead Token. Nao vira moeda no mercador. Clonado
+            // das moedas, nao do Thunderstone: no chao e uma moeda grossa de verdade.
+            new NativeItemDefinition { PrefabName = DeadToken.Prefab, Name = DeadToken.Nome, Description = "Moeda do Deadheim.", MaxStack = 100, Value = 0, Weight = 0.1f, Icon = "deadtoken.png", Coin = true, ThickCoin = true, BasePrefab = "Coins" },
             // Comprada com Deadcoins: nao pode virar moeda no mercador.
             new NativeItemDefinition { PrefabName = Forja.GarantiaPrefab, Name = Forja.GarantiaNome, Description = "Na Forja de Potencial, garante o sucesso do refino: o item sobe de nível em vez de quebrar. Gasta junto com o ídolo, a cada tentativa.", MaxStack = 50, Icon = "garantiarefino.png", Value = 0, Coin = true },
             new NativeItemDefinition { PrefabName = "ArmorKit1", Name = "Basic Armor Kit I", Description = "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Guck", Icon = "armorkit1.png" },
@@ -511,8 +510,8 @@ namespace Deadheim
             {
                 new Piece.Requirement
                 {
-                    m_resItem = ObjectDB.instance?.GetItemPrefab(DeadToken.Prefab)?.GetComponent<ItemDrop>(),
-                    m_amount = DeadToken.CustoSpawner,
+                    m_resItem = ObjectDB.instance?.GetItemPrefab("SpawnerToken")?.GetComponent<ItemDrop>(),
+                    m_amount = 1,
                     m_recover = true
                 }
             };
@@ -539,7 +538,7 @@ namespace Deadheim
 
             if (icon != null) return icon;
 
-            return ObjectDB.instance?.GetItemPrefab(DeadToken.Prefab)?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
+            return ObjectDB.instance?.GetItemPrefab("SpawnerToken")?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_icons?.FirstOrDefault();
         }
 
         private static void AddNomTameableWolf()

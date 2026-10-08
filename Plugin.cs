@@ -11,24 +11,25 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.5.0";
+        public const string Version = "7.5.1";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
         // IsAdminOnly do Jotunn: o servidor recusa quem nao tem o mod ou tem uma
         // versao abaixo da minima, e as configs de servidor valem as do servidor.
-        // Minimo 7.5.0: as regras de PvP rodam no cliente de quem leva o golpe, entao um
+        // Minimo 7.5.1: as regras de PvP rodam no cliente de quem leva o golpe, entao um
         // cliente sem o modulo de PvP seria alvo sem zona segura, imunidade ou reducao. O
         // protocolo do PvP mudou em 7.3.1 (bounty com id de pedido e resposta, causa no pacote
         // de morte, hora do servidor no estado), e as correcoes de cliente (relogio, pedra,
         // canal so do servidor) so valem se todo mundo estiver nela.
         // 7.4.0 traz a Ward de Territorio (prefab novo) e a contagem dela no RPC de wards; 7.5.0, o
-        // Dead Token (item novo, custo das construcoes pagas e conversao dos tokens antigos).
+        // Dead Token (item novo), e o 7.5.1 tira a conversao dos tokens antigos que o 7.5.0 fazia:
+        // um cliente 7.5.0 trocaria os tokens dos jogadores por Dead Token, que nao constroi nada.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.5.0",
+            MinimumRequiredVersion = "7.5.1",
             ModRequired = true,
             IsLocked = true
         };
@@ -185,7 +186,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             ResetWorldDay = Synced(Config.Bind("Server config", "ResetWorldDay", false,
             new ConfigDescription("ResetWorldDay")));
 
-            PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", DeadToken.Prefab + ":" + DeadToken.CustoPortal + ",FineWood:50,GreydwarfEye:30,SurtlingCore:5",
+            PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:50,GreydwarfEye:30,SurtlingCore:5",
     new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
 
             CartographyTableAmount = Synced(Config.Bind("Server config", "CartographyTableAmount", 0,

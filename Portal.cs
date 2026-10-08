@@ -31,12 +31,11 @@ namespace Deadheim
 
                     if (parts.Length == 2)
                     {
+                        string prefabName = parts[0].Trim();
+
                         // Tenta converter a quantidade para número
                         if (int.TryParse(parts[1].Trim(), out int amount) && amount > 0)
                         {
-                            // Token antigo no cfg ("PortalToken:1") vale como Dead Token.
-                            string prefabName = DeadToken.Custo(parts[0].Trim(), ref amount);
-
                             // Busca o prefab no jogo
                             GameObject prefab = Prefabs.Get(prefabName);
                             if (prefab != null)
