@@ -1,3 +1,4 @@
+using Deadheim.Vanilla;
 using HarmonyLib;
 using System;
 using System.Linq;
@@ -81,6 +82,8 @@ namespace Deadheim.Ajustes
 
         public static void AbrirJanela()
         {
+            if (Ui.IsTyping()) return;
+
             Menu menu = Menu.instance;
             if (menu == null) return;
 
