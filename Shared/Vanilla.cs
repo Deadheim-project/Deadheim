@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -291,6 +292,21 @@ namespace Deadheim.Vanilla
     internal static class Ui
     {
         public static readonly Color ValheimOrange = new Color(1f, 0.631f, 0.235f, 1f);
+
+        public static bool IsTyping()
+        {
+            if (Chat.instance != null && Chat.instance.HasFocus()) return true;
+            if (Console.IsVisible() || (TextInput.instance != null && TextInput.IsVisible())) return true;
+
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            if (!selected) return false;
+
+            InputField input = selected.GetComponentInParent<InputField>();
+            if (input && input.isFocused) return true;
+
+            TMP_InputField tmpInput = selected.GetComponentInParent<TMP_InputField>();
+            return tmpInput && tmpInput.isFocused;
+        }
 
         public static ColorBlock ValheimScrollbarHandleColorBlock => new ColorBlock
         {

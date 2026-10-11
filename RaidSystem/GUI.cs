@@ -15,6 +15,8 @@ namespace RaidSystem
 
         public static void ToggleMenu()
         {
+            if (Ui.IsTyping()) return;
+
             if (_menu == null || (_menu != null && !_menu.activeSelf))
             {
 
@@ -32,6 +34,8 @@ namespace RaidSystem
 
         public static void ToggleScoreboard()
         {
+            if (Ui.IsTyping()) return;
+
             if (_scoreboard != null)
                 _scoreboard.SetActive(!_scoreboard.activeSelf);
             else

@@ -1,6 +1,7 @@
 extern alias GuildsMod;
 using BepInEx;
 using BepInEx.Configuration;
+using Deadheim.Vanilla;
 using HarmonyLib;
 using ServerSync;
 using System.Collections.Generic;
@@ -20,13 +21,13 @@ namespace RaidSystem
     {
         public const string PluginGUID = "Detalhes.RaidSystem";
         public const string PluginName = "RaidSystem";
-        public const string PluginVersion = "2.2.2";
+        public const string PluginVersion = "2.2.3";
         public const string DefaultWebhookUrl = "";
         public static RaidSystemPlugin Instance { get; private set; }
         private Harmony _harmony;
 
-        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.2.2" };
-        // Minimo 2.2.2: o cliente passou a confiar so no servidor (sincronia, tributo, conquista)
+        private static readonly ConfigSync _configSync = new ConfigSync(PluginGUID) { DisplayName = PluginName, CurrentVersion = PluginVersion, MinimumRequiredVersion = "2.2.3" };
+        // Minimo 2.2.3: inclui o bloqueio dos menus enquanto o jogador digita.
         // e a ler o horario de raid pela hora do servidor; cliente velho continuaria aberto a isso.
 
         public static readonly string ModPath = Path.GetDirectoryName(typeof(RaidSystemPlugin).Assembly.Location);
@@ -101,6 +102,7 @@ namespace RaidSystem
 
             Player lp = Player.m_localPlayer;
             if (!lp || lp.IsDead() || lp.InCutscene() || lp.IsTeleporting()) return;
+            if (Ui.IsTyping()) return;
             if (Input.GetKeyDown(KeyboardShortcut.Value))
             { GUI.ToggleMenu(); ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RaidSystem_RequestFullSync", new ZPackage()); }
             if (Input.GetKeyDown(ScoreboardShortcut.Value))
