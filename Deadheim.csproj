@@ -144,6 +144,7 @@
     <Compile Include="Montarias.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="SkillsTeste.cs" />
     <Compile Include="SkipIntroCinematic.cs" />
     <!-- Substitui o Jotunn: prefabs, pecas, criaturas, admin e UI com o que o jogo ja tem. -->
     <Compile Include="Shared\Vanilla.cs" />

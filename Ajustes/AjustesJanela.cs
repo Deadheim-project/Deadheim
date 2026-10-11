@@ -35,6 +35,8 @@ namespace Deadheim.Ajustes
         private const float LarguraEditor = 250f;
         private const float LarguraPadrao = 70f;
         private const float EsperaServidor = 8f;
+        private const float AlturaAbas = -88f;
+        private const float SensibilidadeRolagem = 300f;
 
         private static readonly Color CorTexto = new Color(0.93f, 0.9f, 0.84f, 1f);
         private static readonly Color CorDescricao = new Color(0.78f, 0.74f, 0.68f, 1f);
@@ -85,7 +87,7 @@ namespace Deadheim.Ajustes
 
             bool admin = Admin.LocalPlayerIsAdmin();
             _botaoServidor.SetActive(admin);
-            ((RectTransform)_botaoMeus.transform).anchoredPosition = new Vector2(admin ? -115f : 0f, 262f);
+            ((RectTransform)_botaoMeus.transform).anchoredPosition = new Vector2(admin ? -115f : 0f, AlturaAbas);
 
             MostrarAba(_aba == Aba.Servidor && admin ? Aba.Servidor : Aba.Meus);
         }
@@ -248,11 +250,11 @@ namespace Deadheim.Ajustes
             GameObject go = Retangulo("Secao", _listaItens, LarguraLinha, AlturaSecao);
 
             Text titulo = CriarTexto(go.transform, nome, 19, Ui.ValheimOrange, TextAnchor.LowerLeft);
-            Colocar(titulo.gameObject, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(6f, 4f), new Vector2(LarguraLinha - 12f, 28f));
+            Ancorar(titulo.gameObject, Vector2.zero, new Vector2(1f, 0f), new Vector2(6f, 4f), new Vector2(-6f, 32f));
 
             // Filete embaixo do titulo, como os cabecalhos das janelas do jogo.
             GameObject filete = Retangulo("Filete", go.transform, LarguraLinha, 2f);
-            Colocar(filete, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(LarguraLinha, 2f));
+            Ancorar(filete, Vector2.zero, new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(0f, 3f));
             Image imagem = filete.AddComponent<Image>();
             imagem.color = new Color(Ui.ValheimOrange.r, Ui.ValheimOrange.g, Ui.ValheimOrange.b, 0.45f);
             imagem.raycastTarget = false;
@@ -267,11 +269,12 @@ namespace Deadheim.Ajustes
             Linha linha = new Linha { Item = item, Objeto = go };
             go.AddComponent<AoPassar>().Acao = () => MostrarInfo(item);
 
-            float larguraTexto = LarguraLinha - LarguraEditor - LarguraPadrao - 40f;
+            // O texto vai da esquerda ate os controles, que ficam presos a direita da linha.
+            float margemTexto = -(LarguraEditor + LarguraPadrao + 28f);
             Text chave = CriarTexto(go.transform, item.Chave, 16, Ui.ValheimOrange, TextAnchor.MiddleLeft);
-            Colocar(chave.gameObject, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(12f, -5f), new Vector2(larguraTexto, 22f));
+            Ancorar(chave.gameObject, new Vector2(0f, 1f), Vector2.one, new Vector2(12f, -27f), new Vector2(margemTexto, -5f));
             Text descricao = CriarTexto(go.transform, Resumo(item), 13, CorDescricao, TextAnchor.MiddleLeft);
-            Colocar(descricao.gameObject, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(12f, -28f), new Vector2(larguraTexto, 20f));
+            Ancorar(descricao.gameObject, new Vector2(0f, 1f), Vector2.one, new Vector2(12f, -48f), new Vector2(margemTexto, -28f));
 
             float direita = -(LarguraPadrao + 18f);
             switch (item.Editor)
@@ -348,10 +351,12 @@ namespace Deadheim.Ajustes
                 const float espacamento = 4f;
                 float larguraCampo = LarguraEditor - larguraBotao * 2f - espacamento * 2f;
 
+                // [campo][-][+]. Colocar usa o pivo na borda direita: a posicao e onde cada
+                // controle termina, nao o centro.
                 GameObject menos = Ui.CreateButton("-", linha.Objeto.transform, Vector2.zero, Vector2.zero, Vector2.zero,
                     larguraBotao, 30f);
                 Colocar(menos, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                    new Vector2(direita - LarguraEditor + larguraBotao / 2f, 0f), new Vector2(larguraBotao, 30f));
+                    new Vector2(direita - larguraBotao - espacamento, 0f), new Vector2(larguraBotao, 30f));
                 linha.Menos = menos.GetComponent<Button>();
                 linha.Menos.interactable = !linha.Item.SomenteLeitura;
                 linha.Menos.onClick.AddListener(() => AlterarNumero(linha, -1));
@@ -359,7 +364,7 @@ namespace Deadheim.Ajustes
                 GameObject mais = Ui.CreateButton("+", linha.Objeto.transform, Vector2.zero, Vector2.zero, Vector2.zero,
                     larguraBotao, 30f);
                 Colocar(mais, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                    new Vector2(direita - larguraBotao / 2f, 0f), new Vector2(larguraBotao, 30f));
+                    new Vector2(direita, 0f), new Vector2(larguraBotao, 30f));
                 linha.Mais = mais.GetComponent<Button>();
                 linha.Mais.interactable = !linha.Item.SomenteLeitura;
                 linha.Mais.onClick.AddListener(() => AlterarNumero(linha, 1));
@@ -367,7 +372,7 @@ namespace Deadheim.Ajustes
                 GameObject campoNumero = Ui.CreateInputField(linha.Objeto.transform, Vector2.zero, Vector2.zero, Vector2.zero,
                     InputField.ContentType.Standard, "", 14, larguraCampo, 32f);
                 Colocar(campoNumero, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                    new Vector2(direita - larguraBotao - espacamento - larguraCampo / 2f, 0f),
+                    new Vector2(direita - (larguraBotao + espacamento) * 2f, 0f),
                     new Vector2(larguraCampo, 32f));
                 linha.Campo = campoNumero.GetComponent<InputField>();
                 linha.Campo.lineType = InputField.LineType.SingleLine;
@@ -649,44 +654,54 @@ namespace Deadheim.Ajustes
             _janela = Ui.CreateWoodpanel(pai, centro, centro, Vector2.zero, Largura, Altura, draggable: true);
             _janela.name = "DeadheimAjustes";
 
-            Text titulo = CriarTexto(_janela.transform, "DEADHEIM", 36, Ui.ValheimOrange, TextAnchor.MiddleCenter);
-            Colocar(titulo.gameObject, centro, centro, new Vector2(0f, 310f), new Vector2(600f, 48f));
+            // Tudo preso as bordas da janela: ao redimensionar, as listas esticam junto.
+            Vector2 topo = new Vector2(0.5f, 1f);
 
-            _botaoMeus = Ui.CreateButton("Meus ajustes", _janela.transform, centro, centro, new Vector2(-115f, 262f), 210f, 38f);
+            Text titulo = CriarTexto(_janela.transform, "DEADHEIM", 36, Ui.ValheimOrange, TextAnchor.MiddleCenter);
+            Colocar(titulo.gameObject, topo, centro, new Vector2(0f, -40f), new Vector2(600f, 48f));
+
+            _botaoMeus = Ui.CreateButton("Meus ajustes", _janela.transform, centro, centro, Vector2.zero, 210f, 38f);
+            Colocar(_botaoMeus, topo, centro, new Vector2(-115f, AlturaAbas), new Vector2(210f, 38f));
             _botaoMeus.GetComponent<Button>().onClick.AddListener(() => MostrarAba(Aba.Meus));
-            _botaoServidor = Ui.CreateButton("Servidor", _janela.transform, centro, centro, new Vector2(115f, 262f), 210f, 38f);
+            _botaoServidor = Ui.CreateButton("Servidor", _janela.transform, centro, centro, Vector2.zero, 210f, 38f);
+            Colocar(_botaoServidor, topo, centro, new Vector2(115f, AlturaAbas), new Vector2(210f, 38f));
             _botaoServidor.GetComponent<Button>().onClick.AddListener(() => MostrarAba(Aba.Servidor));
 
-            GameObject mods = CriarRolagem(250f, 460f, new Vector2(-385f, -5f));
+            GameObject mods = CriarRolagem(new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(20f, 115f), new Vector2(270f, -125f));
             _listaMods = mods.transform.Find("Scroll View/Viewport/Content");
             VerticalLayoutGroup layoutMods = _listaMods.GetComponent<VerticalLayoutGroup>();
             layoutMods.spacing = 4f;
             layoutMods.padding = new RectOffset(0, 0, 6, 6);
 
             _cabecalho = CriarTexto(_janela.transform, "", 22, CorSelecionado, TextAnchor.MiddleLeft);
-            Colocar(_cabecalho.gameObject, centro, centro, new Vector2(-5f, 203f), new Vector2(460f, 36f));
+            Ancorar(_cabecalho.gameObject, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(295f, -165f), new Vector2(-290f, -129f));
 
-            GameObject busca = Ui.CreateInputField(_janela.transform, centro, centro, new Vector2(385f, 203f),
+            GameObject busca = Ui.CreateInputField(_janela.transform, centro, centro, Vector2.zero,
                 InputField.ContentType.Standard, "Buscar...", 15, 250f, 32f);
+            Colocar(busca, new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-20f, -147f), new Vector2(250f, 32f));
             _busca = busca.GetComponent<InputField>();
             _busca.onValueChanged.AddListener(Filtrar);
 
-            GameObject itens = CriarRolagem(750f, 410f, new Vector2(135f, -30f));
+            GameObject itens = CriarRolagem(Vector2.zero, Vector2.one, new Vector2(290f, 115f), new Vector2(-20f, -175f));
             _listaItens = itens.transform.Find("Scroll View/Viewport/Content");
             VerticalLayoutGroup layoutItens = _listaItens.GetComponent<VerticalLayoutGroup>();
             layoutItens.spacing = 3f;
-            layoutItens.padding = new RectOffset(0, 0, 4, 8);
+            layoutItens.padding = new RectOffset(10, 10, 4, 8);
+            // As linhas ocupam a largura toda da lista (que muda com a janela).
+            layoutItens.childControlWidth = true;
+            layoutItens.childForceExpandWidth = true;
 
             _vazio = CriarTexto(itens.transform, "", 18, CorDescricao, TextAnchor.MiddleCenter);
-            Colocar(_vazio.gameObject, centro, centro, Vector2.zero, new Vector2(680f, 80f));
+            Ancorar(_vazio.gameObject, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(20f, -40f), new Vector2(-20f, 40f));
 
             _info = CriarTexto(_janela.transform, "", 14, CorTexto, TextAnchor.UpperLeft);
-            Colocar(_info.gameObject, centro, centro, new Vector2(0f, -272f), new Vector2(1020f, 54f));
+            Ancorar(_info.gameObject, Vector2.zero, new Vector2(1f, 0f), new Vector2(20f, 51f), new Vector2(-20f, 105f));
 
             _status = CriarTexto(_janela.transform, "", 15, CorTexto, TextAnchor.MiddleLeft);
-            Colocar(_status.gameObject, centro, centro, new Vector2(-105f, -320f), new Vector2(810f, 30f));
+            Ancorar(_status.gameObject, Vector2.zero, new Vector2(1f, 0f), new Vector2(20f, 15f), new Vector2(-230f, 45f));
 
-            GameObject voltar = Ui.CreateButton("Voltar", _janela.transform, centro, centro, new Vector2(425f, -320f), 160f, 40f);
+            GameObject voltar = Ui.CreateButton("Voltar", _janela.transform, centro, centro, Vector2.zero, 160f, 40f);
+            Colocar(voltar, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(-40f, 30f), new Vector2(160f, 40f));
             voltar.GetComponent<Button>().onClick.AddListener(AjustesMenu.FecharJanela);
 
             GameObject resizeAlca = new GameObject("ResizeAlca", typeof(RectTransform), typeof(Image));
@@ -703,12 +718,12 @@ namespace Deadheim.Ajustes
             resizeAlca.AddComponent<ResizeWindowHandler>();
         }
 
-        private static GameObject CriarRolagem(float largura, float altura, Vector2 posicao)
+        private static GameObject CriarRolagem(Vector2 ancoraMin, Vector2 ancoraMax, Vector2 margemMin, Vector2 margemMax)
         {
             GameObject rolagem = Ui.CreateScrollView(_janela.transform, false, true, 8f, Ui.ValheimScrollbarHandleColorBlock, 0f,
-                new Color(0.157f, 0.102f, 0.063f, 1f), largura, altura);
-            rolagem.transform.Find("Scroll View").GetComponent<ScrollRect>().scrollSensitivity = 80f;
-            ((RectTransform)rolagem.transform).anchoredPosition = posicao;
+                new Color(0.157f, 0.102f, 0.063f, 1f), 100f, 100f);
+            rolagem.transform.Find("Scroll View").GetComponent<ScrollRect>().scrollSensitivity = SensibilidadeRolagem;
+            Ancorar(rolagem, ancoraMin, ancoraMax, margemMin, margemMax);
             Image fundo = rolagem.AddComponent<Image>();
             fundo.color = FundoLista;
             fundo.raycastTarget = false;
@@ -746,6 +761,17 @@ namespace Deadheim.Ajustes
             rect.pivot = pivo;
             rect.sizeDelta = tamanho;
             rect.anchoredPosition = posicao;
+        }
+
+        /// <summary>Prende o retangulo as ancoras com margens fixas: estica junto com o pai.</summary>
+        private static void Ancorar(GameObject go, Vector2 ancoraMin, Vector2 ancoraMax, Vector2 margemMin, Vector2 margemMax)
+        {
+            RectTransform rect = (RectTransform)go.transform;
+            rect.anchorMin = ancoraMin;
+            rect.anchorMax = ancoraMax;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.offsetMin = margemMin;
+            rect.offsetMax = margemMax;
         }
 
         private static void Esticar(GameObject go)
@@ -816,8 +842,8 @@ namespace Deadheim.Ajustes
         {
             private RectTransform _panelRect;
             private Canvas _canvas;
-            private const float MinWidth = 600f;
-            private const float MinHeight = 400f;
+            private const float MinWidth = 900f;
+            private const float MinHeight = 520f;
 
             public void OnBeginDrag(PointerEventData eventData)
             {
@@ -831,10 +857,16 @@ namespace Deadheim.Ajustes
                 if (!_panelRect) return;
                 float scale = _canvas ? _canvas.scaleFactor : 1f;
                 Vector2 delta = eventData.delta / (scale > 0f ? scale : 1f);
-                Vector2 newSize = _panelRect.sizeDelta + delta;
-                newSize.x = Mathf.Max(MinWidth, newSize.x);
-                newSize.y = Mathf.Max(MinHeight, newSize.y);
+                // Arrastar para baixo (delta.y negativo) aumenta a altura.
+                Vector2 oldSize = _panelRect.sizeDelta;
+                Vector2 newSize = new Vector2(
+                    Mathf.Max(MinWidth, oldSize.x + delta.x),
+                    Mathf.Max(MinHeight, oldSize.y - delta.y));
+                Vector2 change = newSize - oldSize;
                 _panelRect.sizeDelta = newSize;
+                // Compensa o pivo para o canto de cima a esquerda ficar parado.
+                Vector2 pivot = _panelRect.pivot;
+                _panelRect.anchoredPosition += new Vector2(change.x * pivot.x, -change.y * (1f - pivot.y));
             }
         }
     }
