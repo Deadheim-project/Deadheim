@@ -287,7 +287,8 @@ namespace Deadheim.Ajustes
         {
             if (tipo == typeof(bool)) return "liga/desliga";
             if (tipo == typeof(string)) return "texto";
-            if (tipo == typeof(int) || tipo == typeof(long) || tipo == typeof(short) || tipo == typeof(byte)) return "numero inteiro";
+            if (tipo == typeof(sbyte) || tipo == typeof(byte) || tipo == typeof(short) || tipo == typeof(ushort) ||
+                tipo == typeof(int) || tipo == typeof(uint) || tipo == typeof(long) || tipo == typeof(ulong)) return "numero inteiro";
             if (tipo == typeof(float) || tipo == typeof(double) || tipo == typeof(decimal)) return "numero";
             if (tipo.Name == "KeyCode") return "tecla";
             if (tipo.Name == "KeyboardShortcut") return "atalho (ex.: F1 + LeftControl)";

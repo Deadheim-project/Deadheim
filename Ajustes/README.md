@@ -36,8 +36,11 @@ opcionais. O que conta e o `ConfigFile` que o BepInEx ja tem aberto para cada mo
 | `AjustesRede.cs` | RPCs `DH_Ajustes_ToServer` / `DH_Ajustes_ToClient`: lista de mods, opcoes de um mod (comprimidas) e troca de valor. |
 
 Tipos de editor: liga/desliga vira caixa de marcar; enum e lista de valores aceitos viram `< valor >`;
-o resto (numero, texto, tecla, atalho, cor) vira campo de texto, aplicado com Enter ou ao clicar fora.
-Valor invalido e recusado com a mensagem embaixo.
+campos numericos incluem botoes `-` e `+` (passo de 1 para inteiros e 0,1 para decimais) e tambem
+aceitam edicao direta, aplicada com Enter ou ao clicar fora. Os botoes respeitam faixas numericas
+configuradas. Texto, tecla, atalho e cor continuam em campo de texto. Valor invalido e recusado com a mensagem embaixo.
+
+A janela pode ser arrastada pelo painel e as listas rolam mais rapido que o padrao do jogo.
 
 O servidor registra cada mudanca no log: `Ajustes: <id> mudou <mod> [secao] chave: 'antes' -> 'depois'`.
 

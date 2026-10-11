@@ -1,6 +1,7 @@
 using Deadheim.Vanilla;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -341,6 +342,43 @@ namespace Deadheim.Ajustes
 
         private static void CriarCampo(Linha linha, float direita)
         {
+            if (EhNumero(linha.Item))
+            {
+                const float larguraBotao = 32f;
+                const float espacamento = 4f;
+                float larguraCampo = LarguraEditor - larguraBotao * 2f - espacamento * 2f;
+
+                GameObject menos = Ui.CreateButton("-", linha.Objeto.transform, Vector2.zero, Vector2.zero, Vector2.zero,
+                    larguraBotao, 30f);
+                Colocar(menos, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                    new Vector2(direita - LarguraEditor + larguraBotao / 2f, 0f), new Vector2(larguraBotao, 30f));
+                linha.Menos = menos.GetComponent<Button>();
+                linha.Menos.interactable = !linha.Item.SomenteLeitura;
+                linha.Menos.onClick.AddListener(() => AlterarNumero(linha, -1));
+
+                GameObject mais = Ui.CreateButton("+", linha.Objeto.transform, Vector2.zero, Vector2.zero, Vector2.zero,
+                    larguraBotao, 30f);
+                Colocar(mais, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                    new Vector2(direita - larguraBotao / 2f, 0f), new Vector2(larguraBotao, 30f));
+                linha.Mais = mais.GetComponent<Button>();
+                linha.Mais.interactable = !linha.Item.SomenteLeitura;
+                linha.Mais.onClick.AddListener(() => AlterarNumero(linha, 1));
+
+                GameObject campoNumero = Ui.CreateInputField(linha.Objeto.transform, Vector2.zero, Vector2.zero, Vector2.zero,
+                    InputField.ContentType.Standard, "", 14, larguraCampo, 32f);
+                Colocar(campoNumero, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                    new Vector2(direita - larguraBotao - espacamento - larguraCampo / 2f, 0f),
+                    new Vector2(larguraCampo, 32f));
+                linha.Campo = campoNumero.GetComponent<InputField>();
+                linha.Campo.lineType = InputField.LineType.SingleLine;
+                linha.Campo.interactable = !linha.Item.SomenteLeitura;
+                linha.Campo.onEndEdit.AddListener(valor =>
+                {
+                    if (!linha.Atualizando) Aplicar(linha, valor);
+                });
+                return;
+            }
+
             GameObject campo = Ui.CreateInputField(linha.Objeto.transform, Vector2.zero, Vector2.zero, Vector2.zero,
                 InputField.ContentType.Standard, "", 14, LarguraEditor, 32f);
             Colocar(campo, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(direita, 0f), new Vector2(LarguraEditor, 32f));
@@ -353,6 +391,52 @@ namespace Deadheim.Ajustes
                 if (!linha.Atualizando) Aplicar(linha, valor);
             });
         }
+
+        private static bool EhNumero(ItemAjuste item)
+            => item.Tipo == "numero inteiro" || item.Tipo == "numero";
+
+        private static void AlterarNumero(Linha linha, int direcao)
+        {
+            if (!TentarNumero(linha.Item.Valor, out decimal atual))
+            {
+                Status($"Valor numerico invalido: {linha.Item.Chave}.", CorErro);
+                linha.Mostrar();
+                return;
+            }
+
+            decimal passo = linha.Item.Tipo == "numero inteiro" ? 1m : 0.1m;
+            decimal novo;
+            try
+            {
+                novo = checked(atual + passo * direcao);
+            }
+            catch (OverflowException)
+            {
+                Status($"Limite numerico atingido: {linha.Item.Chave}.", CorErro);
+                linha.Mostrar();
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(linha.Item.Faixa))
+            {
+                string[] limites = linha.Item.Faixa.Split(new[] { " a " }, StringSplitOptions.None);
+                if (limites.Length != 2 || !TentarNumero(limites[0], out decimal minimo) ||
+                    !TentarNumero(limites[1], out decimal maximo))
+                {
+                    Status($"Faixa numerica invalida: {linha.Item.Chave}.", CorErro);
+                    linha.Mostrar();
+                    return;
+                }
+
+                novo = Math.Max(minimo, Math.Min(maximo, novo));
+            }
+
+            Aplicar(linha, novo.ToString(CultureInfo.InvariantCulture));
+        }
+
+        private static bool TentarNumero(string texto, out decimal valor)
+            => decimal.TryParse(texto, NumberStyles.Float, CultureInfo.InvariantCulture, out valor) ||
+               decimal.TryParse(texto, NumberStyles.Float, CultureInfo.CurrentCulture, out valor);
 
         private static void Girar(Linha linha, int passo)
         {
@@ -562,7 +646,7 @@ namespace Deadheim.Ajustes
         private static void Construir(Transform pai)
         {
             Vector2 centro = new Vector2(0.5f, 0.5f);
-            _janela = Ui.CreateWoodpanel(pai, centro, centro, Vector2.zero, Largura, Altura, draggable: false);
+            _janela = Ui.CreateWoodpanel(pai, centro, centro, Vector2.zero, Largura, Altura, draggable: true);
             _janela.name = "DeadheimAjustes";
 
             Text titulo = CriarTexto(_janela.transform, "DEADHEIM", 36, Ui.ValheimOrange, TextAnchor.MiddleCenter);
@@ -610,6 +694,7 @@ namespace Deadheim.Ajustes
         {
             GameObject rolagem = Ui.CreateScrollView(_janela.transform, false, true, 8f, Ui.ValheimScrollbarHandleColorBlock, 0f,
                 new Color(0.157f, 0.102f, 0.063f, 1f), largura, altura);
+            rolagem.transform.Find("Scroll View").GetComponent<ScrollRect>().scrollSensitivity = 80f;
             ((RectTransform)rolagem.transform).anchoredPosition = posicao;
             Image fundo = rolagem.AddComponent<Image>();
             fundo.color = FundoLista;
@@ -673,6 +758,8 @@ namespace Deadheim.Ajustes
             public ItemAjuste Item;
             public GameObject Objeto;
             public InputField Campo;
+            public Button Menos;
+            public Button Mais;
             public Toggle Caixa;
             public Text RotuloCaixa;
             public Text ValorLista;
