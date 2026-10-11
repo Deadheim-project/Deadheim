@@ -688,6 +688,19 @@ namespace Deadheim.Ajustes
 
             GameObject voltar = Ui.CreateButton("Voltar", _janela.transform, centro, centro, new Vector2(425f, -320f), 160f, 40f);
             voltar.GetComponent<Button>().onClick.AddListener(AjustesMenu.FecharJanela);
+
+            GameObject resizeAlca = new GameObject("ResizeAlca", typeof(RectTransform), typeof(Image));
+            RectTransform resizeRect = (RectTransform)resizeAlca.transform;
+            resizeRect.SetParent(_janela.transform, false);
+            resizeRect.anchorMin = new Vector2(1f, 0f);
+            resizeRect.anchorMax = new Vector2(1f, 0f);
+            resizeRect.pivot = new Vector2(1f, 0f);
+            resizeRect.sizeDelta = new Vector2(30f, 30f);
+            resizeRect.anchoredPosition = new Vector2(0f, 0f);
+            Image resizeImage = resizeAlca.GetComponent<Image>();
+            resizeImage.color = new Color(0.5f, 0.35f, 0.15f, 0.8f);
+            resizeAlca.AddComponent<EventTrigger>();
+            resizeAlca.AddComponent<ResizeWindowHandler>();
         }
 
         private static GameObject CriarRolagem(float largura, float altura, Vector2 posicao)
@@ -796,6 +809,33 @@ namespace Deadheim.Ajustes
             public Action Acao;
 
             public void OnPointerEnter(PointerEventData eventData) => Acao?.Invoke();
+        }
+
+        /// <summary>Permite redimensionar a janela com a alça no canto inferior direito.</summary>
+        private sealed class ResizeWindowHandler : MonoBehaviour, IBeginDragHandler, IDragHandler
+        {
+            private RectTransform _panelRect;
+            private Canvas _canvas;
+            private const float MinWidth = 600f;
+            private const float MinHeight = 400f;
+
+            public void OnBeginDrag(PointerEventData eventData)
+            {
+                _panelRect = transform.parent as RectTransform;
+                _canvas = GetComponentInParent<Canvas>();
+                if (_panelRect) _panelRect.SetAsLastSibling();
+            }
+
+            public void OnDrag(PointerEventData eventData)
+            {
+                if (!_panelRect) return;
+                float scale = _canvas ? _canvas.scaleFactor : 1f;
+                Vector2 delta = eventData.delta / (scale > 0f ? scale : 1f);
+                Vector2 newSize = _panelRect.sizeDelta + delta;
+                newSize.x = Mathf.Max(MinWidth, newSize.x);
+                newSize.y = Mathf.Max(MinHeight, newSize.y);
+                _panelRect.sizeDelta = newSize;
+            }
         }
     }
 }

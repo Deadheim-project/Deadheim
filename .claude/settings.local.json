@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl --netrc-file:*)",
+      "PowerShell(powershell -NoProfile -File bin/restart-server.ps1 *)",
+      "PowerShell(powershell -File bin/restart-server.ps1 *)",
+      "Bash(powershell -File bin/restart-server.ps1 *)",
+      "Bash(powershell -NoProfile -File bin/restart-server.ps1 *)",
+      "Bash(powershell -File D:/deadheim-deploy/bin/restart-server.ps1:*)",
+      "PowerShell(powershell -File D:\\deadheim-deploy\\bin\\restart-server.ps1:*)",
+      "Bash(git -C D:/deadheim-launcher push:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
