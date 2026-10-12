@@ -128,6 +128,7 @@
     <Reference Remove="UnityEngine.ProfilerModule" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdminImortal.cs" />
     <Compile Include="AllyScaling.cs" />
     <Compile Include="Boats.cs" />
     <Compile Include="Boss.cs" />

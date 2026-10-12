@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.5.5";
+        public const string Version = "7.5.6";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -201,6 +201,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Pvp.PvpModule.Init(Config);
             Montarias.Bind(Config);
             Forja.Bind(Config);
+            AdminImortal.Bind(Config);
             SkillsTeste.Bind(Config); // TEMPORARIO: remover no lancamento
 
             _harmony.PatchAll();
