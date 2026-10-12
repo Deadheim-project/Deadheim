@@ -110,6 +110,7 @@
     <Compile Include="Solo.cs" />
     <Compile Include="Ajustes.cs" />
     <Compile Include="Forja.cs" />
+    <Compile Include="Bancada.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
