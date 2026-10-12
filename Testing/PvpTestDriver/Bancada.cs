@@ -18,9 +18,11 @@ namespace PvpTestDriver
             GameObject prefab = ZNetScene.instance.GetPrefab("piece_workbench");
             CraftingStation modelo = prefab ? prefab.GetComponentInChildren<CraftingStation>(true) : null;
             // Uma receita da bancada que empilha (o lote cabe num slot) e sem melhoria.
-            Recipe receita = ObjectDB.instance.m_recipes.FirstOrDefault(r => r && r.m_enabled && r.m_item
-                && r.m_craftingStation && modelo && r.m_craftingStation.m_name == modelo.m_name
-                && r.m_item.m_itemData.m_shared.m_maxStackSize >= 20 && r.m_resources.Length > 0);
+            // A flecha de madeira (so madeira); sem ela, outra da bancada que empilha.
+            Recipe receita = ObjectDB.instance.m_recipes.FirstOrDefault(r => r && r.name == "Recipe_ArrowWood")
+                ?? ObjectDB.instance.m_recipes.FirstOrDefault(r => r && r.m_enabled && r.m_item
+                    && r.m_craftingStation && modelo && r.m_craftingStation.m_name == modelo.m_name
+                    && r.m_item.m_itemData.m_shared.m_maxStackSize >= 20 && r.m_resources.Length > 0);
             Check("bancada/receita", receita != null, receita?.name ?? "(nenhuma)");
             if (receita == null) yield break;
             string nome = Localization.instance.Localize(receita.m_item.m_itemData.m_shared.m_name);
@@ -32,12 +34,15 @@ namespace PvpTestDriver
             inv.RemoveAll();
             GameObject go = Instantiate(prefab, Ground(Me.transform.position + Me.transform.forward * 1f), Quaternion.identity);
             CraftingStation bancada = go.GetComponentInChildren<CraftingStation>();
+            // O jogo fecha o painel longe do componente da estacao (m_useDistance): ele fica a 1 m.
+            go.transform.position += Me.transform.position + Me.transform.forward * 1f - bancada.transform.position;
             foreach (Collider c in go.GetComponentsInChildren<Collider>()) c.enabled = false;
             Me.AddKnownRecipe(receita);
             const int lote = 3;
             foreach (Piece.Requirement req in receita.m_resources)
                 Give(req.m_resItem.name, req.m_amount * lote, 1);
             yield return Wait(1f);
+            Log($"bancada: estacao a {Vector3.Distance(Me.transform.position, bancada.transform.position):0.00} m (uso {bancada.m_useDistance})");
 
             // ------------------------------------------------------------------ painel
             Me.SetCraftingStation(bancada);
