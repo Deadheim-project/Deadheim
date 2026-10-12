@@ -6,6 +6,7 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Deadheim.Vanilla;
 
 namespace Deadheim.Craft
 {
@@ -24,9 +25,13 @@ namespace Deadheim.Craft
     {
         private const float TempoDeFabricacao = 0.25f;
         internal const int QuantidadeMaxima = 99;
-        private const float AlturaDaBusca = 30f;
+        private const float AlturaDaBusca = 32f;
         private const float EspacoDaBusca = 4f;
-        private const float LarguraDaQuantidade = 120f;
+        // [-] [numero] [+] na frente do Fabricar, na altura dele.
+        private const float LarguraDoBotao = 40f;
+        private const float LarguraDoNumero = 54f;
+        private const float EspacoEntre = 4f;
+        private const float LarguraDaQuantidade = LarguraDoBotao * 2 + LarguraDoNumero + EspacoEntre * 2;
         private const float EspacoDaQuantidade = 6f;
 
         internal static int Quantidade = 1;
@@ -91,7 +96,7 @@ namespace Deadheim.Craft
             FieldInfo envio = AccessTools.Field(campo.GetType(), "OnInputSubmit");
             if (envio != null && !envio.FieldType.IsAbstract) envio.SetValue(campo, Activator.CreateInstance(envio.FieldType));
             campo.SetTextWithoutNotify("");
-            if (campo.placeholder is TMP_Text dica) dica.text = "Buscar item...";
+            EstilizarBusca(gui, campo);
             campo.onValueChanged.AddListener(texto =>
             {
                 Busca = Normalizar(texto);
@@ -118,24 +123,21 @@ namespace Deadheim.Craft
             r.offsetMax = new Vector2(_botaoFabricarEsquerda + LarguraDaQuantidade, _botaoFabricar.offsetMax.y);
             r.SetSiblingIndex(_botaoFabricar.GetSiblingIndex());
 
-            Menos = CriarBotao(gui, r, "-", 0f, 0.3f, -1);
-            Mais = CriarBotao(gui, r, "+", 0.7f, 1f, 1);
+            Menos = CriarBotao(gui, r, "-", 0f, -1);
+            Mais = CriarBotao(gui, r, "+", LarguraDoBotao + EspacoEntre + LarguraDoNumero + EspacoEntre, 1);
 
-            // Numero no meio, com o fundo do campo de busca quando houver.
+            // Numero no meio: a moldura do botao Fabricar, mais escura, na mesma altura dos botoes.
             GameObject caixa = new GameObject("Numero", typeof(RectTransform));
             RectTransform cr = (RectTransform)caixa.transform;
             cr.SetParent(r, false);
-            cr.anchorMin = new Vector2(0.3f, 0f);
-            cr.anchorMax = new Vector2(0.7f, 1f);
-            cr.offsetMin = new Vector2(2f, 4f);
-            cr.offsetMax = new Vector2(-2f, -4f);
-            Image fundoBusca = Campo ? Campo.GetComponent<Image>() : null;
-            if (fundoBusca && fundoBusca.sprite)
+            Posicionar(cr, LarguraDoBotao + EspacoEntre, LarguraDoNumero);
+            Image moldura = gui.m_craftButton.GetComponent<Image>();
+            if (moldura && moldura.sprite)
             {
                 Image fundo = caixa.AddComponent<Image>();
-                fundo.sprite = fundoBusca.sprite;
-                fundo.type = fundoBusca.type;
-                fundo.color = fundoBusca.color;
+                fundo.sprite = moldura.sprite;
+                fundo.type = moldura.type;
+                fundo.color = new Color(0.55f, 0.55f, 0.55f, 1f);
                 fundo.raycastTarget = false;
             }
 
@@ -154,7 +156,7 @@ namespace Deadheim.Craft
                 numero.fontSharedMaterial = modelo.fontSharedMaterial;
                 numero.color = modelo.color;
             }
-            numero.fontSize = 20f;
+            numero.fontSize = 24f;
             numero.alignment = TextAlignmentOptions.Center;
             numero.raycastTarget = false;
             numero.text = "1";
@@ -164,7 +166,7 @@ namespace Deadheim.Craft
             root.SetActive(false);
         }
 
-        private static Button CriarBotao(InventoryGui gui, Transform pai, string rotulo, float de, float ate, int passo)
+        private static Button CriarBotao(InventoryGui gui, Transform pai, string rotulo, float x, int passo)
         {
             GameObject go = UnityEngine.Object.Instantiate(gui.m_craftButton.gameObject, pai, false);
             go.name = passo < 0 ? "Menos" : "Mais";
@@ -172,10 +174,7 @@ namespace Deadheim.Craft
             LimparClone(go);
 
             RectTransform r = (RectTransform)go.transform;
-            r.anchorMin = new Vector2(de, 0f);
-            r.anchorMax = new Vector2(ate, 1f);
-            r.offsetMin = Vector2.zero;
-            r.offsetMax = Vector2.zero;
+            Posicionar(r, x, LarguraDoBotao);
             r.localScale = Vector3.one;
 
             TMP_Text texto = go.GetComponentInChildren<TMP_Text>(true);
@@ -183,7 +182,7 @@ namespace Deadheim.Craft
             {
                 texto.text = rotulo;
                 texto.enableAutoSizing = false;
-                texto.fontSize = 24f;
+                texto.fontSize = 30f;
             }
 
             Button botao = go.GetComponent<Button>();
@@ -192,6 +191,58 @@ namespace Deadheim.Craft
             // Shift: de 10 em 10.
             botao.onClick.AddListener(() => MudarQuantidade(passo * (ShiftApertado() ? 10 : 1)));
             return botao;
+        }
+
+        /// <summary>Faixa de largura fixa a partir de x, na altura toda do pai.</summary>
+        private static void Posicionar(RectTransform r, float x, float largura)
+        {
+            r.anchorMin = Vector2.zero;
+            r.anchorMax = new Vector2(0f, 1f);
+            r.offsetMin = new Vector2(x, 0f);
+            r.offsetMax = new Vector2(x + largura, 0f);
+        }
+
+        /// <summary>
+        /// O campo do menu de construcao e cinza e em caixa alta. Aqui ele fica com o fundo dos
+        /// slots de requisito e a fonte da lista de receitas, como o resto do painel.
+        /// </summary>
+        private static void EstilizarBusca(InventoryGui gui, TMP_InputField campo)
+        {
+            Image fundo = campo.GetComponent<Image>();
+            Image slot = gui.m_recipeRequirementList != null && gui.m_recipeRequirementList.Length > 0
+                ? gui.m_recipeRequirementList[0].GetComponent<Image>() : null;
+            if (fundo && slot && slot.sprite)
+            {
+                fundo.sprite = slot.sprite;
+                fundo.type = slot.type;
+                fundo.color = slot.color;
+            }
+
+            Transform nome = gui.m_recipeElementPrefab ? gui.m_recipeElementPrefab.transform.Find("name") : null;
+            TMP_Text fonte = nome ? nome.GetComponent<TMP_Text>() : null;
+            if (fonte) campo.fontAsset = fonte.font;
+            campo.pointSize = 16f;
+            campo.customCaretColor = true;
+            campo.caretColor = Ui.ValheimOrange;
+            campo.selectionColor = new Color(1f, 0.631f, 0.235f, 0.35f);
+
+            if (campo.textComponent)
+            {
+                campo.textComponent.fontStyle = FontStyles.Normal;
+                campo.textComponent.enableAutoSizing = false;
+                campo.textComponent.color = Color.white;
+                campo.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
+            }
+            if (campo.placeholder is TMP_Text dica)
+            {
+                if (fonte) dica.font = fonte.font;
+                dica.text = "Buscar item...";
+                dica.fontStyle = FontStyles.Italic;
+                dica.enableAutoSizing = false;
+                dica.fontSize = 16f;
+                dica.color = new Color(0.7f, 0.7f, 0.7f, 0.75f);
+                dica.alignment = TextAlignmentOptions.MidlineLeft;
+            }
         }
 
         /// <summary>Tira do clone o que fazia ele agir como o original (dica de gamepad, tooltip, traducao).</summary>
