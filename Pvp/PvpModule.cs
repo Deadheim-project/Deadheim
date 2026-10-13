@@ -21,8 +21,6 @@ namespace Deadheim.Pvp
         private static double _retreatReadyAt;
 
         private static float _nextTick;
-        private static float _coinsDefaultWeight = -1f;
-        private static int _coinsDefaultStack = -1;
 
         public static void Init(ConfigFile config)
         {
@@ -31,10 +29,6 @@ namespace Deadheim.Pvp
             // o RaidSystem registra o proprio resolvedor depois e prevalece (e o mesmo Guilds).
             if (Wards.WardBridge.GuildOfPlayer == null)
                 Wards.WardBridge.GuildOfPlayer = PvpGuilds.GuildOf;
-            Prefabs.PiecesReady += ApplyItemTweaks;
-            PvpConfig.CoinsWeightless.SettingChanged += (_, __) => ApplyItemTweaks();
-            PvpConfig.CoinsMaxStack.SettingChanged += (_, __) => ApplyItemTweaks();
-            PvpConfig.Enabled.SettingChanged += (_, __) => ApplyItemTweaks();
             Vanilla.Prefabs.PiecesReady += PvpHud.RegisterStatusEffects;
         }
 
@@ -125,29 +119,6 @@ namespace Deadheim.Pvp
             double left = RetreatRemaining;
             if (left > 0d) player.m_customData[KeyRetreatLeft] = left.ToString("R", CultureInfo.InvariantCulture);
             else player.m_customData.Remove(KeyRetreatLeft);
-        }
-
-        // -------------------------------------------------------------------- moeda
-
-        /// <summary>Coins sem peso e com pilha grande. Guarda o original para poder voltar.</summary>
-        public static void ApplyItemTweaks()
-        {
-            GameObject prefab = ObjectDB.instance != null ? ObjectDB.instance.GetItemPrefab("Coins") : null;
-            ItemDrop drop = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
-            if (drop == null || drop.m_itemData?.m_shared == null) return;
-
-            ItemDrop.ItemData.SharedData shared = drop.m_itemData.m_shared;
-            if (_coinsDefaultWeight < 0f)
-            {
-                _coinsDefaultWeight = shared.m_weight;
-                _coinsDefaultStack = shared.m_maxStackSize;
-            }
-
-            bool active = PvpConfig.Active;
-            shared.m_weight = active && PvpConfig.CoinsWeightless.Value ? 0f : _coinsDefaultWeight;
-            shared.m_maxStackSize = active && PvpConfig.CoinsMaxStack.Value > 0
-                ? Mathf.Clamp(PvpConfig.CoinsMaxStack.Value, 1, 1000000)
-                : _coinsDefaultStack;
         }
 
         // ----------------------------------------------------------------- ciclo de vida

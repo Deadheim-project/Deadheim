@@ -960,7 +960,7 @@ namespace PvpTestDriver
         {
             ItemDrop.ItemData.SharedData coins = ObjectDB.instance.GetItemPrefab("Coins").GetComponent<ItemDrop>().m_itemData.m_shared;
             Check("coins/peso-zero", coins.m_weight == 0f, "peso=" + coins.m_weight);
-            Check("coins/pilha-5000", coins.m_maxStackSize == PvpConfig.CoinsMaxStack.Value, "pilha=" + coins.m_maxStackSize);
+            Check("coins/pilha-sem-limite", coins.m_maxStackSize == Deadheim.Moedas.PilhaMaxima, "pilha=" + coins.m_maxStackSize);
             yield break;
         }
     }

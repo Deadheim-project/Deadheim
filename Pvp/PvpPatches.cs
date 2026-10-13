@@ -257,8 +257,8 @@ namespace Deadheim.Pvp
                     if (wasPk && clearsPk) PvpState.ClearPk();
 
                     bool wasAggressor = PvpState.IsAggressor;
-                    // Antes do vanilla criar a tumba: moedas e carga que ficam para quem matou.
-                    int coinsDropped = byPlayer && !arena ? DropCoins(__instance, pos) : 0;
+                    // Antes do vanilla criar a tumba: carga que fica para quem matou. Moedas nunca caem (Moedas.cs).
+                    const int coinsDropped = 0;
                     int cargoDropped = byPlayer && !arena ? DropCargo(__instance, pos) : 0;
 
                     PvpState.ForgetAttacker();
@@ -279,38 +279,10 @@ namespace Deadheim.Pvp
             }
 
             /// <summary>
-            /// PvpCoinDropPercent das moedas (padrao: todas) vao para o chao, fora da tumba (que so o
-            /// dono abre): e o saque de quem matou, seja a vitima PK ou nao.
-            /// </summary>
-            private static int DropCoins(Player player, Vector3 pos)
-            {
-                float percent = Mathf.Clamp(PvpConfig.PvpCoinDropPercent.Value, 0f, 100f);
-                if (percent <= 0f) return 0;
-                GameObject prefab = ObjectDB.instance != null ? ObjectDB.instance.GetItemPrefab("Coins") : null;
-                ItemDrop coins = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
-                Inventory inventory = player.GetInventory();
-                if (coins == null || inventory == null) return 0;
-
-                string name = coins.m_itemData.m_shared.m_name;
-                int amount = Mathf.FloorToInt(inventory.CountItems(name) * percent / 100f);
-                if (amount <= 0) return 0;
-                inventory.RemoveItem(name, amount);
-
-                int maxStack = Mathf.Max(1, coins.m_itemData.m_shared.m_maxStackSize);
-                for (int left = amount; left > 0; left -= maxStack)
-                {
-                    Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.4f;
-                    ItemDrop drop = UnityEngine.Object.Instantiate(prefab, at, Quaternion.identity).GetComponent<ItemDrop>();
-                    if (drop != null) drop.SetStack(Mathf.Min(left, maxStack));
-                }
-                return amount;
-            }
-
-            /// <summary>
             /// Carga: PvpCargoDropPercent de cada pilha que nao esta equipada e e de um tipo de
             /// PvpCargoTypes (minerio, metal, comida, trofeu...) vai para o chao. Equipamento fica na
             /// tumba. A fracao que sobra vira sorteio: 50% de uma pilha de 1 cai metade das vezes.
-            /// Moedas ficam com PvpCoinDropPercent.
+            /// Moedas nunca caem.
             /// </summary>
             private static int DropCargo(Player player, Vector3 pos)
             {
@@ -358,7 +330,7 @@ namespace Deadheim.Pvp
                 int dropped = 0;
                 foreach (ItemDrop.ItemData item in new System.Collections.Generic.List<ItemDrop.ItemData>(inventory.GetAllItems()))
                 {
-                    if (item == null || item.m_dropPrefab == null) continue;
+                    if (item == null || item.m_dropPrefab == null || Moedas.EhMoeda(item)) continue;
                     bool equipped = player.IsItemEquiped(item);
                     if (equipped && penalty == PvpConfig.PkPenalty.Unequipped) continue;
                     if (equipped) player.UnequipItem(item, false);

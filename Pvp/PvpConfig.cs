@@ -102,7 +102,6 @@ namespace Deadheim.Pvp
         public static ConfigEntry<string> CombatLogout;
 
         // ------------------------------------------------------------------ saque
-        public static ConfigEntry<float> PvpCoinDropPercent;
         public static ConfigEntry<float> PvpCargoDropPercent;
         public static ConfigEntry<string> PvpCargoTypes;
         public static ConfigEntry<string> PvpCargoKeep;
@@ -117,8 +116,6 @@ namespace Deadheim.Pvp
 
         // ------------------------------------------------------------------- mundo
         public static ConfigEntry<bool> DisableRandomEvents;
-        public static ConfigEntry<bool> CoinsWeightless;
-        public static ConfigEntry<int> CoinsMaxStack;
 
         // ------------------------------------------------------------------- ranking
         public static ConfigEntry<int> LeaderboardSize;
@@ -317,9 +314,6 @@ namespace Deadheim.Pvp
                 "quem caiu de verdade nao perde nada); Death = alem disso, ao voltar o jogador morre onde saiu.");
 
             const string loot = "PvP - Saque";
-            PvpCoinDropPercent = Bind(config, loot, "PvpCoinDropPercent", 100f,
-                "Porcentagem das moedas do inventario que quem morre para jogador deixa no chao, fora da tumba, " +
-                "seja PK ou nao. 100 = todas. 0 = desligado. Nao vale na arena.");
             PvpCargoDropPercent = Bind(config, loot, "PvpCargoDropPercent", 50f,
                 "Porcentagem da carga (o que nao esta equipado e e de um tipo de PvpCargoTypes: minerio, metal, " +
                 "comida, trofeu...) que cai no chao na morte por jogador. Equipamento fica na tumba. 0 = desligado. Nao vale na arena.");
@@ -345,10 +339,6 @@ namespace Deadheim.Pvp
             const string world = "PvP - Mundo";
             DisableRandomEvents = Bind(config, world, "DisableRandomEvents", true,
                 "Desliga os ataques aleatorios de monstros as bases (raids do jogo).");
-            CoinsWeightless = Bind(config, world, "CoinsWeightless", true,
-                "Moedas (Coins) nao pesam.");
-            CoinsMaxStack = Bind(config, world, "CoinsMaxStack", 5000,
-                "Tamanho da pilha de moedas.");
             PvpResourceRate = Bind(config, world, "PvpResourceRate", 2f,
                 "Taxa de coleta de quem joga PvP (todo mundo que nao e PvE permanente): arvore, pedra, minerio, " +
                 "colheita, drop de monstro. 2 = dobro. 0 = a do mundo. O PvE usa PveResourceRate.");

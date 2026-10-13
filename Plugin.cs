@@ -11,13 +11,13 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.5.7";
+        public const string Version = "7.5.8";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
         // IsAdminOnly do Jotunn: o servidor recusa quem nao tem o mod ou tem uma
         // versao abaixo da minima, e as configs de servidor valem as do servidor.
-        // Minimo 7.5.1: as regras de PvP rodam no cliente de quem leva o golpe, entao um
+        // Minimo 7.5.8: as regras de PvP rodam no cliente de quem leva o golpe, entao um
         // cliente sem o modulo de PvP seria alvo sem zona segura, imunidade ou reducao. O
         // protocolo do PvP mudou em 7.3.1 (bounty com id de pedido e resposta, causa no pacote
         // de morte, hora do servidor no estado), e as correcoes de cliente (relogio, pedra,
@@ -25,11 +25,12 @@ namespace Deadheim
         // 7.4.0 traz a Ward de Territorio (prefab novo) e a contagem dela no RPC de wards; 7.5.0, o
         // Dead Token (item novo), e o 7.5.1 tira a conversao dos tokens antigos que o 7.5.0 fazia:
         // um cliente 7.5.0 trocaria os tokens dos jogadores por Dead Token, que nao constroi nada.
+        // 7.5.8 fixa as moedas no slot (Moedas.cs): um cliente anterior ainda as derrubaria na morte por jogador.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.5.1",
+            MinimumRequiredVersion = "7.5.8",
             ModRequired = true,
             IsLocked = true
         };
@@ -93,7 +94,7 @@ namespace Deadheim
             ItemService.ModifyItemsCost();
             ItemService.StubNoLife();
             ItemService.OnlyAdminPieces();
-            Pvp.PvpModule.ApplyItemTweaks();
+            Moedas.AplicarNoPrefab();
 
             Logger.LogInfo("Config do servidor recebida e aplicada.");
         }
@@ -199,6 +200,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
     new ConfigDescription("O bonus de vida e dano do monstro por jogador perto (vanilla e CreatureLevelControl) so conta quem luta e o grupo e a guilda dele. Desligado, conta todo mundo no raio, como no jogo.")));
 
             Pvp.PvpModule.Init(Config);
+            Moedas.Init();
             Montarias.Bind(Config);
             Forja.Bind(Config);
             AdminImortal.Bind(Config);

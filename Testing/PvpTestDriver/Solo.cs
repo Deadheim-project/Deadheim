@@ -550,9 +550,8 @@ namespace PvpTestDriver
         }
 
         /// <summary>
-        /// Saque: quem morre para jogador deixa no chao PvpCoinDropPercent das moedas (todas, no
-        /// padrao) e PvpCargoDropPercent da carga (material, comida...). O equipado fica na tumba e
-        /// o que esta em PvpCargoKeep nunca cai.
+        /// Saque: quem morre para jogador deixa no chao PvpCargoDropPercent da carga (material, comida...). O equipado fica na tumba e
+        /// o que esta em PvpCargoKeep nunca cai. Moedas nunca saem do jogador (Moedas.cs).
         /// </summary>
         private IEnumerator SoloLoot()
         {
@@ -570,20 +569,23 @@ namespace PvpTestDriver
             bool token = ObjectDB.instance.GetItemPrefab(DeadToken.Prefab) != null;
             if (token) GiveItem(DeadToken.Prefab, 2);
             GiveAndEquip("SwordBronze");
-            int coins = Mathf.FloorToInt(1000 * PvpConfig.PvpCoinDropPercent.Value / 100f);
+            int coinsBefore = Me.GetInventory().CountItems("$item_coins");
             int wood = Mathf.FloorToInt(20 * PvpConfig.PvpCargoDropPercent.Value / 100f);
             int meat = Mathf.FloorToInt(4 * PvpConfig.PvpCargoDropPercent.Value / 100f);
 
             MarkServerLog();
             yield return DummyKillsMe("saque");
             yield return Wait(1.5f);
-            Check("saque/moedas-no-chao", GroundCount("Coins", deathAt) == coins, $"no-chao={GroundCount("Coins", deathAt)} esperado={coins}");
+            Check("saque/moedas-nunca-caem", GroundCount("Coins", deathAt) == 0, $"no-chao={GroundCount("Coins", deathAt)}");
+            Check("saque/moedas-ficam-no-slot", Deadheim.Moedas.EhMoeda(Me.GetInventory().GetItemAt(0, 1))
+                                                && Me.GetInventory().CountItems("$item_coins") == coinsBefore,
+                  $"tem={Me.GetInventory().CountItems("$item_coins")} esperado={coinsBefore}");
             Check("saque/carga-material", GroundCount("Wood", deathAt) == wood, $"madeira={GroundCount("Wood", deathAt)} esperado={wood}");
             Check("saque/carga-comida", GroundCount("CookedMeat", deathAt) == meat, $"carne={GroundCount("CookedMeat", deathAt)} esperado={meat}");
             Check("saque/equipado-fica-na-tumba", GroundCount("SwordBronze", deathAt) == 0, "espada=" + GroundCount("SwordBronze", deathAt));
             if (token) Check("saque/token-nunca-cai", GroundCount(DeadToken.Prefab, deathAt) == 0, "token=" + GroundCount(DeadToken.Prefab, deathAt));
             string log = ServerLogSinceMark();
-            Check("saque/servidor-sabe", log.Contains($"moedasNoChao={coins} cargaNoChao="), Tail(log));
+            Check("saque/servidor-sabe", log.Contains("moedasNoChao=0 cargaNoChao="), Tail(log));
             ClearGround(deathAt);
             PvpState.ClearImmunity(Me);
         }

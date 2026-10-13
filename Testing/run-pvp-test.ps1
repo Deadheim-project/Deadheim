@@ -219,7 +219,6 @@ BountyPausesInOwnWard = true
 HuntedNoWardDefense = true
 
 [PvP - Saque]
-PvpCoinDropPercent = 100
 PvpCargoDropPercent = 50
 "@
     Set-Content -Path "$Root\server\BepInEx\config\Detalhes.Deadheim.cfg" -Value $cfg -Encoding UTF8
