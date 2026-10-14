@@ -10,6 +10,11 @@ que o servidor ja tem, em vez de duplicar:
   x2 se desfazem restaurando o `.fch` do PC.
 - **RaidSystem**: e a guerra de castelos. As zonas dele (`Raid Zones`) sao os castelos do
   PvP, e ele recebe do Deadheim cada morte por jogador ja classificada para o Ranking de Guerra.
+  Na abertura (17/10/2026) o servidor nao tem castelo (`Raid Zones` vazio): as regras de castelo
+  abaixo ficam paradas, so o Ranking de Guerra conta. No lugar dos castelos vem o battleground.
+- **NpcValheim**: os NPCs Cacador de Recompensas e Juiz de Guerra sao a tela da bounty e da troca
+  PvE/PvP. Chamam o Deadheim por reflexao pela `Pvp/PvpApi.cs` (`PvpApi.Version`); quem decide e
+  o servidor, pelo mesmo canal do PvP.
 - Substitui o **TombstoneLock** (tumba por jogador), o **Combat** (Detalhes.Combat: status
   "Em combate" e teleporte bloqueado) e o **SaddleStaminaControl** (estamina da sela, agora em
   `[Montarias]` no mesmo cfg).
@@ -17,14 +22,18 @@ que o servidor ja tem, em vez de duplicar:
 Config: secoes `PvP*` do `BepInEx/config/Detalhes.Deadheim.cfg`. Vale a do servidor
 (ServerSync); o cliente recebe ao conectar. **Salvar o cfg com o servidor ligado ja vale**: o
 arquivo e relido (`Shared/ConfigWatcher.cs`) e o ServerSync entrega o valor novo a quem esta
-conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.5.1**
+conectado. O mesmo vale para Wards, RaidSystem, VipList e Hearthstone. A versao minima aceita pelo servidor e **7.5.9**
 (Deadheim), **2.2.2** (RaidSystem) e **2.1.1** (Hearthstone): as regras rodam no cliente de quem leva o golpe, entao um
-cliente sem elas seria alvo sem nenhuma protecao, o protocolo do PvP mudou no 7.3.1, o 7.4.0 traz a Ward de Territorio e o 7.5.1 tira a conversao dos tokens que o 7.5.0 fazia.
+cliente sem elas seria alvo sem nenhuma protecao, o protocolo do PvP mudou no 7.3.1, o 7.4.0 traz a Ward de Territorio, o
+7.5.1 tira a conversao dos tokens que o 7.5.0 fazia, o 7.5.8 fixa as moedas no inventario e o 7.5.9 traz as respostas
+que os NPCs de bounty e de PvE esperam (`bountyboard`, `pveres`).
 
-**Estado (2026-10-08):** o **7.5.1** volta os tokens de cada construcao (Portal, Spawner e Territory Token,
-como no 7.4.0) e deixa o **Dead Token** so como item, sem uso por enquanto; o 7.5.0 fazia dele o custo de tudo
-e convertia os tokens antigos. Vem sobre o **7.4.0** (Ward de Territorio, icones e moeda dos
-tokens, item nativo que nao some mais ao cair no chao) e o 7.3.1 (correcoes da analise de bugs). Os itens nativos do
+**Estado (2026-10-14):** o **7.5.9** tira o `/bounty` e o `/pve` do jogador (os dois viram NPCs do NpcValheim,
+pela `PvpApi`), deixa o PvE ir e voltar com espera entre trocas, da a todo personagem novo os
+`TokensIniciais`, conta o passe de chefe do NpcValheim na faixa por chefes, tira a Ward de Protecao pequena do martelo, volta a Pedra-guardia aos 32 m do jogo e muda padroes para a abertura (ver
+"Atualizacao para o 7.5.9"). Vem sobre o **7.5.8** (moedas fixas no slot, nao caem na morte), o
+**7.5.1** (tokens de cada construcao: Portal, Spawner e Territory Token; o **Dead Token** e so item, sem uso), o
+**7.4.0** (Ward de Territorio) e o 7.3.1 (correcoes da analise de bugs). Os itens nativos do
 Deadheim nunca caem como carga (`ClonedItems.IsNativeItem`), com ou sem `PvpCargoKeep`.
 
 ## Onde a regra e decidida
@@ -34,11 +43,14 @@ roda no dono da ZDO dela), que e o mesmo lugar onde o vanilla ja checa PvP. Cada
 publica na propria ZDO se participa de PvP agora (`pvp`) e o motivo (`dh_pvpFlags`:
 imune, PK, cacado, protegido, em combate, arena, castelo). Os outros so leem.
 
-O servidor guarda o que precisa sobreviver: K/D, marca e nivel de PK, bounties ativas, PvE permanente
-e moedas a entregar, num arquivo de texto por mundo em `BepInEx/config/Deadheim/pvp-<mundo>.txt`
-(uma linha por registro, campos `chave=valor` separados por TAB; edite so com o servidor desligado).
+O servidor guarda o que precisa sobreviver: K/D, marca e nivel de PK, bounties ativas, quem esta
+no PvE (e quando trocou pela ultima vez, para a espera entre trocas) e moedas a entregar, num
+arquivo de texto por mundo em `BepInEx/config/Deadheim/pvp-<mundo>.txt` (uma linha por registro,
+campos `chave=valor` separados por TAB; edite so com o servidor desligado). O campo do PvE ainda se
+chama `pvePermanent`, do tempo em que o PvE era para sempre: renomear apagaria a escolha de quem ja
+e PvE. `pveChangedAt` (7.5.9) e a hora da ultima troca; quem nao tem o campo pode trocar na hora.
 Ate o 7.2.0 era um JSON do `JsonUtility`, que gravava so o `version`: todo restart zerava K/D, PK,
-bounties (com as moedas pagas) e o PvE permanente. O arquivo antigo e ignorado.
+bounties (com as moedas pagas) e o PvE. O arquivo antigo e ignorado.
 
 ## O que o servidor confere (7.3.1)
 
@@ -83,11 +95,11 @@ Uma regra so (`PvpRules.ClassifyDeath`), usada por tudo que reage a morte:
 | Conta no `/rank` (K/D) | sim, fora da arena | nao |
 | Conta no Ranking de Guerra (RaidSystem) | sim, entre guildas diferentes, fora da arena | nao |
 | Matador vira PK | sim, salvo arena / castelo em raid / alvo PK / alvo cacado / alvo agressor | - |
-| Saque | todas as moedas (`PvpCoinDropPercent`, 100) e metade da carga (`PvpCargoDropPercent`: minerio, metal, comida, trofeu) vao para o chao, fora da tumba, seja PK ou nao; o equipado fica na tumba (nao na arena). Tokens e o que se compra com Deadcoins nunca caem (`PvpCargoKeep`); um item que nao consegue cair fica na tumba | tudo na tumba |
+| Saque | metade da carga (`PvpCargoDropPercent`: minerio, metal, comida, trofeu) vai para o chao, fora da tumba, seja PK ou nao; o equipado fica na tumba (nao na arena). As moedas ficam com o jogador (7.5.8, `Moedas.cs`). Tokens e o que se compra com Deadcoins nunca caem (`PvpCargoKeep`); um item que nao consegue cair fica na tumba | tudo na tumba, menos as moedas |
 | Morte dentro de castelo | ninguem perde skill (atacante ou defensor) | perda normal |
 | Guilda dona mata invasor no castelo | ganha a recompensa do bioma | - |
 | Alvo de bounty morre | a bounty acaba; quem matou leva `BountyKillerSharePercent` do pote se o golpe final foi dele e ele nao e (nem foi nas ultimas `BountyAllyHours`) da guilda do alvo; senao o pote fica com a casa | a bounty continua |
-| PK que morre | perde pelo nivel (skill x2, e itens no Unequipped/All) e deixa de ser PK | perde pelo nivel (se `PkPenaltyOnPveDeath`) e **continua PK** (`PkClearsOnPveDeath`) |
+| PK que morre | perde pelo nivel (skill x2, e itens no Unequipped/All) e deixa de ser PK | perda normal do jogo (pelo nivel so com `PkPenaltyOnPveDeath`, desligado desde a 7.5.9) e **continua PK** (`PkClearsOnPveDeath`) |
 | Janela "sem perda de skill" do vanilla (10 min depois de morrer) | morte sem perda (arena, castelo) nao abre a janela; PK perde mesmo dentro dela | igual |
 | Tumba | so o dono abre | so o dono abre |
 
@@ -112,25 +124,26 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 | Retreat cooldown e combate | `/retreat` com recarga (conta com o jogo aberto; so gasta se o teleporte sair), bloqueado em combate (com jogador ou monstro) e cacado; a pedra do Hearthstone tambem (2.1.1+: recusada, ela nao some). O cacado so usa se `HuntedCanUsePortals` | `RetreatCooldownMinutes` (30), `RetreatBlockedByPveCombat`, `HuntedCanUsePortals` |
 | Buffs de estado | Cada estado do PvP e um buff na barra de efeitos do jogo, com contagem: **Em combate** (ou **Luta com monstro**, quando ela bloqueia o retreat), **Imune a PvP**, **PK** (com o contador, `PK x3`, ou `PK permanente`), **Agressor**, **Cacado**, **Bounty** (o aviso), **Zona segura** (com o nome da zona) e o titulo do **PvE**. A linha no topo da tela continua resumindo | `CombatStatusIcon`, `StateBuffs` |
 | Combate | Opcional: apanhar de/bater em monstro tambem conta para todo teleporte (zona segura continua valendo contra jogador); so para o retreat e a pedra ja vale por padrao | `CombatFromPve`, `RetreatBlockedByPveCombat`, `CombatTagSeconds` |
-| Fuga de combate | Em combate nenhum teleporte longo funciona (portal, NPC teleportador, pedra, retreat). Deslogar em combate conta morte para quem saiu e abate para quem bateu (`Rank`, padrao); com `Death`, ao voltar ele tambem morre onde saiu | `CombatBlocksTeleport`, `CombatLogout` (Off/Rank/Death) |
+| Fuga de combate | Em combate nenhum teleporte longo funciona (portal, NPC teleportador, pedra, retreat). Deslogar em combate conta morte para quem saiu e abate para quem bateu e, ao voltar, ele morre onde saiu (`Death`, padrao desde a 7.5.9); com `Rank` so conta no ranking | `CombatBlocksTeleport`, `CombatLogout` (Off/Rank/Death) |
 | PK por niveis | Quem mata jogador vira PK. O nivel sobe com os abates seguidos (padrao: 1 = 1 h, 2 = 2 h, 3+ = 24 h, 5+ = permanente ate ser morto por jogador, no mapa de todos). **O tempo so corre online** (deslogar nao limpa), **o PK nao tem zona segura nem transporte** (quem esta na zona pode ataca-lo) e **so sai morto por jogador** (morrer de PvE nao limpa). Ao morrer marcado perde pelo nivel: `Skills` (skill x2), `Unequipped` (+ tudo que nao esta equipado cai no chao), `All` (+ o inventario inteiro cai no chao). Matar PK, cacado, agressor, na arena ou no castelo em raid nao gera PK | `PkTiers`, `PkSkillLossMultiplier`, `PkClearsOnDeath`, `PkClearsOnPveDeath`, `PkTimeOnlineOnly`, `PkNoSafeZone`, `PkPenaltyOnPveDeath`, `PkPermanentOnMap` |
 | Legitima defesa | Quem bate primeiro em alguem sem marca vira AGRESSOR por 10 min (nome e HUD); o relogio para enquanto ele esta em combate com jogador. Revidar em quem bateu em voce nesse tempo e defesa, mesmo antes de a marca dele chegar. Matar um agressor nao gera PK, e o agressor que morre nao perde nada a mais | `AggressorRule`, `AggressorSeconds`, `AggressorPausesInCombat` |
 | Contador de PK | Quantos abates deram PK a cada jogador: no `/rank`, no `/pvp`, no HUD e no nome (`[PK x3]`), e no anuncio da morte (`[PK #3]`) | - |
 | Arena sem perda de skill | Zonas de arena: PvP sempre, sem perda de skill, sem PK, sem imunidade, fogo amigo liberado, fora do ranking | `ArenaZones`, `ArenaNoSkillLoss`, `ArenaFriendlyFire`, `ArenaCountsLeaderboard` |
 | Defesa de castelo | Castelo = zona do RaidSystem. Quem morre para jogador la nao perde skill (qualquer lado), a imunidade nao vale la e ninguem vira PK. A guilda dona que mata invasor ganha moedas pelo bioma, uma vez por invasor no cooldown (salvo, o restart nao zera) e ate o teto diario por defensor | `CastleNoSkillLoss`, `CastleIgnoresImmunity`, `CastleRewardItem`, `CastleRewardByBiome`, `CastleRewardCooldownMinutes`, `CastleRewardDailyCap` (500) |
-| Faixa por chefes | Dois jogadores so se ferem se a diferenca de chefes derrotados for no maximo `BossGapMax` (1): quem matou a Massa Ossea (3) luta com quem esta entre o Anciao (2) e a Moder (4). O nivel e o chefe mais avancado que o personagem ajudou a matar (o perfil do jogo conta a morte do chefe para quem deu dano). Fora da faixa ninguem fere ninguem e o nome mostra `[outra faixa]`; na arena nao vale. Protege o novato do veterano | `BossGapMax`, `BossOrder` |
+| Faixa por chefes | Dois jogadores so se ferem se a diferenca de chefes derrotados for no maximo `BossGapMax` (1): quem matou a Massa Ossea (3) luta com quem esta entre o Anciao (2) e a Moder (4). O nivel e o chefe mais avancado que o personagem ajudou a matar (o perfil do jogo conta a morte do chefe para quem deu dano) ou, desde a 7.5.9, cujo passe de chefe do NpcValheim ele tem, ganho ou comprado no Mestre dos Passes (`PvpBossPass`, pela `BossPassApi`). Fora da faixa ninguem fere ninguem e o nome mostra `[outra faixa]`; na arena nao vale. Protege o novato do veterano | `BossGapMax`, `BossOrder`, `BossPassCounts` |
 | Bounty / Hunted | No NPC Cacador de Recompensas (NpcValheim, pela `PvpApi`; o `/bounty` saiu na 7.5.9): minimo 1000, sai do inventario: o alvo e avisado e 10 min depois vira CACADO, no mapa de todos, sem zona segura nem imunidade, sem teleporte. Tempo = 1 h por 1000 moedas, contado so com o alvo online; a partir de 5000, ate morrer. Quem matar leva 75% do pote, o resto e da casa. O alvo pode pagar 1,5x o pote para a casa e se livrar (no mesmo NPC). Sem recompensa por sobreviver (nada sai do nada). Dentro do proprio ward o relogio para e o ward nao reduz o dano; com poucos jogadores online tambem para. Cada jogador poe no maximo `BountyDailyCapPerPlayer` (10000) por dia. So golpe final de jogador paga, e nunca a quem e ou foi da guilda do alvo nas ultimas `BountyAllyHours` (24 h): o pote fica com a casa. Admin: `/pvpadmin bounty <jogador> <moedas>` (a casa paga) | `Bounty*`, `HuntedCanUsePortals`, `HuntedNoWardDefense` |
 | Leaderboard K/D | `/rank` (todo mundo, com ou sem guilda, com o contador de PK) e o Ranking de Guerra do RaidSystem (PageDown, pontos por guilda), que agora conta os abates de verdade | `LeaderboardSize` |
 | Tumba por player | So o dono (e admin) abre a propria tumba | `TombstoneOwnerOnly`, `TombstoneGuildAccess` |
 | Tirar raids | Ataques aleatorios de monstros as bases (raids do vanilla) desligados. O RaidSystem continua: e o PvP de castelos | `DisableRandomEvents` |
 | Stagger no PvP | O cambalear de golpe de jogador em jogador pode ser reduzido | `StaggerMultiplier` |
-| Base raidavel | Fora da zona segura, o que o ward cobre toma `DamagePercent` do dano (padrao 25%); na zona segura (`SafeArea`: 1500 m do spawn, ilha inicial, SafeZones) e sempre 0. Wards sem limite por jogador | `[Wards] DamagePercent`, `[Server config] WardLimit` |
-| Ward de Territorio | **Territory Token** (`TerritoryToken`), vendido por doacao na Loja Deadcoins, constroi a **Ward de Territorio** (`DeadheimTerritoryWard`, no martelo), 1 por jogador. Nos 1500 m do spawn (`[Server config] SafeArea`) a ward comum ja protege 100%, entao ali ela nem pode ser colocada; fora dali, abastecida e depois de `TerritoryWardActivationMinutes` (60 min com o servidor ligado), nada no raio (20 m) toma dano de quem nao tem acesso. Ate ativar, vale como ward comum: e a recarga de mudar de lugar, e impede plantar a ward no meio de um raid. Nao entra em zona de raid; fica a 2 raios de outra Ward de Territorio, mesmo da propria guilda. So o dono remove (a guilda tem acesso, mas nao desmonta); o token volta ao remover (`TerritoryTokenRecover`). Nao e zona segura de PvP: quem esta dentro ainda morre | `[Wards - Territorio]` |
+| Base raidavel | Fora da zona segura, o que o ward cobre toma `DamagePercent` do dano (padrao 25%); na zona segura (`SafeArea`: 1500 m do spawn, ilha inicial, SafeZones) e sempre 0. Wards sem limite por jogador. Desde a 7.5.9 a Ward de Protecao pequena (`DeadheimWard`) sai do martelo (`PlayerWardEnabled = false`; as que existem continuam valendo): ficam a Pedra-guardia do jogo, com raio `WardRadius` (32 m desde a 7.5.9, o do jogo; era 150), e a Ward de Territorio | `[Wards] DamagePercent`, `[Wards] PlayerWardEnabled`, `[Server config] WardLimit`, `[Server config] WardRadius` |
+| Ward de Territorio | **Territory Token** (`TerritoryToken`): todo personagem recebe 1 ao entrar (`TokensIniciais`, 7.5.9) e o token volta ao remover. Ele constroi a **Ward de Territorio** (`DeadheimTerritoryWard`, no martelo), 1 por jogador. Nos 1500 m do spawn (`[Server config] SafeArea`) a ward comum ja protege 100%, entao ali ela nem pode ser colocada; fora dali, abastecida e depois de `TerritoryWardActivationMinutes` (60 min com o servidor ligado), nada no raio (`TerritoryWardRadius`, 32 m desde a 7.5.9) toma dano de quem nao tem acesso. Ate ativar, vale como ward comum: e a recarga de mudar de lugar, e impede plantar a ward no meio de um raid. Nao entra em zona de raid; fica a 2 raios de outra Ward de Territorio, mesmo da propria guilda. So o dono remove (a guilda tem acesso, mas nao desmonta); o token volta ao remover (`TerritoryTokenRecover`). Nao e zona segura de PvP: quem esta dentro ainda morre | `[Wards - Territorio]` |
 | Dead Token | Moeda do Deadheim (`DeadToken`): moeda grossa de ouro com um valknut (no inventario e no chao), clonada das moedas do jogo; nao vende no mercador e nunca cai como carga. Por enquanto so existe o item: nenhuma construcao custa Dead Token, e os tokens de cada construcao continuam valendo | - |
 | Castelo | O castelo so e zona de guerra na janela de raid do RaidSystem; quando a RaidWard cai, vira zona segura ate a janela fechar. Guilda que segura o castelo a janela inteira ganha cargas de tributo e pontos de defesa | RaidSystem `3 - PvP`, `Defense Tribute Charges`, `Points Per Defense` |
 | PvE (Juiz de Guerra) | No NPC Juiz de Guerra (NpcValheim, pela `PvpApi`; o `/pve` saiu na 7.5.9) o jogador vira `PveTitle` (padrao Mercador) e sai do PvP, ou volta a ele, com `PveSwitchCooldownHours` (24 h) entre trocas; em todo lugar (arena e castelo inclusive); nao pode receber bounty. **Sem bonus**: sobe skill x0.5 e coleta 1x, enquanto quem joga PvP coleta 2x (arvore, pedra, minerio, colheita, drop de monstro). PK, quem tem bounty e quem esta em combate nao podem virar. O admin ajusta os atributos no menu do NPC (aba Atributos, pelo canal dos Ajustes) e tira alguem do PvE com `/pvpadmin pve <jogador>` | `PveEnabled`, `PveSwitchCooldownHours`, `PveTitle`, `PveSkillMultiplier`, `PvpSkillMultiplier`, `PveResourceRate`, `PvpResourceRate` |
 | Bonus de monstro so para aliados | O bonus de vida e dano do monstro por jogador perto (jogo e CreatureLevelControl) so conta quem luta e o grupo e a guilda dele: estranho passando perto nao deixa o monstro mais duro | `[Server config] MonsterScalingAlliesOnly` |
-| Gold sem peso, pilha 5k | Coins pesam 0 e empilham 5000 | `CoinsWeightless`, `CoinsMaxStack` |
+| Moedas fixas | Desde a 7.5.8 as Coins ficam numa pilha so no primeiro slot da segunda linha, pesam 0 e empilham 100 milhoes; nao vao para bau, chao nem tumba e nao saem em morte nenhuma. Substitui `CoinsWeightless`, `CoinsMaxStack` e `PvpCoinDropPercent`, que sairam | - (`Moedas.cs`) |
+| Tokens iniciais | Cada personagem recebe uma vez os itens da lista ao entrar (padrao 1 Portal Token e 1 Territory Token); a marca `dh_tokensIniciais` no `m_customData` impede a segunda entrega, mesmo se a lista mudar | `[Server config] TokensIniciais` |
 | Ward sem quebrar chao, pedra e arvore | Dentro do ward alheio: sem picareta/enxada no terreno, sem quebrar pedra, arvore, tronco e toco. Veio de minerio fica livre (senao guilda tranca os veios com ward), e a protecao pode ficar so perto do ward | `[Wards] ProtectTerrain`, `ProtectNature`, `ProtectNatureOres`, `NatureOreDrops`, `ProtectNatureRadius` |
 
 Formato das zonas (arena e seguras): `Nome,x,z,raio|Nome2,x,z,raio`. Castelos sao configurados
@@ -177,7 +190,7 @@ powershell -ExecutionPolicy Bypass -File Testing\run-pvp-test.ps1 -Root D:\tmp\p
 - `-Admin -AdminId <SteamID64>`: o cliente vira admin. Precisam disso a bounty (`bounty`, `bounty-pagar`,
   `bounty-expira`) e a parte do servidor do `pk-sem-protecao`; admin passa por cima de ward, entao rode so
   esses passos assim. A pausa da bounty no proprio ward usa o ward que o passo `territorio` cria: rode os dois juntos.
-- Fotos de alguns passos (`ajustes`, `forja`, `tokens`) ficam em `<Root>otos`.
+- Fotos de alguns passos (`ajustes`, `forja`, `tokens`) ficam em `<Root>\fotos`.
 
 `Testing/PvpSemJogo` testa sem o jogo o arquivo de estado (ida e volta, arquivo editado a mao, o
 JSON antigo), o relogio de PK, a devolucao e o teto da bounty, a entrega de item com inventario
@@ -195,3 +208,21 @@ proprio Deadheim (tokens, Garantia de Refino, kits) deixaram de cair como carga 
 depender de `PvpCargoKeep`. O `pvp-<mundo>.txt` ganha campos novos (versao 4) e continua lendo o
 arquivo antigo. Imunidade e recarga do retreat no formato antigo (horario) sao convertidas na
 primeira entrada de cada personagem.
+
+## Atualizacao para o 7.5.9 (cfg do servidor)
+
+Aqui padroes mudaram, e o BepInEx nao troca um valor que ja esta escrito no cfg: num servidor que
+ja subiu com uma versao anterior, grave estes a mao (ou pelo menu de ajustes do servidor):
+
+| Chave | Antes | 7.5.9 |
+|---|---|---|
+| `[PvP - Fuga] CombatLogout` | `Rank` | `Death` |
+| `[PvP - PK] PkPenaltyOnPveDeath` | `true` | `false` |
+| `[Wards] PlayerWardEnabled` | `true` | `false` |
+| `[Wards - Territorio] TerritoryWardRadius` | `20` | `32` |
+| `[Server config] WardRadius` | `150` | `32` |
+
+Entram sozinhas: `[Server config] TokensIniciais` (`PortalToken:1,TerritoryToken:1`), `[PvP - Chefes] BossPassCounts` (true),
+`[PvP - PvE permanente] PveSwitchCooldownHours` (24) e `PvpSkillMultiplier` (1). A secao do PvE
+guarda o nome antigo de proposito, para nao perder os valores ja ajustados. O `pvp-<mundo>.txt`
+ganha o campo `pveChangedAt` e continua lendo o arquivo antigo.

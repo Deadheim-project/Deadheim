@@ -17,7 +17,7 @@ namespace Deadheim
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
         // IsAdminOnly do Jotunn: o servidor recusa quem nao tem o mod ou tem uma
         // versao abaixo da minima, e as configs de servidor valem as do servidor.
-        // Minimo 7.5.8: as regras de PvP rodam no cliente de quem leva o golpe, entao um
+        // Minimo 7.5.9: as regras de PvP rodam no cliente de quem leva o golpe, entao um
         // cliente sem o modulo de PvP seria alvo sem zona segura, imunidade ou reducao. O
         // protocolo do PvP mudou em 7.3.1 (bounty com id de pedido e resposta, causa no pacote
         // de morte, hora do servidor no estado), e as correcoes de cliente (relogio, pedra,
@@ -26,6 +26,7 @@ namespace Deadheim
         // Dead Token (item novo), e o 7.5.1 tira a conversao dos tokens antigos que o 7.5.0 fazia:
         // um cliente 7.5.0 trocaria os tokens dos jogadores por Dead Token, que nao constroi nada.
         // 7.5.8 fixa as moedas no slot (Moedas.cs): um cliente anterior ainda as derrubaria na morte por jogador.
+        // 7.5.9 responde aos NPCs de bounty e de PvE (bountyboard, pveres): um cliente anterior nao os entende.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
@@ -174,8 +175,8 @@ new ConfigDescription("SafeArea")));
             WardLimitVip = Synced(Config.Bind("Server config", "WardLimitVip", 0,
     new ConfigDescription("Wards por VIP. 0 = sem limite.")));
 
-            WardRadius = Synced(Config.Bind("Server config", "WardRadius", 150,
-new ConfigDescription("WardRadius")));
+            WardRadius = Synced(Config.Bind("Server config", "WardRadius", 32,
+new ConfigDescription("Raio da Pedra-guardia (o ward do jogo) em metros. 32 = o do jogo (padrao desde a 7.5.9; era 150).")));
             WardRadius.SettingChanged += (_, __) => Wards.WardProfiles.ApplyRadii();
 
             BoatWindSpeedmultiplier = Synced(Config.Bind("Server config", "boatWindSpeedmultiplier", 1f,

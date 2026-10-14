@@ -176,6 +176,7 @@
     <!-- Modulo de PvP: regras de dano, zonas, cla, desafio, ranking. Tudo no Deadheim.dll. -->
     <Compile Include="Pvp\PvpApi.cs" />
     <Compile Include="Pvp\PvpBosses.cs" />
+    <Compile Include="Pvp\PvpBossPass.cs" />
     <Compile Include="Pvp\PvpBridge.cs" />
     <Compile Include="Pvp\PvpBounty.cs" />
     <Compile Include="Pvp\PvpClient.cs" />

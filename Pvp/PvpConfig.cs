@@ -60,6 +60,7 @@ namespace Deadheim.Pvp
         // ------------------------------------------------------------------ chefes
         public static ConfigEntry<int> BossGapMax;
         public static ConfigEntry<string> BossOrder;
+        public static ConfigEntry<bool> BossPassCounts;
 
         // ------------------------------------------------------- castelo (RaidSystem)
         public static ConfigEntry<bool> CastleNoSkillLoss;
@@ -227,11 +228,15 @@ namespace Deadheim.Pvp
             BossGapMax = Bind(config, bosses, "BossGapMax", 1,
                 "Faixa de PvP por chefes derrotados: dois jogadores so se ferem se a diferenca de chefes entre eles for " +
                 "no maximo esta. 1 = quem derrotou a Massa Ossea (3) luta com quem esta entre o Anciao (2) e a Moder (4). " +
-                "Conta o chefe mais avancado que o personagem ajudou a matar (deu dano). Nao vale na arena. -1 = desligado.");
+                "Conta o chefe mais avancado que o personagem ajudou a matar (deu dano) ou cujo passe tem (BossPassCounts). " +
+                "Nao vale na arena. -1 = desligado.");
             BossOrder = Bind(config, bosses, "BossOrder",
                 "$enemy_eikthyr,$enemy_gdking,$enemy_bonemass,$enemy_dragon,$enemy_goblinking,$enemy_seekerqueen,$enemy_fader",
                 "Chefes em ordem de progressao (nome interno do inimigo). O nivel do jogador e a posicao do mais avancado " +
                 "que ele ajudou a matar: 0 = nenhum, 1 = Eikthyr, 2 = Anciao, 3 = Massa Ossea, 4 = Moder...");
+            BossPassCounts = Bind(config, bosses, "BossPassCounts", true,
+                "O passe de chefe do NpcValheim (ganho ajudando a matar o chefe ou comprado no Mestre dos Passes) conta " +
+                "para o nivel como a morte do chefe. Desligado, so a morte conta. Sem o NpcValheim, so a morte conta.");
 
             // Castelo e zona de guerra do RaidSystem (Raid Zones). Sem o RaidSystem, nao ha castelo.
             const string castle = "PvP - Castelo";

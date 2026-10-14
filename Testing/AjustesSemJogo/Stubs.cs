@@ -93,6 +93,16 @@ public class Game
 
 namespace Deadheim { public class Plugin { public const string PluginGUID = "Detalhes.Deadheim"; } }
 
+// O AjustesRede tambem avisa o menu de admin do Juiz de Guerra (NpcValheim) pela PvpApi.
+namespace Deadheim.Pvp
+{
+    internal static class PvpApi
+    {
+        public static object[] Resultado;
+        internal static void OnSettingResult(bool ok, string key, string value, string message) => Resultado = new object[] { ok, key, value, message };
+    }
+}
+
 namespace Deadheim.Ajustes
 {
     // Sombreia o UnityEngine.Debug dentro do namespace (o de verdade precisa da Unity).

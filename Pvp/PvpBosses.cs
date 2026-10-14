@@ -11,6 +11,8 @@ namespace Deadheim.Pvp
     /// (Character.OnDeath -> Game.RPC_RegisterKill), e o ServerCharacters guarda o perfil no
     /// servidor. Dois jogadores so se ferem se a diferenca de nivel for no maximo BossGapMax;
     /// fora disso nem um nem o outro causa dano. E o que protege o novato do veterano.
+    /// Com BossPassCounts, o passe de chefe do NpcValheim (ganho ou comprado) conta como a morte
+    /// do chefe (PvpBossPass).
     ///
     /// Cada cliente publica o proprio nivel na ZDO, como as bandeiras de PvP (PvpState).
     /// </summary>
@@ -47,6 +49,7 @@ namespace Deadheim.Pvp
         {
             _localTier = 0;
             _nextRefresh = 0f;
+            PvpBossPass.ResetSession();
         }
 
         /// <summary>Recalcula o nivel do jogador local (a cada 5 s, o perfil muda pouco) e publica na ZDO.</summary>
@@ -64,7 +67,10 @@ namespace Deadheim.Pvp
 
         public static void Refresh() => _nextRefresh = 0f;
 
-        private static int ComputeLocalTier()
+        private static int ComputeLocalTier() => Math.Max(KillTier(), PvpBossPass.LocalTier(Order));
+
+        /// <summary>O chefe mais avancado que o perfil do jogador local registra como morto.</summary>
+        private static int KillTier()
         {
             try
             {
