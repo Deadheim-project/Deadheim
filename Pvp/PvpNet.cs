@@ -30,6 +30,10 @@ namespace Deadheim.Pvp
         public const string OpPunish = "punish";
         /// <summary>Resposta a um pedido de bounty (place/pay): quanto o servidor ficou. O resto o cliente devolve.</summary>
         public const string OpBountyResult = "bountyres";
+        /// <summary>Quadro de bounties ativas, linha a linha, para o NPC Cacador de Recompensas.</summary>
+        public const string OpBountyBoard = "bountyboard";
+        /// <summary>Resposta a um pedido de troca PvE/PvP: se trocou e por que nao.</summary>
+        public const string OpPveResult = "pveres";
 
         private static bool _registered;
 
@@ -59,6 +63,9 @@ namespace Deadheim.Pvp
             pkg.Write(op);
             return pkg;
         }
+
+        /// <summary>O canal esta registrado nesta sessao: da para falar com o servidor.</summary>
+        public static bool Ready => _registered && ZRoutedRpc.instance != null;
 
         public static void SendToServer(ZPackage pkg)
         {

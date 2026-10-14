@@ -141,8 +141,9 @@ namespace Deadheim.Wards
             const string section = "Wards";
 
             // Tudo sincronizado (ServerSync): e o servidor que decide o que o ward protege.
-            PlayerWardEnabled = Plugin.Synced(config.Bind(section, "PlayerWardEnabled", true,
-                "Habilita o ward de protecao proprio (DeadheimWard), separado do guard_stone."));
+            PlayerWardEnabled = Plugin.Synced(config.Bind(section, "PlayerWardEnabled", false,
+                "Ward de Protecao (DeadheimWard, a ward pequena) no martelo. Desligado (padrao desde a 7.5.9): so a " +
+                "Pedra-guardia do jogo e a Ward de Territorio; as Wards de Protecao que ja existem continuam funcionando."));
             PlayerWardRadius = Plugin.Synced(config.Bind(section, "PlayerWardRadius", 32,
                 "Raio do DeadheimWard em metros."));
             PlayerWardCost = Plugin.Synced(config.Bind(section, "PlayerWardCost", "Stone:100,SurtlingCore:5",
@@ -183,8 +184,8 @@ namespace Deadheim.Wards
             const string territory = "Wards - Territorio";
             TerritoryWardEnabled = Plugin.Synced(config.Bind(territory, "TerritoryWardEnabled", true,
                 "Ward de Territorio no martelo. Desligado, as que ja existem viram ward comum (DamagePercent)."));
-            TerritoryWardRadius = Plugin.Synced(config.Bind(territory, "TerritoryWardRadius", 20,
-                "Raio da Ward de Territorio em metros. Tudo dentro dele fica indestrutivel."));
+            TerritoryWardRadius = Plugin.Synced(config.Bind(territory, "TerritoryWardRadius", 32,
+                "Raio da Ward de Territorio em metros (32 = o raio da ward do jogo). Tudo dentro dele fica indestrutivel."));
             TerritoryWardCost = Plugin.Synced(config.Bind(territory, "TerritoryWardCost", TerritoryToken + ":1,Stone:100,SurtlingCore:5",
                 "Custo no formato Item:Quantidade. O " + TerritoryToken + " e vendido por doacao (Loja Deadcoins)."));
             TerritoryTokenRecover = Plugin.Synced(config.Bind(territory, "TerritoryTokenRecover", true,
@@ -267,11 +268,15 @@ namespace Deadheim.Wards
             Prefabs.PiecesReady += RegisterTerritoryWardPiece;
         }
 
+        /// <summary>
+        /// Sempre criada, mesmo com PlayerWardEnabled desligado, como a Ward de Territorio: as que ja
+        /// estao no mundo precisam do prefab para carregar. Desligado so tira do martelo.
+        /// </summary>
         private static void CreatePlayerWardPrefab()
         {
             Prefabs.ZNetSceneReady -= CreatePlayerWardPrefab;
 
-            if (!PlayerWardEnabled.Value || _playerWardPrefab != null) return;
+            if (_playerWardPrefab != null) return;
 
             _playerWardPrefab = Prefabs.Clone(PlayerWard, VanillaWard);
             if (_playerWardPrefab == null)

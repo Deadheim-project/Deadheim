@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Deadheim.Pvp
 {
     /// <summary>
-    /// Estado persistente do PvP no servidor: K/D, PK, bounties e PvE permanente. Um arquivo
+    /// Estado persistente do PvP no servidor: K/D, PK, bounties e PvE. Um arquivo
     /// de texto por mundo em BepInEx/config/Deadheim (formato em PvpStoreFormat), salvo junto
     /// com o mundo e a cada minuto se mudou.
     /// </summary>

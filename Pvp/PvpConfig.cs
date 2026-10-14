@@ -87,10 +87,12 @@ namespace Deadheim.Pvp
         public static ConfigEntry<int> BountyDailyCapPerPlayer;
         public static ConfigEntry<float> BountyAllyHours;
 
-        // PvE permanente
+        // PvE (troca no NPC Juiz de Guerra)
         public static ConfigEntry<bool> PveEnabled;
+        public static ConfigEntry<float> PveSwitchCooldownHours;
         public static ConfigEntry<string> PveTitle;
         public static ConfigEntry<float> PveSkillMultiplier;
+        public static ConfigEntry<float> PvpSkillMultiplier;
         public static ConfigEntry<float> PveResourceRate;
         public static ConfigEntry<float> PvpResourceRate;
 
@@ -168,7 +170,7 @@ namespace Deadheim.Pvp
             PkClearsOnPveDeath = Bind(config, pk, "PkClearsOnPveDeath", false,
                 "Morrer de PvE (monstro, queda, afogamento) tambem tira a marca de PK nao permanente. Desligado, " +
                 "a marca fica: morrer de proposito em casa nao limpa o PK.");
-            PkPenaltyOnPveDeath = Bind(config, pk, "PkPenaltyOnPveDeath", true,
+            PkPenaltyOnPveDeath = Bind(config, pk, "PkPenaltyOnPveDeath", false,
                 "A perda do nivel de PK vale em qualquer morte. Desligado, so quando o PK e morto por jogador " +
                 "(morte PvE perde skill normal).");
             PkTimeOnlineOnly = Bind(config, pk, "PkTimeOnlineOnly", true,
@@ -250,7 +252,8 @@ namespace Deadheim.Pvp
 
             const string bounty = "PvP - Bounty";
             BountyEnabled = Bind(config, bounty, "BountyEnabled", true,
-                "Libera o /bounty: um jogador paga moedas para outro ser cacado. Quem matar o alvo fica com parte do pote.");
+                "Libera a bounty no NPC Cacador de Recompensas (NpcValheim): um jogador paga moedas para outro ser cacado. " +
+                "Quem matar o alvo fica com parte do pote.");
             BountyMinimum = Bind(config, bounty, "BountyMinimum", 1000,
                 "Menor valor (Coins) de uma bounty.");
             BountyMinutesPer1000 = Bind(config, bounty, "BountyMinutesPer1000", 60f,
@@ -260,7 +263,7 @@ namespace Deadheim.Pvp
             BountyKillerSharePercent = Bind(config, bounty, "BountyKillerSharePercent", 75f,
                 "Porcentagem do pote que vai para quem matar o alvo. O resto e da casa (sai do jogo).");
             BountyBuyoutMultiplier = Bind(config, bounty, "BountyBuyoutMultiplier", 1.5f,
-                "O alvo pode pagar o pote vezes este valor para a casa e encerrar a bounty (/bounty pagar). 0 = desligado.");
+                "O alvo pode pagar o pote vezes este valor para a casa e encerrar a bounty (no Cacador de Recompensas). 0 = desligado.");
             BountyExpiredRefundPercent = Bind(config, bounty, "BountyExpiredRefundPercent", 0f,
                 "Porcentagem do pote devolvida a quem pagou quando a bounty expira sem ninguem matar o alvo. O resto e da casa.");
             BountyDelaySeconds = Bind(config, bounty, "BountyDelaySeconds", 600,
@@ -286,15 +289,23 @@ namespace Deadheim.Pvp
                 "o alvo nao entrega o pote a um amigo. So paga golpe final de jogador (queda ou fogo depois de um golpe " +
                 "nao). Nesses casos a bounty acaba e o pote fica com a casa. 0 = so a guilda de agora.");
 
+            // A secao guarda o nome antigo de proposito: renomear jogaria fora os valores ja
+            // ajustados no cfg do servidor. O PvE deixou de ser para sempre: troca no NPC.
             const string pve = "PvP - PvE permanente";
             PveEnabled = Bind(config, pve, "PveEnabled", true,
-                "Libera o /pve: o jogador sai do PvP para sempre (so admin desfaz com /pvpadmin pve <jogador>).");
+                "Libera a troca entre PvE e PvP no NPC Juiz de Guerra (NpcValheim). Desligado, ninguem entra no PvE; " +
+                "quem ja e PvE ainda pode voltar ao PvP. O admin tira alguem do PvE com /pvpadmin pve <jogador>.");
+            PveSwitchCooldownHours = Bind(config, pve, "PveSwitchCooldownHours", 24f,
+                "Horas (de relogio, online ou nao) entre duas trocas PvE/PvP do mesmo jogador. 0 = sem espera.");
             PveTitle = Bind(config, pve, "PveTitle", "Mercador",
-                "Titulo de quem e PvE permanente, no nome sobre a cabeca e no HUD.");
+                "Titulo de quem e PvE, no nome sobre a cabeca e no HUD.");
             PveSkillMultiplier = Bind(config, pve, "PveSkillMultiplier", 0.5f,
                 "Ganho de skill do PvE, multiplicado em cima do SkillMultiplier do servidor. 0.5 = metade.");
+            PvpSkillMultiplier = Bind(config, pve, "PvpSkillMultiplier", 1f,
+                "Ganho de skill de quem joga PvP (todo mundo que nao e PvE), multiplicado em cima do SkillMultiplier " +
+                "do servidor. 1 = sem mudanca.");
             PveResourceRate = Bind(config, pve, "PveResourceRate", 1f,
-                "Taxa de coleta de quem e PvE permanente (arvore, pedra, minerio, colheita, drop de monstro). " +
+                "Taxa de coleta de quem e PvE (arvore, pedra, minerio, colheita, drop de monstro). " +
                 "1 = normal. 0 = a do mundo.");
 
             const string escape = "PvP - Fuga";
@@ -305,11 +316,11 @@ namespace Deadheim.Pvp
                 "com monstro quando ela bloqueia algo (CombatFromPve ou RetreatBlockedByPveCombat).");
             StateBuffs = Bind(config, escape, "StateBuffs", true,
                 "Mostra os outros estados do PvP como buffs na barra de efeitos, com contagem: imune a PvP, PK, agressor, " +
-                "cacado, bounty, zona segura e PvE permanente.");
+                "cacado, bounty, zona segura e PvE.");
             CombatFromPve = Bind(config, escape, "CombatFromPve", false,
                 "Dano de/em monstro tambem conta como combate, mas so para bloquear teleporte, retreat e pedra " +
                 "(zona segura continua valendo contra jogador). O mod Combat antigo fazia isso por padrao.");
-            CombatLogout = Bind(config, escape, "CombatLogout", "Rank",
+            CombatLogout = Bind(config, escape, "CombatLogout", "Death",
                 "Deslogar em combate. Off = nada; Rank = conta morte para quem saiu e abate para quem bateu (nao mata: " +
                 "quem caiu de verdade nao perde nada); Death = alem disso, ao voltar o jogador morre onde saiu.");
 
@@ -340,7 +351,7 @@ namespace Deadheim.Pvp
             DisableRandomEvents = Bind(config, world, "DisableRandomEvents", true,
                 "Desliga os ataques aleatorios de monstros as bases (raids do jogo).");
             PvpResourceRate = Bind(config, world, "PvpResourceRate", 2f,
-                "Taxa de coleta de quem joga PvP (todo mundo que nao e PvE permanente): arvore, pedra, minerio, " +
+                "Taxa de coleta de quem joga PvP (todo mundo que nao e PvE): arvore, pedra, minerio, " +
                 "colheita, drop de monstro. 2 = dobro. 0 = a do mundo. O PvE usa PveResourceRate.");
 
             LeaderboardSize = Bind(config, "PvP - Ranking", "LeaderboardSize", 10,

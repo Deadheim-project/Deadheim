@@ -29,7 +29,7 @@ namespace Deadheim.Pvp
         InOwnWard = 512,
         /// <summary>PK permanente: so sai morto por jogador.</summary>
         PkPermanent = 1024,
-        /// <summary>PvE permanente (/pve): fora do PvP para sempre.</summary>
+        /// <summary>PvE (escolhido no NPC Juiz de Guerra): fora do PvP.</summary>
         Pve = 2048,
     }
 
@@ -382,7 +382,7 @@ namespace Deadheim.Pvp
             bool pve = PvpPve.IsLocal;
             if (pve)
             {
-                // PvE permanente vale em todo lugar, arena e castelo inclusive.
+                // O PvE vale em todo lugar, arena e castelo inclusive.
                 pvp = false;
                 label = PvpPve.Title;
             }

@@ -126,7 +126,7 @@ namespace PvpTestDriver
                 Step("coins", Coins),
                 Step("forja", SoloForja),
                 Step("bancada", SoloBancada),
-                // Sem volta para o personagem de teste: depois de todos os passos de PvP.
+                // Depois de todos os passos de PvP: com -Admin o personagem volta ao PvP no fim.
                 Step("pve", SoloPve),
                 // Por ultimo: abre o menu do ESC, e com -Admin o cliente e admin.
                 Step("ajustes", SoloAjustes),
@@ -1147,11 +1147,11 @@ namespace PvpTestDriver
                 $"taxa={Game.m_resourceRate} esperado={PvpConfig.PvpResourceRate.Value}");
             MarkServerLog();
 
-            Command("pve");
-            yield return Wait(2f);
-            Check("pve/so-explica-sem-confirmar", !PvpPve.IsLocal);
-
-            Command("pve confirmar");
+            // O /pve saiu: a troca e pelo NPC Juiz de Guerra, que chama a PvpApi.
+            Check("pve/sem-comando", !Terminal.commands.ContainsKey("pve"));
+            Check("pve/pode-trocar", PvpApi.PveSwitchRefusal(true) == null, PvpApi.PveSwitchRefusal(true));
+            string asked = PvpApi.RequestPveSwitch(true);
+            Check("pve/pediu", asked == null, asked);
             yield return WaitFor(() => PvpPve.IsLocal, 15f);
             yield return Wait(1f);
             Check("pve/virou", PvpPve.IsLocal && (PvpState.Current & PvpFlags.Pve) != 0, $"flags={PvpState.Current}");
@@ -1180,7 +1180,22 @@ namespace PvpTestDriver
             Check("pve/arena-nao-liga-pvp", (PvpState.Current & PvpFlags.Arena) != 0 && !Me.IsPVPEnabled(), $"flags={PvpState.Current}");
 
             string log = ServerLogSinceMark();
-            Check("pve/servidor-guardou", log.Contains($"{_myName} ({Me.GetPlayerID()}) virou PvE permanente"), Tail(log));
+            Check("pve/servidor-guardou", log.Contains($"{_myName} ({Me.GetPlayerID()}) virou PvE"), Tail(log));
+
+            // Com espera entre trocas, voltar logo ao PvP e recusado (no cliente e no servidor).
+            if (PvpApi.PveSwitchCooldownHours() > 0f)
+            {
+                Check("pve/cooldown-no-estado", PvpApi.LocalPveSwitchSeconds() > 0d, "faltam=" + PvpApi.LocalPveSwitchSeconds());
+                Check("pve/cooldown-recusa", PvpApi.RequestPveSwitch(false) != null && PvpPve.IsLocal);
+            }
+
+            // O admin tira do PvE sem esperar; o personagem de teste volta ao PvP.
+            if (RequireAdmin("pve-volta"))
+            {
+                Command($"pvpadmin pve {_myName}");
+                yield return WaitFor(() => !PvpPve.IsLocal, 15f);
+                Check("pve/admin-tirou", !PvpPve.IsLocal);
+            }
         }
 
         /// <summary>Acumulado de um RaiseSkill de espada partindo do zero, no nivel 10.</summary>
@@ -1316,7 +1331,8 @@ namespace PvpTestDriver
             int cost = PvpBounty.BuyoutCost(pot);
             GiveItem("Coins", cost + 100);
             MarkServerLog();
-            Command("bounty pagar");
+            string asked = PvpApi.PayOwnBounty();
+            Check("bounty-pagar/pediu", asked == null, asked);
             yield return WaitFor(() => PvpClient.BountyPot == 0, 10f);
             yield return Wait(1f);
             Check("bounty-pagar/terminou", PvpClient.BountyPot == 0 && !PvpState.IsHuntPending && !PvpState.IsHunted,

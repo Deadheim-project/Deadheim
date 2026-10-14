@@ -254,7 +254,8 @@ namespace Deadheim
                 if (skill.m_level >= Plugin.SkillCap.Value) return false;
 
                 factor *= Plugin.SkillMultiplier.Value;
-                if (Pvp.PvpPve.IsLocal) factor *= Mathf.Max(0f, Pvp.PvpConfig.PveSkillMultiplier.Value);
+                if (Pvp.PvpConfig.Active)
+                    factor *= Mathf.Max(0f, Pvp.PvpPve.IsLocal ? Pvp.PvpConfig.PveSkillMultiplier.Value : Pvp.PvpConfig.PvpSkillMultiplier.Value);
                 return true;
             }
         }

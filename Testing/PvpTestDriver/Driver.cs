@@ -751,7 +751,8 @@ namespace PvpTestDriver
             {
                 Me.GetInventory().AddItem(ObjectDB.instance.GetItemPrefab("Coins"), pot);
                 int before = CountItem(Me, "Coins");
-                Command($"bounty {_otherName} {pot}");
+                string asked = PvpApi.PlaceBounty(_otherName, pot);
+                Check("desafio/bounty-pediu", asked == null, asked);
                 yield return Wait(2f);
                 Check("desafio/bounty-cobrou", CountItem(Me, "Coins") == before - pot, $"antes={before} depois={CountItem(Me, "Coins")}");
             }

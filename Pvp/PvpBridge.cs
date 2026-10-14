@@ -55,7 +55,7 @@ namespace Deadheim.Pvp
         }
 
         /// <summary>
-        /// O jogador e PvE permanente ou esta imune (pelas bandeiras que ele publica): nada de fora
+        /// O jogador e PvE ou esta imune (pelas bandeiras que ele publica): nada de fora
         /// (o "Force PvP In Zones" do RaidSystem) deve ligar o PvP dele.
         /// </summary>
         public static bool IsPveOrImmune(Player player)

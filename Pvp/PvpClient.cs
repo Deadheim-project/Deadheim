@@ -26,6 +26,37 @@ namespace Deadheim.Pvp
         public static double BountyCooldownRemaining
             => Math.Max(0d, BountyCooldown - (PvpState.Mono - _bountyCooldownAt));
 
+        // Segundos ate a proxima troca PvE/PvP, como o servidor mandou no estado, contados daqui
+        // pelo relogio monotonico.
+        private static double _pveReadyIn;
+        private static double _pveReadyAt;
+
+        /// <summary>Segundos ate o jogador local poder trocar PvE/PvP de novo. 0 = pode agora.</summary>
+        public static double PveSwitchReadyIn => Math.Max(0d, _pveReadyIn - (PvpState.Mono - _pveReadyAt));
+
+        /// <summary>Uma linha do quadro de bounties (OpBountyBoard).</summary>
+        public struct BountyBoardRow
+        {
+            public string Target;
+            public int Payout;
+            public string State;
+            public bool Online;
+            public bool Hunted;
+        }
+
+        /// <summary>O ultimo quadro de bounties que o servidor mandou; Revision sobe a cada um.</summary>
+        public static List<BountyBoardRow> BountyBoard { get; private set; } = new List<BountyBoardRow>();
+        public static int BountyBoardRevision { get; private set; }
+
+        /// <summary>A ultima resposta do servidor a um pedido de bounty; Revision sobe a cada uma.</summary>
+        public static string LastBountyMessage { get; private set; } = string.Empty;
+        public static int BountyMessageRevision { get; private set; }
+
+        /// <summary>A ultima resposta do servidor a um pedido de troca PvE/PvP; Revision sobe a cada uma.</summary>
+        public static string LastPveMessage { get; private set; } = string.Empty;
+        public static bool LastPveOk { get; private set; }
+        public static int PveMessageRevision { get; private set; }
+
         public static void Handle(string op, ZPackage pkg)
         {
             switch (op)
@@ -46,6 +77,8 @@ namespace Deadheim.Pvp
                     PvpPve.ApplyLocal(pkg.ReadBool());
                     // Hora do servidor: as janelas de raid do castelo (RaidSystem) contam por ela.
                     if (pkg.GetPos() < pkg.Size()) RelogioServidor.Sincronizar(pkg.ReadDouble());
+                    _pveReadyIn = pkg.GetPos() < pkg.Size() ? pkg.ReadDouble() : 0d;
+                    _pveReadyAt = PvpState.Mono;
                     PvpState.ApplyServerTimers(pk, pending, hunted, BountyPot > 0 && BountyUntilDeath);
                     PvpState.ApplyPk(pkPermanent, (PvpConfig.PkPenalty)pkPenalty);
                     PvpState.ApplyPkCount(Player.m_localPlayer, pkCount);
@@ -66,6 +99,31 @@ namespace Deadheim.Pvp
                 case PvpNet.OpBountyResult:
                     OnBountyResult(pkg.ReadInt(), pkg.ReadInt(), pkg.ReadString());
                     break;
+                case PvpNet.OpBountyBoard:
+                {
+                    int count = pkg.ReadInt();
+                    List<BountyBoardRow> rows = new List<BountyBoardRow>(count);
+                    for (int i = 0; i < count; i++)
+                        rows.Add(new BountyBoardRow
+                        {
+                            Target = pkg.ReadString(),
+                            Payout = pkg.ReadInt(),
+                            State = pkg.ReadString(),
+                            Online = pkg.ReadBool(),
+                            Hunted = pkg.ReadBool(),
+                        });
+                    BountyBoard = rows;
+                    BountyBoardRevision++;
+                    break;
+                }
+                case PvpNet.OpPveResult:
+                {
+                    LastPveOk = pkg.ReadBool();
+                    LastPveMessage = pkg.ReadString();
+                    PveMessageRevision++;
+                    ShowMessage(LastPveMessage, true);
+                    break;
+                }
                 case PvpNet.OpRankResult:
                 {
                     int count = pkg.ReadInt();
@@ -144,6 +202,8 @@ namespace Deadheim.Pvp
             BountyPot = 0;
             BountyUntilDeath = false;
             _punishPending = false;
+            _pveReadyIn = 0d;
+            BountyBoard = new List<BountyBoardRow>();
             // Sem resposta ate o logout (conexao caiu no meio): nao da para saber se o servidor
             // ficou com as moedas, entao nada volta. Fica no log para o admin conferir.
             foreach (KeyValuePair<int, int> pending in _bountyTaken)
@@ -160,6 +220,8 @@ namespace Deadheim.Pvp
                 int back = PvpCoinMath.BountyRefund(taken, kept);
                 if (back > 0) GiveReward("Coins", back, "Devolvido");
             }
+            LastBountyMessage = text ?? string.Empty;
+            BountyMessageRevision++;
             ShowMessage(text, true);
         }
 
@@ -198,7 +260,7 @@ namespace Deadheim.Pvp
             PvpNet.SendToServer(pkg);
         }
 
-        /// <summary>join (virar PvE permanente) | admin-off &lt;jogador&gt;. Quem decide e o servidor.</summary>
+        /// <summary>set pve|pvp (trocar, pelo NPC) | admin-off &lt;jogador&gt;. Quem decide e o servidor.</summary>
         public static void SendPve(string action, string target)
         {
             ZPackage pkg = PvpNet.Package(PvpNet.OpPve);

@@ -116,11 +116,17 @@ namespace Deadheim.Ajustes
                         string valor = pkg.ReadString();
                         string mensagem = pkg.ReadString();
                         AjustesJanela.ReceberResultadoDoServidor(ok, guid, secao, chave, valor, mensagem);
+                        // O menu de admin do Juiz de Guerra (NpcValheim) usa o mesmo pedido.
+                        if (guid == Plugin.PluginGUID) Pvp.PvpApi.OnSettingResult(ok, chave, valor, mensagem);
                         break;
                     }
                     case OpNegado:
-                        AjustesJanela.ReceberNegado(pkg.ReadString());
+                    {
+                        string mensagem = pkg.ReadString();
+                        AjustesJanela.ReceberNegado(mensagem);
+                        Pvp.PvpApi.OnSettingResult(false, "", "", mensagem);
                         break;
+                    }
                 }
             }
             catch (Exception ex)

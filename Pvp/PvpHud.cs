@@ -87,11 +87,11 @@ namespace Deadheim.Pvp
         private static readonly Buff Hunted = new Buff("DH_Hunted", "Cacado",
             "Ha uma bounty na sua cabeca: aparece no mapa, sem zona segura, imunidade nem teleporte.", "Bow", "SwordBronze");
         private static readonly Buff Bounty = new Buff("DH_Bounty", "Bounty",
-            "Colocaram moedas na sua cabeca. Quando o tempo acabar voce vira CACADO. /bounty pagar encerra.", "Coins", "SwordBronze");
+            "Colocaram moedas na sua cabeca. Quando o tempo acabar voce vira CACADO. O Cacador de Recompensas encerra se voce pagar.", "Coins", "SwordBronze");
         private static readonly Buff Safe = new Buff("DH_SafeZone", "Zona segura",
             "Ninguem te fere aqui, e voce nao fere ninguem, enquanto nao estiver em combate.", "se:Shelter", "ShieldWood", "SwordBronze");
         private static readonly Buff Pve = new Buff("DH_Pve", "PvE",
-            "PvE permanente: nao luta com jogadores em lugar nenhum.", "Hammer", "SwordBronze");
+            "PvE: nao luta com jogadores em lugar nenhum. O Juiz de Guerra troca de volta.", "Hammer", "SwordBronze");
 
         private static readonly Buff[] All = { Combat, Immune, Pk, Aggressor, Hunted, Bounty, Safe, Pve };
 
@@ -217,7 +217,7 @@ namespace Deadheim.Pvp
             List<string> parts = new List<string>();
 
             if ((flags & PvpFlags.Pve) != 0)
-                parts.Add("<color=#9acd32>PvE PERMANENTE: " + PvpPve.Title + "</color>");
+                parts.Add("<color=#9acd32>PvE: " + PvpPve.Title + "</color>");
             else if ((flags & (PvpFlags.Arena | PvpFlags.Castle)) != 0)
                 parts.Add("<color=#ff8c00>" + PvpState.ZoneLabel + "</color>");
             else if ((flags & PvpFlags.Hunted) != 0)

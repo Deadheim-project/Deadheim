@@ -91,8 +91,8 @@ namespace Deadheim.Pvp
         // --------------------------------------------------------------- comandos
 
         /// <summary>
-        /// place &lt;alvo&gt; &lt;valor&gt; | pay &lt;valor&gt; | list. Em place e pay o cliente ja tirou
-        /// &lt;valor&gt; moedas do inventario: a resposta (Answer) diz quanto o servidor ficou.
+        /// place &lt;alvo&gt; &lt;valor&gt; | pay &lt;valor&gt; | board | list. Em place e pay o cliente ja
+        /// tirou &lt;valor&gt; moedas do inventario: a resposta (Answer) diz quanto o servidor ficou.
         /// </summary>
         public static void OnCommand(PvpPeer peer, string action, string target, int paid, int request)
         {
@@ -101,6 +101,7 @@ namespace Deadheim.Pvp
             {
                 case "place": Place(peer, target, paid, false, request); break;
                 case "pay": Buyout(peer, paid, request); break;
+                case "board": Board(peer); break;
                 case "admin":
                     // Bounty paga pela casa: ferramenta de admin (e do teste solo). Pode ser em si mesmo.
                     if (!PvpServer.IsAdminPeer(peer.PeerId)) { Answer(peer, request, 0, "So admin."); return; }
@@ -145,7 +146,7 @@ namespace Deadheim.Pvp
                 return;
             }
             if (targetId == peer.PlayerId && !byHouse) { Refuse("Voce nao pode colocar bounty em si mesmo."); return; }
-            if (PvpStore.Player(targetId, name).pvePermanent) { Refuse($"{name} e PvE permanente: nao pode ser cacado."); return; }
+            if (PvpStore.Player(targetId, name).pvePermanent) { Refuse($"{name} e PvE: nao pode ser cacado."); return; }
             if (paid <= 0) { Refuse("Valor invalido."); return; }
 
             PvpBountyRecord bounty = Find(targetId);
@@ -202,7 +203,7 @@ namespace Deadheim.Pvp
                 PvpNet.Message(targetPeer.PeerId, bounty.delayLeft > 0d
                     ? $"<color=#ff5050>Colocaram {bounty.pot} moedas na sua cabeca.</color> Em {PvpClient.FormatDuration(bounty.delayLeft)} voce vira CACADO: " +
                       "aparece no mapa e perde a zona segura. Ainda da tempo de teleportar." +
-                      (BuyoutCost(bounty.pot) > 0 ? $" Ou pague {BuyoutCost(bounty.pot)} com /bounty pagar." : string.Empty)
+                      (BuyoutCost(bounty.pot) > 0 ? $" Ou pague {BuyoutCost(bounty.pot)} no Cacador de Recompensas." : string.Empty)
                     : $"<color=#ff5050>Sua bounty subiu para {bounty.pot} moedas.</color>");
                 PvpServer.SendState(targetPeer);
             }
@@ -249,19 +250,43 @@ namespace Deadheim.Pvp
                       $"(pote {bounty.pot}, casa).");
         }
 
+        private static string StateText(PvpBountyRecord bounty)
+        {
+            if (bounty.delayLeft > 0d) return "cacado em " + PvpClient.FormatDuration(bounty.delayLeft);
+            if (UntilDeath(bounty.pot)) return "CACADO ate morrer";
+            return "CACADO por mais " + PvpClient.FormatDuration(TotalSeconds(bounty.pot) - bounty.elapsed);
+        }
+
         private static void List(PvpPeer peer)
         {
             List<string> lines = new List<string>();
             foreach (PvpBountyRecord bounty in All)
             {
-                string state;
-                if (bounty.delayLeft > 0d) state = "cacado em " + PvpClient.FormatDuration(bounty.delayLeft);
-                else if (UntilDeath(bounty.pot)) state = "CACADO ate morrer";
-                else state = "CACADO por mais " + PvpClient.FormatDuration(TotalSeconds(bounty.pot) - bounty.elapsed);
                 bool online = PvpPeer.TryFindByPlayerId(bounty.targetId, out _);
-                lines.Add($"{bounty.targetName}: {Payout(bounty.pot)} moedas para quem matar, {state}" + (online ? string.Empty : " (offline, tempo parado)"));
+                lines.Add($"{bounty.targetName}: {Payout(bounty.pot)} moedas para quem matar, {StateText(bounty)}" + (online ? string.Empty : " (offline, tempo parado)"));
             }
             PvpNet.Message(peer.PeerId, lines.Count == 0 ? "Nenhuma bounty ativa." : string.Join("\n", lines), false);
+        }
+
+        /// <summary>
+        /// O quadro do Cacador de Recompensas: uma linha por bounty, ja com o que o NPC mostra.
+        /// So leitura; a maior cabeca primeiro.
+        /// </summary>
+        private static void Board(PvpPeer peer)
+        {
+            List<PvpBountyRecord> bounties = new List<PvpBountyRecord>(All);
+            bounties.Sort((a, b) => b.pot.CompareTo(a.pot));
+            ZPackage pkg = PvpNet.Package(PvpNet.OpBountyBoard);
+            pkg.Write(bounties.Count);
+            foreach (PvpBountyRecord bounty in bounties)
+            {
+                pkg.Write(bounty.targetName ?? string.Empty);
+                pkg.Write(Payout(bounty.pot));
+                pkg.Write(StateText(bounty));
+                pkg.Write(PvpPeer.TryFindByPlayerId(bounty.targetId, out _));
+                pkg.Write(bounty.delayLeft <= 0d);
+            }
+            PvpNet.SendToClient(peer.PeerId, pkg);
         }
 
         private static int Payout(int pot) => Mathf.FloorToInt(pot * Mathf.Clamp(PvpConfig.BountyKillerSharePercent.Value, 0f, 100f) / 100f);
@@ -404,7 +429,7 @@ namespace Deadheim.Pvp
             Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} {(paused ? "pausada (" + reason + ")" : "retomada")}.");
         }
 
-        private static PvpFlags FlagsOf(PvpPeer peer)
+        internal static PvpFlags FlagsOf(PvpPeer peer)
         {
             ZDO zdo = peer.CharacterId.IsNone() || ZDOMan.instance == null ? null : ZDOMan.instance.GetZDO(peer.CharacterId);
             return zdo != null ? (PvpFlags)zdo.GetInt(PvpState.ZdoFlags, 0) : PvpFlags.None;

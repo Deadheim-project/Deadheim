@@ -30,10 +30,15 @@ namespace Deadheim.Pvp
         public bool combatLogPending;
         /// <summary>Moedas a entregar quando ele voltar (bounty paga ou devolvida com ele offline).</summary>
         public int pendingCoins;
-        /// <summary>Escolheu o PvE permanente (/pve confirmar). So admin desfaz.</summary>
+        /// <summary>
+        /// Esta no PvE (escolheu no NPC Juiz de Guerra). O nome ficou do tempo em que o PvE era
+        /// para sempre: mudar a chave do arquivo apagaria a escolha de quem ja e PvE.
+        /// </summary>
         public bool pvePermanent;
         /// <summary>Segundos UTC de quando virou PvE.</summary>
         public double pveSince;
+        /// <summary>Segundos UTC da ultima troca PvE/PvP (PveSwitchCooldownHours conta daqui). 0 = nunca trocou.</summary>
+        public double pveChangedAt;
         /// <summary>Dia (UTC do servidor, dias desde 1970) do contador bountyPaidToday.</summary>
         public int bountyPaidDay;
         /// <summary>Moedas que este jogador ja pos em bounties no dia bountyPaidDay (BountyDailyCapPerPlayer).</summary>
@@ -229,7 +234,7 @@ namespace Deadheim.Pvp
     /// Texto, uma linha por registro e campos "chave=valor" separados por TAB. Campo que nao
     /// existe vira o padrao e campo desconhecido e ignorado, entao acrescentar campo nao quebra
     /// arquivo antigo. Substitui o JsonUtility, que gravava so o "version" e perdia as listas:
-    /// todo restart zerava K/D, PK, bounties e o PvE permanente.
+    /// todo restart zerava K/D, PK, bounties e o PvE.
     /// </summary>
     internal static class PvpStoreFormat
     {
@@ -241,7 +246,7 @@ namespace Deadheim.Pvp
         public static string Write(PvpStoreData data)
         {
             StringBuilder text = new StringBuilder();
-            text.Append("# Deadheim PvP: estado deste mundo (K/D, PK, bounties, PvE permanente).\n");
+            text.Append("# Deadheim PvP: estado deste mundo (K/D, PK, bounties, PvE).\n");
             text.Append("# Uma linha por registro, campos chave=valor separados por TAB. Edite so com o servidor desligado.\n");
             text.Append("version\t").Append(Version.ToString(Inv)).Append('\n');
 
@@ -251,7 +256,7 @@ namespace Deadheim.Pvp
                     "pkLeft", D(p.pkLeft), "pkPermanent", B(p.pkPermanent), "pkStreak", I(p.pkStreak),
                     "pkPenalty", I(p.pkPenalty), "pkKills", I(p.pkKills), "bountyReadyAt", D(p.bountyReadyAt),
                     "combatLogPending", B(p.combatLogPending), "pendingCoins", I(p.pendingCoins),
-                    "pvePermanent", B(p.pvePermanent), "pveSince", D(p.pveSince),
+                    "pvePermanent", B(p.pvePermanent), "pveSince", D(p.pveSince), "pveChangedAt", D(p.pveChangedAt),
                     "bountyPaidDay", I(p.bountyPaidDay), "bountyPaidToday", I(p.bountyPaidToday),
                     "guild", S(p.guild), "prevGuild", S(p.prevGuild), "prevGuildUntil", D(p.prevGuildUntil),
                     "castleRewardDay", I(p.castleRewardDay), "castleRewardToday", I(p.castleRewardToday));
@@ -317,6 +322,7 @@ namespace Deadheim.Pvp
                             pendingCoins = GetInt(f, "pendingCoins"),
                             pvePermanent = GetBool(f, "pvePermanent"),
                             pveSince = GetDouble(f, "pveSince"),
+                            pveChangedAt = GetDouble(f, "pveChangedAt"),
                             bountyPaidDay = GetInt(f, "bountyPaidDay"),
                             bountyPaidToday = GetInt(f, "bountyPaidToday"),
                             guild = NullIfEmpty(GetString(f, "guild")),
