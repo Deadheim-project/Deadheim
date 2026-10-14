@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guia do Deadheim</title>
+<meta name="description" content="Como funciona o Deadheim, servidor PvP de Valheim 1.0: entrada, PvP, morte, PK, bounty, bases, guildas, arena, economia e montarias.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Grenze+Gotisch:wght@600&family=Grenze:wght@500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: manual de campo; índice fixo à esquerda no desktop, coluna única no celular. */
+:root {
+  --bg: #eef0ec;
+  --surface: #f8f9f6;
+  --ink: #1b211f;
+  --muted: #59625e;
+  --line: #d2d8d1;
+  --blood: #a3261b;
+  --blood-soft: #f3dfdb;
+  --frost: #2b6886;
+  --frost-soft: #dde9ef;
+  --gold: #8a6a1c;
+  --gold-soft: #efe6cf;
+  --f-display: "Grenze Gotisch", "Grenze", Georgia, serif;
+  --f-head: "Grenze", Georgia, "Times New Roman", serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111513; --surface: #181e1b; --ink: #e2e6e1; --muted: #9ba49f; --line: #2b332f;
+    --blood: #e8644e; --blood-soft: #3a1f1a; --frost: #73b5d4; --frost-soft: #182a33;
+    --gold: #d8ab4a; --gold-soft: #322a17; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111513; --surface: #181e1b; --ink: #e2e6e1; --muted: #9ba49f; --line: #2b332f;
+  --blood: #e8644e; --blood-soft: #3a1f1a; --frost: #73b5d4; --frost-soft: #182a33;
+  --gold: #d8ab4a; --gold-soft: #322a17; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 1.0625rem/1.6 var(--f-body);
+  padding-inline: 16px;
+}
+a { color: var(--frost); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+
+.page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding-block: 2rem 4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+}
+@media (min-width: 60rem) {
+  .page { grid-template-columns: 13rem minmax(0, 1fr); gap: 3rem; }
+  .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 1.5rem); align-self: start; }
+}
+
+/* Índice */
+.toc { font-size: .95rem; }
+.toc h2 {
+  font: 600 .75rem/1 var(--f-body); text-transform: uppercase; letter-spacing: .12em;
+  color: var(--muted); margin: 0 0 .75rem; border: 0; padding: 0;
+}
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; }
+.toc a { display: block; padding: .2rem 0; color: var(--ink); text-decoration: none; }
+.toc a:hover { color: var(--blood); }
+@media (max-width: 59.99rem) {
+  .toc { border-bottom: 1px solid var(--line); padding-bottom: 1rem; }
+  .toc ol { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .toc a { padding: .25rem .6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: .9rem; }
+}
+
+main { min-width: 0; }
+main > section { padding-top: 2.5rem; }
+main > section + section { margin-top: 1rem; border-top: 1px solid var(--line); }
+
+/* Capa */
+.hero { padding-top: 0 !important; }
+.eyebrow {
+  font: 700 .78rem/1.2 var(--f-body); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--blood); margin: 0 0 .5rem;
+}
+h1 {
+  font: 600 clamp(3.4rem, 11vw, 6.5rem)/.9 var(--f-display);
+  margin: 0; letter-spacing: .01em;
+}
+.lead { font-size: 1.25rem; max-width: 40rem; margin: 1rem 0 0; }
+.launch {
+  display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem;
+  margin-top: 1.5rem; padding: .7rem 1rem; border: 1px solid var(--blood);
+  border-radius: 4px; background: var(--blood-soft);
+}
+.launch strong { font: 600 1.35rem/1.1 var(--f-head); color: var(--blood); }
+.launch span { color: var(--muted); font-size: .95rem; }
+
+h2 {
+  font: 600 clamp(1.7rem, 4vw, 2.3rem)/1.1 var(--f-head);
+  margin: 0 0 1rem; text-wrap: balance;
+}
+h3 { font: 600 1.3rem/1.2 var(--f-head); margin: 2rem 0 .5rem; text-wrap: balance; }
+p, li { max-width: 68ch; }
+p { margin: .6rem 0; }
+ul, ol { padding-left: 1.25rem; margin: .6rem 0; }
+li + li { margin-top: .3rem; }
+.muted { color: var(--muted); }
+strong { font-weight: 700; }
+
+kbd, code {
+  font: 500 .82em/1 var(--f-mono);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  padding: .15em .4em; white-space: nowrap;
+}
+kbd { border-bottom-width: 2px; }
+
+/* Passos de entrada */
+.steps { list-style: none; padding: 0; margin: 1.25rem 0 0; display: grid; gap: 1rem; counter-reset: passo; }
+@media (min-width: 44rem) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.steps li {
+  counter-increment: passo; margin: 0; max-width: none;
+  padding-top: .75rem; border-top: 3px solid var(--ink);
+}
+.steps li::before {
+  content: "Passo " counter(passo); display: block;
+  font: 700 .75rem/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: .4rem;
+}
+.steps b { display: block; font: 600 1.15rem/1.25 var(--f-head); margin-bottom: .25rem; }
+
+/* O essencial */
+.essencial { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0; }
+@media (min-width: 44rem) { .essencial { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2rem; } }
+.essencial li { margin: 0; padding: .8rem 0; border-bottom: 1px solid var(--line); max-width: none; }
+.essencial b { display: block; font: 600 1.1rem/1.25 var(--f-head); }
+
+/* Tabelas */
+.table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 32rem; font-size: .97rem; }
+th, td { text-align: left; vertical-align: top; padding: .55rem .8rem; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font: 700 .75rem/1.3 var(--f-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); background: var(--bg); }
+td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Avisos com cor de significado */
+.nota {
+  margin: 1rem 0; padding: .75rem 1rem; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--surface); max-width: 68ch;
+}
+.nota.perigo { border-color: var(--blood); background: var(--blood-soft); }
+.nota.seguro { border-color: var(--frost); background: var(--frost-soft); }
+.nota.ouro { border-color: var(--gold); background: var(--gold-soft); }
+.nota p { margin: .2rem 0; }
+.tag {
+  display: inline-block; font: 700 .72rem/1.4 var(--f-body); letter-spacing: .08em; text-transform: uppercase;
+  padding: .05rem .45rem; border-radius: 3px; border: 1px solid currentColor;
+}
+.tag.perigo { color: var(--blood); }
+.tag.seguro { color: var(--frost); }
+.tag.ouro { color: var(--gold); }
+
+/* Duas colunas de comparação */
+.duas { display: grid; gap: 1rem; margin: 1rem 0; }
+@media (min-width: 44rem) { .duas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.duas > div { min-width: 0; padding: .9rem 1rem; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+.duas h4 { margin: 0 0 .4rem; font: 600 1.1rem/1.2 var(--f-head); }
+.duas ul { margin: 0; }
+
+/* Faixa por chefes */
+.faixa { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+.faixa-label { font: 700 .75rem/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 .7rem; }
+.chefes { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.2rem, 1fr)); gap: .4rem; }
+.chefe {
+  font: 500 .95rem/1.2 var(--f-body); color: var(--muted); cursor: pointer;
+  padding: .55rem .4rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg);
+  text-align: center; transition: background-color .15s, color .15s, border-color .15s;
+}
+.chefe small { display: block; font: 500 .7rem/1.2 var(--f-mono); opacity: .8; margin-bottom: .15rem; }
+.chefe.alcance { color: var(--blood); border-color: var(--blood); background: var(--blood-soft); }
+.chefe.voce { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+.faixa-saida { margin: .8rem 0 0; min-height: 3.2em; }
+@media (prefers-reduced-motion: reduce) { .chefe { transition: none; } }
+
+footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .95rem; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc" aria-label="Índice">
+  <h2>Neste guia</h2>
+  <ol>
+    <li><a href="#entrar">Como entrar</a></li>
+    <li><a href="#essencial">O essencial</a></li>
+    <li><a href="#pvp">PvP</a></li>
+    <li><a href="#morte">Morte e saque</a></li>
+    <li><a href="#pk">PK e defesa</a></li>
+    <li><a href="#bounty">Bounty</a></li>
+    <li><a href="#pve">PvE ou PvP</a></li>
+    <li><a href="#bases">Bases e wards</a></li>
+    <li><a href="#guildas">Guildas e grupos</a></li>
+    <li><a href="#economia">Economia e NPCs</a></li>
+    <li><a href="#montarias">Montarias</a></li>
+    <li><a href="#mundo">O mundo</a></li>
+    <li><a href="#vip">VIP</a></li>
+    <li><a href="#teclas">Teclas e comandos</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section class="hero" id="entrar">
+  <p class="eyebrow">Temporada PvP · Valheim 1.0</p>
+  <h1>Deadheim</h1>
+  <p class="lead">PvP em mundo aberto, clãs e arena ranqueada. Seu personagem fica salvo no servidor: o que você conquista, e o que perde, vale de verdade.</p>
+  <div class="launch"><strong>Abertura: sábado, 17 de outubro</strong><span>Valheim 1.0 · só Steam</span></div>
+
+  <ol class="steps">
+    <li><b>Instale o Deadheim Launcher</b>Baixe o <code>DeadheimLauncherSetup.exe</code> na <a href="https://github.com/Deadheim-project/Launcher/releases/latest">página de releases do launcher</a> e instale.</li>
+    <li><b>Deixe ele preparar o jogo</b>O launcher baixa e atualiza sozinho todos os mods do servidor, na versão certa. Você não instala nada à mão.</li>
+    <li><b>Clique em Jogar</b>O jogo abre e conecta direto no servidor. Na primeira vez, você cria o personagem que fica ligado ao Deadheim.</li>
+  </ol>
+
+  <div class="nota perigo">
+    <p><strong>Um personagem por conta Steam</strong>, salvo no servidor. Não dá para restaurar backup do seu PC: perda de skill e de itens é definitiva.</p>
+    <p>Jogue só com os mods do launcher. Mod faltando, a mais ou em outra versão faz o anticheat desconectar você.</p>
+  </div>
+</section>
+
+<section id="essencial">
+  <h2>O essencial</h2>
+  <ul class="essencial">
+    <li><b>PvP em todo o mapa</b>Fora das zonas seguras, qualquer jogador da sua faixa de chefes pode atacar você, e você a ele. Não lutam entre si: aliados (guilda e grupo), quem escolheu o PvE e quem acabou de morrer (10 minutos imune). A ilha inicial protege quem está começando.</li>
+    <li><b>Lute com quem está no seu nível</b>Você só fere e só é ferido por quem derrotou quase os mesmos chefes que você: até um chefe de diferença.</li>
+    <li><b>Morrer para jogador custa caro</b>Metade dos materiais e da comida que você carrega cai no chão para quem quiser pegar.</li>
+    <li><b>Matar te marca</b>Quem mata vira PK e perde mais ao morrer. Revidar quem te atacou primeiro não marca.</li>
+    <li><b>Cabeças a prêmio</b>No NPC <strong>Caçador de Recompensas</strong> qualquer um põe moedas na cabeça de outro jogador.</li>
+    <li><b>Bases podem ser atacadas</b>Fora da área protegida, o que a Pedra-guardiã cobre toma uma parte do dano. Todo jogador ganha um Territory Token ao entrar: com ele, a Ward de Território deixa a sua base indestrutível. Ward sem combustível não protege nada.</li>
+    <li><b>Battleground em breve</b>Um mapa de pancadaria entre times, com fila como a da arena: você entra, luta e volta para onde estava.</li>
+    <li><b>Prefere não lutar?</b>O NPC <strong>Juiz de Guerra</strong> tira você do PvP (e devolve depois), com coleta e skill mais lentas. Entre uma troca e outra são 24 horas.</li>
+  </ul>
+</section>
+
+<section id="pvp">
+  <h2>PvP: quem pode ferir quem</h2>
+  <p>O PvP fica ligado para todos e o botão de PvP do inventário fica travado. Um golpe só acerta se os dois estão com PvP ligado, não são aliados e estão na mesma faixa de chefes.</p>
+
+  <h3>Dano entre jogadores</h3>
+  <ul>
+    <li>O dano de jogador em jogador é <strong>cortado pela metade</strong>, depois da armadura.</li>
+    <li>Dentro de um ward seu, ligado e abastecido, o dano de jogador que você recebe cai <strong>pela metade de novo</strong>.</li>
+    <li><strong>Aliados não se ferem:</strong> mesma guilda, mesmo grupo e, dentro de um ward, quem tem permissão nele.</li>
+  </ul>
+
+  <h3>Faixa por chefes</h3>
+  <p>Seu nível é o chefe mais avançado que você ajudou a matar (contam todos que deram dano nele). Você só luta com quem está até <strong>um chefe</strong> acima ou abaixo de você. Fora da faixa ninguém fere ninguém, e o nome do outro mostra <code>[outra faixa]</code>. Na arena a faixa não vale.</p>
+
+  <div class="faixa" id="faixa">
+    <p class="faixa-label">Escolha o seu último chefe</p>
+    <div class="chefes" role="group" aria-label="Último chefe derrotado">
+      <button type="button" class="chefe" data-nivel="0"><small>0</small>Nenhum</button>
+      <button type="button" class="chefe" data-nivel="1"><small>1</small>Eikthyr</button>
+      <button type="button" class="chefe" data-nivel="2"><small>2</small>Ancião</button>
+      <button type="button" class="chefe" data-nivel="3"><small>3</small>Massa Óssea</button>
+      <button type="button" class="chefe" data-nivel="4"><small>4</small>Moder</button>
+      <button type="button" class="chefe" data-nivel="5"><small>5</small>Yagluth</button>
+      <button type="button" class="chefe" data-nivel="6"><small>6</small>A Rainha</button>
+      <button type="button" class="chefe" data-nivel="7"><small>7</small>Fader</button>
+    </div>
+    <p class="faixa-saida" id="faixa-saida" aria-live="polite">Quem já matou a Massa Óssea luta com quem está entre o Ancião e a Moder.</p>
+  </div>
+
+  <h3>Zonas seguras e arena</h3>
+  <div class="duas">
+    <div>
+      <h4><span class="tag seguro">Seguro</span> Ilha inicial</h4>
+      <p>A terra em volta do templo onde você nasce. Ali ninguém fere ninguém, <strong>menos</strong> quem está em combate, quem é PK e quem está sendo caçado por bounty.</p>
+    </div>
+    <div>
+      <h4><span class="tag perigo">PvP sempre</span> Arena</h4>
+      <p>PvP obrigatório e aliados podem lutar entre si. Morrer na arena não tira skill, não dá PK nem imunidade e não conta no ranking.</p>
+    </div>
+  </div>
+
+  <h3>Transporte não protege</h3>
+  <p>Barco, carroça e montaria não deixam ninguém seguro. Barco e carroça tomam dano de jogador: dá para afundar barco e quebrar carroça, e a carga cai. Qualquer golpe derruba você da montaria.</p>
+
+  <h3>Imunidade depois de morrer</h3>
+  <p>Morreu para jogador fora da arena? Você fica <strong>10 minutos imune</strong>: não dá nem leva dano de jogador. Relogar não tira a imunidade, e ela só conta com você no jogo.</p>
+
+  <h3>Em combate</h3>
+  <ul>
+    <li>Dar ou levar dano de jogador deixa você <strong>em combate por 30 segundos</strong>, com ícone e contagem na barra de efeitos.</li>
+    <li>Em combate não funcionam portal, Teleportador, pedra de retorno, <code>/retreat</code> nem invocar montaria. Portas de masmorra funcionam.</li>
+    <li>Em combate nenhuma zona segura protege você.</li>
+    <li>Lutar com monstro também bloqueia a pedra de retorno e o <code>/retreat</code> pelo mesmo tempo.</li>
+    <li><strong>Deslogar em combate mata.</strong> Quando você voltar, morre no lugar onde saiu, e a tumba fica ali. Conta como morte para você e abate para quem bateu por último, no <code>/rank</code> e no Ranking de Guerra. Vale também se a sua internet cair.</li>
+  </ul>
+</section>
+
+<section id="morte">
+  <h2>Morte e saque</h2>
+  <p>Toda morte é de um de dois tipos. Conta como <strong>morte por jogador</strong> quando um jogador deu o golpe final ou quando você levou dano de jogador nos 20 segundos anteriores (queda, afogamento ou monstro terminando o serviço). Veneno e fogo deixados por um jogador também contam até acabarem. O resto é <strong>morte por PvE</strong>.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>Morte por jogador</th><th>Morte por PvE</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Materiais e comida</strong></td><td>Metade cai no chão, fora da tumba, para quem pegar primeiro</td><td>Ficam na tumba</td></tr>
+        <tr><td><strong>Equipamento</strong></td><td>Fica na tumba</td><td>Fica na tumba</td></tr>
+        <tr><td><strong>Moedas</strong></td><td>Ficam com você</td><td>Ficam com você</td></tr>
+        <tr><td><strong>Tokens do Deadheim</strong> (Portal, Território)</td><td>Nunca caem</td><td>Ficam na tumba</td></tr>
+        <tr><td><strong>Skill</strong></td><td>Perda normal do jogo (nenhuma na arena)</td><td>Perda normal do jogo</td></tr>
+        <tr><td><strong>Imunidade a PvP</strong></td><td>10 minutos</td><td>Não</td></tr>
+        <tr><td><strong>Ranking</strong></td><td>Conta no <code>/rank</code> e, entre guildas diferentes, no Ranking de Guerra</td><td>Não conta</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Carga é o que entra como material, consumível, troféu ou peixe: minério, barras, comida, troféus. <strong>Só você abre a sua tumba.</strong></p>
+</section>
+
+<section id="pk">
+  <h2>PK e legítima defesa</h2>
+  <p>Quem mata um jogador vira <strong>PK</strong>. Cada abate feito enquanto você ainda está marcado sobe o nível da marca e estende o tempo.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th class="num">Abates seguidos</th><th>A marca dura</th><th>Se um jogador matar você marcado</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>1 hora</td><td>Perde skill em dobro</td></tr>
+        <tr><td class="num">2</td><td>2 horas</td><td>Perde skill em dobro</td></tr>
+        <tr><td class="num">3 ou 4</td><td>24 horas</td><td>Skill em dobro, e tudo que não está equipado cai no chão</td></tr>
+        <tr><td class="num">5 ou mais</td><td>Para sempre, até ser morto por um jogador. Aparece no mapa de todos.</td><td>Skill em dobro, e o inventário inteiro cai no chão</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="nota perigo">
+    <p>O tempo da marca só corre com você online. Deslogar não limpa.</p>
+    <p>A marca só sai quando um jogador mata você, e só aí você paga a perda da tabela. Morrer para monstro, queda ou afogamento não limpa a marca nem cobra essa perda: você perde só a skill normal do jogo. Vale a regra de <a href="#morte">Morte e saque</a>: se um jogador acertou você nos 20 segundos anteriores, conta como morte por jogador.</p>
+    <p>O PK não tem zona segura nem proteção de transporte. Quem está na zona segura pode atacá-lo.</p>
+  </div>
+
+  <h3>Não gera PK</h3>
+  <ul>
+    <li>Matar um PK, um caçado (bounty) ou um <strong>agressor</strong>.</li>
+    <li>Matar na arena.</li>
+  </ul>
+
+  <h3>Agressor: legítima defesa</h3>
+  <p>Quem bate primeiro em alguém sem marca vira <strong>AGRESSOR</strong> por 10 minutos, contados do último golpe (o relógio para enquanto ele segue em combate). Se ele bater em você, revide: matar o agressor não deixa você PK. A marca de agressor aparece no nome e na barra de efeitos.</p>
+  <p>O nome de cada jogador mostra o estado dele: <code>[PK x3]</code>, <code>PK PERMANENTE</code>, <code>AGRESSOR</code>, <code>CAÇADO</code>, <code>IMUNE</code>, <code>SEGURO</code>, <code>[Mercador]</code> (PvE) ou <code>[outra faixa]</code>.</p>
+</section>
+
+<section id="bounty">
+  <h2>Bounty: cabeça a prêmio</h2>
+  <p>A bounty é feita no NPC <strong>Caçador de Recompensas</strong>: escreva o nome do jogador e quantas moedas quer pôr na cabeça dele. As moedas saem do seu inventário, o mínimo é <strong>1.000</strong> e várias pessoas podem somar na mesma cabeça. Vale para qualquer jogador que já entrou no servidor, mesmo offline, menos quem é PvE.</p>
+
+  <ol>
+    <li><strong>Aviso.</strong> O alvo é avisado e tem 10 minutos antes de virar caçado.</li>
+    <li><strong>Caçado.</strong> Aparece no mapa de todos e perde zona segura, imunidade, teleporte (portal, Teleportador, pedra e retreat) e a redução de dano do próprio ward.</li>
+    <li><strong>Duração.</strong> 1 hora de caçada para cada 1.000 moedas no pote. A partir de 5.000 moedas, a caçada só acaba com a morte do alvo.</li>
+    <li><strong>Prêmio.</strong> Quem der o golpe final leva <strong>75% do pote</strong>; o resto fica com a casa. Quem é ou foi da guilda do alvo nas últimas 24 horas não recebe.</li>
+  </ol>
+
+  <ul>
+    <li>O relógio só corre com o alvo online, com pelo menos 3 jogadores no servidor, e para enquanto o caçado está dentro de um ward onde tem permissão.</li>
+    <li>No mesmo NPC, o alvo compra a saída pagando 1,5 vez o pote à casa.</li>
+    <li>Se a bounty expirar, o pote fica com a casa. Ninguém ganha por sobreviver.</li>
+    <li>Depois que uma bounty acaba, o mesmo jogador só pode receber outra 2 horas depois. Cada jogador põe no máximo 10.000 moedas por dia.</li>
+    <li>Morrer para monstro não encerra a bounty, e abate na arena não paga.</li>
+  </ul>
+  <p>O quadro do Caçador de Recompensas mostra as bounties ativas, quanto cada uma paga e se o alvo está online.</p>
+</section>
+
+<section id="pve">
+  <h2>PvE ou PvP: o Juiz de Guerra</h2>
+  <p>O NPC <strong>Juiz de Guerra</strong> tira você do PvP (você vira PvE) e, quando quiser, devolve você ao PvP. Ele mostra lado a lado o que cada escolha dá. Depois de trocar, a próxima troca só fica liberada <strong>24 horas</strong> depois.</p>
+  <div class="duas">
+    <div>
+      <h4>O que você ganha</h4>
+      <ul>
+        <li>Não fere nem é ferido por jogador em lugar nenhum, arena inclusive.</li>
+        <li>Não pode receber bounty.</li>
+        <li>Seu nome mostra <code>[Mercador]</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>O que você paga</h4>
+      <ul>
+        <li>Skills sobem na metade da velocidade dos outros.</li>
+        <li>Coleta normal (1×), enquanto quem joga PvP coleta em dobro (2×) em árvore, pedra, minério, colheita e drop de monstro.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted">Não pode virar PvE quem é PK, quem tem bounty na cabeça (mesmo no aviso) e quem está em combate.</p>
+</section>
+
+<section id="bases">
+  <h2>Bases e wards</h2>
+  <p>Ward é o que protege a sua construção. Sem ward, qualquer um quebra. Com ward abastecido:</p>
+  <div class="duas">
+    <div>
+      <h4><span class="tag seguro">100% protegida</span> Área protegida</h4>
+      <p>Até 1.500 m do centro do mapa e na ilha inicial, o que o ward cobre não toma dano nenhum.</p>
+    </div>
+    <div>
+      <h4><span class="tag perigo">Raidável</span> Resto do mapa</h4>
+      <p>O que o ward cobre toma <strong>25% do dano</strong>, de jogador e de monstro. Dá para invadir, só demora mais.</p>
+    </div>
+  </div>
+  <p class="muted">A área protegida vale para construções. Para jogadores, a zona segura de PvP é só a ilha inicial.</p>
+
+  <h3>Os wards</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ward</th><th class="num">Raio</th><th>Custo</th><th>Observação</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Pedra-guardiã</strong> (o ward do jogo)</td><td class="num">150 m</td><td>Receita do jogo</td><td>Cobre a base inteira. Fora da área protegida, o que ela cobre toma 25% do dano</td></tr>
+        <tr><td><strong>Ward de Território</strong></td><td class="num">32 m</td><td>1 Territory Token, 100 Pedra, 5 Núcleo de Surtling</td><td>Uma por jogador. Ativa, nada no raio toma dano de quem não tem acesso</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Combustível</h3>
+  <ul>
+    <li>Olhe para o ward e use <strong>Resina</strong> para pôr uma carga. Cada carga dura 24 horas do relógio do mundo, que só anda com o servidor ligado.</li>
+    <li>No máximo 10 cargas. Ward novo nasce com 1.</li>
+    <li><strong>Ward sem combustível não protege nada.</strong></li>
+  </ul>
+
+  <h3>Regras do ward</h3>
+  <ul>
+    <li>Têm acesso o dono, quem ele autorizar e a guilda dele.</li>
+    <li>Dentro do ward dos outros você não mexe no terreno (picareta, enxada, cultivador), não renomeia portal, não colhe nem destrói plantação e não quebra pedra, árvore, tronco ou toco. <strong>Veios de minério ficam livres.</strong></li>
+    <li>Não há limite de wards por jogador, mas eles precisam de espaço: longe de um ward alheio pelo menos 3 vezes o raio dele (450 m de uma Pedra-guardiã).</li>
+  </ul>
+
+  <h3>Ward de Território</h3>
+  <p>Feita com o <strong>Territory Token</strong>, que <strong>todo jogador recebe ao entrar no servidor</strong>, doador ou não. Só pode ser posta fora da área protegida. Depois de abastecida e de <strong>60 minutos</strong> com o servidor ligado, nada no raio dela (32 m) toma dano de quem não tem acesso. Até lá ela vale como ward comum, o que impede plantá-la no meio de um ataque.</p>
+  <p>Na prática: o que está só sob a Pedra-guardiã pode ser invadido, devagar, por quem passar de madrugada. Ponha o que importa (baús, bancadas, a cama) no raio da Ward de Território.</p>
+  <ul>
+    <li>Uma por jogador, e longe de outra Ward de Território pelo menos 2 raios, mesmo da sua guilda.</li>
+    <li>Só o dono remove, e o token volta para ele.</li>
+    <li>Ela protege a construção, não as pessoas: quem está dentro ainda pode morrer.</li>
+  </ul>
+</section>
+
+<section id="guildas">
+  <h2>Guildas e grupos</h2>
+
+  <div class="duas">
+    <div>
+      <h4>Guilda (o clã)</h4>
+      <ul>
+        <li>Fundada no NPC <strong>Registrador de Guildas</strong>, que também abre a janela da guilda (membros, pedidos de entrada e cargos).</li>
+        <li>Sem fogo amigo, acesso aos wards dos membros e vela do clã.</li>
+        <li><kbd>Shift</kbd> no ping do mapa: só a guilda vê.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Grupo (party)</h4>
+      <ul>
+        <li>Até 5 jogadores, nomes em verde, chat do grupo.</li>
+        <li>Sem fogo amigo. É o grupo que forma o time da fila ranqueada da arena.</li>
+        <li><kbd>Alt</kbd> no ping do mapa: só o grupo vê.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Battleground (em breve)</h3>
+  <p>No lugar dos castelos vem o <strong>battleground</strong>: um mapa feito para a pancadaria, entre times de 3 ou mais jogadores, conforme o mapa. Você entra na fila como na arena; quando a partida fecha, aceita e é levado para lá, e no fim volta para o lugar onde estava. Os detalhes saem no anúncio dele.</p>
+
+  <h3>Ranking de Guerra</h3>
+  <p>Abre no <kbd>PageDown</kbd>. Mostra os 10 melhores jogadores e os pontos de cada guilda. Quem não tem guilda não pontua.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Evento</th><th class="num">Pontos</th><th>Para quem</th></tr></thead>
+      <tbody>
+        <tr><td>Matar jogador de outra guilda (fora da arena)</td><td class="num">+10</td><td>Quem matou</td></tr>
+        <tr><td>Morrer para jogador de outra guilda</td><td class="num">−3</td><td>Quem morreu</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><code>/rank</code> mostra o ranking de abates e mortes (K/D) de todos, com ou sem guilda. <kbd>PageUp</kbd> abre o painel da sua guilda com os membros.</p>
+</section>
+
+<section id="economia">
+  <h2>Economia e NPCs</h2>
+
+  <div class="nota ouro">
+    <p><strong>Suas moedas ficam sempre com você.</strong> Elas ocupam um espaço fixo do inventário (o primeiro da segunda linha), não pesam e não têm limite. Não vão para baú, chão nem tumba, e não caem quando você morre. Mercador, bancadas, NPCs e bounty usam as moedas normalmente.</p>
+  </div>
+
+  <p>Todos os NPCs abrem com <kbd>E</kbd>. Eles ficam nos lugares que a administração preparou.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>NPC</th><th>Para que serve</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Mercador</strong></td><td><strong>Leilão:</strong> anuncie itens e compre dos outros, mesmo com o vendedor offline. Anúncio dura 48 horas; o que não vender volta pelo correio. <strong>Balcão:</strong> o NPC compra e vende itens a preço fixo. Algumas lojas pedem o passe do chefe do bioma: ajude a matar o chefe ou pague o passe.</td></tr>
+        <tr><td><strong>Caixa Postal</strong></td><td>Recebe compras do leilão e recompensas. Mande cartas para qualquer jogador pelo nome, ou para uma "casa" inteira.</td></tr>
+        <tr><td><strong>Missões</strong></td><td>Missões de coleta e de caça. O diário abre no <kbd>J</kbd>, e as recompensas chegam pelo correio.</td></tr>
+        <tr><td><strong>Teleportador</strong></td><td>Leva a destinos fixos. Não funciona em combate nem para caçados.</td></tr>
+        <tr><td><strong>Loja Deadcoins</strong></td><td>Troca Deadcoins, a moeda de doação, por itens. O Portal Token é vendido aqui.</td></tr>
+        <tr><td><strong>Mestre dos Passes</strong></td><td>Mostra os seus passes de chefe. O passe libera a loja do bioma daquele chefe no Mercador; ele é seu de graça se você ajudou a matar o chefe, ou se paga uma vez, em moedas ou Deadcoins.</td></tr>
+        <tr><td><strong>Registrador de Guildas</strong></td><td>O único lugar onde se funda uma guilda e onde se abre a janela da guilda: procurar uma, pedir para entrar, aceitar membros.</td></tr>
+        <tr><td><strong>Caçador de Recompensas</strong></td><td>Põe moedas na cabeça de um jogador, mostra quem está a prêmio e deixa o alvo comprar a própria cabeça.</td></tr>
+        <tr><td><strong>Juiz de Guerra</strong></td><td>Troca você entre PvE e PvP, com 24 horas de espera entre uma troca e outra.</td></tr>
+        <tr><td><strong>Mestre das Montarias</strong></td><td>Ensina a Habilidade de Montaria e vende as montarias.</td></tr>
+        <tr><td><strong>Arena</strong></td><td>O <strong>Organizador</strong> cria o time (carta paga em moedas), o <strong>Mestre da Arena</strong> põe na fila e mostra o ranking, e o <strong>Intendente</strong> troca Pontos de Arena por recompensas.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Arena</h3>
+  <p>Arena no estilo do WoW, com rating: 1v1 sozinho, sem time, e 2v2, 3v3 e 5v5 com o seu time na fila ranqueada, ou escaramuça sem rating. Ninguém morre na partida: quem cai é nocauteado, volta com vida cheia e vai assistir. O último time de pé vence. Os Pontos de Arena são distribuídos toda terça-feira ao meio-dia (horário de Brasília) para quem jogou o bastante na semana.</p>
+  <p><strong>Para que servem os Pontos de Arena:</strong> o <strong>Intendente da Arena</strong> troca os pontos por kits de armas e de armaduras e por hidroméis. Os kits melhores pedem rating: quanto mais alto o seu rating, mais coisa fica à venda. O que você compra chega pela Caixa Postal.</p>
+
+  <h3>Deadcoins e tokens</h3>
+  <p>As <strong>Deadcoins</strong> são a moeda de quem apoia o servidor: a administração credita no seu nome quando você doa. Elas não são item, não ficam no inventário e não caem; o saldo fica guardado no servidor e aparece nos NPCs que aceitam Deadcoins.</p>
+  <ul>
+    <li><strong>Onde gastar:</strong> Loja Deadcoins (itens e o Portal Token), Mestre das Montarias (o nível Mestre e as montarias) e Mestre dos Passes (passe de chefe sem precisar matar o chefe).</li>
+    <li><strong>Portal Token:</strong> faz um portal. Todo jogador <strong>ganha 1 ao entrar</strong> no servidor; os seguintes são vendidos na Loja Deadcoins.</li>
+    <li><strong>Territory Token:</strong> faz a Ward de Território. Todo jogador <strong>ganha 1 ao entrar</strong>. Como cada jogador só tem uma Ward de Território, o token volta para você quando você a remove para mudar de lugar.</li>
+    <li>Os tokens nunca caem quando um jogador mata você.</li>
+  </ul>
+
+  <h3>Portal</h3>
+  <p>Cada portal custa <strong>1 Portal Token, 100 Madeira Fina, 30 Olho de Greydwarf e 10 Núcleo de Surtling</strong>. Carregando minério você não passa pelo portal.</p>
+</section>
+
+<section id="montarias">
+  <h2>Montarias</h2>
+  <p>Como no WoW, você precisa de duas coisas, ambas vendidas pelo <strong>Mestre das Montarias</strong>: a <strong>Habilidade de Montaria</strong> e a <strong>montaria</strong>.</p>
+
+  <div class="duas">
+    <div>
+      <h4>Habilidade</h4>
+      <div class="table-wrap">
+        <table style="min-width: 0">
+          <thead><tr><th>Nível</th><th>Efeito</th><th class="num">Preço</th></tr></thead>
+          <tbody>
+            <tr><td>Aprendiz</td><td>Monta</td><td class="num">500 moedas</td></tr>
+            <tr><td>Experiente</td><td>+25% velocidade, invoca mais rápido</td><td class="num">2.500 moedas</td></tr>
+            <tr><td>Mestre</td><td>+50% velocidade, invoca na metade do tempo</td><td class="num">500 Deadcoins</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Cada nível é aprendido em cima do anterior.</p>
+    </div>
+    <div>
+      <h4>Montarias</h4>
+      <p>Capivara, Neck, Cervo, Javali e Eikthyr, por <strong>300 Deadcoins</strong> cada.</p>
+      <p>Ao comprar, você recebe o <strong>apito</strong> da montaria. Use o apito, ou aperte <kbd>H</kbd>, para aparecer montado. Use de novo para descer: a montaria some.</p>
+    </div>
+  </div>
+  <ul>
+    <li><kbd>U</kbd> abre o menu de montarias: escolha a do <kbd>H</kbd> e pegue de volta um apito perdido.</li>
+    <li>Montado, <kbd>Espaço</kbd> salta e o clique dá uma investida.</li>
+    <li>Não dá para montar em combate, no leme do barco nem sentado. Descer sempre dá.</li>
+    <li><strong>Qualquer golpe derruba</strong> você da montaria. Ela não protege em PvP.</li>
+    <li>A posse fica salva no servidor, ligada ao seu personagem. O apito de outra pessoa não serve para você.</li>
+  </ul>
+</section>
+
+<section id="mundo">
+  <h2>O mundo e as mudanças no jogo</h2>
+  <div class="duas">
+    <div>
+      <h4>Progresso</h4>
+      <ul>
+        <li>Skills sobem na metade da velocidade normal, até o nível 100.</li>
+        <li>Quem joga PvP coleta em dobro: árvore, pedra, minério, colheita e drop de monstro.</li>
+        <li>Monstros têm no máximo 2 estrelas, sem efeitos especiais.</li>
+        <li>Masmorras e acampamentos voltam uma vez por semana.</li>
+        <li>O bônus de vida e dano dos monstros por jogador perto só conta quem está lutando e os aliados dele.</li>
+        <li>As raids de monstros nas bases estão desligadas.</li>
+        <li>A borda do mundo mata.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Qualidade de vida</h4>
+      <ul>
+        <li>Bancadas com busca de receitas e quantidade; fabricar leva 0,25 s.</li>
+        <li>Bancada não precisa de telhado.</li>
+        <li>Fornos e fundições maiores e mais rápidos.</li>
+        <li><kbd>Shift</kbd> + <kbd>E</kbd> numa planta ou colmeia colhe tudo igual num raio de 10 m.</li>
+        <li>Tocos quebram com 1 golpe.</li>
+        <li>O Megingjord dá +200 de carga.</li>
+        <li>Velas personalizadas e de clã: <kbd>G</kbd> perto do barco.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Pedra de retorno</h3>
+  <p>Olhe para a sua cama e aperte <kbd>P</kbd> para marcar o ponto de retorno. A <strong>Pedra de retorno</strong> é feita na Bancada (3 Cristal, 30 moedas, 20 Fragmento de Osso) e leva você até esse ponto uma vez. Não funciona em combate, caçado ou carregando minério.</p>
+</section>
+
+<section id="vip">
+  <h2>VIP</h2>
+  <p>O VIP (Aesir) tem:</p>
+  <ul>
+    <li><code>/retreat</code>: volta ao ponto marcado na cama, com recarga de 30 minutos. Segue as mesmas travas da pedra.</li>
+    <li>Loja Deadcoins de qualquer lugar do mapa, no <kbd>F7</kbd>.</li>
+    <li>O Baú Aesir, de 6×6.</li>
+    <li>Os portais VIP.</li>
+  </ul>
+</section>
+
+<section id="teclas">
+  <h2>Teclas e comandos</h2>
+  <div class="duas">
+    <div>
+      <h4>Teclas</h4>
+      <div class="table-wrap">
+        <table style="min-width: 0">
+          <tbody>
+            <tr><td><kbd>Esc</kbd> → Deadheim</td><td>Seus ajustes dos mods</td></tr>
+            <tr><td><kbd>E</kbd> no NPC</td><td>Abre o NPC</td></tr>
+            <tr><td><kbd>PageUp</kbd></td><td>Painel da guilda</td></tr>
+            <tr><td><kbd>PageDown</kbd></td><td>Ranking de Guerra</td></tr>
+            <tr><td><kbd>J</kbd></td><td>Diário de missões</td></tr>
+            <tr><td><kbd>U</kbd></td><td>Menu de montarias</td></tr>
+            <tr><td><kbd>H</kbd></td><td>Montar e descer</td></tr>
+            <tr><td><kbd>G</kbd> perto do barco</td><td>Velas</td></tr>
+            <tr><td><kbd>P</kbd> olhando a cama</td><td>Marca o ponto de retorno</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>E</kbd></td><td>Colheita em área</td></tr>
+            <tr><td><kbd>F7</kbd></td><td>Loja Deadcoins (VIP)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h4>Comandos no chat</h4>
+      <div class="table-wrap">
+        <table style="min-width: 0">
+          <tbody>
+            <tr><td><code>/pvp</code></td><td>Seu estado: PvP, guilda, grupo, bounty, PK</td></tr>
+            <tr><td><code>/rank</code></td><td>Ranking de abates e mortes</td></tr>
+            <tr><td><code>/retreat</code></td><td>Volta à cama (VIP)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Regras do Deadheim para a abertura da temporada, em 17 de outubro de 2026. A administração pode ajustar números ao longo da temporada; o que estiver no servidor vale.</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  var nomes = ["nenhum chefe", "Eikthyr", "o Ancião", "a Massa Óssea", "a Moder", "Yagluth", "a Rainha", "o Fader"];
+  var curtos = ["Nenhum", "Eikthyr", "Ancião", "Massa Óssea", "Moder", "Yagluth", "A Rainha", "Fader"];
+  var botoes = Array.prototype.slice.call(document.querySelectorAll("#faixa .chefe"));
+  var saida = document.getElementById("faixa-saida");
+  function escolher(n) {
+    botoes.forEach(function (b) {
+      var m = Number(b.getAttribute("data-nivel"));
+      b.classList.toggle("voce", m === n);
+      b.classList.toggle("alcance", m !== n && Math.abs(m - n) <= 1);
+      b.setAttribute("aria-pressed", m === n ? "true" : "false");
+    });
+    var min = Math.max(0, n - 1), max = Math.min(7, n + 1);
+    var quem = n === 0 ? "Quem ainda não matou nenhum chefe" : "Quem já matou " + nomes[n];
+    saida.textContent = quem + " luta com quem está entre " + curtos[min] + " e " + curtos[max] +
+      ". Contra os outros, ninguém fere ninguém.";
+  }
+  botoes.forEach(function (b) {
+    b.addEventListener("click", function () { escolher(Number(b.getAttribute("data-nivel"))); });
+  });
+  escolher(3);
+})();
+</script>
+</body>
+</html>
