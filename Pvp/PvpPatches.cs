@@ -194,6 +194,8 @@ namespace Deadheim.Pvp
 
         private static float _pendingSkillMultiplier = 1f;
         private static float _keepTimeSinceDeath = -1f;
+        // A protecao do Treinador cobre esta morte: o SkillLossPatch corta a perda e gasta uma carga.
+        private static bool _protectedDeath;
 
         /// <summary>
         /// Antes do vanilla: m_lastHit ainda diz quem matou e Skills.OnDeath ainda nao rodou.
@@ -207,6 +209,9 @@ namespace Deadheim.Pvp
         ///   se tivesse morrido ha pouco.
         /// O PK tambem perde itens pelo nivel (PkTiers): Unequipped ou All jogam no chao, antes
         /// da tumba, o que ele perdeu. Com PkPenaltyOnPveDeath desligado, so morte por jogador.
+        ///
+        /// A protecao do Treinador (Treinador.cs) e decidida aqui, depois dessas regras: so corta
+        /// perda normal, nunca a pena de PK, e morte sem perda (arena, castelo) nao a gasta.
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
         private static class DeathPatch
@@ -215,15 +220,21 @@ namespace Deadheim.Pvp
             {
                 _pendingSkillMultiplier = 1f;
                 _keepTimeSinceDeath = -1f;
+                _protectedDeath = false;
                 try
                 {
-                    if (!PvpConfig.Active) return;
                     if (__instance != Player.m_localPlayer || !__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()) return;
-
-                    Vector3 pos = __instance.transform.position;
 
                     PvpRules.DeathCause cause = PvpRules.ClassifyDeath(__instance, __instance.m_lastHit, out ZDOID killer, out long killerId);
                     bool byPlayer = cause != PvpRules.DeathCause.Pve;
+                    if (!PvpConfig.Active)
+                    {
+                        // Sem o modulo de PvP nao ha PK, arena nem castelo: a protecao so olha quem matou.
+                        _protectedDeath = Treinador.Covers(byPlayer, pkPays: false);
+                        return;
+                    }
+
+                    Vector3 pos = __instance.transform.position;
 
                     bool arena = PvpZones.IsArena(pos);
                     // Castelo so conta em morte por jogador: um mob dentro do castelo e PvE comum.
@@ -242,6 +253,7 @@ namespace Deadheim.Pvp
 
                     if (_pendingSkillMultiplier <= 0f) _keepTimeSinceDeath = __instance.m_timeSinceDeath;
                     else if (pkPays) __instance.ClearHardDeath();
+                    _protectedDeath = _pendingSkillMultiplier > 0f && Treinador.Covers(byPlayer, pkPays);
 
                     bool warZone = arena || (castle != null && PvpConfig.CastleIgnoresImmunity.Value);
                     if (byPlayer && !warZone && PvpConfig.ImmunityMinutes.Value > 0f)
@@ -270,7 +282,7 @@ namespace Deadheim.Pvp
                               $"arena={arena} castelo={castle ?? "-"} defesaDoMatador={killerDefendingCastle} PK={wasPk} " +
                               $"PKpermanente={wasPermanent} PKsaiu={wasPk && clearsPk} perda={(pkPays ? penalty.ToString() : "-")} " +
                               $"itensNoChao={itemsDropped} agressor={wasAggressor} moedasNoChao={coinsDropped} cargaNoChao={cargoDropped} " +
-                              $"multiplicadorSkill={_pendingSkillMultiplier}");
+                              $"multiplicadorSkill={_pendingSkillMultiplier} protecaoTreinador={_protectedDeath}");
                 }
                 catch (Exception ex)
                 {
@@ -373,16 +385,23 @@ namespace Deadheim.Pvp
             {
                 _pendingSkillMultiplier = 1f;
                 _keepTimeSinceDeath = -1f;
+                _protectedDeath = false;
             }
         }
 
+        /// <summary>
+        /// A perda de skill da morte. So roda em morte "de verdade": dentro da janela sem perda do
+        /// vanilla o jogo nem chama Skills.OnDeath, entao a protecao do Treinador tambem nao e
+        /// gasta ali.
+        /// </summary>
         [HarmonyPatch(typeof(Skills), nameof(Skills.OnDeath))]
         private static class SkillLossPatch
         {
             private static bool Prefix(Skills __instance)
             {
                 float multiplier = _pendingSkillMultiplier;
-                if (Mathf.Approximately(multiplier, 1f)) return true;
+                bool protectedDeath = _protectedDeath;
+                if (Mathf.Approximately(multiplier, 1f) && !protectedDeath) return true;
 
                 if (multiplier <= 0f)
                 {
@@ -391,6 +410,19 @@ namespace Deadheim.Pvp
                 }
 
                 float factor = Mathf.Clamp01(__instance.m_DeathLowerFactor * Game.m_skillReductionRate * multiplier);
+                if (protectedDeath)
+                {
+                    // O DeathPatch so marca a morte protegida quando o PK nao paga: aqui o multiplicador e o normal.
+                    float cut = Treinador.ProtectionCut;
+                    factor = TreinadorRegras.ProtectedLoss(factor, cut);
+                    Player local = Player.m_localPlayer;
+                    Treinador.ConsumeProtection(local);
+                    __instance.LowerAllSkills(factor);
+                    local?.Message(MessageHud.MessageType.TopLeft,
+                        $"<color=#7fd4ff>Protecao do Treinador: perda de skill -{cut * 100f:0}%</color>");
+                    return false;
+                }
+
                 __instance.LowerAllSkills(factor);
                 __instance.m_player?.Message(MessageHud.MessageType.TopLeft,
                     $"<color=#ff5050>PK: perda de skill x{multiplier:0.#}</color>");

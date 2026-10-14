@@ -105,6 +105,7 @@ namespace Deadheim
             ApplyServerConfigOnce();
             Wards.WardCore.Update();
             Pvp.PvpModule.Update();
+            Treinador.Update(Player.m_localPlayer);
             Ajustes.AjustesMenu.Update();
 
             Player localPlayer = Player.m_localPlayer;
@@ -207,6 +208,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             AdminImortal.Bind(Config);
             TokensIniciais.Bind(Config);
             SkillsTeste.Bind(Config); // TEMPORARIO: remover no lancamento
+            Treinador.Init();
 
             _harmony.PatchAll();
             Ajustes.AjustesMenu.Init(_harmony);

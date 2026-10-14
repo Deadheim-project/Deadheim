@@ -167,6 +167,8 @@
     <Compile Include="RPC.cs" />
     <Compile Include="Smelters.cs" />
     <Compile Include="TokensIniciais.cs" />
+    <Compile Include="Treinador.cs" />
+    <Compile Include="TreinadorRegras.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Wards\WardBridge.cs" />
     <Compile Include="Wards\WardProfile.cs" />

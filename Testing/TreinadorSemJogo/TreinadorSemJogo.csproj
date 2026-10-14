@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Teste sem o jogo das regras do Treinador (TreinadorRegras.cs): o estudo em cima do
+       SkillMultiplier, quando a protecao vale (nunca na pena de PK) e o formato gravado no
+       personagem. Fora do Deadheim.sln, como o PvpSemJogo. TreinadorRegras.cs nao usa Unity,
+       entao nao ha referencia nenhuma ao jogo.
+       dotnet run -c Release -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>9.0</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\..\TreinadorRegras.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

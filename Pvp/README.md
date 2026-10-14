@@ -101,6 +101,7 @@ Uma regra so (`PvpRules.ClassifyDeath`), usada por tudo que reage a morte:
 | Alvo de bounty morre | a bounty acaba; quem matou leva `BountyKillerSharePercent` do pote se o golpe final foi dele e ele nao e (nem foi nas ultimas `BountyAllyHours`) da guilda do alvo; senao o pote fica com a casa | a bounty continua |
 | PK que morre | perde pelo nivel (skill x2, e itens no Unequipped/All) e deixa de ser PK | perda normal do jogo (pelo nivel so com `PkPenaltyOnPveDeath`, desligado desde a 7.5.9) e **continua PK** (`PkClearsOnPveDeath`) |
 | Janela "sem perda de skill" do vanilla (10 min depois de morrer) | morte sem perda (arena, castelo) nao abre a janela; PK perde mesmo dentro dela | igual |
+| Protecao do Treinador (NpcValheim, `Treinador.cs`) | nao vale com `[Trainer] ProtectionPveOnly` (padrao) e nao e gasta; desligado, corta a perda normal. **Nunca reduz a pena de PK** | corta `ProtectionFactor` (0.5) da perda e gasta uma protecao; o PK que paga pelo nivel paga inteiro. Morte sem perda (arena, castelo, janela do vanilla) nao gasta |
 | Tumba | so o dono abre | so o dono abre |
 
 O cliente registra cada morte no log (`[Deadheim PvP] Morri: causa=PlayerDirect|PlayerCredit|Pve
