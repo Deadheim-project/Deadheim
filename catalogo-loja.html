@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catálogo do Deadheim</title>
+<meta name="description" content="Tudo o que se compra no Deadheim, servidor PvP de Valheim 1.0: Deadcoins, Loja Deadcoins, Mercadores de bioma, passes de chefe, montarias, Treinador e VIP Aesir.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400&family=Grenze+Gotisch:wght@600&family=Grenze:wght@500;600&family=JetBrains+Mono:wght@500&display=swap">
+<script>
+/* Exportação: ?p=N mostra só a prancha N, ?export tira margens e pinta o fundo para o recorte,
+   ?tema=escuro|claro força o tema. Roda antes de pintar para não piscar. */
+(function () {
+  var q = new URLSearchParams(location.search), h = document.documentElement;
+  var tema = q.get("tema");
+  if (tema === "escuro") h.setAttribute("data-theme", "dark");
+  if (tema === "claro") h.setAttribute("data-theme", "light");
+  if (q.has("export")) h.classList.add("export");
+  if (q.get("p")) h.setAttribute("data-so", q.get("p"));
+})();
+</script>
+<style>
+/* Mesmo visual do guia do jogador; aqui em pranchas de celular, uma por imagem no Discord. */
+:root {
+  --bg: #eef0ec;
+  --surface: #f8f9f6;
+  --ink: #1b211f;
+  --muted: #59625e;
+  --line: #d2d8d1;
+  --blood: #a3261b;
+  --blood-soft: #f3dfdb;
+  --frost: #2b6886;
+  --frost-soft: #dde9ef;
+  --gold: #8a6a1c;
+  --gold-soft: #efe6cf;
+  --f-display: "Grenze Gotisch", "Grenze", Georgia, serif;
+  --f-head: "Grenze", Georgia, "Times New Roman", serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111513; --surface: #181e1b; --ink: #e2e6e1; --muted: #9ba49f; --line: #2b332f;
+    --blood: #e8644e; --blood-soft: #3a1f1a; --frost: #73b5d4; --frost-soft: #182a33;
+    --gold: #d8ab4a; --gold-soft: #322a17; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111513; --surface: #181e1b; --ink: #e2e6e1; --muted: #9ba49f; --line: #2b332f;
+  --blood: #e8644e; --blood-soft: #3a1f1a; --frost: #73b5d4; --frost-soft: #182a33;
+  --gold: #d8ab4a; --gold-soft: #322a17; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 1.0625rem/1.5 var(--f-body);
+  padding: 2rem 16px 4rem;
+}
+
+.pranchas { max-width: 34rem; margin: 0 auto; display: grid; gap: 1.5rem; }
+.prancha {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1.6rem 1.4rem 1.2rem;
+  min-width: 0;
+}
+@media (max-width: 26rem) { .prancha { padding-inline: 1rem; } }
+
+/* Exportação */
+html[data-so] .prancha { display: none; }
+html[data-so="1"] #p1, html[data-so="2"] #p2, html[data-so="3"] #p3, html[data-so="4"] #p4,
+html[data-so="5"] #p5, html[data-so="6"] #p6, html[data-so="7"] #p7 { display: block; }
+html.export body { background: #ff00ff; padding: 0; }
+html.export .pranchas { max-width: none; gap: 0; }
+html.export .prancha { border: 0; border-radius: 0; background: var(--bg); padding: 1.8rem 1.5rem 1.3rem; }
+
+/* Topo e rodapé de cada prancha */
+.topo {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  font: 700 .74rem/1.2 var(--f-body); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--muted); padding-bottom: .7rem; border-bottom: 1px solid var(--line); margin-bottom: 1.2rem;
+}
+.topo b { color: var(--blood); font-weight: 800; }
+.rodape {
+  margin-top: 1.3rem; padding-top: .7rem; border-top: 1px solid var(--line);
+  font-size: .86rem; line-height: 1.35; color: var(--muted);
+  display: flex; justify-content: space-between; gap: 1rem;
+}
+
+.eyebrow {
+  font: 700 .78rem/1.2 var(--f-body); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--blood); margin: 0 0 .35rem;
+}
+h1 { font: 600 4.6rem/.9 var(--f-display); margin: 0; letter-spacing: .01em; }
+.sub { font: 600 1.75rem/1.1 var(--f-head); margin: .35rem 0 0; }
+h2 { font: 600 2.1rem/1.05 var(--f-head); margin: 0 0 .6rem; text-wrap: balance; }
+h3 { font: 600 1.3rem/1.2 var(--f-head); margin: 1.4rem 0 .45rem; }
+p { margin: .5rem 0; }
+.lead { font-size: 1.18rem; line-height: 1.45; margin-top: .9rem; }
+.muted { color: var(--muted); }
+strong { font-weight: 700; }
+kbd {
+  font: 500 .8em/1 var(--f-mono);
+  background: var(--bg); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px;
+  padding: .15em .4em; white-space: nowrap;
+}
+
+/* Etiquetas: situação e moeda */
+.tag {
+  display: inline-block; font: 700 .68rem/1.45 var(--f-body); letter-spacing: .08em; text-transform: uppercase;
+  padding: 0 .4rem; border-radius: 3px; border: 1px solid currentColor; white-space: nowrap; vertical-align: .12em;
+}
+.tag.ar { color: var(--frost); background: var(--frost-soft); }
+.tag.breve { color: var(--muted); border-style: dashed; }
+.tag.data { color: var(--blood); }
+
+.v { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v small { font: 700 .66rem/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; margin-left: .22rem; }
+.v.m small { color: var(--gold); }
+.v.dc small { color: var(--blood); }
+.ou { color: var(--muted); font-size: .85rem; margin: 0 .2rem; }
+.sem { color: var(--muted); }
+
+.legenda { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin: 1rem 0 0; padding: .6rem .8rem;
+  border: 1px solid var(--line); border-radius: 4px; background: var(--bg); font-size: .92rem; }
+html.export .legenda { background: var(--surface); }
+.legenda span { white-space: nowrap; }
+
+/* Tabelas */
+table { border-collapse: collapse; width: 100%; font-size: .98rem; margin: .7rem 0; }
+th, td { text-align: left; vertical-align: top; padding: .48rem .5rem; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+tr:last-child td { border-bottom: 0; }
+th { font: 700 .7rem/1.3 var(--f-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td > small { display: block; color: var(--muted); font-size: .86rem; line-height: 1.3; margin-top: .1rem; }
+
+/* Pacotes de Deadcoins */
+.pacotes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .4rem; margin: .9rem 0 .4rem; }
+.pacote { text-align: center; padding: .7rem .2rem .6rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+html.export .pacote { background: var(--surface); }
+.pacote .rs { font: 600 1.1rem/1 var(--f-head); }
+.pacote .dc { font: 800 1.35rem/1.1 var(--f-body); color: var(--blood); margin-top: .35rem; font-variant-numeric: tabular-nums; }
+.pacote .dc small { display: block; font: 700 .62rem/1.2 var(--f-body); letter-spacing: .1em; color: var(--muted); }
+.pacote .bonus { font: 700 .74rem/1.2 var(--f-body); color: var(--gold); margin-top: .35rem; min-height: 1.2em; }
+@media (max-width: 26rem) { .pacotes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Índice da capa */
+.indice { list-style: none; padding: 0; margin: .6rem 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: .1rem 1rem; }
+.indice li { padding: .35rem 0; border-bottom: 1px solid var(--line); display: flex; gap: .55rem; align-items: baseline; }
+.indice b { font: 500 .78rem/1 var(--f-mono); color: var(--muted); }
+
+/* Itens à venda: nome e descrição à esquerda, preço à direita */
+.itens { list-style: none; padding: 0; margin: .5rem 0 0; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem 1rem; padding: .7rem 0; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: 0; }
+.item .nome { font: 600 1.18rem/1.2 var(--f-head); }
+.item .nome .tag { margin-left: .35rem; }
+.item .desc { grid-column: 1; font-size: .95rem; line-height: 1.38; color: var(--muted); margin-top: .15rem; }
+.item .preco { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+.item .preco .v { font-size: 1.12rem; }
+.item .preco > div + div { margin-top: .15rem; }
+
+/* Avisos */
+.nota { margin: .9rem 0 0; padding: .65rem .85rem; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); font-size: .95rem; line-height: 1.4; }
+.nota.ouro { border-color: var(--gold); background: var(--gold-soft); }
+.nota.seguro { border-color: var(--frost); background: var(--frost-soft); }
+.nota.perigo { border-color: var(--blood); background: var(--blood-soft); }
+.nota p { margin: .15rem 0; }
+
+.duas { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin: .8rem 0 0; }
+.duas > div { padding: .7rem .8rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); min-width: 0; }
+html.export .duas > div { background: var(--surface); }
+.duas h4 { margin: 0 0 .25rem; font: 600 1.12rem/1.2 var(--f-head); }
+.duas p { margin: 0; font-size: .95rem; line-height: 1.38; }
+@media (max-width: 26rem) { .duas { grid-template-columns: 1fr; } }
+
+/* Teto das aulas por passe */
+.teto { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .35rem; margin: .6rem 0 0; }
+.teto div { text-align: center; padding: .5rem .2rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); font-size: .82rem; line-height: 1.2; color: var(--muted); }
+html.export .teto div { background: var(--surface); }
+.teto b { display: block; font: 800 1.35rem/1.1 var(--f-body); color: var(--ink); margin-top: .2rem; }
+.teto.quatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.teto b.nao { font: 700 .95rem/1.55 var(--f-body); color: var(--blood); }
+.rotulo { font: 700 .72rem/1.3 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: .9rem 0 0; }
+
+/* Biomas e o passe que cada um pede */
+.biomas { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin: .8rem 0 0; }
+.biomas div { padding: .45rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); font-size: .92rem; line-height: 1.3; color: var(--muted); }
+html.export .biomas div { background: var(--surface); }
+.biomas b { display: block; font: 600 1.08rem/1.2 var(--f-head); color: var(--ink); }
+
+/* Listas do VIP */
+.lista { margin: .4rem 0 0; padding-left: 1.1rem; }
+.lista li { margin: .22rem 0; }
+.grupos { display: grid; gap: .55rem; margin-top: .6rem; }
+.grupo { padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+html.export .grupo { background: var(--surface); }
+.grupo h4 { margin: 0 0 .2rem; font: 700 .74rem/1.2 var(--f-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.grupo p { margin: 0; font-size: .97rem; line-height: 1.4; }
+</style>
+</head>
+<body>
+<main class="pranchas">
+
+<!-- 1. Capa e Deadcoins -->
+<section class="prancha" id="p1">
+  <div class="topo"><span><b>Deadheim</b> · Catálogo da loja</span><span>1/7</span></div>
+  <p class="eyebrow">Temporada PvP · Valheim 1.0</p>
+  <h1>Deadheim</h1>
+  <p class="sub">O que se compra no servidor</p>
+  <p class="lead">Tudo à venda, em um lugar: o que sai com <strong>moedas</strong>, que você ganha jogando, e o que sai com <strong>Deadcoins</strong>, a moeda de quem apoia o servidor.</p>
+
+  <div class="legenda">
+    <span><span class="v m"><small>moedas</small></span> as do jogo</span>
+    <span><span class="v dc"><small>DC</small></span> Deadcoins</span>
+    <span><span class="tag ar">No ar</span> já funciona</span>
+    <span><span class="tag breve">Em breve</span> ainda não chegou</span>
+  </div>
+
+  <h3>Deadcoins</h3>
+  <p>Você doa e a administração credita as Deadcoins no seu nome. O saldo fica guardado no servidor: não é item, não cai quando você morre e não passa para outro jogador.</p>
+  <div class="pacotes">
+    <div class="pacote"><div class="rs">R$ 10</div><div class="dc">200<small>DC</small></div><div class="bonus"></div></div>
+    <div class="pacote"><div class="rs">R$ 25</div><div class="dc">525<small>DC</small></div><div class="bonus">+5%</div></div>
+    <div class="pacote"><div class="rs">R$ 50</div><div class="dc">1.100<small>DC</small></div><div class="bonus">+10%</div></div>
+    <div class="pacote"><div class="rs">R$ 100</div><div class="dc">2.300<small>DC</small></div><div class="bonus">+15%</div></div>
+    <div class="pacote"><div class="rs">R$ 200</div><div class="dc">4.800<small>DC</small></div><div class="bonus">+20%</div></div>
+  </div>
+  <p class="muted">R$ 1 = 20 Deadcoins. Os pacotes maiores dão bônus. Para doar, chame a administração no Discord.</p>
+
+  <h3>Onde gastar</h3>
+  <ol class="indice">
+    <li><b>2</b>Loja Deadcoins</li>
+    <li><b>3</b>Mercadores de bioma</li>
+    <li><b>4</b>Mestre dos Passes</li>
+    <li><b>5</b>Mestre das Montarias</li>
+    <li><b>6</b>Treinador</li>
+    <li><b>7</b>VIP Aesir</li>
+  </ol>
+
+  <div class="rodape"><span>Os valores podem mudar durante a temporada. Vale o que estiver no jogo.</span></div>
+</section>
+
+<!-- 2. Loja Deadcoins -->
+<section class="prancha" id="p2">
+  <div class="topo"><span><b>Deadheim</b> · Catálogo da loja</span><span>2/7</span></div>
+  <p class="eyebrow">NPC Loja Deadcoins · <kbd>F7</kbd> para VIP</p>
+  <h2>Loja Deadcoins</h2>
+  <p>Abra com <kbd>E</kbd> no NPC. Quem é VIP abre a loja de qualquer lugar do mapa com <kbd>F7</kbd>.</p>
+
+  <ul class="itens">
+    <li class="item">
+      <div class="nome">Portal Token <span class="tag ar">No ar</span></div>
+      <div class="desc">Faz um portal. Todo jogador ganha 1 ao entrar no servidor; os próximos saem daqui, ou do Mercador por moedas.</div>
+      <div class="preco"><div><span class="v dc">250<small>DC</small></span></div><div><span class="ou">ou no Mercador</span></div><div><span class="v m">3.000<small>moedas</small></span></div></div>
+    </li>
+  </ul>
+
+  <h3>Cosméticos e serviços</h3>
+  <ul class="itens">
+    <li class="item">
+      <div class="nome">Título Fundador <span class="tag breve">Em breve</span></div>
+      <div class="desc">Para quem chegou na abertura. <span class="tag data">Só de 17 a 31/10</span></div>
+      <div class="preco"><span class="v dc">200<small>DC</small></span></div>
+    </li>
+    <li class="item">
+      <div class="nome">Barbeiro <span class="tag breve">Em breve</span></div>
+      <div class="desc">Troque o cabelo e a barba do seu personagem no NPC Barbeiro.</div>
+      <div class="preco"><span class="v dc">60<small>DC</small></span></div>
+    </li>
+    <li class="item">
+      <div class="nome">Pacote de Halloween <span class="tag breve">Em breve</span></div>
+      <div class="desc">Cosméticos da festa. <span class="tag data">De 24/10 a 07/11</span></div>
+      <div class="preco"><span class="v dc">400<small>DC</small></span></div>
+    </li>
+    <li class="item">
+      <div class="nome">Passe de temporada <span class="tag breve">Em breve</span></div>
+      <div class="desc">Recompensas cosméticas ao longo da temporada. <span class="tag data">A partir de novembro</span></div>
+      <div class="preco"><span class="v dc">500<small>DC</small></span></div>
+    </li>
+    <li class="item">
+      <div class="nome">Batizar um lugar <span class="tag breve">Em breve</span></div>
+      <div class="desc">Dê o nome que quiser a um lugar do mundo.</div>
+      <div class="preco"><span class="v dc">800<small>DC</small></span></div>
+    </li>
+    <li class="item">
+      <div class="nome">Vela ou brasão de guilda <span class="tag breve">Em breve</span></div>
+      <div class="desc">Arte feita sob encomenda para a sua guilda, na vela do barco.</div>
+      <div class="preco"><span class="v dc">1.000<small>DC</small></span></div>
+    </li>
+  </ul>
+
+  <div class="rodape"><span>Os valores podem mudar durante a temporada. Vale o que estiver no jogo.</span></div>
+</section>
+
+<!-- 3. Mercadores de bioma -->
+<section class="prancha" id="p3">
+  <div class="topo"><span><b>Deadheim</b> · Catálogo da loja</span><span>3/7</span></div>
+  <p class="eyebrow">NPCs de bioma · moedas ou Deadcoins</p>
+  <h2>Mercadores de bioma</h2>
+  <p>Cada bioma tem o seu Mercador, com os itens daquele bioma: materiais, minério e a Garantia de Refino. Para comprar você precisa do passe do chefe do bioma, pagando em moedas ou em Deadcoins.</p>
+
+  <div class="biomas">
+    <div><b>Prados</b>Livre</div>
+    <div><b>Floresta Negra</b>Livre</div>
+    <div><b>Pântano</b>Passe do Ancião</div>
+    <div><b>Montanha</b>Passe da Massa Óssea</div>
+    <div><b>Planície</b>Passe da Moder</div>
+    <div><b>Mistlands</b>Passe de Yagluth</div>
+    <div><b>Ashlands</b>Passe da Rainha</div>
+    <div><b>Norte Profundo</b>Passe do Fader</div>
+  </div>
+  <div class="nota">
+    <p><span class="tag ar">No ar</span> Mercadores com moedas, travados pelo passe. <span class="tag breve">Em breve</span> Pagar em Deadcoins.</p>
+  </div>
+
+  <ul class="itens">
+    <li class="item">
+      <div class="nome">Garantia de Refino <span class="tag breve">Em breve</span></div>
+      <div class="desc">Na Forja de Potencial, cada tentativa de refino gasta um ídolo e acerta 65% das vezes: se falhar, <strong>o item quebra</strong>. Com Garantia no inventário, a tentativa sempre dá certo. O ídolo continua sendo gasto.</div>
+      <div class="preco"><div><span class="v m">1.000<small>moedas</small></span></div><div><span class="ou">ou</span><span class="v dc">30<small>DC</small></span></div></div>
+    </li>
+  </ul>
+  <p class="rotulo">Garantias por tentativa, pelo nível que o item vai alcançar</p>
+  <div class="teto quatro">
+    <div>Nível 1 a 10<b>1</b></div>
+    <div>11 a 15<b>2</b></div>
+    <div>16 a 20<b>3</b></div>
+    <div>21 a 25<b class="nao">não vale</b></div>
+  </div>
+
+  <div class="nota ouro">
+    <p><strong>Limite por semana, por jogador:</strong> 2 lotes de minério e 10 Garantias de Refino, somando moedas e Deadcoins.</p>
+  </div>
+
+  <div class="rodape"><span>Os valores podem mudar durante a temporada. Vale o que estiver no jogo.</span></div>
+</section>
+
+<!-- 4. Mestre dos Passes -->
+<section class="prancha" id="p4">
+  <div class="topo"><span><b>Deadheim</b> · Catálogo da loja</span><span>4/7</span></div>
+  <p class="eyebrow">NPC Mestre dos Passes</p>
+  <h2>Passes de chefe</h2>
+  <p>O passe de um chefe abre o Mercador do bioma dele, conta para a sua faixa de PvP como se você tivesse matado o chefe e sobe o teto das aulas do Treinador.</p>
+
+  <div class="duas">
+    <div>
+      <h4>Matando</h4>
+      <p>Ajudou a matar o chefe? O passe é seu, de graça.</p>
+    </div>
+    <div>
+      <h4>Com Deadcoins</h4>
+      <p>Pague uma vez no Mestre dos Passes. Passe não se compra com moedas.</p>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Chefe</th><th>Abre o Mercador</th><th class="num">Preço</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Ancião</strong></td><td>Pântano</td><td class="num"><span class="v dc">500<small>DC</small></span></td></tr>
+      <tr><td><strong>Massa Óssea</strong></td><td>Montanha</td><td class="num"><span class="v dc">1.000<small>DC</small></span></td></tr>
+      <tr><td><strong>Moder</strong></td><td>Planície</td><td class="num"><span class="v dc">2.500<small>DC</small></span></td></tr>
+      <tr><td><strong>Yagluth</strong></td><td>Mistlands</td><td class="num"><span class="v dc">5.000<small>DC</small></span></td></tr>
+      <tr><td><strong>A Rainha</strong></td><td>Ashlands</td><td class="num"><span class="v dc">10.000<small>DC</small></span></td></tr>
+      <tr><td><strong>Fader</strong></td><td>Norte Profundo</td><td class="num"><span class="v dc">20.000<small>DC</small></span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="nota perigo">
+    <p><strong>Primeiro alguém tem que matar o chefe.</strong> O passe de cada chefe só fica à venda depois que esse chefe morrer no servidor pela primeira vez. Até lá, só matando.</p>
+  </div>
+
+  <div class="rodape"><span>Os valores podem mudar durante a temporada. Vale o que estiver no jogo.</span></div>
+</section>
+
+<!-- 5. Mestre das Montarias -->
+<section class="prancha" id="p5">
+  <div class="topo"><span><b>Deadheim</b> · Catálogo da loja</span><span>5/7</span></div>
+  <p class="eyebrow">NPC Mestre das Montarias</p>
+  <h2>Montarias</h2>
+  <p>Você precisa de duas coisas: a <strong>habilidade</strong> e a <strong>montaria</strong>. Cada nível da habilidade é aprendido em cima do anterior.</p>
+
+  <h3>Habilidade</h3>
+  <table>
+    <thead><tr><th>Nível</th><th class="num">Moedas</th><th class="num">Deadcoins</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Aprendiz</strong><small>Monta</small></td><td class="num"><span class="v m">500</span></td><td class="num sem">—</td></tr>
+      <tr><td><strong>Experiente</strong><small>+25% de velocidade, invoca mais rápido</small></td><td class="num"><span class="v m">2.500</span></td><td class="num sem">—</td></tr>
+      <tr><td><strong>Mestre</strong><small>+50% de velocidade, invoca na metade do tempo</small></td><td class="num"><span class="v m">10.000</span></td><td class="num"><span class="v dc">500</span></td></tr>
+      <tr><td><strong>Voadora</strong><small>Como o Mestre, e voa com o Moder</small></td><td class="num"><span class="v m">20.000</span></td><td class="num"><span class="v dc">1.000</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Montarias</h3>
+  <table>
+    <thead><tr><th>Montaria</th><th class="num">Moedas</th><th class="num">Deadcoins</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Javali</strong></td><td class="num"><span class="v m">1.000</span></td><td class="num"><span class="v dc">300</span></td></tr>
+      <tr><td><strong>Capivara, Neck, Cervo, Eikthyr</strong><small>Cada uma</small></td><td class="num sem">—</td><td class="num"><span class="v dc">300</span></td></tr>
+      <tr><td><strong>Moder</strong><small>Voa. Pede o nível Voadora e o passe da Moder</small></td><td class="num"><span class="v m">10.000</span></td><td class="num"><span class="v dc">600</span></td></tr>
+    </tbody>
+  </table>
+  <p class="muted">Javali, Capivara, Neck, Cervo e Eikthyr correm igual: muda só a aparência.</p>
+
+  <div class="nota">
+    <p><span class="tag ar">No ar</span> Todos os níveis e montarias, nos preços em moedas de Aprendiz e Experiente e em Deadcoins do resto.</p>
+    <p><span class="tag breve">Em breve</span> Pagar com moedas o Mestre, a Voadora, o Javali e o Moder.</p>
+  </div>
+
+  <div class="rodape"><span>Os valores podem mudar durante a temporada. Vale o que estiver no jogo.</span></div>
+</section>
+
+<!-- 6. Treinador -->
+<section class="prancha" id="p6">
+  <div class="topo"><span><b>Deadheim</b> · Catálogo da loja</span><span>6/7</span></div>
+  <p class="eyebrow">NPC Treinador · moedas ou Deadcoins</p>
+  <h2>Treinador <span class="tag breve">Em breve</span></h2>
+  <p>Ajuda a subir as skills. Tudo sai com moedas ou com Deadcoins.</p>
+
+  <ul class="itens">
+    <li class="item">
+      <div class="nome">Estudo</div>
+      <div class="desc"><strong>+50% de XP</strong> de skill por 60 minutos, nas skills abaixo do nível 50. Comprar de novo soma tempo, até 24 horas.</div>
+      <div class="preco"><div><span class="v m">1.000<small>moedas</small></span></div><div><span class="ou">ou</span><span class="v dc">50<small>DC</small></span></div></div>
+    </li>
+    <li class="item">
+      <div class="nome">Proteção</div>
+      <div class="desc">Ao morrer para monstro, queda ou afogamento, você perde <strong>metade</strong> da skill que perderia. Morte por jogador e pena de PK continuam inteiras.</div>
+      <div class="preco"><div><span class="v m">1.000<small>moedas</small></span></div><div><span class="ou">ou</span><span class="v dc">50<small>DC</small></span></div></div>
+    </li>
+    <li class="item">
+      <div class="nome">Aula</div>
+      <div class="desc"><strong>+1 nível</strong> numa skill. Até 5 aulas por semana. O preço sobe com o nível que a skill vai alcançar.</div>
+    </li>
+  </ul>
+
+  <table>
+    <thead><tr><th>Aula até o nível</th><th class="num">Moedas</th><th class="num">Deadcoins</th></tr></thead>
+    <tbody>
+      <tr><td>15</td><td class="num"><span class="v m">300</span></td><td class="num"><span class="v dc">15</span></td></tr>
+      <tr><td>25</td><td class="num"><span class="v m">600</span></td><td class="num"><span class="v dc">30</span></td></tr>
+      <tr><td>35</td><td class="num"><span class="v m">1.000</span></td><td class="num"><span class="v dc">50</span></td></tr>
+      <tr><td>45</td><td class="num"><span class="v m">1.600</span></td><td class="num"><span class="v dc">80</span></td></tr>
+      <tr><td>50</td><td class="num"><span class="v m">2.400</span></td><td class="num"><span class="v dc">120</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Até onde a aula leva</h3>
+  <p>O teto sobe com os seus passes de chefe. A aula nunca passa do nível 50.</p>
+  <div class="teto">
+    <div>Sem passe<b>15</b></div>
+    <div>Ancião<b>25</b></div>
+    <div>Massa Óssea<b>35</b></div>
+    <div>Moder<b>45</b></div>
+    <div>Yagluth<b>50</b></div>
+  </div>
+  <p class="muted">Exemplo: a aula que leva a skill do 29 para o 30 está na faixa até 35: 1.000 moedas ou 50 DC.</p>
+
+  <div class="rodape"><span>Os valores podem mudar durante a temporada. Vale o que estiver no jogo.</span></div>
+</section>
+
+<!-- 7. VIP Aesir -->
+<section class="prancha" id="p7">
+  <div class="topo"><span><b>Deadheim</b> · Catálogo da loja</span><span>7/7</span></div>
+  <p class="eyebrow">VIP</p>
+  <h2>Aesir</h2>
+  <p>Conforto e visual. Nada de dano, vida ou velocidade: no combate, o VIP joga igual a todo mundo.</p>
+  <div class="nota ouro">
+    <p><strong>R$ 20 por mês</strong>, com <strong>100 Deadcoins</strong> de bônus todo mês.</p>
+  </div>
+
+  <h3>O VIP já tem <span class="tag ar">No ar</span></h3>
+  <ul class="lista">
+    <li><kbd>/retreat</kbd>: volta ao ponto marcado na cama, com recarga de 30 minutos.</li>
+    <li>Loja Deadcoins de qualquer lugar do mapa, no <kbd>F7</kbd>.</li>
+    <li>Baú Aesir, de 6×6.</li>
+    <li>Portais VIP.</li>
+  </ul>
+
+  <h3>Pronto, chega no próximo update <span class="tag breve">Em breve</span></h3>
+  <div class="grupos">
+    <div class="grupo"><h4>Coleta e fazenda</h4><p><kbd>Shift</kbd> + <kbd>E</kbd> colhe tudo igual num raio de 10 m, e a plantação é replantada sozinha · abastecer fundições do mesmo tipo em área · foice e enxada sem desgaste · tempo restante ao mirar um recurso</p></div>
+    <div class="grupo"><h4>Bancada e baús</h4><p>Fabricar em lote de até 99, em 0,25 s · reparar tudo por perto com o martelo · <kbd>/depositar</kbd> completa as pilhas dos baús próximos · <kbd>/ordenar</kbd> · <kbd>/etiqueta</kbd> nomeia o baú</p></div>
+    <div class="grupo"><h4>Conforto</h4><p>Descansado mais longo · segundo ponto de retorno (<kbd>Shift</kbd> + <kbd>P</kbd> e <kbd>/retreat 2</kbd>) · mensagem ao entrar no mundo</p></div>
+    <div class="grupo"><h4>Visual</h4><p>Tag [Aesir] no nome e no chat · velas exclusivas</p></div>
+  </div>
+  <div class="nota perigo">
+    <p><strong>Muda para quem não é VIP:</strong> colher em área e fabricar em lote rápido eram de todos e passam a ser só do VIP. O resto do jogo fica como está.</p>
+  </div>
+
+  <h3>Na fila <span class="tag breve">Em breve</span></h3>
+  <p class="muted">Chegam aos poucos durante a temporada. Cada um sai no anúncio.</p>
+  <div class="grupos">
+    <div class="grupo"><h4>Fazenda e bancada</h4><p>Fabricar com os baús perto · animais e fogueiras puxam do baú</p></div>
+    <div class="grupo"><h4>Conforto</h4><p>Vaga reservada no servidor · estábulo · mais anúncios no leilão · mais anexos no correio · plantas de construção salvas</p></div>
+    <div class="grupo"><h4>Visual</h4><p>Nome e skins na montaria · chama colorida · efeito de abate · peças decorativas · lápide · comemoração na arena · transmog · pet</p></div>
+    <div class="grupo"><h4>Comunidade</h4><p>Item sazonal · Conselho Aesir, que vota no que vem a seguir · cargo e canal no Discord</p></div>
+  </div>
+
+  <div class="rodape"><span>Os valores podem mudar durante a temporada. Vale o que estiver no jogo.</span></div>
+</section>
+
+</main>
+</body>
+</html>

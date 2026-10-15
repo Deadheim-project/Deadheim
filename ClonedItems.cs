@@ -30,6 +30,10 @@ namespace Deadheim
             public string BasePrefab;
             // Peso; null = o do item-base.
             public float? Weight;
+            // Tipo do item; null = o do item-base (Trophy/Misc, nao da "Usar" no inventario).
+            // Consumable: o "Usar" chama Humanoid.UseItem, que o Cosmeticos.cs e o Lugares.cs
+            // interceptam para as fichas que se trocam sozinhas (sem passar por um NPC).
+            public ItemDrop.ItemData.ItemType? ItemType;
         }
 
         private static readonly NativeItemDefinition[] NativeItems =
@@ -43,6 +47,19 @@ namespace Deadheim
             new NativeItemDefinition { PrefabName = DeadToken.Prefab, Name = DeadToken.Nome, Description = "Moeda do Deadheim.", MaxStack = 100, Value = 0, Weight = 0.1f, Icon = "deadtoken.png", Coin = true, ThickCoin = true, BasePrefab = "Coins" },
             // Comprada com Deadcoins: nao pode virar moeda no mercador.
             new NativeItemDefinition { PrefabName = Forja.GarantiaPrefab, Name = Forja.GarantiaNome, Description = "Na Forja de Potencial, garante o sucesso do refino: o item sobe de nível em vez de quebrar. Gasta junto com o ídolo, a cada tentativa.", MaxStack = 50, Icon = "garantiarefino.png", Value = 0, Coin = true },
+            // Fichas vendidas na Loja Deadcoins (NpcValheim): compradas com Deadcoins, por isso
+            // Value = 0 (nunca viram moeda no mercador) e, por serem itens nativos (IsNativeItem),
+            // nunca caem como carga de PvP (PvpCargoKeep); vao para a tumba como qualquer item na
+            // morte normal, igual a Garantia de Refino. FichaFundador e FichaBatizar sao
+            // Consumable: "Usar" no inventario as troca sozinhas (Cosmeticos.cs/Lugares.cs). As
+            // outras tres ainda nao tem para onde ir (Barbeiro e o pacote de Halloween/temporada
+            // entram nas proximas ondas) e ficam so como item ate la.
+            new NativeItemDefinition { PrefabName = "FichaFundador", Name = "Ficha do Fundador", Description = "Use para liberar o título permanente [Fundador], de quem jogou desde a abertura do servidor.", MaxStack = 10, Icon = "fichafundador.png", Value = 0, Coin = true, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "FichaBarbeiro", Name = "Ficha do Barbeiro", Description = "Troque com o Barbeiro para mudar cabelo, barba e cores.", MaxStack = 10, Icon = "fichabarbeiro.png", Value = 0, Coin = true },
+            new NativeItemDefinition { PrefabName = "FichaHalloween", Name = "Ficha de Halloween", Description = "Troque pelo pacote de Halloween: título, vela, chama e lápide do evento.", MaxStack = 10, Icon = "fichahalloween.png", Value = 0, Coin = true },
+            new NativeItemDefinition { PrefabName = "FichaTemporada", Name = "Ficha de Temporada", Description = "Troque pelo passe de temporada: trilha de recompensas cosméticas da temporada atual.", MaxStack = 10, Icon = "fichatemporada.png", Value = 0, Coin = true },
+            new NativeItemDefinition { PrefabName = "FichaBatizar", Name = "Ficha de Batizar Lugar", Description = "Use para dar um nome a um lugar do mapa: fica marcado para todos ali onde você estiver.", MaxStack = 10, Icon = "fichabatizar.png", Value = 0, Coin = true, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "FichaBrasao", Name = "Ficha de Vela/Brasão", Description = "Troque com um admin por uma vela ou brasão de guilda sob encomenda.", MaxStack = 10, Icon = "fichabrasao.png", Value = 0, Coin = true },
             new NativeItemDefinition { PrefabName = "ArmorKit1", Name = "Basic Armor Kit I", Description = "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Guck", Icon = "armorkit1.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit2", Name = "Good Armor Kit II", Description = "Kit de itens utilizados para fabricar armaduras de refinadas de qualidade pertencente a era do ferro.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Blueberries", Icon = "armorkit2.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit3", Name = "Great Armor Kit III", Description = "Kit de itens utilizados para fabricar armaduras reluzentes beirando a perfeição, sua qualidade pertence a era da prata.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Amber", Icon = "armorkit3.png" },
@@ -193,6 +210,8 @@ namespace Deadheim
                 itemDrop.m_itemData.m_shared.m_value = definition.Value.Value;
             if (definition.Weight.HasValue)
                 itemDrop.m_itemData.m_shared.m_weight = definition.Weight.Value;
+            if (definition.ItemType.HasValue)
+                itemDrop.m_itemData.m_shared.m_itemType = definition.ItemType.Value;
             itemDrop.m_itemData.m_dropPrefab = item;
 
             ApplyMaterials(objectDb, item, definition.FirstMaterialPrefab, definition.SecondMaterialPrefab);

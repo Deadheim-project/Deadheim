@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.5.9";
+        public const string Version = "7.6.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -31,7 +31,7 @@ namespace Deadheim
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.5.9",
+            MinimumRequiredVersion = "7.6.0",
             ModRequired = true,
             IsLocked = true
         };
@@ -107,6 +107,7 @@ namespace Deadheim
             Pvp.PvpModule.Update();
             Treinador.Update(Player.m_localPlayer);
             Ajustes.AjustesMenu.Update();
+            Titulos.Tick(Player.m_localPlayer);
 
             Player localPlayer = Player.m_localPlayer;
             bool flag = Player.m_localPlayer == null;
@@ -129,8 +130,13 @@ namespace Deadheim
                                 bool keyDown = Input.GetKeyDown(KeyCode.P);
                                 if (keyDown)
                                 {
-                                    Retreat.SetHearthStonePosition();
-                                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Seu novo ponto de Retreat", 0, null);
+                                    // Aesir 18 (14/10/2026): Shift+P grava o segundo ponto, so para VIP com a chave ligada.
+                                    bool segundoPonto = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                                        && AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value
+                                        && VipList.VipListApi.IsLocalPlayerVip();
+                                    Retreat.SetHearthStonePosition(segundoPonto ? 2 : 1);
+                                    Player.m_localPlayer.Message(MessageHud.MessageType.Center,
+                                        segundoPonto ? "Seu novo segundo ponto de Retreat" : "Seu novo ponto de Retreat", 0, null);
                                 }
                             }
                         }
@@ -209,6 +215,8 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             TokensIniciais.Bind(Config);
             SkillsTeste.Bind(Config); // TEMPORARIO: remover no lancamento
             Treinador.Init();
+            AesirConfig.Bind(Config);
+            Lugares.Bind(Config);
 
             _harmony.PatchAll();
             Ajustes.AjustesMenu.Init(_harmony);

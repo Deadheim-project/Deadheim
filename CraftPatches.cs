@@ -299,9 +299,13 @@ namespace Deadheim.Craft
             Quantidade = Mathf.Clamp(Quantidade + delta, 1, QuantidadeMaxima);
         }
 
+        /// <summary>Aesir 11 (14/10/2026, decisao do usuario): fabricacao em lote (99) so para VIP.</summary>
+        private static bool SoVip => !Deadheim.AesirConfig.Aesir11SoVip.Value || VipList.VipListApi.IsLocalPlayerVip();
+
         /// <summary>Receita nova (nao melhoria) fora da Forja: so ai a quantidade vale.</summary>
         private static bool AceitaQuantidade(InventoryGui gui, Player player)
         {
+            if (!SoVip) return false;
             if (!gui.m_selectedRecipe.Recipe || gui.m_selectedRecipe.ItemData != null) return false;
             CraftingStation estacao = player ? player.GetCurrentCraftingStation() : null;
             return !(estacao && estacao.m_upgrader);
@@ -347,10 +351,21 @@ namespace Deadheim.Craft
         [HarmonyPatch(typeof(InventoryGui), "UpdateRecipe")]
         private static class FasterCrafting
         {
+            // Duracao original do jogo (antes de qualquer Prefix nosso rodar), para devolver a quem
+            // nao e VIP quando a fabricacao rapida esta restrita (Aesir 11).
+            private static float? _duracaoOriginal;
+            private static float? _duracaoLoteOriginal;
+
             private static void Prefix(InventoryGui __instance, Player player)
             {
-                __instance.m_craftDuration = TempoDeFabricacao;
-                __instance.m_multiCraftDuration = TempoDeFabricacao;
+                if (_duracaoOriginal == null)
+                {
+                    _duracaoOriginal = __instance.m_craftDuration;
+                    _duracaoLoteOriginal = __instance.m_multiCraftDuration;
+                }
+                bool rapido = SoVip;
+                __instance.m_craftDuration = rapido ? TempoDeFabricacao : _duracaoOriginal.Value;
+                __instance.m_multiCraftDuration = rapido ? TempoDeFabricacao : _duracaoLoteOriginal.Value;
 
                 // Outra receita escolhida: volta para 1.
                 if (__instance.m_selectedRecipe.Recipe != _receita || __instance.m_selectedRecipe.ItemData != _receitaItem)

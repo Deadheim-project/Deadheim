@@ -218,7 +218,131 @@ def dead():
     return finish(img, 'deadtoken.png')
 
 
-TOKENS = {'portal': portal, 'spawner': spawner, 'territory': territory, 'dead': dead}
+# ----------------------------------------------------------------- Ficha Fundador
+def fundador():
+    """Estrela de 5 pontas: quem chegou na abertura (titulo Fundador)."""
+    img = coin((255, 221, 140, 255), (120, 78, 10, 255))
+    em = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(em)
+    pts = []
+    for i in range(10):
+        r = 128 if i % 2 == 0 else 54
+        a = math.radians(i * 36 - 90)
+        pts.append((C + math.cos(a) * r, C + math.sin(a) * r))
+    d.polygon(pts, fill=(255, 238, 176, 255), outline=(90, 52, 10, 255))
+    d.line(pts + [pts[0]], fill=(90, 52, 10, 255), width=5)
+    em = glow(em, (255, 210, 110), blur=14, strength=2)
+    img = Image.alpha_composite(img, em)
+    return finish(img, 'fichafundador.png')
+
+
+# ----------------------------------------------------------------- Ficha Barbeiro
+def barbeiro():
+    """Tesoura aberta: troca de cabelo/barba no Barbeiro."""
+    img = coin((60, 90, 150, 255), (14, 22, 42, 255))
+    em = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(em)
+    silver = (225, 232, 240, 255)
+    dark = (40, 46, 56, 255)
+    # Duas laminas em X, cada uma um triangulo fino saindo do centro.
+    for sign in (-1, 1):
+        a = math.radians(35 * sign)
+        tip = (C + math.sin(a) * 150, C - 150)
+        base1 = (C - 14 * math.cos(a), C - 14 * math.sin(a) + 8)
+        base2 = (C + 14 * math.cos(a), C + 14 * math.sin(a) + 8)
+        d.polygon([tip, base1, base2], fill=silver, outline=dark)
+    # Aneis do cabo, embaixo.
+    for sign in (-1, 1):
+        d.ellipse((C + sign * 50 - 34, C + 58, C + sign * 50 + 34, C + 126), outline=dark, width=14)
+    d.ellipse((C - 16, C + 2, C + 16, C + 34), fill=dark)
+    em = glow(em, (150, 190, 255), blur=10, strength=1)
+    img = Image.alpha_composite(img, em)
+    return finish(img, 'fichabarbeiro.png')
+
+
+# --------------------------------------------------------------- Ficha Halloween
+def halloween():
+    """Abobora com brasa verde: pacote de Halloween."""
+    img = coin((255, 150, 40, 255), (60, 20, 4, 255))
+    em = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(em)
+    orange = (255, 140, 30, 255)
+    dark = (60, 18, 4, 255)
+    for dx in (-70, 0, 70):
+        d.ellipse((C + dx - 70, C - 110, C + dx + 70, C + 130), fill=orange, outline=dark, width=6)
+    d.rectangle((C - 16, C - 170, C + 16, C - 100), fill=(80, 130, 50, 255), outline=dark)
+    glowcol = (140, 255, 90, 255)
+    d.polygon([(C - 60, C - 50), (C - 20, C - 50), (C - 40, C), ], fill=glowcol)
+    d.polygon([(C + 60, C - 50), (C + 20, C - 50), (C + 40, C), ], fill=glowcol)
+    d.polygon([(C - 55, C + 55), (C + 55, C + 55), (C + 30, C + 95), (C, C + 70), (C - 30, C + 95)], fill=glowcol)
+    em = glow(em, (140, 255, 90), blur=14, strength=2)
+    img = Image.alpha_composite(img, em)
+    return finish(img, 'fichahalloween.png')
+
+
+# -------------------------------------------------------------- Ficha Temporada
+def temporada():
+    """Ampulheta: passe de temporada cosmetico."""
+    img = coin((70, 150, 170, 255), (10, 30, 42, 255))
+    em = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(em)
+    gold = (255, 214, 120, 255)
+    edge = (90, 54, 10, 255)
+    glass = (220, 245, 250, 180)
+    d.rounded_rectangle((C - 90, C - 140, C + 90, C - 118), radius=8, fill=gold, outline=edge, width=5)
+    d.rounded_rectangle((C - 90, C + 118, C + 90, C + 140), radius=8, fill=gold, outline=edge, width=5)
+    top = [(C - 80, C - 118), (C + 80, C - 118), (C + 14, C - 6), (C - 14, C - 6)]
+    bottom = [(C - 14, C + 6), (C + 14, C + 6), (C + 80, C + 118), (C - 80, C + 118)]
+    d.polygon(top, fill=glass, outline=edge)
+    d.polygon(bottom, fill=glass, outline=edge)
+    d.polygon([(C - 60, C - 100), (C + 60, C - 100), (C + 10, C - 24), (C - 10, C - 24)], fill=(200, 140, 70, 255))
+    d.polygon([(C - 10, C + 18), (C + 10, C + 18), (C + 36, C + 92), (C - 36, C + 92)], fill=(200, 140, 70, 255))
+    em = glow(em, (120, 220, 240), blur=12, strength=1)
+    img = Image.alpha_composite(img, em)
+    return finish(img, 'fichatemporada.png')
+
+
+# ---------------------------------------------------------------- Ficha Batizar
+def batizar():
+    """Marcador de mapa (pin): batizar um lugar."""
+    img = coin((70, 150, 90, 255), (10, 36, 16, 255))
+    em = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(em)
+    gold = (255, 214, 120, 255)
+    edge = (90, 54, 10, 255)
+    cx, top, r = C, C - 150, 95
+    d.ellipse((cx - r, top, cx + r, top + 2 * r), fill=gold, outline=edge, width=8)
+    d.polygon([(cx - r * 0.62, top + 1.55 * r), (cx + r * 0.62, top + 1.55 * r), (cx, C + 150)], fill=gold, outline=edge)
+    d.ellipse((cx - 36, top + r - 36, cx + 36, top + r + 36), fill=(10, 36, 16, 255))
+    em = glow(em, (255, 210, 110), blur=12, strength=1)
+    img = Image.alpha_composite(img, em)
+    return finish(img, 'fichabatizar.png')
+
+
+# ----------------------------------------------------------------- Ficha Brasao
+def brasao():
+    """Escudo: vela/brasao de guilda sob encomenda."""
+    img = coin((150, 30, 36, 255), (34, 6, 8, 255))
+    em = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(em)
+    gold = (255, 214, 120, 255)
+    edge = (70, 14, 10, 255)
+    shield = [(C - 100, C - 130), (C + 100, C - 130), (C + 100, C + 30), (C, C + 150), (C - 100, C + 30)]
+    d.polygon(shield, fill=gold, outline=edge, width=0)
+    d.line(shield + [shield[0]], fill=edge, width=8)
+    inner = (34, 6, 8, 255)
+    d.rectangle((C - 16, C - 95, C + 16, C + 70), fill=inner)
+    d.rectangle((C - 65, C - 20, C + 65, C + 12), fill=inner)
+    em = glow(em, (255, 190, 90), blur=10, strength=1)
+    img = Image.alpha_composite(img, em)
+    return finish(img, 'fichabrasao.png')
+
+
+TOKENS = {
+    'portal': portal, 'spawner': spawner, 'territory': territory, 'dead': dead,
+    'fundador': fundador, 'barbeiro': barbeiro, 'halloween': halloween,
+    'temporada': temporada, 'batizar': batizar, 'brasao': brasao,
+}
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)

@@ -46,7 +46,7 @@ namespace Deadheim
             ChanceComGarantia = Plugin.Synced(config.Bind(section, "ChanceComGarantia", 1f,
                 new ConfigDescription("Chance de sucesso de uma tentativa com garantia. 1 = 100%. Abaixo de 1, a falha segue a regra do " +
                     "idolo (no jogo, o item quebra).", new AcceptableValueRange<float>(0f, 1f))));
-            GarantiasPorNivel = Plugin.Synced(config.Bind(section, "GarantiasPorNivel", "1:1",
+            GarantiasPorNivel = Plugin.Synced(config.Bind(section, "GarantiasPorNivel", "1:1,11:2,16:3,21:0",
                 "Quantas garantias cada tentativa gasta, pelo nivel que o item vai alcancar. Lista Nivel:Quantidade: vale a do maior " +
                 "Nivel que nao passe do nivel alvo. Ex.: 1:1,15:2,21:3 = 1 garantia ate o nivel 14, 2 do 15 ao 20, 3 do 21 em diante. " +
                 "Quantidade 0 = a garantia nao vale nesses niveis. Vazio = 1 para todos."));

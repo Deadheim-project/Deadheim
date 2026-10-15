@@ -37,6 +37,11 @@ namespace MassFarming
         [HarmonyPatch(typeof(Player), "Interact")]
         public static void Prefix(Player __instance, GameObject go, bool hold, bool alt)
         {
+            // Aesir 5 (14/10/2026, decisao do usuario): colheita/extracao em massa so para VIP.
+            if (Deadheim.AesirConfig.Aesir5SoVip != null && Deadheim.AesirConfig.Aesir5SoVip.Value
+                && !VipList.VipListApi.IsLocalPlayerVip())
+                return;
+
             if (__instance.InAttack() || __instance.InDodge())
             {
                 return;

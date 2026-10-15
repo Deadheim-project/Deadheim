@@ -129,11 +129,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdminImortal.cs" />
+    <Compile Include="AesirFaceis.cs" />
     <Compile Include="AllyScaling.cs" />
     <Compile Include="Boats.cs" />
     <Compile Include="Boss.cs" />
     <Compile Include="ClonedItems.cs" />
     <Compile Include="Containers.cs" />
+    <Compile Include="Cosmeticos.cs" />
+    <Compile Include="Lugares.cs" />
     <Compile Include="CraftingStations.cs" />
     <Compile Include="CraftPatches.cs" />
     <Compile Include="DeadToken.cs" />
@@ -218,6 +221,12 @@
     <EmbeddedResource Include="assets\deadtoken.png" />
     <EmbeddedResource Include="assets\esqueletaoshield.png" />
     <EmbeddedResource Include="assets\esqueletaosword.png" />
+    <EmbeddedResource Include="assets\fichabarbeiro.png" />
+    <EmbeddedResource Include="assets\fichabatizar.png" />
+    <EmbeddedResource Include="assets\fichabrasao.png" />
+    <EmbeddedResource Include="assets\fichafundador.png" />
+    <EmbeddedResource Include="assets\fichahalloween.png" />
+    <EmbeddedResource Include="assets\fichatemporada.png" />
     <EmbeddedResource Include="assets\garantiarefino.png" />
     <EmbeddedResource Include="assets\portaltoken.png" />
     <EmbeddedResource Include="assets\spawnertoken.png" />
