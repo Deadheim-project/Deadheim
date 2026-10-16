@@ -109,12 +109,12 @@ namespace Deadheim
             //   - Corvo: prefab Crow (Raven não existe como spawnável), escala 0.6
             // Formato: id=prefab;escala;origem;speedParam;sitParam
             PetCatalog = Plugin.Synced(config.Bind("Pets", "PetCatalog",
-                "galinha=Hen;0.5;aesir;forward_speed;sleeping," +
-                "pintinho=Chicken;0.3;aesir;forward_speed;sleeping," +
-                "leitao=Boar_piggy;0.8;aesir;forward_speed;sleeping," +
-                "wolf_cub=Wolf_cub;0.5;ficha;forward_speed;sleeping," +
-                "lox_cub=Lox_Calf;0.6;ficha;forward_speed;," +
-                "corvo=Crow;0.6;ficha;forward_speed;",
+                "galinha=Hen;1;aesir;forward_speed;sleeping," +
+                "pintinho=Chicken;1;aesir;forward_speed;sleeping," +
+                "leitao=Boar_piggy;1.3;aesir;forward_speed;sleeping," +
+                "wolf_cub=Wolf_cub;1;ficha;forward_speed;sleeping," +
+                "lox_cub=Lox_Calf;0.8;ficha;forward_speed;," +
+                "corvo=Crow;1;ficha;forward_speed;",
                 new ConfigDescription("Catálogo de pets. Formato: id=prefab;escala;origem;speedParam;sitParam (separados por vírgula). speedParam=forward_speed, sitParam=sleeping ou vazio.")));
             PetCatalog.SettingChanged += (s, e) => LoadCatalog();
 
@@ -657,6 +657,14 @@ namespace Deadheim
         /// D2: pet oculto em arena, partida de arena (NpcValheim) e janela de raid.
         /// Recebe o Player para poder ler o ZDO do jogador (battleground) e a posição (arena/raid).
         /// </summary>
+        private static float _nextHideLog;
+        private static void LogHide(string why)
+        {
+            if (Time.realtimeSinceStartup < _nextHideLog) return;
+            _nextHideLog = Time.realtimeSinceStartup + 30f;
+            Debug.Log($"[Deadheim Pets] pet oculto: zona '{why}'.");
+        }
+
         private static bool ShouldHide(Player player)
         {
             string zones = PetHiddenZones.Value?.ToLowerInvariant() ?? "";
@@ -671,11 +679,11 @@ namespace Deadheim
 
                 // arena: zona geográfica configurada no Deadheim
                 if (z == "arena" && Pvp.PvpZones.IsArena(pos))
-                    return true;
+                { LogHide("arena"); return true; }
 
                 // battleground: partida de arena do NpcValheim (chave npcv_arenaMatch no ZDO do jogador)
                 if (z == "battleground" && zdo != null && zdo.GetLong(ZdoArenaMatch, 0L) != 0L)
-                    return true;
+                { LogHide("battleground"); return true; }
 
                 // raid: o castelo na posição tem uma zona de raid ativa.
                 // PvpBridge.CastleAt retorna o nome do castelo que cobre o ponto; se há um castelo
@@ -684,7 +692,7 @@ namespace Deadheim
                 {
                     string castle = Pvp.PvpBridge.CastleAt?.Invoke(pos);
                     if (castle != null && !Pvp.PvpBridge.CastleSafe(pos))
-                        return true;
+                    { LogHide("raid (" + castle + ")"); return true; }
                 }
             }
             return false;
@@ -1015,7 +1023,7 @@ namespace Deadheim
         public bool LimitHidden;
 
         private const float FollowDistance = 2.5f;
-        private const float TeleportDistance = 30f;
+        private const float TeleportDistance = 15f;
         private const float SitDelay = 5f;
 
         public void SetTarget(Player player) { _target = player; }
@@ -1136,6 +1144,9 @@ namespace Deadheim
             float walkSpeed = Def.WalkSpeed > 0f ? Def.WalkSpeed : 2f;
             float runSpeed  = Def.RunSpeed  > 0f ? Def.RunSpeed  : 5f;
             float moveSpeed = Mathf.Lerp(walkSpeed, runSpeed, Mathf.Clamp01(ownerSpeed / 6f));
+            // alcanca o dono: se ficou para tras, corre mais que ele (o pet pequeno tem passo curto)
+            float gap = Vector3.Distance(currentPos, desiredPos);
+            if (gap > 1f) moveSpeed = Mathf.Max(moveSpeed, ownerSpeed * 1.2f, Mathf.Min(gap * 2f, 12f));
             transform.position = Vector3.MoveTowards(currentPos, desiredPos, moveSpeed * Time.deltaTime);
 
             Vector3 moveDir = desiredPos - currentPos;
