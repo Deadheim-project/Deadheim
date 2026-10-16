@@ -864,6 +864,23 @@ namespace Deadheim
             }
         }
 
+        // O chat do Valheim manda "/comando" para o Terminal antes do SendText, entao o
+        // comando precisa ser registrado como ConsoleCommand (como /depositar).
+        [HarmonyPatch(typeof(Terminal), nameof(Terminal.InitTerminal))]
+        private static class PetConsolePatch
+        {
+            private static void Postfix()
+            {
+                new Terminal.ConsoleCommand("pet", "(Aesir) /pet <id>, off, nome <texto>, resgatar <id>",
+                    args =>
+                    {
+                        string[] parts = (string[])args.Args.Clone();
+                        parts[0] = "/pet";
+                        HandlePetCommand(parts);
+                    });
+            }
+        }
+
         private static void SendToServer(params string[] fields)
         {
             ZPackage pkg = new ZPackage();
