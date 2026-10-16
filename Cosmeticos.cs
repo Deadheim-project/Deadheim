@@ -32,9 +32,11 @@ namespace Deadheim
 
         // Ficha consumida (prefab) -> chave que ela libera. So a que ja tem para onde ir nesta
         // onda; Barbeiro, Halloween e Temporada entram quando os NPCs/o conteudo deles existirem.
+        // FichaPet é especial: abre uma lista de pets para escolha (implementação futura com UI).
         private static readonly Dictionary<string, string> FichaParaChave = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "FichaFundador", TituloFundador },
+            // FichaPet é tratada separadamente (abre lista de pets)
         };
 
         // ------------------------------------------------------------ armazenamento (servidor)
@@ -226,6 +228,14 @@ namespace Deadheim
             private static bool Prefix(Humanoid __instance, Inventory inventory, ItemDrop.ItemData item)
             {
                 if (__instance != Player.m_localPlayer || item?.m_dropPrefab == null || ZRoutedRpc.instance == null) return true;
+
+                // FichaPet: tratamento especial (abre lista de pets)
+                if (item.m_dropPrefab.name == "FichaPet")
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Use /pet resgatar <id> para trocar a ficha por um pet (wolf_cub, lox_cub ou corvo).");
+                    return false;
+                }
+
                 if (!FichaParaChave.TryGetValue(item.m_dropPrefab.name, out string chave)) return true;
 
                 if (LocalHas(chave))

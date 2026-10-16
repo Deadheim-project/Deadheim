@@ -108,6 +108,7 @@ namespace Deadheim
             Treinador.Update(Player.m_localPlayer);
             Ajustes.AjustesMenu.Update();
             Titulos.Tick(Player.m_localPlayer);
+            Pets.Tick();
 
             Player localPlayer = Player.m_localPlayer;
             bool flag = Player.m_localPlayer == null;
@@ -217,6 +218,8 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Treinador.Init();
             AesirConfig.Bind(Config);
             Lugares.Bind(Config);
+            Pets.BindConfigs(Config);
+            Pets.Init();
 
             _harmony.PatchAll();
             Ajustes.AjustesMenu.Init(_harmony);

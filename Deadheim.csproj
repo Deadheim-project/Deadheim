@@ -117,6 +117,14 @@
       <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
           <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.AudioModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.AnimationModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
           <Private>false</Private>
@@ -147,6 +155,7 @@
     <Compile Include="MassPickUp.cs" />
     <Compile Include="Moedas.cs" />
     <Compile Include="Montarias.cs" />
+    <Compile Include="Pets.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="SkillsTeste.cs" />
@@ -224,6 +233,7 @@
     <EmbeddedResource Include="assets\fichabarbeiro.png" />
     <EmbeddedResource Include="assets\fichabatizar.png" />
     <EmbeddedResource Include="assets\fichabrasao.png" />
+    <EmbeddedResource Include="assets\fichapet.png" />
     <EmbeddedResource Include="assets\fichafundador.png" />
     <EmbeddedResource Include="assets\fichahalloween.png" />
     <EmbeddedResource Include="assets\fichatemporada.png" />

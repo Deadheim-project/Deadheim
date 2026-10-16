@@ -1,0 +1,16 @@
+> **Briefing para agente de desenvolvimento** (leia primeiro `00-LEIA-PRIMEIRO.md` desta pasta).
+> Repositório: **Deadheim** (em D:\deadheim\). Release: **R5 Deadheim**.
+> Regras: responda em português; seja econômico (leia só o necessário, não imprima arquivos grandes, não crie subagentes); implemente SÓ este item; não faça commit, push, release nem deploy (o usuário decide); compile com `dotnet build -c Release` e informe o resultado; não sobrescreva alterações sem commit de outras sessões (confira `git status` antes); ao terminar, liste arquivos mudados e o que ficou sem teste no jogo.
+> O texto abaixo é o PROJETO; o agente confirma nomes de métodos do jogo no assembly publicizado em D:alheim-ref antes de escrever Harmony.
+
+## Aesir 10: animais e fogueiras puxam do baú
+
+**Abordagem.** Dois comportamentos para o VIP, dentro de um raio configurável (sugestão 8 m) e só baús que ele pode abrir: (a) animais domesticados (`Procreation`/`Tameable` com `MonsterAI.m_consumeItems`) acham comida em baús próximos em vez de esperar no chão; (b) fogueiras e braseiros (`Fireplace`) pegam combustível de baús próximos.
+
+**Ganchos.** Dados do jogo: `Fireplace.UpdateFireplace`/`Fireplace.Interact` (combustível), `MonsterAI.UpdateConsumeItem` (procura item no chão) e `Container` (`m_inventory`, `CheckAccess(long playerID)`). Prefixo ou postfix em `Fireplace.UpdateFireplace` quando o combustível está abaixo de um limite; achar `Container`s por `Physics.OverlapSphere` com cache de 5 s (não varrer a cada frame). Para os animais, postfix em `MonsterAI.UpdateConsumeItem`: se não achou item, procurar no baú e simular o consumo (`Container.GetInventory().RemoveItem`).
+
+**Onde a posse é checada.** Em quem tem autoridade do objeto: o dono do `ZNetView` do animal ou da fogueira (no servidor dedicado, o servidor ou o cliente mais próximo). **O dono do objeto pode não ser o VIP.** Por isso a regra é: o *dono da peça/animal* precisa ser VIP (o jogador que construiu a fogueira, gravado em `Piece.m_creator`, ou o `Tameable` com `m_owner`/`Character.m_nview "owner"`). Checar `creator` contra a lista VIP **no servidor**, que é quem executa o consumo para objetos sem cliente por perto. Se o objeto é executado por um cliente, ele não pode confiar em si mesmo: o consumo do baú tem de passar por RPC ao dono do baú ou ao servidor. Mais simples e seguro: **executar só no servidor** (dedicado) e registrar a regra para zonas carregadas.
+
+**Regras de PvP.** Baú só abre se o jogador teria acesso (ward, `Container.CheckAccess`). Zona de raid: fogueira de base inimiga **não** puxa de baú alheio durante raid. Sem puxar de baú de outro jogador/guilda.
+
+**Config** (`[AesirContainers]`): `Enabled`, `Radius=8`, `OnlyOwnerVip=true`, `PullIntervalSeconds=5`, `AllowedFuel` (lista). **Arquivos:** `Containers.cs` (já existe; reaproveitar a busca), novo `AesirPull.cs`. **Riscos:** custo de varredura com muitas fogueiras (cache e intervalo); duplicação de consumo entre servidor e cliente; o baú de outro jogador. **Teste:** fogueira de VIP acende puxando madeira; fogueira de não-VIP não; baú fora do raio não; baú trancado/ward alheio não; animal come do baú. **Esforço:** 2 dias. **Faz par com o 13** (mesma busca de baús, mesma regra de posse).

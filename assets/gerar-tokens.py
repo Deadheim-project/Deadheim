@@ -338,10 +338,33 @@ def brasao():
     return finish(img, 'fichabrasao.png')
 
 
+# ------------------------------------------------------------------- Ficha Pet
+def pet():
+    """Pata de animal: pet cosmético."""
+    img = coin((180, 130, 90, 255), (60, 40, 10, 255))
+    em = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(em)
+    brown = (180, 140, 100, 255)
+    dark = (60, 40, 10, 255)
+    # Pata: dedo grande no centro, dois pequenos em cima
+    # Dedo grande
+    d.ellipse((C - 45, C - 40, C + 45, C + 70), fill=brown, outline=dark, width=6)
+    # Dedos pequenos
+    d.ellipse((C - 95, C - 100, C - 45, C - 40), fill=brown, outline=dark, width=6)
+    d.ellipse((C + 45, C - 100, C + 95, C - 40), fill=brown, outline=dark, width=6)
+    # Almofadas
+    d.ellipse((C - 20, C + 30, C + 20, C + 70), fill=dark)
+    d.ellipse((C - 70, C - 60, C - 30, C - 20), fill=dark)
+    d.ellipse((C + 30, C - 60, C + 70, C - 20), fill=dark)
+    em = glow(em, (255, 210, 140), blur=12, strength=1)
+    img = Image.alpha_composite(img, em)
+    return finish(img, 'fichapet.png')
+
+
 TOKENS = {
     'portal': portal, 'spawner': spawner, 'territory': territory, 'dead': dead,
     'fundador': fundador, 'barbeiro': barbeiro, 'halloween': halloween,
-    'temporada': temporada, 'batizar': batizar, 'brasao': brasao,
+    'temporada': temporada, 'batizar': batizar, 'brasao': brasao, 'pet': pet,
 }
 
 if __name__ == '__main__':
