@@ -834,10 +834,15 @@ namespace Deadheim
 
             var scripts = root.GetComponentsInChildren<MonoBehaviour>(true)
                 .Where(m => m != null && !IsUnityType(m.GetType()) && !(m is ZNetView))
-                .OrderByDescending(m => Depth(m.GetType()))
+                .OrderBy(m => m is Character ? 1 : 0)   // CharacterDrop etc. dependem de Humanoid: Character por ultimo
+                .ThenByDescending(m => Depth(m.GetType()))
                 .ToList();
             foreach (MonoBehaviour m in scripts)
                 if (m != null) UnityEngine.Object.DestroyImmediate(m);
+
+            // segunda passada: o que resistiu na primeira (dependencia entre componentes)
+            foreach (MonoBehaviour m in root.GetComponentsInChildren<MonoBehaviour>(true))
+                if (m != null && !IsUnityType(m.GetType()) && !(m is ZNetView)) UnityEngine.Object.DestroyImmediate(m);
 
             foreach (ZNetView z in root.GetComponentsInChildren<ZNetView>(true)) UnityEngine.Object.DestroyImmediate(z);
             foreach (Rigidbody r in root.GetComponentsInChildren<Rigidbody>(true)) UnityEngine.Object.DestroyImmediate(r);
