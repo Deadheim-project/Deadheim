@@ -138,6 +138,7 @@
   <ItemGroup>
     <Compile Include="AdminImortal.cs" />
     <Compile Include="AesirFaceis.cs" />
+    <Compile Include="AesirPull.cs" />
     <Compile Include="AllyScaling.cs" />
     <Compile Include="Boats.cs" />
     <Compile Include="Boss.cs" />

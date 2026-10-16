@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using Deadheim.Vanilla;
 
 namespace Deadheim
 {
@@ -20,6 +21,9 @@ namespace Deadheim
         private const string ZdoPetNameKey = "dh_petnome";
         private const string RpcToServer = "DH_Pet_ToServer";
         private const string RpcToClient = "DH_Pet_ToClient";
+        // D3: tabela de verdade (servidor envia, clientes obedecem)
+        private const string RpcSync = "DH_Pet_Sync";
+        private const string RpcRequestSync = "DH_Pet_RequestSync";
 
         // Configurações sincronizadas
         public static ConfigEntry<bool> PetEnabled;
@@ -42,6 +46,19 @@ namespace Deadheim
         // Para o Update: última vez que varreu os jogadores
         private static float _lastScanTime;
         private const float ScanInterval = 1f;
+
+        // D3: tabela servidor playerId → (petId, nome) — enviada a todos os clientes
+        // No servidor: preenchida por OnToServer. No cliente: recebida por OnSync.
+        private struct PetEntry { public string PetId; public string Name; }
+        private static readonly Dictionary<long, PetEntry> _serverTable = new Dictionary<long, PetEntry>();
+        private static float _lastVipCheck;
+        // Restauração do pet salvo após relogar ou reiniciar o servidor: o cliente reenvia "set"
+        // quando a tabela do servidor não tem a entrada dele.
+        private static bool _tableReceived;
+        private static bool _restoring;
+        private static float _nextRestore;
+        private static int _restoreTries;
+        private const float VipCheckInterval = 60f;
 
         // Pai inativo dos moldes de pet (como MountPrefab.Hidden)
         private static Transform _hiddenRoot;
@@ -237,13 +254,86 @@ namespace Deadheim
                 if (ZRoutedRpc.instance == null) return;
                 ZRoutedRpc.instance.Register<ZPackage>(RpcToServer, OnToServer);
                 ZRoutedRpc.instance.Register<ZPackage>(RpcToClient, OnToClient);
+                ZRoutedRpc.instance.Register<ZPackage>(RpcSync, OnSync);
+                ZRoutedRpc.instance.Register<ZPackage>(RpcRequestSync, OnRequestSync);
+            }
+        }
+
+        // D3: cliente pede a tabela ao servidor ao spawnar
+        [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
+        private static class PlayerOnSpawnedPatch
+        {
+            private static void Postfix(Player __instance)
+            {
+                if (__instance != Player.m_localPlayer) return;
+                if (ZRoutedRpc.instance == null) return;
+                // Cliente requisita a tabela completa ao servidor
+                ZRoutedRpc.instance.InvokeRoutedRPC(
+                    ZRoutedRpc.instance.GetServerPeerID(),
+                    RpcRequestSync,
+                    new ZPackage());
             }
         }
 
         [HarmonyPatch(typeof(Game), nameof(Game.Logout))]
         private static class LogoutPatch
         {
-            private static void Prefix() => DestroyAll();
+            private static void Prefix()
+            {
+                DestroyAll();
+                // D3: limpar tabela local ao deslogar
+                _serverTable.Clear();
+                _tableReceived = false;
+                _restoring = false;
+                _restoreTries = 0;
+            }
+        }
+
+        // D3: envia tabela completa a um peer (ao entrar no servidor) ou mudança individual a todos.
+        private static void BroadcastSync(long targetPeer = ZRoutedRpc.Everybody)
+        {
+            if (ZRoutedRpc.instance == null || !ZNet.instance.IsServer()) return;
+            ZPackage pkg = new ZPackage();
+            pkg.Write(_serverTable.Count);
+            foreach (var kv in _serverTable)
+            {
+                pkg.Write(kv.Key);          // playerId
+                pkg.Write(kv.Value.PetId);
+                pkg.Write(kv.Value.Name);
+            }
+            ZRoutedRpc.instance.InvokeRoutedRPC(targetPeer, RpcSync, pkg);
+        }
+
+        // D3: recebida no cliente: substitui a tabela local pela do servidor.
+        private static void OnSync(long sender, ZPackage pkg)
+        {
+            if (ZRoutedRpc.instance == null) return;
+            // Só aceita do servidor
+            if (sender != ZRoutedRpc.instance.GetServerPeerID()) return;
+            try
+            {
+                _serverTable.Clear();
+                _tableReceived = true;
+                int count = pkg.ReadInt();
+                for (int i = 0; i < count; i++)
+                {
+                    long playerId = pkg.ReadLong();
+                    string petId = pkg.ReadString();
+                    string name = pkg.ReadString();
+                    _serverTable[playerId] = new PetEntry { PetId = petId, Name = name };
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Deadheim Pets] Erro em OnSync: {ex.Message}");
+            }
+        }
+
+        // D3: servidor recebe pedido de tabela completa de um cliente recém-conectado.
+        private static void OnRequestSync(long sender, ZPackage _pkg)
+        {
+            if (ZNet.instance == null || !ZNet.instance.IsServer()) return;
+            BroadcastSync(sender);
         }
 
         // Servidor: valida posse e responde. Quem grava no ZDO é o cliente dono (o ZDO é dele).
@@ -264,6 +354,9 @@ namespace Deadheim
 
                 if (op == "off")
                 {
+                    // D3: remover da tabela e sincronizar
+                    _serverTable.Remove(peer.PlayerId);
+                    BroadcastSync();
                     SendResponse(real, op, true, "", "", "");
                     return;
                 }
@@ -271,6 +364,12 @@ namespace Deadheim
                 if (op == "nome")
                 {
                     string newName = SanitizeName(pkg.ReadString());
+                    // D3: atualizar o nome na tabela (se o pet estiver ativo)
+                    if (_serverTable.TryGetValue(peer.PlayerId, out PetEntry entry))
+                    {
+                        _serverTable[peer.PlayerId] = new PetEntry { PetId = entry.PetId, Name = newName };
+                        BroadcastSync();
+                    }
                     SendResponse(real, op, true, "", "", newName);
                     return;
                 }
@@ -290,6 +389,9 @@ namespace Deadheim
                         SendResponse(real, op, false, "Você não tem este pet.", "", "");
                         return;
                     }
+                    // D3: gravar na tabela e sincronizar com todos
+                    _serverTable[peer.PlayerId] = new PetEntry { PetId = def.Id, Name = name };
+                    BroadcastSync();
                     SendResponse(real, op, true, "", def.Id, name);
                     Debug.Log($"[Deadheim Pets] {peer.Name} ativou o pet '{def.Id}'.");
                 }
@@ -363,7 +465,9 @@ namespace Deadheim
 
                 if (!success)
                 {
-                    lp.Message(MessageHud.MessageType.TopLeft, message);
+                    // Falha numa restauração automática: sem mensagem (para no limite de tentativas).
+                    if (op == "set" && _restoring) _restoring = false;
+                    else lp.Message(MessageHud.MessageType.TopLeft, message);
                     // D1: resgatar falhou → não remover a ficha (nada a fazer aqui).
                     return;
                 }
@@ -371,7 +475,8 @@ namespace Deadheim
                 if (op == "set")
                 {
                     WriteLocal(petId, name, true, !string.IsNullOrEmpty(name));
-                    lp.Message(MessageHud.MessageType.Center, "Pet ativado!");
+                    if (_restoring) _restoring = false; // restauração automática: sem mensagem
+                    else lp.Message(MessageHud.MessageType.Center, "Pet ativado!");
                 }
                 else if (op == "off")
                 {
@@ -407,6 +512,14 @@ namespace Deadheim
             if (_catalog == null || !PetEnabled.Value || !_catalogLoaded || ZNetScene.instance == null) return;
 
             float now = Time.realtimeSinceStartup;
+
+            // D3: revalidação VIP a cada 60 s (no servidor: remove Aesir de quem perdeu o VIP)
+            if (ZNet.instance != null && ZNet.instance.IsServer() && now - _lastVipCheck > VipCheckInterval)
+            {
+                _lastVipCheck = now;
+                CheckVipExpiry();
+            }
+
             if (now - _lastScanTime < ScanInterval) return;
             _lastScanTime = now;
 
@@ -420,6 +533,38 @@ namespace Deadheim
             }
         }
 
+        // D3: remove da tabela pets Aesir de jogadores que perderam o VIP.
+        private static void CheckVipExpiry()
+        {
+            bool changed = false;
+            foreach (var kv in _serverTable.ToList())
+            {
+                long playerId = kv.Key;
+                string petId = kv.Value.PetId;
+
+                // Quem saiu do servidor sai da tabela; ao voltar, o cliente reenvia o pet salvo.
+                if (!Pvp.PvpPeer.TryFindByPlayerId(playerId, out _))
+                {
+                    _serverTable.Remove(playerId);
+                    changed = true;
+                    continue;
+                }
+
+                if (!_catalog.TryGetValue(petId, out PetDef def)) continue;
+                if (def.Origin != "aesir") continue;
+
+                // Encontrar o peerId a partir do playerId
+                if (!Pvp.PvpPeer.TryFindByPlayerId(playerId, out Pvp.PvpPeer peer)) continue;
+                if (!IsVipPeer(peer.PeerId))
+                {
+                    _serverTable.Remove(playerId);
+                    changed = true;
+                    Debug.Log($"[Deadheim Pets] Pet Aesir de {peer.Name} (playerId={playerId}) removido por perda de VIP.");
+                }
+            }
+            if (changed) BroadcastSync();
+        }
+
         /// <summary>Depois de relogar o ZDO do jogador é novo: republica o pet guardado no personagem.</summary>
         private static void RepublishLocal(Player lp)
         {
@@ -428,9 +573,23 @@ namespace Deadheim
             if (zdo.GetString(ZdoPetKey, "").Length > 0) return;
             if (!lp.m_customData.TryGetValue(ZdoPetKey, out string saved) || string.IsNullOrEmpty(saved)) return;
             if (!_catalog.TryGetValue(saved, out PetDef def) || !LocalOwns(def)) return;
+            lp.m_customData.TryGetValue(ZdoPetNameKey, out string n);
             zdo.Set(ZdoPetKey, saved);
-            if (lp.m_customData.TryGetValue(ZdoPetNameKey, out string n) && !string.IsNullOrEmpty(n))
-                zdo.Set(ZdoPetNameKey, n);
+            if (!string.IsNullOrEmpty(n)) zdo.Set(ZdoPetNameKey, n);
+
+            // Os outros clientes só mostram o pet que a tabela do servidor confirma. Depois de
+            // relogar ou de um restart a entrada some: pede ao servidor de novo (sem mensagem),
+            // com intervalo e limite de tentativas.
+            long myId = lp.GetPlayerID();
+            bool inTable = _serverTable.TryGetValue(myId, out PetEntry mine) && mine.PetId == saved;
+            if (inTable) { _restoreTries = 0; return; }
+            if (!_tableReceived || _restoreTries >= 6 || ZRoutedRpc.instance == null) return;
+            float now = Time.realtimeSinceStartup;
+            if (now < _nextRestore) return;
+            _nextRestore = now + 10f;
+            _restoreTries++;
+            _restoring = true;
+            SendToServer("set", saved, n ?? "");
         }
 
         private static void ScanPlayers()
@@ -469,7 +628,23 @@ namespace Deadheim
                     continue;
                 }
 
-                UpdateOrCreatePet(player, def, zdo.GetString(ZdoPetNameKey, ""));
+                // D3: para pets de outros jogadores, verificar a tabela do servidor.
+                // O jogador local confia em si mesmo (ZDO é o dele).
+                // Clientes remotos só mostram o pet se a tabela do servidor confirmar.
+                if (!isLocal)
+                {
+                    if (!_serverTable.TryGetValue(playerId, out PetEntry tableEntry) || tableEntry.PetId != petId)
+                    {
+                        DestroyPet(playerId);
+                        continue;
+                    }
+                }
+
+                string petName = isLocal
+                    ? zdo.GetString(ZdoPetNameKey, "")
+                    : (_serverTable.TryGetValue(playerId, out PetEntry nameEntry) ? nameEntry.Name : "");
+
+                UpdateOrCreatePet(player, def, petName);
             }
 
             foreach (long id in _activePets.Keys.ToList())
@@ -721,6 +896,40 @@ namespace Deadheim
             if (sub == "nome")
             {
                 SendToServer("nome", parts.Length > 2 ? string.Join(" ", parts.Skip(2)) : "");
+                return;
+            }
+
+            // /pet debug: só admin — lista parâmetros do Animator de cada prefab do catálogo
+            if (sub == "debug")
+            {
+                if (!Vanilla.Admin.LocalPlayerIsAdmin())
+                {
+                    lp.Message(MessageHud.MessageType.Center, "Só admin.");
+                    return;
+                }
+                if (_catalog == null || ZNetScene.instance == null)
+                {
+                    lp.Message(MessageHud.MessageType.Center, "Catálogo ou cena não disponível.");
+                    return;
+                }
+                foreach (PetDef def in _catalog.Values)
+                {
+                    GameObject original = ZNetScene.instance.GetPrefab(def.PrefabName);
+                    if (original == null)
+                    {
+                        Debug.Log($"[Deadheim Pets] /pet debug: prefab '{def.PrefabName}' não encontrado.");
+                        continue;
+                    }
+                    Animator anim = original.GetComponentInChildren<Animator>();
+                    if (anim == null)
+                    {
+                        Debug.Log($"[Deadheim Pets] /pet debug: '{def.PrefabName}' sem Animator.");
+                        continue;
+                    }
+                    string paramList = string.Join(", ", anim.parameters.Select(p => $"{p.name}({p.type})"));
+                    Debug.Log($"[Deadheim Pets] /pet debug [{def.Id}] {def.PrefabName}: {paramList}");
+                }
+                lp.Message(MessageHud.MessageType.Center, "Parâmetros do Animator no log do jogo.");
                 return;
             }
 
