@@ -120,6 +120,33 @@ namespace Deadheim
             }
         }
 
+        // Construcao: o martelo pergunta HaveRequirements(Piece, CanBuild) a cada frame (fantasma
+        // vermelho/branco) e ao colocar. O consumo passa pelo ConsumeResources abaixo, o mesmo da
+        // fabricacao.
+        [HarmonyPatch(typeof(Player), "HaveRequirements", new[] { typeof(Piece), typeof(Player.RequirementMode) })]
+        private static class HavePieceRequirementsPatch
+        {
+            private static void Postfix(Player __instance, Piece piece, Player.RequirementMode mode, ref bool __result)
+            {
+                if (__result || _busy || piece == null || mode != Player.RequirementMode.CanBuild) return;
+                if (!Active(__instance)) return;
+                Inventory inv = __instance.GetInventory();
+                if (inv == null) return;
+
+                foreach (Piece.Requirement req in piece.m_resources)
+                {
+                    string name = SharedName(req);
+                    if (string.IsNullOrEmpty(name)) continue;
+                    int need = req.m_amount;
+                    if (need <= 0) continue;
+                    int have = inv.CountItems(name, -1, false);
+                    if (have >= need) continue;
+                    if (have + InChests(__instance, name) < need) return;   // continua faltando
+                }
+                __result = true;
+            }
+        }
+
         [HarmonyPatch(typeof(Player), "ConsumeResources")]
         private static class ConsumePatch
         {
