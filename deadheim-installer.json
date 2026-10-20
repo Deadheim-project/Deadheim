@@ -17,7 +17,6 @@
     { "source": "thunderstore", "namespace": "Dreanegade", "name": "Hunter_Legacy", "version": "1.0.6" },
     { "source": "thunderstore", "namespace": "Dreanegade", "name": "Magic_Supremacy", "version": "2.1.9" },
     { "source": "thunderstore", "namespace": "Azumatt", "name": "AzuExtendedPlayerInventory", "version": "2.4.1" },
-    { "source": "thunderstore", "namespace": "Azumatt", "name": "MaxPlayerCount", "version": "1.2.4" },
     { "source": "thunderstore", "namespace": "Azumatt", "name": "AzuAntiCheat", "version": "4.3.11" },
     { "source": "thunderstore", "namespace": "Azumatt", "name": "AzuClock", "version": "1.0.5" },
     { "source": "thunderstore", "namespace": "WackyMole", "name": "WackyEpicMMOSystem", "version": "1.9.59" },
