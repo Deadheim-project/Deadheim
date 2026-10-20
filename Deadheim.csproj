@@ -79,6 +79,10 @@
       <HintPath>$(ValheimManaged)\UnityEngine.dll</HintPath>
           <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
           <Private>false</Private>
@@ -160,6 +164,7 @@
     <Compile Include="Montarias.cs" />
     <Compile Include="Pets.cs" />
     <Compile Include="PetDrops.cs" />
+    <Compile Include="Transmog.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="SkillsTeste.cs" />

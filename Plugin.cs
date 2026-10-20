@@ -222,6 +222,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             VipSlotsConfig.Bind(Config);
             Lugares.Bind(Config);
             Pets.BindConfigs(Config);
+            Transmog.BindConfigs(Config);
             Pets.Init();
             PetDrops.BindConfigs(Config);
             PetDrops.Init();
