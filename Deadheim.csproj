@@ -139,6 +139,8 @@
     <Compile Include="AdminImortal.cs" />
     <Compile Include="AesirFaceis.cs" />
     <Compile Include="AesirPull.cs" />
+    <Compile Include="AesirCraft.cs" />
+    <Compile Include="VipSlots.cs" />
     <Compile Include="AllyScaling.cs" />
     <Compile Include="Boats.cs" />
     <Compile Include="Boss.cs" />
@@ -157,6 +159,7 @@
     <Compile Include="Moedas.cs" />
     <Compile Include="Montarias.cs" />
     <Compile Include="Pets.cs" />
+    <Compile Include="PetDrops.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="SkillsTeste.cs" />
@@ -235,6 +238,12 @@
     <EmbeddedResource Include="assets\fichabatizar.png" />
     <EmbeddedResource Include="assets\fichabrasao.png" />
     <EmbeddedResource Include="assets\fichapet.png" />
+    <EmbeddedResource Include="assets\pet-galinha.png" />
+    <EmbeddedResource Include="assets\pet-pintinho.png" />
+    <EmbeddedResource Include="assets\pet-leitao.png" />
+    <EmbeddedResource Include="assets\pet-wolf_cub.png" />
+    <EmbeddedResource Include="assets\pet-lox_cub.png" />
+    <EmbeddedResource Include="assets\pet-corvo.png" />
     <EmbeddedResource Include="assets\fichafundador.png" />
     <EmbeddedResource Include="assets\fichahalloween.png" />
     <EmbeddedResource Include="assets\fichatemporada.png" />

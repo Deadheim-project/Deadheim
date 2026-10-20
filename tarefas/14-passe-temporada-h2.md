@@ -18,3 +18,13 @@
 **PvP.** Nenhum desafio de PvP; nenhuma recompensa dá vantagem. Sem "ranking de temporada" público (evita farm).
 
 **Config** (`[Season]`): `Enabled`, `SeasonId`, `Start`, `End`, `PointsPerLevel`, `FreeLevels=3`, `Rewards` (nível=chave). **Arquivos:** NpcValheim `Npc/SeasonHeraldNpc.cs`, `UI/SeasonWindow.cs`, `Persistence/SeasonDatabase.cs`; Deadheim: só as chaves. **Riscos:** o maior item novo de UI; balancear pontos. **Teste:** concluir desafio, pontos sobem; abate PvP não conta; comprar a ficha libera retroativo; virar a semana reinicia desafios; fim da temporada congela. **Esforço:** 4 a 5 dias. Entregar depois do Halloween, em novembro.
+
+---
+
+## Resultado da implementação (2026-10-19, sessão npc-valheim, sem commit)
+
+**Feito (NpcValheim, compila: 0 avisos, 0 erros):** Arauto da Temporada (`NpcValheim_Season`), 10 níveis (3 grátis), passe de 500 DC cobrado no próprio Arauto (retroativo), 3 desafios semanais sorteados de forma determinística (Kill/Gather/Talk, nada de PvP), recompensas por chave de `CosmeticosApi.Grant` (por reflexão), progresso em `season.db`.
+**Arquivos novos:** `Npc/Season.cs`, `Npc/SeasonHeraldNpc.cs`, `Persistence/SeasonDatabase.cs`, `Integration/DeadheimCosmeticsApi.cs`, `UI/SeasonView.cs`.
+**Arquivos alterados:** `Plugin.cs` (config `[Season]`, abrir/fechar `season.db`), `Npc/QuestProgressNetwork.cs` (2 chamadas a `Season.OnEvent`), `Npc/ServiceNpcAuthority.cs`, `Prefabs/NpcPrefabFactory.cs`, `UI/NpcWindow.cs`. Deadheim: nenhum código (só este rodapé).
+**Não testado no jogo:** tudo (concluir desafio, abate PvP não contar, compra retroativa, virada de semana, fim da temporada, 2 clientes).
+**Pendências:** (1) `Enabled=false` por padrão; ligar e conferir `Start`/`End`. (2) Chaves `vela:`, `chama:`, `lapide:`, `abate:` e `pet:temporada1/2` são só registradas; o efeito depende dos itens 29/31/33/vela/pet. Os dois pets são placeholders. (3) O `Titulos` do Deadheim só exibe `titulo:fundador`; `titulo:temporada1`/`campeao_t1` ainda não aparecem no chat. (4) Falta o ícone `Assets/Icons/season.png` (usa o da caixa postal). (5) Desafio Explore ficou de fora; Gather é farmável soltando e pegando o item (mesmo risco dos quests). (6) Para compilar neste worktree criei a junção `.claude/worktrees/Deadheim` -> `D:\deadheim\Deadheim` (o csproj usa `..\..\Deadheim`); ela não entra no git.

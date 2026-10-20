@@ -24,3 +24,13 @@
 **Teste.** (1) Trocar com ficha: aplica, ficha some. (2) Cancelar: volta ao antigo, ficha fica. (3) Sem ficha: bloqueado. (4) Relogar: persiste. (5) Segundo cliente vê o novo cabelo. (6) Spam de clique: cobra uma vez.
 
 **Esforço:** 2 dias (a UI toma metade). **Antes de pronto, tirar a FichaBarbeiro da loja** (já está em `DefaultItems`).
+
+---
+
+## Resultado (2026-10-19, sessão blissful-mendel, sem commit)
+
+Compila (0 erros). Arquivos: `NpcValheim/Npc/Barber.cs`, `Npc/BarberNpc.cs`, `UI/BarberView.cs`, `UI/NpcViewBase.cs` (`Destroy` virtual), `Assets/Icons/barber.png` (cópia provisória do trainer.png), `README.md` (seção "Barbeiro", com como ligar).
+- Corrigido: (1) `Barber.Register` agora chama `BarberNet.Register` (o RPC de resposta existe nos dois lados; só aceita remetente autoritativo). (2) Ficha cobrada uma vez: o servidor emite autorização de uso único (20 s, uma por jogador) e o cliente dono remove 1 ficha só ao receber o "ok" que esperava; botão travado enquanto espera. O servidor dedicado não vê o inventário, então não confere a ficha. (3) Cor do cabelo/pele validada contra `HairColors`/`SkinColors` (paleta `r,g,b|...`, vazia = livre 0..1; a UI encaixa na cor da paleta). (4) Servidor não aplica nada; o cliente grava. (5) `NpcRequestGuard.AllowNearby` (6 m, limite de frequência). (6) Spike: lendo o assembly, o visual fica em `Humanoid.m_hairItem/m_beardItem` e `Player.m_hairColor/m_skinColor`, gravados por `Player.Save` e recopiados ao `VisEquipment` por `SetupVisEquipment`; a versão antiga mexia só no `VisEquipment` (desfeito no quadro seguinte, não salvo). Agora usa `Player.SetHair/SetBeard/SetHairColor/SetSkinColor`.
+- NPC criável: já estava registrado em `NpcPrefabFactory` e em `AllowedTargets`; faltava o ícone.
+- Continua DESLIGADO (`[Barber] Enabled=false`). `FichaBarbeiro` continua FORA da loja.
+- Sem teste no jogo: tudo (aplicar, cancelar, sem ficha, relogar, 2º cliente, spam, distância, paleta). Em especial a persistência após relogar e a posição dos sliders/dropdown da UI (não foi vista em tela). Bug de cultura (vírgula decimal) tratado com InvariantCulture.

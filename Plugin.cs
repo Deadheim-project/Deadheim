@@ -218,9 +218,13 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Treinador.Init();
             AesirConfig.Bind(Config);
             AesirPullConfig.Bind(Config);
+            AesirCraftConfig.Bind(Config);
+            VipSlotsConfig.Bind(Config);
             Lugares.Bind(Config);
             Pets.BindConfigs(Config);
             Pets.Init();
+            PetDrops.BindConfigs(Config);
+            PetDrops.Init();
 
             _harmony.PatchAll();
             Ajustes.AjustesMenu.Init(_harmony);
