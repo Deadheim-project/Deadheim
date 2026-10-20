@@ -469,9 +469,9 @@ namespace Deadheim
         private static bool ServerWardBlocks(Vector3 pos, long playerId)
         {
             if (Wards.WardBridge.Governed(pos)) return false;
-            foreach (PrivateArea area in PrivateArea.m_allAreas)
+            foreach (PrivateArea area in Priv.AllAreas())
             {
-                if (area == null || !area.IsEnabled() || !area.IsInside(pos, 0f)) continue;
+                if (area == null || !Priv.AreaEnabled(area) || !Priv.AreaInside(area, pos, 0f)) continue;
                 if (Wards.WardCore.IsPermittedIn(area, playerId)) continue;
                 return true;
             }
@@ -679,12 +679,12 @@ namespace Deadheim
                 r.NextAt = Time.time + 0.5f;
                 return;
             }
-            if (piece.m_craftingStation != null && !lp.m_noPlacementCost
+            if (piece.m_craftingStation != null && !Priv.NoPlacementCost(lp)
                 && CraftingStation.HaveBuildStationInRange(piece.m_craftingStation.m_name, pos) == null)
             {
                 r.Skipped++; r.Idx++; return;
             }
-            if (!lp.m_noPlacementCost && !lp.HaveRequirements(piece, Player.RequirementMode.CanBuild))
+            if (!Priv.NoPlacementCost(lp) && !lp.HaveRequirements(piece, Player.RequirementMode.CanBuild))
             {
                 r.Waiting = "Falta material para " + Localization.instance.Localize(piece.m_name) + ". Pegue mais ou cancele.";
                 r.NextAt = Time.time + 1f;
@@ -714,7 +714,7 @@ namespace Deadheim
         private static void PlaceApproved(Player lp, Run r, Piece piece, Vector3 pos, Quaternion rot)
         {
             lp.PlacePiece(piece, pos, rot, false);
-            if (!lp.m_noPlacementCost && !ZoneSystem.instance.GetGlobalKey(piece.FreeBuildKey()))
+            if (!Priv.NoPlacementCost(lp) && !ZoneSystem.instance.GetGlobalKey(piece.FreeBuildKey()))
                 lp.ConsumeResources(piece.m_resources, 0);
             r.Placed++;
             r.Idx++;

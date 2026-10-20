@@ -77,6 +77,22 @@ namespace Deadheim
         internal static Piece FirePiece(Fireplace f) => FirePieceField?.GetValue(f) as Piece;
         internal static Animator Animator(BaseAI ai) => AnimatorField?.GetValue(ai) as Animator;
         internal static void ResetFeedingTimer(Tameable t) => ResetFeedingMethod?.Invoke(t, null);
+
+        // Acessos privados usados por PetDrops, Plantas e Transmog.
+        private static readonly System.Reflection.FieldInfo LastHitField = AccessTools.Field(typeof(Character), "m_lastHit");
+        private static readonly System.Reflection.FieldInfo AllAreasField = AccessTools.Field(typeof(PrivateArea), "m_allAreas");
+        private static readonly System.Reflection.MethodInfo AreaIsEnabled = AccessTools.Method(typeof(PrivateArea), "IsEnabled");
+        private static readonly System.Reflection.MethodInfo AreaIsInside = AccessTools.Method(typeof(PrivateArea), "IsInside", new[] { typeof(Vector3), typeof(float) });
+        private static readonly System.Reflection.FieldInfo NoPlacementCostField = AccessTools.Field(typeof(Player), "m_noPlacementCost");
+        private static readonly System.Reflection.FieldInfo VisNviewField = AccessTools.Field(typeof(VisEquipment), "m_nview");
+
+        internal static HitData LastHit(Character c) => LastHitField?.GetValue(c) as HitData;
+        internal static List<PrivateArea> AllAreas() => AllAreasField?.GetValue(null) as List<PrivateArea> ?? new List<PrivateArea>();
+        internal static bool AreaEnabled(PrivateArea a) => AreaIsEnabled != null && (bool)AreaIsEnabled.Invoke(a, null);
+        internal static bool AreaInside(PrivateArea a, Vector3 pos, float radius) =>
+            AreaIsInside != null && (bool)AreaIsInside.Invoke(a, new object[] { pos, radius });
+        internal static bool NoPlacementCost(Player p) => NoPlacementCostField != null && (bool)NoPlacementCostField.GetValue(p);
+        internal static ZNetView VisNview(VisEquipment v) => VisNviewField?.GetValue(v) as ZNetView;
     }
 
     internal static class AesirChests

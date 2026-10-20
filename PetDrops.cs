@@ -73,7 +73,7 @@ namespace Deadheim
 
         private static bool KilledByPlayerSide(Character victim)
         {
-            Character attacker = victim.m_lastHit?.GetAttacker();
+            Character attacker = Priv.LastHit(victim)?.GetAttacker();
             if (!attacker) return false;
             return attacker.IsPlayer() || attacker.IsTamed();
         }

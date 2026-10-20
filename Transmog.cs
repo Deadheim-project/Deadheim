@@ -400,8 +400,8 @@ namespace Deadheim
         /// <summary>Hash da aparencia para o item real nesse VisEquipment (ou o proprio hash).</summary>
         internal static int Swap(VisEquipment vis, int hash)
         {
-            if (hash == 0 || vis == null || !vis.m_isPlayer || vis.m_nview == null) return hash;
-            ZDO zdo = vis.m_nview.GetZDO();
+            if (hash == 0 || vis == null || !vis.m_isPlayer || Priv.VisNview(vis) == null) return hash;
+            ZDO zdo = Priv.VisNview(vis).GetZDO();
             if (zdo == null) return hash;
             string raw = zdo.GetString(ZdoKey, "");
             if (raw.Length == 0) return hash;
