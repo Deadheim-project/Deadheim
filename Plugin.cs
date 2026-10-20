@@ -219,6 +219,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             AesirConfig.Bind(Config);
             AesirPullConfig.Bind(Config);
             Lugares.Bind(Config);
+            Plantas.Bind(Config);
             Pets.BindConfigs(Config);
             Pets.Init();
 

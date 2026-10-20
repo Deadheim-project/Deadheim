@@ -91,6 +91,10 @@
       <HintPath>$(ValheimManaged)\UnityEngine.InputForUIModule.dll</HintPath>
           <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ValheimManaged)/UnityEngine.IMGUIModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>$(ValheimManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
           <Private>false</Private>
@@ -146,6 +150,8 @@
     <Compile Include="Containers.cs" />
     <Compile Include="Cosmeticos.cs" />
     <Compile Include="Lugares.cs" />
+    <Compile Include="Plantas.cs" />
+    <Compile Include="PlantasUi.cs" />
     <Compile Include="CraftingStations.cs" />
     <Compile Include="CraftPatches.cs" />
     <Compile Include="DeadToken.cs" />

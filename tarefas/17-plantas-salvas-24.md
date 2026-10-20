@@ -18,3 +18,11 @@
 **Armazenamento.** Arquivo por jogador no servidor (`plantas-<mundo>.json`) ou no cliente? Recomendo **no servidor** (VIP com PC novo mantém) com tamanho máximo.
 
 **Config** (`[Blueprints]`): `Enabled`, `MaxPieces=300`, `MaxSaved=5`, `PlaceIntervalSeconds`, `PrefabAllow`. **Arquivos:** novo `Plantas.cs`, `PlantasUi.cs`. **Riscos:** o maior item de código do conjunto; desempenho (muitas `ZDO`); colisão de peças; duplicar o que o PlanBuild faz (usuários já não o têm). **Teste:** salvar uma casa de 80 peças, colocar fora de ward alheia, dentro de ward alheia (bloqueia), durante combate (bloqueia), sem material (bloqueia), VIP expirado (bloqueia nova colocação). **Esforço:** 5 a 6 dias. Quase pelo fim da fila.
+
+---
+## Resultado (2026-10-19, sessao youthful-feistel) — implementado, compila (0 erros), SEM teste no jogo
+- Arquivos: `Plantas.cs` (novo), `PlantasUi.cs` (novo), `Deadheim.csproj` (2 Compile + referencia UnityEngine.IMGUIModule), `Plugin.cs` (1 linha: `Plantas.Bind(Config);` apos `Lugares.Bind`).
+- Janela IMGUI com `/planta` (e `/planta cancelar`). So VIP (sem ficha). So pecas criadas pelo proprio jogador. Armazenamento no servidor em `config/Deadheim/plantas-<mundo>.txt` (texto, nao JSON).
+- Achado: `Player.PlacePiece` NAO tem trava de ward/material/combate. As travas sao feitas antes de cada chamada: ward (`PrivateArea.CheckAccess` no cliente; `WardCore.IsPermittedIn` no servidor), raid (`WardBridge.Governed`), NoBuild, bioma, estacao, combate (`PvpState`), material (`HaveRequirements`/`ConsumeResources`) e OK do servidor (RPC `DH_Planta_ToServer`: begin/check/end; o servidor recalcula posicao da peca a partir da planta salva).
+- Sem teste no jogo: tudo (captura, fila, RPC com 2 clientes, janela e bloqueio de input/cursor, VIP expirado, ward alheio, raid, combate, sem material, bancada, desempenho com 300 pecas). Risco conhecido: o servidor nao ve o combate (so o cliente) e nao confere o criador na captura.
+- PlanBuild em `deadheim-installer.json:44` nao chega ao jogador (tudo vem do manifest do launcher): nada a fazer.
