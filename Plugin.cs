@@ -220,6 +220,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             AesirPullConfig.Bind(Config);
             Lugares.Bind(Config);
             Pets.BindConfigs(Config);
+            Transmog.BindConfigs(Config);
             Pets.Init();
 
             _harmony.PatchAll();
