@@ -20,6 +20,8 @@ namespace Deadheim
             public string FirstMaterialPrefab;
             public string SecondMaterialPrefab;
             public string Icon;
+            // Modelo visual original do Valheim usado para renderizar o ícone do item.
+            public string IconPrefabName;
             // Valor de venda no mercador; null = o do item-base.
             public int? Value;
             // No chao vira uma moeda com a arte do Icon, em vez do Thunderstone de onde o item e clonado.
@@ -60,7 +62,15 @@ namespace Deadheim
             new NativeItemDefinition { PrefabName = "FichaTemporada", Name = "Ficha de Temporada", Description = "Troque pelo passe de temporada: trilha de recompensas cosméticas da temporada atual.", MaxStack = 10, Icon = "fichatemporada.png", Value = 0, Coin = true },
             new NativeItemDefinition { PrefabName = "FichaBatizar", Name = "Ficha de Batizar Lugar", Description = "Use para dar um nome a um lugar do mapa: fica marcado para todos ali onde você estiver.", MaxStack = 10, Icon = "fichabatizar.png", Value = 0, Coin = true, ItemType = ItemDrop.ItemData.ItemType.Consumable },
             new NativeItemDefinition { PrefabName = "FichaBrasao", Name = "Ficha de Vela/Brasão", Description = "Troque com um admin por uma vela ou brasão de guilda sob encomenda.", MaxStack = 10, Icon = "fichabrasao.png", Value = 0, Coin = true },
-            new NativeItemDefinition { PrefabName = "FichaPet", Name = "Ficha de Pet", Description = "Use para escolher um pet cosmético da lista de fichas: filhote de lobo, bezerro de lox ou corvo no ombro.", MaxStack = 10, Icon = "fichapet.png", Value = 0, Coin = true, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "FichaPet", Name = "Ficha antiga de Pet", Description = "Ficha descontinuada. Os pets agora são itens individuais negociáveis.", MaxStack = 10, Icon = "fichapet.png", Value = 0, Coin = true, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            // Cada pet é um item único, permanente enquanto o jogador o mantiver e negociável.
+            // O patch de Pets intercepta a ação de usar e não consome o item.
+            new NativeItemDefinition { PrefabName = "Pet_galinha", Name = "Pet: Galinha", Description = "Use para invocar ou guardar sua galinha. Item permanente e negociável.", MaxStack = 1, Icon = "pet-galinha.png", IconPrefabName = "Hen", Value = 0, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "Pet_pintinho", Name = "Pet: Pintinho", Description = "Use para invocar ou guardar seu pintinho. Item permanente e negociável.", MaxStack = 1, Icon = "pet-pintinho.png", IconPrefabName = "Chicken", Value = 0, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "Pet_leitao", Name = "Pet: Leitão", Description = "Use para invocar ou guardar seu leitão. Item permanente e negociável.", MaxStack = 1, Icon = "pet-leitao.png", IconPrefabName = "Boar_piggy", Value = 0, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "Pet_wolf_cub", Name = "Pet: Filhote de Lobo", Description = "Use para invocar ou guardar seu filhote de lobo. Item permanente e negociável.", MaxStack = 1, Icon = "pet-wolf_cub.png", IconPrefabName = "Wolf_cub", Value = 0, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "Pet_lox_cub", Name = "Pet: Bezerro de Lox", Description = "Use para invocar ou guardar seu bezerro de lox. Item permanente e negociável.", MaxStack = 1, Icon = "pet-lox_cub.png", IconPrefabName = "Lox_Calf", Value = 0, ItemType = ItemDrop.ItemData.ItemType.Consumable },
+            new NativeItemDefinition { PrefabName = "Pet_corvo", Name = "Pet: Corvo", Description = "Use para invocar ou guardar seu corvo. Item permanente e negociável.", MaxStack = 1, Icon = "pet-corvo.png", IconPrefabName = "Crow", Value = 0, ItemType = ItemDrop.ItemData.ItemType.Consumable },
             new NativeItemDefinition { PrefabName = "ArmorKit1", Name = "Basic Armor Kit I", Description = "Kit de itens utilizados para fabricar armaduras de menor qualidade pertencente a era do bronze.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Guck", Icon = "armorkit1.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit2", Name = "Good Armor Kit II", Description = "Kit de itens utilizados para fabricar armaduras de refinadas de qualidade pertencente a era do ferro.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Blueberries", Icon = "armorkit2.png" },
             new NativeItemDefinition { PrefabName = "ArmorKit3", Name = "Great Armor Kit III", Description = "Kit de itens utilizados para fabricar armaduras reluzentes beirando a perfeição, sua qualidade pertence a era da prata.", MaxStack = 25, FirstMaterialPrefab = "Wood", SecondMaterialPrefab = "Amber", Icon = "armorkit3.png" },
@@ -72,6 +82,7 @@ namespace Deadheim
         };
 
         private static readonly Dictionary<string, GameObject> RegisteredNativeItems = new Dictionary<string, GameObject>(StringComparer.Ordinal);
+        private static readonly HashSet<string> PrefabIconApplied = new HashSet<string>(StringComparer.Ordinal);
 
         private static readonly HashSet<string> NativeItemNames =
             new HashSet<string>(NativeItems.Select(definition => definition.PrefabName), StringComparer.OrdinalIgnoreCase);
@@ -134,6 +145,7 @@ namespace Deadheim
             }
 
             UpdateObjectDbRegisters?.Invoke(objectDb, null);
+            ApplyPetPrefabIcons();
 
             // Se o ZNetScene já terminou seu Awake, atualiza também o dicionário
             // de rede. No fluxo normal ele ainda não existe e o prefixo abaixo
@@ -388,7 +400,140 @@ namespace Deadheim
             AddNomTameableWolf();
             AddPorcoLox();
             AddSkeletao();
+            ApplyPetPrefabIcons();
             Prefabs.ZNetSceneReady -= AddVanillaClonedCreatures;
+        }
+
+        /// <summary>Renderiza os modelos originais do Valheim como ícones, mantendo o PNG como fallback.</summary>
+        private static void ApplyPetPrefabIcons()
+        {
+            if (ZNetScene.instance == null) return;
+            foreach (NativeItemDefinition definition in NativeItems)
+            {
+                if (string.IsNullOrEmpty(definition.IconPrefabName) ||
+                    PrefabIconApplied.Contains(definition.PrefabName) ||
+                    !RegisteredNativeItems.TryGetValue(definition.PrefabName, out GameObject item) ||
+                    item == null)
+                    continue;
+                try
+                {
+                    Sprite sprite = RenderPrefabIcon(definition.IconPrefabName);
+                    ItemDrop drop = item.GetComponent<ItemDrop>();
+                    if (sprite == null || drop?.m_itemData?.m_shared == null) continue;
+                    drop.m_itemData.m_shared.m_icons = new[] { sprite };
+                    PrefabIconApplied.Add(definition.PrefabName);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[Deadheim] Ícone 3D de '{definition.PrefabName}' indisponível; usando o ícone ilustrado: {ex.Message}");
+                }
+            }
+        }
+
+        private static Sprite RenderPrefabIcon(string prefabName)
+        {
+            GameObject source = ZNetScene.instance?.GetPrefab(prefabName);
+            if (source == null) return null;
+
+            const int layer = 30;
+            const int size = 256;
+            GameObject stage = new GameObject("Deadheim_PetIconStage");
+            stage.hideFlags = HideFlags.HideAndDontSave;
+            stage.SetActive(false);
+            // Sem isto o ZNetView/Character do prefab acordam de verdade ao ativar o palco.
+            bool previousForce = ZNetView.m_forceDisableInit;
+            ZNetView.m_forceDisableInit = true;
+            GameObject model;
+            try { model = UnityEngine.Object.Instantiate(source, stage.transform); }
+            finally { ZNetView.m_forceDisableInit = previousForce; }
+            model.name = "PetIconModel";
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            SetLayerRecursively(model.transform, layer);
+
+            foreach (Behaviour behaviour in model.GetComponentsInChildren<Behaviour>(true))
+            {
+                if (!(behaviour is Animator)) behaviour.enabled = false;
+            }
+            foreach (Collider collider in model.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+            foreach (Rigidbody body in model.GetComponentsInChildren<Rigidbody>(true)) body.isKinematic = true;
+
+            GameObject cameraObject = new GameObject("Deadheim_PetIconCamera");
+            cameraObject.hideFlags = HideFlags.HideAndDontSave;
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+            camera.orthographic = true;
+            camera.aspect = 1f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0f, 0f, 0f, 0f);
+            camera.cullingMask = 1 << layer;
+            camera.nearClipPlane = 0.01f;
+            camera.farClipPlane = 100f;
+
+            GameObject keyObject = new GameObject("Deadheim_PetIconKeyLight");
+            keyObject.hideFlags = HideFlags.HideAndDontSave;
+            Light key = keyObject.AddComponent<Light>();
+            key.type = LightType.Directional;
+            key.intensity = 1.25f;
+            key.color = new Color(1f, 0.88f, 0.7f);
+            key.cullingMask = 1 << layer;
+            key.shadows = LightShadows.None;
+            key.transform.rotation = Quaternion.Euler(35f, -30f, 0f);
+
+            RenderTexture target = new RenderTexture(size, size, 24, RenderTextureFormat.ARGB32);
+            target.antiAliasing = 2;
+            camera.targetTexture = target;
+
+            Texture2D texture = null;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                stage.SetActive(true);
+                Animator animator = model.GetComponentInChildren<Animator>(true);
+                if (animator != null)
+                {
+                    animator.applyRootMotion = false;
+                    animator.Rebind();
+                    animator.Update(0f);
+                }
+
+                Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true)
+                    .Where(renderer => renderer != null && renderer.enabled).ToArray();
+                if (renderers.Length == 0) return null;
+                Bounds bounds = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+
+                float distance = Mathf.Max(3f, bounds.extents.magnitude * 4f);
+                Vector3 center = bounds.center;
+                camera.transform.position = center + new Vector3(0.55f, bounds.extents.y * 0.3f, -distance);
+                camera.transform.rotation = Quaternion.LookRotation(center - camera.transform.position, Vector3.up);
+                camera.orthographicSize = Mathf.Max(bounds.extents.y, bounds.extents.x) * 1.18f;
+
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                texture.ReadPixels(new Rect(0, 0, size, size), 0, 0);
+                texture.Apply();
+                return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 128f);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                camera.targetTexture = null;
+                target.Release();
+                UnityEngine.Object.DestroyImmediate(target);
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                UnityEngine.Object.DestroyImmediate(keyObject);
+                UnityEngine.Object.DestroyImmediate(stage);
+            }
+        }
+
+        private static void SetLayerRecursively(Transform root, int layer)
+        {
+            root.gameObject.layer = layer;
+            for (int i = 0; i < root.childCount; i++)
+                SetLayerRecursively(root.GetChild(i), layer);
         }
 
         private static void AddAdminWards()

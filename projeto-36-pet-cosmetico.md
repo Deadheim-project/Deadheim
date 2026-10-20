@@ -19,7 +19,7 @@ Pela regra do projeto (nenhuma vantagem de combate), a opção A.
 
 ## Como funciona (opção A)
 
-1. **Posse.** Fica no registro de cosméticos que já existe (`CosmeticosApi`, no servidor): chave `pet:<id>`. A escolha do pet ativo do jogador vai numa chave do ZDO dele, `dh_pet`, que os outros clientes já recebem junto com o jogador.
+1. **Posse.** Cada pet é um item nativo individual (`Pet_<id>`), negociável e não consumido ao usar. A posse acompanha o item no inventário; o pet ativo fica na chave `dh_pet` do ZDO do jogador.
 2. **Quem vê.** Cada cliente, para cada jogador a até 40 m, lê `dh_pet` e cria o modelo visual local. Se o valor mudar, troca. Se o jogador sair do alcance, apaga.
 3. **O modelo.** Cópia do prefab de uma criatura do jogo, sem `Character`, sem IA, sem `ZNetView`, sem colisores. Ficam só as malhas, o `Animator` e o tamanho ajustado. Ou seja, nunca é um objeto de rede.
 4. **Movimento.** Um script simples: fica a 2–3 m atrás do dono, no chão do terreno, aponta para onde anda, e passa ao `Animator` a velocidade (anda, corre, parado). Parado por 5 s, senta ou deita se o bicho tiver a animação. Se o dono se afasta mais de 30 m, usa portal, teleporta, monta ou entra em barco, o pet reaparece ao lado dele. Sobre montaria, vai no ombro do jogador só se for ave, senão some até desmontar.
@@ -49,10 +49,10 @@ Os nomes exatos dos prefabs e as animações de cada um precisam ser conferidos 
 
 ## Venda
 
-- **Aesir:** escolhe 1 pet entre os 3 básicos, sem custo.
-- **Ficha de Pet** (nova): 150 DC, libera um pet à escolha da lista de fichas. Entra em `[DeadcoinShop] Items`.
+- **Loja Deadcoins:** cada item individual de pet custa 150 DC na configuração padrão.
+- O item não é consumido ao invocar. Negociá-lo transfere a posse para o outro jogador.
 - **Temporada e Halloween:** um pet exclusivo em cada, permanente.
-- Sem expiração: o pet é do jogador, mesmo que o VIP acabe (mas o pet dos Aesir básicos só vale enquanto for VIP; os de ficha e de evento ficam).
+- Sem expiração enquanto o jogador guardar o item; ao negociá-lo, a posse passa ao comprador.
 
 ## O que o pet NÃO faz (regras)
 
@@ -69,8 +69,8 @@ Os nomes exatos dos prefabs e as animações de cada um precisam ser conferidos 
 
 ## Onde entra no código
 
-- **Deadheim:** `Pets.cs` novo (modelo, movimento, sincronização, comando). Usa `CosmeticosApi` para a posse. Regras de VIP pela `VipListApi`.
-- **NpcValheim:** só a Ficha de Pet em `[DeadcoinShop] Items` e a ficha nova em `ClonedItems`.
+- **Deadheim:** `Pets.cs` (modelo, movimento, sincronização e comando); `ClonedItems.cs` registra um item por pet.
+- **NpcValheim:** itens de pet individuais em `[DeadcoinShop] Items` (150 DC cada).
 - **Launcher/guia/catálogo:** nova linha no guia (VIP e Deadcoins) e no catálogo.
 
 ## Etapas

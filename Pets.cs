@@ -51,14 +51,14 @@ namespace Deadheim
         // No servidor: preenchida por OnToServer. No cliente: recebida por OnSync.
         private struct PetEntry { public string PetId; public string Name; }
         private static readonly Dictionary<long, PetEntry> _serverTable = new Dictionary<long, PetEntry>();
-        private static float _lastVipCheck;
+        private static float _lastOwnershipCheck;
         // Restauração do pet salvo após relogar ou reiniciar o servidor: o cliente reenvia "set"
         // quando a tabela do servidor não tem a entrada dele.
         private static bool _tableReceived;
         private static bool _restoring;
         private static float _nextRestore;
         private static int _restoreTries;
-        private const float VipCheckInterval = 60f;
+        private const float OwnershipCheckInterval = 60f;
 
         // Pai inativo dos moldes de pet (como MountPrefab.Hidden)
         private static Transform _hiddenRoot;
@@ -85,7 +85,7 @@ namespace Deadheim
             public string Id;
             public string PrefabName;
             public float Scale;
-            public string Origin; // "aesir", "ficha", "temporada", "halloween"
+            public string Origin; // origem comercial do item (sem efeito sobre a posse)
             public string SpeedParam;   // ex: "forward_speed" (float, m/s reais)
             public string SitParam;     // ex: "sleeping" (bool), null se não tiver
             public float WalkSpeed;     // lido de Character.m_walkSpeed antes de Strip
@@ -109,12 +109,12 @@ namespace Deadheim
             //   - Corvo: prefab Crow (Raven não existe como spawnável), escala 0.6
             // Formato: id=prefab;escala;origem;speedParam;sitParam
             PetCatalog = Plugin.Synced(config.Bind("Pets", "PetCatalog",
-                "galinha=Hen;1;aesir;forward_speed;sleeping," +
-                "pintinho=Chicken;1;aesir;forward_speed;sleeping," +
-                "leitao=Boar_piggy;1.3;aesir;forward_speed;sleeping," +
-                "wolf_cub=Wolf_cub;1;ficha;forward_speed;sleeping," +
-                "lox_cub=Lox_Calf;0.8;ficha;forward_speed;," +
-                "corvo=Crow;1;ficha;forward_speed;",
+                "galinha=Hen;1;item;forward_speed;sleeping," +
+                "pintinho=Chicken;1;item;forward_speed;sleeping," +
+                "leitao=Boar_piggy;1.3;item;forward_speed;sleeping," +
+                "wolf_cub=Wolf_cub;1;item;forward_speed;sleeping," +
+                "lox_cub=Lox_Calf;0.8;item;forward_speed;," +
+                "corvo=Crow;1;item;forward_speed;",
                 new ConfigDescription("Catálogo de pets. Formato: id=prefab;escala;origem;speedParam;sitParam (separados por vírgula). speedParam=forward_speed, sitParam=sleeping ou vazio.")));
             PetCatalog.SettingChanged += (s, e) => LoadCatalog();
 
@@ -201,27 +201,50 @@ namespace Deadheim
 
         // ------------------------------------------------------------------- posse
 
-        /// <summary>Servidor: o peer é VIP? (mesma lista que o NpcValheim usa no F7)</summary>
-        private static bool IsVipPeer(long peerId)
-        {
-            if (ZRoutedRpc.instance != null && peerId == ZRoutedRpc.instance.m_id)
-                return VipList.VipListApi.IsLocalPlayerVip();
-            string host = ZNet.instance?.GetPeer(peerId)?.m_socket?.GetHostName();
-            return VipList.VipListApi.IsVip(host);
-        }
-
-        /// <summary>Servidor: o jogador do peer tem esse pet? Aesir só enquanto for VIP.</summary>
-        private static bool ServerOwns(long peerId, long playerId, PetDef def)
-        {
-            if (def.Origin == "aesir") return IsVipPeer(peerId);
-            return CosmeticosApi.Has(playerId, "pet:" + def.Id);
-        }
+        /// <summary>
+        /// Servidor: o inventário só existe no cliente dono (o Player remoto no servidor tem
+        /// inventário vazio), então o servidor não consegue conferir o item. O pet é cosmético,
+        /// sem vantagem de combate: o servidor aceita pet do catálogo e o cliente confere o item
+        /// (UsePetItemPatch ao usar; ScanPlayers manda "off" quando o item sai do inventário).
+        /// </summary>
+        private static bool ServerOwns(long peerId, long playerId, PetDef def) => def != null;
 
         /// <summary>Cliente: o jogador local tem esse pet?</summary>
         private static bool LocalOwns(PetDef def)
         {
-            if (def.Origin == "aesir") return VipList.VipListApi.IsLocalPlayerVip();
-            return CosmeticosApi.LocalHas("pet:" + def.Id);
+            return HasPetItem(Player.m_localPlayer, def);
+        }
+
+        private static string ItemPrefab(PetDef def) => "Pet_" + def.Id;
+
+        private static bool HasPetItem(Player player, PetDef def)
+        {
+            if (player == null || def == null) return false;
+            Inventory inventory = player.GetInventory();
+            return inventory != null && inventory.GetAllItems().Any(item =>
+                item?.m_dropPrefab != null && string.Equals(item.m_dropPrefab.name, ItemPrefab(def), StringComparison.Ordinal));
+        }
+
+        [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UseItem))]
+        private static class UsePetItemPatch
+        {
+            private static bool Prefix(Humanoid __instance, Inventory inventory, ItemDrop.ItemData item)
+            {
+                if (__instance != Player.m_localPlayer || item?.m_dropPrefab == null || ZRoutedRpc.instance == null)
+                    return true;
+                string prefab = item.m_dropPrefab.name;
+                if (!prefab.StartsWith("Pet_", StringComparison.Ordinal)) return true;
+                string petId = prefab.Substring("Pet_".Length);
+                if (_catalog == null || !_catalog.TryGetValue(petId, out PetDef def))
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Este item de pet não corresponde ao catálogo atual.");
+                    return false;
+                }
+                if (!HasPetItem(Player.m_localPlayer, def)) return false;
+                string active = Player.m_localPlayer.m_customData.TryGetValue(ZdoPetKey, out string current) ? current : "";
+                SendToServer(string.Equals(active, def.Id, StringComparison.OrdinalIgnoreCase) ? "off" : "set", def.Id, "");
+                return false;
+            }
         }
 
         /// <summary>Lista os pets que o jogador local tem.</summary>
@@ -395,27 +418,6 @@ namespace Deadheim
                     SendResponse(real, op, true, "", def.Id, name);
                     Debug.Log($"[Deadheim Pets] {peer.Name} ativou o pet '{def.Id}'.");
                 }
-                else if (op == "resgatar")
-                {
-                    if (def.Origin != "ficha")
-                    {
-                        SendResponse(real, op, false, "Esse pet não sai de ficha.", "", "");
-                        return;
-                    }
-                    // D1: o servidor responde antes de a ficha ser removida.
-                    // O cliente remove a ficha ao receber a resposta com concedeu=true.
-                    bool jaTemPet = CosmeticosApi.Has(peer.PlayerId, "pet:" + def.Id);
-                    if (jaTemPet)
-                    {
-                        // Já tem: retornar false para o cliente saber que NÃO deve remover a ficha.
-                        SendResponse(real, op, false, "Você já tem este pet.", def.Id, "");
-                        return;
-                    }
-                    bool concedeu = Cosmeticos.ServerGrant(peer.PlayerId, "pet:" + def.Id);
-                    // concedido=true: cliente remove a ficha e exibe mensagem de sucesso.
-                    SendResponse(real, op, concedeu, concedeu ? "" : "Falha ao registrar o pet.", def.Id, "");
-                    Debug.Log($"[Deadheim Pets] {peer.Name} resgatou o pet '{def.Id}' ({(concedeu ? "concedido" : "falhou")}).");
-                }
             }
             catch (Exception ex)
             {
@@ -468,7 +470,6 @@ namespace Deadheim
                     // Falha numa restauração automática: sem mensagem (para no limite de tentativas).
                     if (op == "set" && _restoring) _restoring = false;
                     else lp.Message(MessageHud.MessageType.TopLeft, message);
-                    // D1: resgatar falhou → não remover a ficha (nada a fazer aqui).
                     return;
                 }
 
@@ -488,15 +489,6 @@ namespace Deadheim
                     WriteLocal("", name, false, true);
                     lp.Message(MessageHud.MessageType.Center, string.IsNullOrEmpty(name) ? "Nome removido." : "Nome do pet alterado.");
                 }
-                else if (op == "resgatar")
-                {
-                    // D1: servidor aprovou → agora remover a ficha do inventário.
-                    Inventory inv = lp.GetInventory();
-                    ItemDrop.ItemData ficha = inv?.GetAllItems().FirstOrDefault(i =>
-                        i.m_dropPrefab != null && i.m_dropPrefab.name == "FichaPet");
-                    if (ficha != null) inv.RemoveItem(ficha, 1);
-                    lp.Message(MessageHud.MessageType.Center, $"Pet liberado! Use /pet {petId}.");
-                }
             }
             catch (Exception ex)
             {
@@ -514,9 +506,9 @@ namespace Deadheim
             float now = Time.realtimeSinceStartup;
 
             // D3: revalidação VIP a cada 60 s (no servidor: remove Aesir de quem perdeu o VIP)
-            if (ZNet.instance != null && ZNet.instance.IsServer() && now - _lastVipCheck > VipCheckInterval)
+            if (ZNet.instance != null && ZNet.instance.IsServer() && now - _lastOwnershipCheck > OwnershipCheckInterval)
             {
-                _lastVipCheck = now;
+                _lastOwnershipCheck = now;
                 CheckVipExpiry();
             }
 
@@ -533,7 +525,7 @@ namespace Deadheim
             }
         }
 
-        // D3: remove da tabela pets Aesir de jogadores que perderam o VIP.
+        // Remove da tabela pets de jogadores que transferiram ou perderam o item.
         private static void CheckVipExpiry()
         {
             bool changed = false;
@@ -551,15 +543,12 @@ namespace Deadheim
                 }
 
                 if (!_catalog.TryGetValue(petId, out PetDef def)) continue;
-                if (def.Origin != "aesir") continue;
-
-                // Encontrar o peerId a partir do playerId
                 if (!Pvp.PvpPeer.TryFindByPlayerId(playerId, out Pvp.PvpPeer peer)) continue;
-                if (!IsVipPeer(peer.PeerId))
+                if (!ServerOwns(peer.PeerId, playerId, def))
                 {
                     _serverTable.Remove(playerId);
                     changed = true;
-                    Debug.Log($"[Deadheim Pets] Pet Aesir de {peer.Name} (playerId={playerId}) removido por perda de VIP.");
+                    Debug.Log($"[Deadheim Pets] Pet '{petId}' de {peer.Name} (playerId={playerId}) removido após transferência/perda do item.");
                 }
             }
             if (changed) BroadcastSync();
@@ -622,6 +611,14 @@ namespace Deadheim
 
                 ZDO zdo = player.m_nview.GetZDO();
                 string petId = zdo.GetString(ZdoPetKey, "");
+                if (isLocal && !string.IsNullOrEmpty(petId) &&
+                    (!_catalog.TryGetValue(petId, out PetDef activeDef) || !LocalOwns(activeDef)))
+                {
+                    // O item foi negociado ou saiu do inventário: o novo dono fica com a posse.
+                    WriteLocal("", "", true, false);
+                    SendToServer("off");
+                    petId = "";
+                }
                 if (string.IsNullOrEmpty(petId) || !_catalog.TryGetValue(petId, out PetDef def) || ShouldHide(player))
                 {
                     DestroyPet(playerId);
@@ -884,7 +881,7 @@ namespace Deadheim
         {
             private static void Postfix()
             {
-                new Terminal.ConsoleCommand("pet", "(Aesir) /pet <id>, off, nome <texto>, resgatar <id>",
+                new Terminal.ConsoleCommand("pet", "/pet <id>, off, nome <texto>",
                     args =>
                     {
                         string[] parts = (string[])args.Args.Clone();
@@ -911,7 +908,7 @@ namespace Deadheim
                 string[] owned = GetLocalPets();
                 lp.Message(MessageHud.MessageType.Center, owned.Length == 0
                     ? "Você não tem nenhum pet."
-                    : "Seus pets: " + string.Join(", ", owned) + ". Use /pet <id>, /pet off, /pet nome <texto>, /pet resgatar <id>.");
+                    : "Seus pets: " + string.Join(", ", owned) + ". Use o item do pet para invocá-lo ou /pet off para guardá-lo.");
                 return;
             }
 
@@ -960,36 +957,6 @@ namespace Deadheim
                     Debug.Log($"[Deadheim Pets] /pet debug [{def.Id}] {def.PrefabName}: {paramList}");
                 }
                 lp.Message(MessageHud.MessageType.Center, "Parâmetros do Animator no log do jogo.");
-                return;
-            }
-
-            if (sub == "resgatar")
-            {
-                // /pet resgatar <id>: troca uma Ficha de Pet pelo pet.
-                // D1: a ficha NÃO é removida aqui; só é removida ao receber o "ok" do servidor (OnToClient).
-                string id = parts.Length > 2 ? parts[2].ToLowerInvariant() : "";
-                if (!_catalog.TryGetValue(id, out PetDef def) || def.Origin != "ficha")
-                {
-                    var opcoes = _catalog.Values.Where(d => d.Origin == "ficha").Select(d => d.Id);
-                    lp.Message(MessageHud.MessageType.Center, "Uso: /pet resgatar <" + string.Join("|", opcoes) + ">");
-                    return;
-                }
-                if (CosmeticosApi.LocalHas("pet:" + def.Id))
-                {
-                    lp.Message(MessageHud.MessageType.Center, "Você já tem este pet.");
-                    return;
-                }
-                // Verificar se tem a ficha antes de enviar (UI apenas — o servidor também verifica).
-                Inventory inv = lp.GetInventory();
-                ItemDrop.ItemData ficha = inv?.GetAllItems().FirstOrDefault(i =>
-                    i.m_dropPrefab != null && i.m_dropPrefab.name == "FichaPet");
-                if (ficha == null)
-                {
-                    lp.Message(MessageHud.MessageType.Center, "Você precisa de uma Ficha de Pet.");
-                    return;
-                }
-                // Envia ao servidor sem remover a ficha ainda.
-                SendToServer("resgatar", def.Id);
                 return;
             }
 

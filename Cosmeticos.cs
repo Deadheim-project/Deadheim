@@ -232,7 +232,7 @@ namespace Deadheim
                 // FichaPet: tratamento especial (abre lista de pets)
                 if (item.m_dropPrefab.name == "FichaPet")
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Use /pet resgatar <id> para trocar a ficha por um pet (wolf_cub, lox_cub ou corvo).");
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Esta ficha foi descontinuada. Os pets agora são itens individuais na Loja Deadcoins.");
                     return false;
                 }
 
