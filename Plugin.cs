@@ -221,6 +221,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             AesirCraftConfig.Bind(Config);
             VipSlotsConfig.Bind(Config);
             Lugares.Bind(Config);
+            Plantas.Bind(Config);
             Pets.BindConfigs(Config);
             Transmog.BindConfigs(Config);
             Pets.Init();
