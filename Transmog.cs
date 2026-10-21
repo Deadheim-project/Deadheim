@@ -516,6 +516,45 @@ namespace Deadheim
             }
         }
 
+        // ------------------------------------------------------------------ tooltip
+
+        /// <summary>
+        /// Escreve no tooltip do item a aparencia que ele usa. So para itens da propria bolsa:
+        /// a mesma peca vista na bancada ou no bau de outro nao foi transmogada por ninguem.
+        /// </summary>
+        [HarmonyPatch]
+        private static class TooltipPatch
+        {
+            // GetTooltip(ItemData, int, bool, float, int, bool) no 1.0; achado pelo primeiro
+            // parametro para sobreviver a parametros novos no fim.
+            private static System.Reflection.MethodBase TargetMethod() =>
+                AccessTools.GetDeclaredMethods(typeof(ItemDrop.ItemData)).FirstOrDefault(m =>
+                    m.Name == "GetTooltip" && m.IsStatic && m.GetParameters().Length > 0 &&
+                    m.GetParameters()[0].ParameterType == typeof(ItemDrop.ItemData));
+
+            private static void Postfix(object[] __args, ref string __result)
+            {
+                try
+                {
+                    if (Enabled == null || !Enabled.Value || LocalChosen.Count == 0) return;
+                    var item = __args.Length > 0 ? __args[0] as ItemDrop.ItemData : null;
+                    string real = item?.m_dropPrefab != null ? item.m_dropPrefab.name : null;
+                    if (real == null || !LocalChosen.TryGetValue(real, out string app)) return;
+                    Inventory inv = Player.m_localPlayer?.GetInventory();
+                    if (inv == null || !inv.GetAllItems().Contains(item)) return;
+
+                    ItemDrop.ItemData.SharedData s = SharedOf(app);
+                    string nome = s != null && Localization.instance != null ? Localization.instance.Localize(s.m_name) : app;
+                    string obs = RequireVip.Value && !VipList.VipListApi.IsLocalPlayerVip() ? " <color=#9a9188>(inativo: sem VIP)</color>" : "";
+                    __result += $"\n\n<color=#c58cff>Transmog:</color> {nome}{obs}";
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning("[Deadheim] Transmog: tooltip falhou: " + ex.Message);
+                }
+            }
+        }
+
         // ------------------------------------------------------------------ comando e janela
 
         [HarmonyPatch(typeof(Terminal), nameof(Terminal.InitTerminal))]
