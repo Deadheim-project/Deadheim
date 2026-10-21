@@ -440,7 +440,7 @@ namespace Deadheim
             GameObject stage = new GameObject("Deadheim_PetIconStage");
             stage.hideFlags = HideFlags.HideAndDontSave;
             stage.SetActive(false);
-            // Sem isto o ZNetView/Character do prefab acordam de verdade ao ativar o palco.
+            // Sem isto o ZNetView/Character do prefab acordam de verdade (ver a ativação do palco abaixo).
             bool previousForce = ZNetView.m_forceDisableInit;
             ZNetView.m_forceDisableInit = true;
             GameObject model;
@@ -488,7 +488,12 @@ namespace Deadheim
             RenderTexture previous = RenderTexture.active;
             try
             {
-                stage.SetActive(true);
+                // O Awake do ZNetView roda aqui (Instantiate sob pai inativo não acorda nada). Sem o
+                // flag ele cria um ZDO persistente com o hash de "PetIconModel", que vai para o mundo
+                // e faz todo cliente spamar "Missing prefab hash: 1461255765".
+                ZNetView.m_forceDisableInit = true;
+                try { stage.SetActive(true); }
+                finally { ZNetView.m_forceDisableInit = previousForce; }
                 Animator animator = model.GetComponentInChildren<Animator>(true);
                 if (animator != null)
                 {
