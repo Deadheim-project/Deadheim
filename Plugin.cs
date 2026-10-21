@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.8.1";
+        public const string Version = "7.8.2";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -27,11 +27,12 @@ namespace Deadheim
         // um cliente 7.5.0 trocaria os tokens dos jogadores por Dead Token, que nao constroi nada.
         // 7.5.8 fixa as moedas no slot (Moedas.cs): um cliente anterior ainda as derrubaria na morte por jogador.
         // 7.5.9 responde aos NPCs de bounty e de PvE (bountyboard, pveres): um cliente anterior nao os entende.
+        // 7.8.2 traz a TransmogApi (NPC Alfaiate do NpcValheim) e a previa: um cliente anterior nao os tem.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.8.0",
+            MinimumRequiredVersion = "7.8.2",
             ModRequired = true,
             IsLocked = true
         };

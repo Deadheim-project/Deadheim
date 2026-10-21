@@ -38,9 +38,15 @@ namespace Deadheim
         public static ConfigEntry<bool> DisabledInRaidZone;
         public static ConfigEntry<string> Blacklist;
         public static ConfigEntry<int> MaxChoices;
+        public static ConfigEntry<bool> RequireNpc;
+        public static ConfigEntry<bool> RequireVip;
 
         internal static void BindConfigs(ConfigFile config)
         {
+            RequireNpc = Plugin.Synced(config.Bind("Transmog", "RequireNpc", true,
+                new ConfigDescription("Se verdadeiro, so o NPC Alfaiate (NpcValheim) troca a aparencia; o /transmog so volta ao visual real.")));
+            RequireVip = Plugin.Synced(config.Bind("Transmog", "RequireVip", true,
+                new ConfigDescription("Se verdadeiro, so VIP (Aesir) pode escolher aparencia. Preco e rating de arena ficam no Alfaiate.")));
             Enabled = Plugin.Synced(config.Bind("Transmog", "Enabled", true,
                 new ConfigDescription("Habilita o transmog (so aparencia) para VIPs.")));
             SameWeightClass = Plugin.Synced(config.Bind("Transmog", "SameWeightClass", true,
@@ -171,6 +177,7 @@ namespace Deadheim
 
         private static bool IsVipPeer(long peerId)
         {
+            if (RequireVip != null && !RequireVip.Value) return true;
             if (ZRoutedRpc.instance != null && peerId == ZRoutedRpc.instance.m_id)
                 return VipList.VipListApi.IsLocalPlayerVip();
             string host = ZNet.instance?.GetPeer(peerId)?.m_socket?.GetHostName();
@@ -262,33 +269,18 @@ namespace Deadheim
             try
             {
                 string op = pkg.ReadString();
-                Data d = DataOf(peer.PlayerId);
                 if (op == "hello") { SendState(real, peer.PlayerId); return; }
 
                 if (op == "set")
                 {
                     string item = pkg.ReadString(), app = pkg.ReadString();
-                    if (!IsVipPeer(real)) { Pvp.PvpNet.Message(real, "Transmog e exclusivo Aesir (VIP)."); return; }
-                    if (!d.Unlocked.Contains(item) || !d.Unlocked.Contains(app))
-                    { Pvp.PvpNet.Message(real, "Voce ainda nao vestiu essa peca (desbloqueia ao equipar)."); return; }
-                    if (!Compatible(item, app, out string why)) { Pvp.PvpNet.Message(real, why); return; }
-                    if (item == app) d.Chosen.Remove(item);
-                    else
-                    {
-                        if (!d.Chosen.ContainsKey(item) && d.Chosen.Count >= MaxChoices.Value)
-                        { Pvp.PvpNet.Message(real, "Limite de trocas ativas atingido."); return; }
-                        d.Chosen[item] = app;
-                    }
-                    Save();
-                    SendState(real, peer.PlayerId);
-                    Debug.Log($"[Deadheim] Transmog: {peer.Name} {item} -> {app}");
+                    if (RequireNpc.Value && item != app) { Pvp.PvpNet.Message(real, NpcOnly); return; }
+                    string why = ApplyPairs(peer, new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>(item, app) });
+                    if (why != null) Pvp.PvpNet.Message(real, why);
                 }
                 else if (op == "off")
                 {
-                    string item = pkg.ReadString();
-                    if (item == "*") d.Chosen.Clear(); else d.Chosen.Remove(item);
-                    Save();
-                    SendState(real, peer.PlayerId);
+                    ApplyOff(peer, pkg.ReadString());
                 }
             }
             catch (Exception ex)
@@ -297,7 +289,75 @@ namespace Deadheim
             }
         }
 
+        internal const string NpcOnly = "Fale com o Alfaiate para trocar a aparencia (/transmog off volta ao visual real).";
+
+        internal static List<KeyValuePair<string, string>> ParsePairs(string raw)
+        {
+            var list = new List<KeyValuePair<string, string>>();
+            foreach (string p in (raw ?? "").Split(';'))
+            {
+                int i = p.IndexOf('>');
+                if (i > 0 && i < p.Length - 1) list.Add(new KeyValuePair<string, string>(p.Substring(0, i), p.Substring(i + 1)));
+            }
+            return list;
+        }
+
+        /// <summary>Confere o lote inteiro sem mudar nada. Null = pode aplicar.</summary>
+        internal static string CheckPairs(Pvp.PvpPeer peer, List<KeyValuePair<string, string>> pairs)
+        {
+            if (Enabled == null || !Enabled.Value) return "Transmog desativado.";
+            if (pairs.Count == 0) return "Nenhuma troca escolhida.";
+            Data d = DataOf(peer.PlayerId);
+            int count = d.Chosen.Count;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var kv in pairs)
+            {
+                if (!seen.Add(kv.Key)) return "A mesma peca apareceu duas vezes.";
+                if (kv.Key == kv.Value) { if (d.Chosen.ContainsKey(kv.Key)) count--; continue; }
+                if (!IsVipPeer(peer.PeerId)) return "Transmog e exclusivo Aesir (VIP).";
+                if (!d.Unlocked.Contains(kv.Key) || !d.Unlocked.Contains(kv.Value))
+                    return "Voce ainda nao vestiu essa peca (desbloqueia ao equipar).";
+                if (!Compatible(kv.Key, kv.Value, out string why)) return why;
+                if (!d.Chosen.ContainsKey(kv.Key)) count++;
+            }
+            return count > MaxChoices.Value ? "Limite de trocas ativas atingido." : null;
+        }
+
+        /// <summary>Quantas pecas do lote mudam de aparencia (voltar ao real nao conta).</summary>
+        internal static int ChangedCount(Pvp.PvpPeer peer, List<KeyValuePair<string, string>> pairs)
+        {
+            Data d = DataOf(peer.PlayerId);
+            return pairs.Count(kv => kv.Key != kv.Value && !(d.Chosen.TryGetValue(kv.Key, out string cur) && cur == kv.Value));
+        }
+
+        /// <summary>Confere e aplica o lote inteiro (tudo ou nada), grava e manda o estado.</summary>
+        internal static string ApplyPairs(Pvp.PvpPeer peer, List<KeyValuePair<string, string>> pairs)
+        {
+            string why = CheckPairs(peer, pairs);
+            if (why != null) return why;
+            Data d = DataOf(peer.PlayerId);
+            foreach (var kv in pairs)
+            {
+                if (kv.Key == kv.Value) d.Chosen.Remove(kv.Key);
+                else d.Chosen[kv.Key] = kv.Value;
+                Debug.Log($"[Deadheim] Transmog: {peer.Name} {kv.Key} -> {kv.Value}");
+            }
+            Save();
+            SendState(peer.PeerId, peer.PlayerId);
+            return null;
+        }
+
+        internal static void ApplyOff(Pvp.PvpPeer peer, string item)
+        {
+            Data d = DataOf(peer.PlayerId);
+            if (item == "*") d.Chosen.Clear(); else d.Chosen.Remove(item ?? "");
+            Save();
+            SendState(peer.PeerId, peer.PlayerId);
+        }
+
         // ------------------------------------------------------------------ cliente: estado
+
+        internal static int StateRevision;
 
         internal static readonly HashSet<string> LocalUnlocked = new HashSet<string>(StringComparer.Ordinal);
         internal static readonly Dictionary<string, string> LocalChosen = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -317,6 +377,7 @@ namespace Deadheim
                     int i = p.IndexOf('>');
                     if (i > 0 && i < p.Length - 1) LocalChosen[p.Substring(0, i)] = p.Substring(i + 1);
                 }
+                StateRevision++;
             }
             catch (Exception ex)
             {
@@ -362,7 +423,7 @@ namespace Deadheim
                 string want = "";
                 try
                 {
-                    if (Enabled != null && Enabled.Value && VipList.VipListApi.IsLocalPlayerVip())
+                    if (Enabled != null && Enabled.Value && (!RequireVip.Value || VipList.VipListApi.IsLocalPlayerVip()))
                         want = Encode(LocalChosen);
                 }
                 catch { want = ""; }
@@ -392,15 +453,33 @@ namespace Deadheim
         private static bool Disabled(Vector3 pos)
         {
             if (Enabled != null && !Enabled.Value) return true;
-            if (DisabledInArena.Value && Pvp.PvpZones.IsArena(pos)) return true;
-            if (DisabledInRaidZone.Value && Wards.WardBridge.Governed(pos)) return true;
-            return false;
+            return IsSuppressedAt(pos);
         }
+
+        internal static bool IsSuppressedAt(Vector3 pos) =>
+            (DisabledInArena.Value && Pvp.PvpZones.IsArena(pos)) ||
+            (DisabledInRaidZone.Value && Wards.WardBridge.Governed(pos));
+
+        // Previa da tela do Alfaiate: so no proprio personagem, nunca publicada na ZDO.
+        private static readonly Dictionary<int, int> _preview = new Dictionary<int, int>();
+
+        internal static void SetPreview(string pairs)
+        {
+            _preview.Clear();
+            foreach (var kv in ParsePairs(pairs)) _preview[kv.Key.GetStableHashCode()] = kv.Value.GetStableHashCode();
+        }
+
+        internal static void ClearPreview() => _preview.Clear();
 
         /// <summary>Hash da aparencia para o item real nesse VisEquipment (ou o proprio hash).</summary>
         internal static int Swap(VisEquipment vis, int hash)
         {
-            if (hash == 0 || vis == null || !vis.m_isPlayer || Priv.VisNview(vis) == null) return hash;
+            if (hash == 0 || vis == null || !vis.m_isPlayer) return hash;
+            // O jogo redesenha quando o hash trocado muda, entao ligar/desligar a previa basta.
+            if (_preview.Count > 0 && Player.m_localPlayer != null && vis.gameObject == Player.m_localPlayer.gameObject &&
+                _preview.TryGetValue(hash, out int prev))
+                return prev;
+            if (Priv.VisNview(vis) == null) return hash;
             ZDO zdo = Priv.VisNview(vis).GetZDO();
             if (zdo == null) return hash;
             string raw = zdo.GetString(ZdoKey, "");
@@ -459,9 +538,10 @@ namespace Deadheim
         {
             if (Player.m_localPlayer == null) return;
             if (Enabled != null && !Enabled.Value) { Say("Transmog desativado."); return; }
-            if (!VipList.VipListApi.IsLocalPlayerVip()) { Say("Transmog e exclusivo Aesir (VIP)."); return; }
+            if (parts.Length > 1 && parts[1].Equals("off", StringComparison.OrdinalIgnoreCase)) { SendOff(parts.Length > 2 ? parts[2] : "*"); return; }
+            if (RequireNpc != null && RequireNpc.Value) { Say(NpcOnly); return; }
+            if (RequireVip.Value && !VipList.VipListApi.IsLocalPlayerVip()) { Say("Transmog e exclusivo Aesir (VIP)."); return; }
             if (parts.Length <= 1) { TransmogUi.Toggle(); return; }
-            if (parts[1].Equals("off", StringComparison.OrdinalIgnoreCase)) { SendOff(parts.Length > 2 ? parts[2] : "*"); return; }
             if (parts.Length >= 3) SendSet(parts[1], parts[2]);
             else Say("Uso: /transmog <real> <aparencia> | /transmog off <real|*>");
         }
