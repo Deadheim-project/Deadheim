@@ -213,24 +213,33 @@ namespace Deadheim
 
         private static float _scanTimer;
 
+        // Personagem para o qual cada peer ja recebeu o estado. O "hello" do cliente sai no spawn,
+        // antes de a ZDO do personagem chegar ao servidor, e o TryResolve falha calado; a
+        // varredura entao manda o estado a quem apareceu ou trocou de personagem (morte).
+        private static readonly Dictionary<long, ZDOID> _greeted = new Dictionary<long, ZDOID>();
+
         /// <summary>Servidor, a cada 5 s: o que o jogador realmente veste (ZDO) vira desbloqueado.</summary>
         private static void ServerScan()
         {
             bool changed = false;
+            var online = new HashSet<long>();
             foreach (Pvp.PvpPeer peer in Pvp.PvpPeer.Online())
             {
                 ZDO zdo = ZDOMan.instance?.GetZDO(peer.CharacterId);
                 if (zdo == null) continue;
+                online.Add(peer.PeerId);
                 Data d = DataOf(peer.PlayerId);
-                bool novo = false;
+                bool novo = !_greeted.TryGetValue(peer.PeerId, out ZDOID seen) || seen != peer.CharacterId;
+                _greeted[peer.PeerId] = peer.CharacterId;
                 foreach (int hash in new[] { zdo.GetInt(ZDOVars.s_helmetItem), zdo.GetInt(ZDOVars.s_chestItem),
                                              zdo.GetInt(ZDOVars.s_legItem), zdo.GetInt(ZDOVars.s_shoulderItem) })
                 {
                     string name = NameOfHash(hash);
-                    if (name != null && Eligible(name) && d.Unlocked.Add(name)) novo = true;
+                    if (name != null && Eligible(name) && d.Unlocked.Add(name)) { novo = true; changed = true; }
                 }
-                if (novo) { changed = true; SendState(peer.PeerId, peer.PlayerId); }
+                if (novo) SendState(peer.PeerId, peer.PlayerId);
             }
+            foreach (long gone in _greeted.Keys.Where(k => !online.Contains(k)).ToList()) _greeted.Remove(gone);
             if (changed) Save();
         }
 
