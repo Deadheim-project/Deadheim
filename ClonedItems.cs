@@ -451,6 +451,11 @@ namespace Deadheim
             model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             SetLayerRecursively(model.transform, layer);
 
+            // O Awake roda mesmo com o componente desligado, e o do RandomFlyingBird (corvo) lê o
+            // ZNetView que o flag acima não deixou iniciar: NullReferenceException a cada boot.
+            foreach (RandomFlyingBird bird in model.GetComponentsInChildren<RandomFlyingBird>(true))
+                UnityEngine.Object.DestroyImmediate(bird);
+
             foreach (Behaviour behaviour in model.GetComponentsInChildren<Behaviour>(true))
             {
                 if (!(behaviour is Animator)) behaviour.enabled = false;
