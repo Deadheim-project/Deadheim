@@ -272,6 +272,23 @@ namespace Deadheim.Wards
                     }
                     else
                     {
+                        // Na area segura so cabe uma ward comum por jogador.
+                        if (WardCore.InFullProtectionZone(pos))
+                        {
+                            if (Plugin.PlayerSafeAreaWardCount >= 999)
+                            {
+                                WardCore.RequestWardCount();
+                                __instance.Message(MessageHud.MessageType.Center, "Conferindo suas wards com o servidor. Tente de novo.");
+                                return false;
+                            }
+                            if (Plugin.PlayerSafeAreaWardCount >= 1)
+                            {
+                                __instance.Message(MessageHud.MessageType.Center, "Voce so pode ter uma ward na area segura. Remova a antiga primeiro.");
+                                return false;
+                            }
+                            Plugin.PlayerSafeAreaWardCount++;
+                        }
+
                         // Limite 0 = sem limite: a base e raidavel, entao o limite nao protege nada.
                         int limit = WardCore.GetWardLimit();
                         if (limit > 0 && Plugin.PlayerWardCount < 999 && Plugin.PlayerWardCount >= limit)

@@ -337,20 +337,25 @@ namespace Deadheim.Wards
         /// somando todos os prefabs que contam para o limite, em vez de uma varredura
         /// por prefab como fazia o Util.GetCreatorPrefabCount.
         /// </summary>
-        public static int CountWardsOf(long playerId)
+        public static int CountWardsOf(long playerId) => CountOf(playerId, CommonWardHashes());
+
+        /// <summary>Servidor: wards comuns deste jogador dentro da area segura (so uma e permitida ali).</summary>
+        public static int CountWardsInSafeAreaOf(long playerId) => CountOf(playerId, CommonWardHashes(), InFullProtectionZone);
+
+        private static HashSet<int> CommonWardHashes()
         {
             HashSet<int> hashes = new HashSet<int>();
             hashes.Add(WardProfiles.VanillaWard.GetStableHashCode());
             if (WardProfiles.PlayerWardEnabled.Value)
                 hashes.Add(WardProfiles.PlayerWard.GetStableHashCode());
-            return CountOf(playerId, hashes);
+            return hashes;
         }
 
         /// <summary>Servidor: Wards de Territorio deste jogador (limite proprio, TerritoryWardLimit).</summary>
         public static int CountTerritoryWardsOf(long playerId)
             => CountOf(playerId, new HashSet<int> { WardProfiles.TerritoryWard.GetStableHashCode() });
 
-        private static int CountOf(long playerId, HashSet<int> hashes)
+        private static int CountOf(long playerId, HashSet<int> hashes, Func<Vector3, bool> where = null)
         {
             int count = 0;
             foreach (List<ZDO> sector in ZDOMan.instance.m_objectsBySector)
@@ -360,7 +365,9 @@ namespace Deadheim.Wards
                 {
                     ZDO zdo = sector[i];
                     if (zdo == null || !hashes.Contains(zdo.GetPrefab())) continue;
-                    if (zdo.GetLong(ZDOVars.s_creator, 0L) == playerId) count++;
+                    if (zdo.GetLong(ZDOVars.s_creator, 0L) != playerId) continue;
+                    if (where != null && !where(zdo.GetPosition())) continue;
+                    count++;
                 }
             }
             return count;

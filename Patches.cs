@@ -140,6 +140,7 @@ namespace Deadheim
             {
                 Plugin.PlayerWardCount = 999;
                 Plugin.PlayerPortalCount = 999;
+                Plugin.PlayerSafeAreaWardCount = 999;
             }
         }
 

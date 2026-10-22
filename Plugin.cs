@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.8.5";
+        public const string Version = "7.8.6";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -62,6 +62,8 @@ namespace Deadheim
         public static int PlayerPortalCount = 999;
         /// <summary>Wards de Territorio do jogador local, contadas pelo servidor. 999 = ainda sem resposta.</summary>
         public static int PlayerTerritoryWardCount = 999;
+        /// <summary>Wards comuns do jogador local dentro da area segura, contadas pelo servidor. 999 = ainda sem resposta.</summary>
+        public static int PlayerSafeAreaWardCount = 999;
 
         public static int maxPlayers = 50;
         public static List<ZRpc> validatedUsers = new List<ZRpc>();
