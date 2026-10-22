@@ -55,6 +55,11 @@ namespace Deadheim.Troca
             ["versao_antiga"] = "A oferta mudou; confira de novo.",
             ["vazia"] = "Nada foi oferecido.",
             ["sem_trava"] = "Os dois precisam travar a oferta antes de confirmar.",
+            ["aguarde"] = "Aguarde: um dos itens ainda esta sendo guardado.",
+            ["nome_ambiguo"] = "Ha mais de um jogador com esse nome; chegue perto e use /trocar sem nome.",
+            ["pendencias"] = "Voce tem entregas de troca pendentes; entre de novo no servidor para recebe-las.",
+            ["devagar"] = "Calma: espere alguns segundos antes de pedir outra troca.",
+            ["bloqueado"] = "Esse jogador recusou ha pouco; tente mais tarde.",
         };
 
         private static readonly Dictionary<string, string> Fins = new Dictionary<string, string>
@@ -75,7 +80,33 @@ namespace Deadheim.Troca
         private static bool _carregado;
         private static float _proximoTick;
 
+        // Limites contra abuso (tudo no servidor; o cliente nao e confiavel).
+        private const int MaxPendencias = 20;
+        private const double PedidoIntervaloSeg = 3;
+        private const double RecusaBloqueioSeg = 60;
+        private const int RajadaOps = 20;
+        private const double OpsPorSegundo = 8;
+
+        private static readonly Dictionary<long, double[]> _balde = new Dictionary<long, double[]>();
+        private static readonly Dictionary<long, double> _proxPedido = new Dictionary<long, double>();
+        private static readonly Dictionary<string, double> _bloqueio = new Dictionary<string, double>();
+        private static bool _sujo;
+
         private static double Agora => Time.time;
+
+        /// <summary>Balde de fichas por jogador: rajada de 20 operacoes, depois 8 por segundo.</summary>
+        private static bool Permitido(long peer)
+        {
+            double t = Agora;
+            if (!_balde.TryGetValue(peer, out double[] b)) _balde[peer] = b = new[] { (double)RajadaOps, t };
+            b[0] = Math.Min(RajadaOps, b[0] + (t - b[1]) * OpsPorSegundo);
+            b[1] = t;
+            if (b[0] < 1) return false;
+            b[0] -= 1;
+            return true;
+        }
+
+        private static int Pendencias(long jogador) => _motor.Pendentes.Count(e => e.Dono == jogador);
         private static bool EhServidor => ZNet.instance != null && ZNet.instance.IsServer();
 
         private static string ArquivoDoMundo()
@@ -130,20 +161,44 @@ namespace Deadheim.Troca
             }
         }
 
-        private static ZNetPeer PeerPorNome(string nome)
+        /// <summary>O jogador com esse nome. Dois com o mesmo nome = ambiguo (impostor): ninguem.</summary>
+        private static ZNetPeer PeerPorNome(string nome, out bool ambiguo)
         {
+            ambiguo = false;
             if (string.IsNullOrWhiteSpace(nome)) return null;
-            return ZNet.instance.GetPeers().FirstOrDefault(p => p != null &&
-                string.Equals(p.m_playerName, nome.Trim(), StringComparison.OrdinalIgnoreCase));
+            var achados = ZNet.instance.GetPeers().Where(p => p != null &&
+                string.Equals(p.m_playerName, nome.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+            ambiguo = achados.Count > 1;
+            return achados.Count == 1 ? achados[0] : null;
         }
 
-        private static string NomeDe(long uid) => ZNet.instance?.GetPeer(uid)?.m_playerName ?? "?";
+        /// <summary>Nome para a janela do outro lado: sem angulos, que viram rich text do IMGUI.</summary>
+        private static string NomeDe(long uid)
+            => (ZNet.instance?.GetPeer(uid)?.m_playerName ?? "?").Replace('<', ' ').Replace('>', ' ');
+
+        /// <summary>O que o jogo aceita de um item de verdade; recusa o que um cliente adulterado inventaria.</summary>
+        private static bool ItemValido(ItemDrop.ItemData item)
+        {
+            ItemDrop.ItemData.SharedData sh = item?.m_shared;
+            if (sh == null || item.m_dropPrefab == null || string.IsNullOrEmpty(sh.m_name)) return false;
+            if (item.m_stack <= 0 || item.m_stack > Mathf.Max(1, sh.m_maxStackSize)) return false;
+            if (item.m_quality < 1 || item.m_quality > Mathf.Max(1, sh.m_maxQuality)) return false;
+            if (item.m_variant < 0 || item.m_variant > 255) return false;
+            if (sh.m_useDurability && (item.m_durability < 0f || item.m_durability > item.GetMaxDurability() + 1f)) return false;
+            if (item.m_customData != null)
+            {
+                if (item.m_customData.Count > 16) return false;
+                foreach (var kv in item.m_customData)
+                    if ((kv.Key ?? "").Length > 64 || (kv.Value ?? "").Length > 512) return false;
+            }
+            return true;
+        }
 
         private static void OnToServer(long sender, ZPackage pkg)
         {
             if (!EhServidor) return;
             long real = RemetenteRpc.Real(sender, out _);
-            if (real == 0L) return;
+            if (real == 0L || !Permitido(real)) return;
 
             string op;
             try { op = pkg.ReadString(); }
@@ -176,17 +231,29 @@ namespace Deadheim.Troca
                 {
                     if (!Ativo.Value) return "desligado";
                     ZNetPeer eu = ZNet.instance.GetPeer(real);
-                    ZNetPeer alvo = PeerPorNome(pkg.ReadString());
+                    ZNetPeer alvo = PeerPorNome(pkg.ReadString(), out bool ambiguo);
+                    if (ambiguo) return "nome_ambiguo";
                     if (eu == null || alvo == null) return "sem_jogador";
                     if (alvo.m_uid != real && Vector3.Distance(eu.m_refPos, alvo.m_refPos) > Distancia.Value) return "longe";
+                    if (_proxPedido.TryGetValue(real, out double ate) && agora < ate) return "devagar";
+                    if (_bloqueio.TryGetValue(real + ">" + alvo.m_uid, out double ateBloqueio) && agora < ateBloqueio) return "bloqueado";
+                    if (Pendencias(real) >= MaxPendencias) return "pendencias";
+                    _proxPedido[real] = agora + PedidoIntervaloSeg;
                     return _motor.Pedir(real, alvo.m_uid, agora);
                 }
 
                 case "aceitar":
-                    return Ativo.Value ? _motor.Aceitar(real, agora) : "desligado";
+                    if (!Ativo.Value) return "desligado";
+                    return Pendencias(real) >= MaxPendencias ? "pendencias" : _motor.Aceitar(real, agora);
 
                 case "recusar":
-                    return _motor.Recusar(real);
+                {
+                    TrocaSessao pedido = _motor.SessaoDe(real);
+                    string erroRecusa = _motor.Recusar(real);
+                    // Quem pediu nao pode insistir no mesmo alvo logo em seguida.
+                    if (erroRecusa == null && pedido != null) _bloqueio[pedido.A + ">" + pedido.B] = agora + RecusaBloqueioSeg;
+                    return erroRecusa;
+                }
 
                 case "cancelar":
                     return _motor.Cancelar(real, "cancelou");
@@ -196,10 +263,10 @@ namespace Deadheim.Troca
                     if (!Ativo.Value) return "desligado";
                     string id = pkg.ReadString() ?? "";
                     string dados = pkg.ReadString() ?? "";
-                    if (id.Length == 0 || id.Length > 64) return "item_invalido";
+                    if (id.Length == 0 || id.Length > 64 || dados.Length == 0 || dados.Length > TrocaMotor.MaxDados) return "item_invalido";
+                    if (Pendencias(real) >= MaxPendencias) return "pendencias";
                     ItemDrop.ItemData item = Ler(dados);
-                    if (item?.m_dropPrefab == null || item.m_stack <= 0 || item.m_stack > Mathf.Max(1, item.m_shared.m_maxStackSize))
-                        return "item_invalido";
+                    if (!ItemValido(item)) return "item_invalido";
                     return _motor.Oferecer(real, new TrocaItem
                     {
                         Id = id,
@@ -210,13 +277,21 @@ namespace Deadheim.Troca
                     }, agora);
                 }
 
+                case "persistido":
+                {
+                    int n = Mathf.Clamp(pkg.ReadInt(), 0, TrocaMotor.MaxItens);
+                    var ids = new List<string>();
+                    for (int i = 0; i < n; i++) ids.Add(pkg.ReadString());
+                    return _motor.Persistido(real, ids, agora);
+                }
+
                 case "retirar": return _motor.Retirar(real, pkg.ReadString(), agora);
                 case "descartar": return _motor.Descartar(real, pkg.ReadString(), agora);
                 case "travar": return _motor.Travar(real, pkg.ReadInt(), agora);
                 case "confirmar": return _motor.Confirmar(real, pkg.ReadInt(), agora);
 
                 case "recebido":
-                    _motor.Recebido(real, pkg.ReadLong());
+                    if (_motor.Recebido(real, pkg.ReadLong())) _sujo = true;
                     return null;
             }
             return null;
@@ -228,7 +303,8 @@ namespace Deadheim.Troca
             if (ZRoutedRpc.instance == null) return;
             var efeitos = _motor.Efeitos.ToList();
             _motor.Efeitos.Clear();
-            Salvar();
+            if (efeitos.Count > 0 || _sujo) Salvar();
+            _sujo = false;
             foreach (TrocaEfeito e in efeitos)
             {
                 ZPackage p = new ZPackage();
@@ -245,7 +321,12 @@ namespace Deadheim.Troca
                         p.Write("entrega");
                         p.Write(e.Entrega.Id);
                         p.Write(e.Entrega.Itens.Count);
-                        foreach (TrocaItem i in e.Entrega.Itens) p.Write(i.Dados);
+                        foreach (TrocaItem i in e.Entrega.Itens)
+                        {
+                            p.Write(i.Id);
+                            p.Write(i.Origem == e.Entrega.Dono); // devolucao do que o proprio dono ofereceu
+                            p.Write(i.Dados);
+                        }
                         break;
                     case TrocaEfeitoTipo.Fim:
                         p.Write("fim");
@@ -267,7 +348,7 @@ namespace Deadheim.Troca
             foreach (List<TrocaItem> lista in new[] { s.Oferta(para), s.Oferta(outro) })
             {
                 p.Write(lista.Count);
-                foreach (TrocaItem i in lista) { p.Write(i.Id); p.Write(i.Nome); p.Write(i.Qtd); }
+                foreach (TrocaItem i in lista) { p.Write(i.Id); p.Write(i.Nome); p.Write(i.Qtd); p.Write(i.Seguro); }
             }
         }
 
@@ -345,6 +426,51 @@ namespace Deadheim.Troca
         private static readonly Dictionary<string, ItemDrop.ItemData> _aOferecer = new Dictionary<string, ItemDrop.ItemData>();
         private static readonly HashSet<long> _entregasFeitas = new HashSet<long>();
 
+        // Livro do proprio personagem (m_customData, gravado junto com o inventario no mesmo save):
+        // o que sai do inventario e o que ja foi entregue ficam consistentes mesmo se o jogo for
+        // morto no meio. Sem isso, matar o processo antes do save devolvia o item (duplicado).
+        private const string ChaveSaiu = "DH_Troca_Saiu";
+        private const string ChaveFeitas = "DH_Troca_Feitas";
+        private const int MaxLivro = 60;
+
+        private static readonly System.Reflection.FieldInfo _customData = AccessTools.Field(typeof(Player), "m_customData");
+
+        /// <summary>m_customData do personagem (por reflexao: nao confia em o campo ser publico no jogo original).</summary>
+        private static Dictionary<string, string> Dados(Player p) => (Dictionary<string, string>)_customData.GetValue(p);
+
+        private static List<string> LerLivro(Player p, string chave)
+            => Dados(p).TryGetValue(chave, out string v) && !string.IsNullOrEmpty(v) ? v.Split(',').ToList() : new List<string>();
+
+        private static void Anotar(Player p, string chave, string valor)
+        {
+            List<string> livro = LerLivro(p, chave);
+            livro.Add(valor);
+            if (livro.Count > MaxLivro) livro.RemoveRange(0, livro.Count - MaxLivro);
+            Dados(p)[chave] = string.Join(",", livro);
+        }
+
+        /// <summary>Grava o personagem agora (o salvamento normal e a cada tantos minutos).</summary>
+        private static void SalvarPerfil()
+        {
+            try
+            {
+                System.Reflection.MethodInfo m = AccessTools.Method(typeof(Game), "SavePlayerProfile");
+                if (m == null || Game.instance == null) return;
+                m.Invoke(Game.instance, m.GetParameters().Select(x => x.ParameterType == typeof(bool) ? (object)false : null).ToArray());
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[Deadheim] Troca: nao consegui gravar o personagem: " + ex.Message);
+            }
+        }
+
+        /// <summary>Oferta que nunca saiu do inventario (morte, logout): avisa o servidor para nao devolver.</summary>
+        private static void EsquecerPendentes()
+        {
+            foreach (string id in _aOferecer.Keys.ToList()) Enviar(Pacote("descartar", p => p.Write(id)));
+            _aOferecer.Clear();
+        }
+
         internal static bool EmOferta => Atual != null;
         internal static bool Pendente(ItemDrop.ItemData item) => _aOferecer.ContainsValue(item);
 
@@ -421,7 +547,7 @@ namespace Deadheim.Troca
             {
                 int n = pkg.ReadInt();
                 for (int i = 0; i < n; i++)
-                    lista.Add(new TrocaItem { Id = pkg.ReadString(), Nome = pkg.ReadString(), Qtd = pkg.ReadInt() });
+                    lista.Add(new TrocaItem { Id = pkg.ReadString(), Nome = pkg.ReadString(), Qtd = pkg.ReadInt(), Seguro = pkg.ReadBool() });
             }
             PedidoDe = null;
             Atual = v;
@@ -429,6 +555,7 @@ namespace Deadheim.Troca
 
             // Custodia confirmada pelo servidor: agora o item sai do inventario. Se ele ja nao
             // estava la (largou, moveu), o servidor descarta em vez de devolver, ou duplicaria.
+            var tirados = new List<string>();
             foreach (TrocaItem t in v.Minha)
             {
                 if (!_aOferecer.TryGetValue(t.Id, out ItemDrop.ItemData item)) continue;
@@ -439,8 +566,18 @@ namespace Deadheim.Troca
                 {
                     if (item.m_equipped) player.UnequipItem(item, false);
                     tirou = player.GetInventory().RemoveItem(item);
+                    if (tirou) Anotar(player, ChaveSaiu, t.Id);
                 }
-                if (!tirou) Enviar(Pacote("descartar", p => p.Write(t.Id)));
+                if (tirou) tirados.Add(t.Id);
+                else Enviar(Pacote("descartar", p => p.Write(t.Id)));
+            }
+
+            // So depois de gravar o personagem o servidor libera a troca: o item nao pode voltar
+            // do save antigo enquanto o destino ja o recebeu.
+            if (tirados.Count > 0)
+            {
+                SalvarPerfil();
+                Enviar(Pacote("persistido", p => { p.Write(tirados.Count); foreach (string id in tirados) p.Write(id); }));
             }
         }
 
@@ -448,21 +585,36 @@ namespace Deadheim.Troca
         {
             long id = pkg.ReadLong();
             int n = pkg.ReadInt();
-            var itens = new List<ItemDrop.ItemData>();
-            for (int i = 0; i < n; i++) itens.Add(Ler(pkg.ReadString()));
+            var itens = new List<(string id, bool devolucao, ItemDrop.ItemData item)>();
+            for (int i = 0; i < n; i++)
+            {
+                string itemId = pkg.ReadString();
+                bool devolucao = pkg.ReadBool();
+                itens.Add((itemId, devolucao, Ler(pkg.ReadString())));
+            }
 
             Player player = Player.m_localPlayer;
             if (player == null) return; // sem personagem: o servidor reenvia no proximo login
 
-            // Reenvio de uma entrega que ja entregamos (o "recebido" se perdeu): so confirma.
-            if (_entregasFeitas.Add(id))
+            // Entrega que o personagem ja registrou (reenvio, "recebido" perdido): so confirma.
+            bool feita = _entregasFeitas.Contains(id) || LerLivro(player, ChaveFeitas).Contains(id.ToString());
+            if (!feita)
             {
-                foreach (ItemDrop.ItemData item in itens)
+                List<string> saiu = LerLivro(player, ChaveSaiu);
+                int recebidos = 0;
+                foreach (var (itemId, devolucao, item) in itens)
                 {
                     if (item == null) { Debug.LogError($"[Deadheim] Troca: item ilegivel na entrega {id}."); continue; }
+                    // Devolucao de um item que nunca saiu do save (jogo morto antes de gravar): ele
+                    // ainda esta no inventario, devolver de novo duplicaria.
+                    if (devolucao && !saiu.Contains(itemId)) continue;
                     Entrega.ParaJogador(player, item);
+                    recebidos++;
                 }
-                if (itens.Count > 0) player.Message(MessageHud.MessageType.TopLeft, "Voce recebeu itens da troca.");
+                _entregasFeitas.Add(id);
+                Anotar(player, ChaveFeitas, id.ToString());
+                SalvarPerfil(); // grava ANTES de confirmar: confirmado = nunca mais reenviado
+                if (recebidos > 0) player.Message(MessageHud.MessageType.TopLeft, "Voce recebeu itens da troca.");
             }
             Enviar(Pacote("recebido", p => p.Write(id)));
         }
@@ -492,13 +644,17 @@ namespace Deadheim.Troca
         {
             private static void Prefix(Player __instance)
             {
-                if (__instance == Player.m_localPlayer && (Atual != null || PedidoDe != null)) Cancelar();
+                if (__instance != Player.m_localPlayer) return;
+                EsquecerPendentes();
+                if (Atual != null || PedidoDe != null) Cancelar();
             }
         }
 
         [HarmonyPatch(typeof(Game), nameof(Game.Logout))]
         private static class LogoutPatch
         {
+            private static void Prefix() => EsquecerPendentes();
+
             private static void Postfix()
             {
                 Atual = null; PedidoDe = null;

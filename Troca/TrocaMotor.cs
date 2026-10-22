@@ -15,6 +15,13 @@ namespace Deadheim.Troca
         public string Nome = "";
         public int Qtd;
         public string Dados = "";
+        /// <summary>Quem ofereceu. Entrega ao proprio Origem = devolucao; ao outro = recebimento.</summary>
+        public long Origem;
+        /// <summary>
+        /// O dono ja tirou o item do inventario E gravou o personagem (avisou "persistido"). Sem isso a
+        /// troca nao conclui: matar o jogo antes do save traria o item de volta junto com o do destino.
+        /// </summary>
+        public bool Seguro;
     }
 
     /// <summary>
@@ -138,10 +145,32 @@ namespace Deadheim.Troca
             var oferta = s.Oferta(jogador);
             if (oferta.Count >= MaxItens) return "cheio";
             if (IdEmUso(item.Id)) return "item_repetido";
-            oferta.Add(Copia(item));
+            var copia = Copia(item);
+            copia.Origem = jogador;
+            copia.Seguro = false;
+            oferta.Add(copia);
             Mudou(s, agora);
             return null;
         }
+
+        /// <summary>O cliente tirou os itens do inventario e gravou o personagem: ja podem ser trocados.</summary>
+        public string Persistido(long jogador, IEnumerable<string> ids, double agora)
+        {
+            var s = SessaoDe(jogador);
+            if (s == null || s.Fase != TrocaFase.Oferta) return "sem_sessao";
+            bool mudou = false;
+            foreach (string id in ids)
+            {
+                var item = s.Oferta(jogador).Find(x => x.Id == id);
+                if (item == null || item.Seguro) continue;
+                item.Seguro = true;
+                mudou = true;
+            }
+            if (mudou) { s.Atividade = agora; Avisar(s); }
+            return null;
+        }
+
+        private static bool TudoSeguro(TrocaSessao s) => s.OfertaA.All(i => i.Seguro) && s.OfertaB.All(i => i.Seguro);
 
         public string Retirar(long jogador, string itemId, double agora)
         {
@@ -178,6 +207,7 @@ namespace Deadheim.Troca
             if (s == null || s.Fase != TrocaFase.Oferta) return "sem_sessao";
             if (versaoVista != s.Versao) return "versao_antiga";
             if (s.OfertaA.Count + s.OfertaB.Count == 0) return "vazia";
+            if (!TudoSeguro(s)) return "aguarde";
             if (jogador == s.A) s.TravaA = true; else s.TravaB = true;
             s.Atividade = agora;
             Avisar(s);
@@ -190,6 +220,7 @@ namespace Deadheim.Troca
             if (s == null || s.Fase != TrocaFase.Oferta) return "sem_sessao";
             if (versaoVista != s.Versao) return "versao_antiga";
             if (!(s.TravaA && s.TravaB)) return "sem_trava";
+            if (!TudoSeguro(s)) return "aguarde";
             if (jogador == s.A) s.ConfA = true; else s.ConfB = true;
             s.Atividade = agora;
             if (s.ConfA && s.ConfB)
@@ -265,7 +296,8 @@ namespace Deadheim.Troca
                   .Append(e.Dono.ToString(CultureInfo.InvariantCulture)).Append('\n');
                 foreach (var i in e.Itens)
                     sb.Append("I\t").Append(B64(i.Id)).Append('\t').Append(B64(i.Nome)).Append('\t')
-                      .Append(i.Qtd.ToString(CultureInfo.InvariantCulture)).Append('\t').Append(B64(i.Dados)).Append('\n');
+                      .Append(i.Qtd.ToString(CultureInfo.InvariantCulture)).Append('\t').Append(B64(i.Dados)).Append('\t')
+                      .Append(i.Origem.ToString(CultureInfo.InvariantCulture)).Append('\n');
             }
             return sb.ToString();
         }
@@ -299,7 +331,7 @@ namespace Deadheim.Troca
                         maxId = Math.Max(maxId, atual.Id);
                     }
                     else if (p[0] == "I" && atual != null)
-                        atual.Itens.Add(new TrocaItem { Id = D64(p[1]), Nome = D64(p[2]), Qtd = int.Parse(p[3], CultureInfo.InvariantCulture), Dados = D64(p[4]) });
+                        atual.Itens.Add(new TrocaItem { Id = D64(p[1]), Nome = D64(p[2]), Qtd = int.Parse(p[3], CultureInfo.InvariantCulture), Dados = D64(p[4]), Origem = p.Length > 5 ? long.Parse(p[5], CultureInfo.InvariantCulture) : atual.Dono, Seguro = true });
                 }
             }
             catch (Exception)
@@ -353,7 +385,7 @@ namespace Deadheim.Troca
             => _porJogador.Values.Any(s => s.OfertaA.Any(i => i.Id == id) || s.OfertaB.Any(i => i.Id == id))
                || _entregas.Values.Any(e => e.Itens.Any(i => i.Id == id));
 
-        private static TrocaItem Copia(TrocaItem i) => new TrocaItem { Id = i.Id, Nome = i.Nome ?? "", Qtd = i.Qtd, Dados = i.Dados };
+        private static TrocaItem Copia(TrocaItem i) => new TrocaItem { Id = i.Id, Nome = i.Nome ?? "", Qtd = i.Qtd, Dados = i.Dados, Origem = i.Origem, Seguro = i.Seguro };
         private static string B64(string s) => Convert.ToBase64String(Encoding.UTF8.GetBytes(s ?? ""));
         private static string D64(string s) => Encoding.UTF8.GetString(Convert.FromBase64String(s));
     }

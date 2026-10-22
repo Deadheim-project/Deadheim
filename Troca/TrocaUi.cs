@@ -112,16 +112,17 @@ namespace Deadheim.Troca
 
             GUILayout.Space(8f);
             bool algo = v.Minha.Count + v.Dele.Count > 0;
+            bool guardando = v.Minha.Concat(v.Dele).Any(i => !i.Seguro);
             GUILayout.BeginHorizontal();
-            GUI.enabled = algo && !v.MinhaTrava;
+            GUI.enabled = algo && !guardando && !v.MinhaTrava;
             if (GUILayout.Button("1. Travar oferta")) TrocaRede.Travar();
-            GUI.enabled = v.MinhaTrava && v.OutroTrava && !v.MinhaConf;
+            GUI.enabled = v.MinhaTrava && v.OutroTrava && !v.MinhaConf && !guardando;
             if (GUILayout.Button("2. Confirmar troca")) TrocaRede.Confirmar();
             GUI.enabled = true;
             if (GUILayout.Button("Cancelar")) TrocaRede.Cancelar();
             GUILayout.EndHorizontal();
 
-            GUILayout.Label(Dica(v));
+            GUILayout.Label(guardando ? "Guardando os itens no servidor..." : Dica(v));
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 22f));
         }
 
