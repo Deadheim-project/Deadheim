@@ -171,6 +171,9 @@
     <Compile Include="Pets.cs" />
     <Compile Include="PetDrops.cs" />
     <Compile Include="Transmog.cs" />
+    <Compile Include="Troca\TrocaMotor.cs" />
+    <Compile Include="Troca\TrocaRede.cs" />
+    <Compile Include="Troca\TrocaUi.cs" />
     <Compile Include="TransmogApi.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />

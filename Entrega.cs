@@ -9,6 +9,21 @@ namespace Deadheim
     /// </summary>
     public static class Entrega
     {
+        /// <summary>
+        /// Entrega um item ja pronto (qualidade, durabilidade, dados customizados intactos), como na
+        /// troca entre jogadores. O AddItem(ItemData) completa as pilhas e deixa em m_stack o que nao
+        /// coube; esse resto cai aos pes. Devolve quanto caiu no chao.
+        /// </summary>
+        public static int ParaJogador(Player player, ItemDrop.ItemData item)
+        {
+            if (player == null || item?.m_shared == null || item.m_stack <= 0) return 0;
+            if (player.GetInventory().AddItem(item) || item.m_stack <= 0) return 0;
+            int resto = item.m_stack;
+            Vector3 at = player.transform.position + player.transform.forward + Vector3.up;
+            ItemDrop.DropItem(item, resto, at + Random.insideUnitSphere * 0.3f, Quaternion.identity);
+            return resto;
+        }
+
         /// <summary>Devolve quanto caiu no chao.</summary>
         public static int ParaJogador(Player player, GameObject prefab, int amount)
         {
