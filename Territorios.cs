@@ -418,8 +418,10 @@ namespace Deadheim
             }
         }
 
-        [HarmonyPatch(typeof(ArmorStand), "Interact")]
-        private static class ArmaduraInteragirPatch
+        // No jogo 1.0 o stand de armadura nao tem Interact: quem usa e o Switch de cada slot, que
+        // chama UseItem(Switch, Humanoid, ItemData) e confere CanUseItems antes.
+        [HarmonyPatch(typeof(ArmorStand), "UseItem")]
+        private static class ArmaduraUsarPatch
         {
             private static bool Prefix(ArmorStand __instance, Humanoid user, ref bool __result)
             {
@@ -429,12 +431,12 @@ namespace Deadheim
             }
         }
 
-        [HarmonyPatch(typeof(ArmorStand), "UseItem")]
-        private static class ArmaduraUsarPatch
+        [HarmonyPatch(typeof(ArmorStand), "CanUseItems")]
+        private static class ArmaduraPodePatch
         {
-            private static bool Prefix(ArmorStand __instance, Humanoid user, ref bool __result)
+            private static bool Prefix(ArmorStand __instance, Player player, ref bool __result)
             {
-                if (!InteracaoBloqueada(__instance, user)) return true;
+                if (!InteracaoBloqueada(__instance, player)) return true;
                 __result = false;
                 return false;
             }
