@@ -190,7 +190,7 @@ namespace Deadheim.Wards
             TerritoryWardRadius = Plugin.Synced(config.Bind(territory, "TerritoryWardRadius", 32,
                 "Raio da Ward de Territorio em metros (32 = o raio da ward do jogo). Tudo dentro dele fica indestrutivel."));
             TerritoryWardCost = Plugin.Synced(config.Bind(territory, "TerritoryWardCost", TerritoryToken + ":1,Stone:100,SurtlingCore:5",
-                "Custo no formato Item:Quantidade. Todo personagem recebe 1 " + TerritoryToken + " ao entrar ([Server config] TokensIniciais)."));
+                "Custo no formato Item:Quantidade."));
             TerritoryTokenRecover = Plugin.Synced(config.Bind(territory, "TerritoryTokenRecover", true,
                 "O dono recebe o " + TerritoryToken + " de volta ao remover a ward. Desligado, mudar de lugar custa outro token."));
             TerritoryWardLimit = Plugin.Synced(config.Bind(territory, "TerritoryWardLimit", 1,

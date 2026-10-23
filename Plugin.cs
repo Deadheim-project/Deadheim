@@ -217,7 +217,6 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Montarias.Bind(Config);
             Forja.Bind(Config);
             AdminImortal.Bind(Config);
-            TokensIniciais.Bind(Config);
             SkillsTeste.Bind(Config); // TEMPORARIO: remover no lancamento
             Treinador.Init();
             AesirConfig.Bind(Config);
