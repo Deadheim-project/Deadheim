@@ -409,6 +409,36 @@ namespace Deadheim.Wards
             }
         }
 
+        // ------------------------------------------------------------ item stand
+
+        /// <summary>
+        /// Interact e hover do ItemStand ja checam a ward no vanilla; UseItem (item na mao
+        /// apontado para o stand) nao, e deixava colocar item no stand de outro jogador.
+        /// </summary>
+        [HarmonyPatch(typeof(ItemStand), nameof(ItemStand.UseItem))]
+        public static class ItemStandUsePatch
+        {
+            private static bool Prefix(ItemStand __instance, ref bool __result)
+            {
+                try
+                {
+                    if (!WardProfiles.ProtectStands.Value) return true;
+                    if (Admin.LocalPlayerIsAdmin()) return true;
+
+                    if (!WardCore.IsBlocked(__instance.transform.position, Player.m_localPlayer,
+                            "Item stand protegido por um ward.")) return true;
+
+                    __result = true;
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning("[Wards] Patch de item stand falhou: " + ex.Message);
+                    return true;
+                }
+            }
+        }
+
         // ------------------------------------------------------------ nome de portal
 
         [HarmonyPatch(typeof(TeleportWorld), "SetText")]
