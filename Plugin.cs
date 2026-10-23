@@ -112,6 +112,7 @@ namespace Deadheim
             Ajustes.AjustesMenu.Update();
             Titulos.Tick(Player.m_localPlayer);
             Pets.Tick();
+            Territorios.Tick(Player.m_localPlayer);
 
             Player localPlayer = Player.m_localPlayer;
             bool flag = Player.m_localPlayer == null;
@@ -224,6 +225,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             AesirCraftConfig.Bind(Config);
             VipSlotsConfig.Bind(Config);
             Lugares.Bind(Config);
+            Territorios.Bind(Config);
             Troca.TrocaRede.Bind(Config);
             Plantas.Bind(Config);
             Pets.BindConfigs(Config);

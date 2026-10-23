@@ -156,6 +156,8 @@
     <Compile Include="Containers.cs" />
     <Compile Include="Cosmeticos.cs" />
     <Compile Include="Lugares.cs" />
+    <Compile Include="Territorios.cs" />
+    <Compile Include="TerritoriosUi.cs" />
     <Compile Include="Plantas.cs" />
     <Compile Include="PlantasUi.cs" />
     <Compile Include="CraftingStations.cs" />

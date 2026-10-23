@@ -59,7 +59,7 @@ namespace Deadheim.Pvp
         {
             if (IsArena(point)) return null;
             if (IsOnStartIsland(point)) return "Ilha Inicial";
-            return FindZone(Safe, point)?.Name;
+            return FindZone(Safe, point)?.Name ?? Territorios.NomeSeguro(point);
         }
 
         private static PvpConfig.Zone FindZone(List<PvpConfig.Zone> zones, Vector3 point)
