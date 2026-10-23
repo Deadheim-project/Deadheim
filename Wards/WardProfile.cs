@@ -111,6 +111,7 @@ namespace Deadheim.Wards
         public static ConfigEntry<int> MaxCharges;
         public static ConfigEntry<bool> GuildAccessEnabled;
         public static ConfigEntry<bool> ProtectTerrain;
+        public static ConfigEntry<bool> ProtectStands;
         public static ConfigEntry<bool> ProtectPortals;
         public static ConfigEntry<bool> ProtectPlants;
         public static ConfigEntry<bool> ProtectNature;
@@ -163,6 +164,8 @@ namespace Deadheim.Wards
                 "Membros da guild do dono tem acesso automatico ao ward."));
             ProtectTerrain = Plugin.Synced(config.Bind(section, "ProtectTerrain", true,
                 "Bloqueia picareta, hoe e cultivador dentro do ward."));
+            ProtectStands = Plugin.Synced(config.Bind(section, "ProtectStands", true,
+                "Bloqueia colocar item em item stand de outro jogador dentro do ward (retirar e armor stand o jogo ja protege)."));
             ProtectPortals = Plugin.Synced(config.Bind(section, "ProtectPortals", true,
                 "Bloqueia renomear portais dentro do ward."));
             ProtectPlants = Plugin.Synced(config.Bind(section, "ProtectPlants", true,
