@@ -106,6 +106,9 @@ namespace Deadheim.Pvp
 
         // ------------------------------------------------------------------ saque
         public static ConfigEntry<float> PvpCargoDropPercent;
+        public static ConfigEntry<bool> PvpCargoOnlyPk;
+        public static ConfigEntry<float> PvpCoinDropPercent;
+        public static ConfigEntry<float> PkCoinDropPercent;
         public static ConfigEntry<string> PvpCargoTypes;
         public static ConfigEntry<string> PvpCargoKeep;
 
@@ -333,6 +336,12 @@ namespace Deadheim.Pvp
             PvpCargoDropPercent = Bind(config, loot, "PvpCargoDropPercent", 50f,
                 "Porcentagem da carga (o que nao esta equipado e e de um tipo de PvpCargoTypes: minerio, metal, " +
                 "comida, trofeu...) que cai no chao na morte por jogador. Equipamento fica na tumba. 0 = desligado. Nao vale na arena.");
+            PvpCargoOnlyPk = Bind(config, loot, "PvpCargoOnlyPk", true,
+                "A carga so cai de quem morre marcado como PK. Desligado, cai de qualquer um morto por jogador.");
+            PvpCoinDropPercent = Bind(config, loot, "PvpCoinDropPercent", 3f,
+                "Porcentagem das moedas que cai no chao quando quem NAO e PK morre para jogador. 0 = desligado. Nao vale na arena.");
+            PkCoinDropPercent = Bind(config, loot, "PkCoinDropPercent", 3f,
+                "Porcentagem das moedas que cai no chao quando um PK morre para jogador. 0 = desligado. Nao vale na arena.");
             PvpCargoTypes = Bind(config, loot, "PvpCargoTypes", "Material,Consumable,Trophy,Fish",
                 "Tipos de item que contam como carga (ItemType do jogo): Material (minerio, metal, madeira...), " +
                 "Consumable (comida, hidromel), Trophy, Fish, Misc, Ammo...");

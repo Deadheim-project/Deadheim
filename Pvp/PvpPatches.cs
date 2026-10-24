@@ -269,9 +269,13 @@ namespace Deadheim.Pvp
                     if (wasPk && clearsPk) PvpState.ClearPk();
 
                     bool wasAggressor = PvpState.IsAggressor;
-                    // Antes do vanilla criar a tumba: carga que fica para quem matou. Moedas nunca caem (Moedas.cs).
-                    const int coinsDropped = 0;
-                    int cargoDropped = byPlayer && !arena ? DropCargo(__instance, pos) : 0;
+                    // Antes do vanilla criar a tumba: moedas e carga que ficam para quem matou. A carga, por
+                    // padrao, so cai do PK (PvpCargoOnlyPk); as moedas caem de todos, cada um com a sua taxa.
+                    bool loot = byPlayer && !arena;
+                    int coinsDropped = loot
+                        ? DropCoins(__instance, pos, wasPk ? PvpConfig.PkCoinDropPercent.Value : PvpConfig.PvpCoinDropPercent.Value)
+                        : 0;
+                    int cargoDropped = loot && (wasPk || !PvpConfig.PvpCargoOnlyPk.Value) ? DropCargo(__instance, pos) : 0;
 
                     PvpState.ForgetAttacker();
                     PvpState.ClearAggressor();
@@ -327,6 +331,28 @@ namespace Deadheim.Pvp
                 if (dropped > 0)
                     player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>{dropped} item(ns) da carga cairam no chao.</color>");
                 return dropped;
+            }
+
+            /// <summary>
+            /// Moedas: <paramref name="percent"/> da pilha cai no chao, arredondado para baixo (quem
+            /// tem pouca moeda nao perde nada). O resto fica com o jogador, como sempre (Moedas.cs).
+            /// </summary>
+            private static int DropCoins(Player player, Vector3 pos, float percent)
+            {
+                percent = Mathf.Clamp(percent, 0f, 100f);
+                Inventory inventory = player.GetInventory();
+                if (percent <= 0f || inventory == null) return 0;
+
+                ItemDrop.ItemData coins = Moedas.Organizar(inventory);
+                if (coins == null || coins.m_dropPrefab == null) return 0;
+                int amount = Mathf.Min(Mathf.FloorToInt(coins.m_stack * percent / 100f), coins.m_stack);
+                if (amount <= 0) return 0;
+
+                Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.6f;
+                if (!TryDrop(coins, amount, at)) return 0;
+                inventory.RemoveItem(coins, amount);
+                player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>{amount} moedas cairam no chao.</color>");
+                return amount;
             }
 
             /// <summary>

@@ -8,7 +8,8 @@ namespace Deadheim
     /// <summary>
     /// Moedas (Coins) do jogador: uma pilha so, sempre no primeiro slot da segunda linha do inventario (0,1, logo abaixo da hotbar), sem
     /// peso e sem limite pratico. Nao saem do jogador por vontade dele: nao se movem, nao se
-    /// dividem, nao vao para bau, chao nem tumba, e na morte ficam com ele. Quem tira e poe moedas
+    /// dividem, nao vao para bau, chao nem tumba, e na morte ficam com ele (so a parte do saque PvP,
+    /// PvpCoinDropPercent / PkCoinDropPercent, cai no chao). Quem tira e poe moedas
     /// sao os sistemas do jogo e dos mods (mercador, craft, NPCs, bounty), pelo RemoveItem/AddItem
     /// do inventario. O slot fica reservado mesmo sem moedas (mostra a moeda apagada com 0): nenhum outro item entra nele.
     /// Tudo so vale para o inventario do jogador local; baus, tumbas e o servidor ficam vanilla.
