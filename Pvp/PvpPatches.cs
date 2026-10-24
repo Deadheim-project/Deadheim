@@ -582,6 +582,7 @@ namespace Deadheim.Pvp
         /// teria o mesmo efeito do /retreat que o modulo bloqueia, entao vale a mesma regra.
         /// No HarmonyX devolver false nao para os prefixos seguintes: o do Hearthstone (2.1.1+)
         /// le __runOriginal e desiste, sem gastar a pedra.
+        /// A recarga e a mesma do /retreat (RetreatCooldownMinutes): usar um trava o outro.
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.ConsumeItem))]
         private static class HearthstoneCombatPatch
@@ -589,15 +590,25 @@ namespace Deadheim.Pvp
             [HarmonyPriority(Priority.First)]
             private static bool Prefix(Player __instance, ItemDrop.ItemData item, ref bool __result)
             {
-                if (!PvpConfig.Active || __instance != Player.m_localPlayer || item?.m_shared?.m_name == null) return true;
-                if (item.m_shared.m_name.IndexOf("hearthstone", StringComparison.OrdinalIgnoreCase) < 0) return true;
+                if (!IsLocalHearthstone(__instance, item)) return true;
 
-                string refusal = PvpModule.TeleportRefusal(PvpConfig.RetreatBlockedByPveCombat.Value);
+                string refusal = PvpModule.RetreatRefusal(__instance);
                 if (refusal == null) return true;
                 Refuse(__instance, refusal);
                 __result = false;
                 return false;
             }
+
+            // O Hearthstone so devolve true quando o teleporte saiu e a pedra foi gasta.
+            private static void Postfix(Player __instance, ItemDrop.ItemData item, bool __result)
+            {
+                if (__result && IsLocalHearthstone(__instance, item))
+                    PvpModule.MarkRetreatUsed(__instance);
+            }
+
+            private static bool IsLocalHearthstone(Player player, ItemDrop.ItemData item) =>
+                PvpConfig.Active && player == Player.m_localPlayer && item?.m_shared?.m_name != null
+                && item.m_shared.m_name.IndexOf("hearthstone", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         // ------------------------------------------------------ raids aleatorias do jogo

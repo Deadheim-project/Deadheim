@@ -115,7 +115,8 @@ namespace Deadheim
             Territorios.Tick(Player.m_localPlayer);
 
             Player localPlayer = Player.m_localPlayer;
-            bool flag = Player.m_localPlayer == null;
+            // Mesma guarda do Hearthstone: digitando no chat, o "P" maiusculo (Shift+P) gravava o ponto.
+            bool flag = Player.m_localPlayer == null || Chat.instance?.HasFocus() == true || Console.IsVisible() || Menu.IsVisible();
             if (!flag)
             {
                 bool flag2 = localPlayer.m_hovering;
@@ -132,11 +133,14 @@ namespace Deadheim
                             bool flag5 = bed.IsMine();
                             if (flag5)
                             {
-                                bool keyDown = Input.GetKeyDown(KeyCode.P);
+                                // A tecla e a setPointKey do mod Hearthstone. Sem Shift quem grava e a
+                                // pedra (o ponto e o mesmo); o Deadheim so cuida disso sem ela instalada.
+                                bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+                                bool keyDown = Input.GetKeyDown(Retreat.TeclaDoPonto) && (shift || !Retreat.HearthstoneCarregado);
                                 if (keyDown)
                                 {
-                                    // Aesir 18 (14/10/2026): Shift+P grava o segundo ponto, so para VIP com a chave ligada.
-                                    bool segundoPonto = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                                    // Aesir 18 (14/10/2026): Shift+tecla grava o segundo ponto, so para VIP com a chave ligada.
+                                    bool segundoPonto = shift
                                         && AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value
                                         && VipList.VipListApi.IsLocalPlayerVip();
                                     Retreat.SetHearthStonePosition(segundoPonto ? 2 : 1);

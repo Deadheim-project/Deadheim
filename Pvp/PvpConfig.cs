@@ -347,7 +347,7 @@ namespace Deadheim.Pvp
                 "Membros da guilda do dono tambem abrem a tumba (o dono precisa estar por perto).");
 
             RetreatCooldownMinutes = Bind(config, "PvP - Retreat", "RetreatCooldownMinutes", 30f,
-                "Minutos (de jogo aberto) entre dois usos do /retreat. Em combate ou cacado o retreat nao funciona.");
+                "Minutos (de jogo aberto) entre dois usos do /retreat ou da pedra de retorno (recarga compartilhada: usar um trava o outro). Em combate ou cacado nenhum dos dois funciona.");
             RetreatBlockedByPveCombat = Bind(config, "PvP - Retreat", "RetreatBlockedByPveCombat", true,
                 "Luta com monstro (dar ou levar dano) tambem bloqueia o /retreat e a pedra de retorno por CombatTagSeconds. " +
                 "Portal continua seguindo CombatFromPve.");

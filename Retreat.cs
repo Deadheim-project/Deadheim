@@ -1,4 +1,7 @@
-﻿using Deadheim.Shared;
+﻿using BepInEx;
+using BepInEx.Bootstrap;
+using BepInEx.Configuration;
+using Deadheim.Shared;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -115,14 +118,38 @@ namespace Deadheim
             {
                 if (__instance.IsMine() && (___m_nview.GetZDO().GetLong("owner", 0L) != 0) || Traverse.Create(__instance).Method("IsCurrent").GetValue<bool>())
                 {
-                    __result += Localization.instance.Localize($"\n[<color=yellow><b>P</b></color>] Definir ponto de retreat");
-                    // Aesir 18: segundo ponto, com Shift+P.
+                    KeyCode tecla = TeclaDoPonto;
+                    // Com a pedra instalada a linha dela ja anuncia a tecla (o ponto e o mesmo).
+                    if (!HearthstoneCarregado)
+                        __result += Localization.instance.Localize($"\n[<color=yellow><b>{tecla}</b></color>] Definir ponto de retreat");
+                    // Aesir 18: segundo ponto, com Shift+tecla.
                     if (AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value && VipList.VipListApi.IsLocalPlayerVip())
-                        __result += Localization.instance.Localize($"\n[<color=yellow><b>Shift+P</b></color>] Definir o segundo ponto de retreat");
+                        __result += Localization.instance.Localize($"\n[<color=yellow><b>Shift+{tecla}</b></color>] Definir o segundo ponto de retreat");
                 }
             }
         }
 
+
+        private const string HearthstoneGuid = "Detalhes.Hearthstone";
+        private static ConfigEntry<KeyCode> _teclaHearthstone;
+
+        public static bool HearthstoneCarregado => Chainloader.PluginInfos.ContainsKey(HearthstoneGuid);
+
+        /// <summary>
+        /// Tecla da cama: a setPointKey do mod Hearthstone (de cada jogador), lida pelo Config dele
+        /// porque o Deadheim nao referencia aquele assembly. Sem a pedra (ou antes da 2.1.2), P.
+        /// </summary>
+        public static KeyCode TeclaDoPonto
+        {
+            get
+            {
+                if (_teclaHearthstone == null
+                    && Chainloader.PluginInfos.TryGetValue(HearthstoneGuid, out PluginInfo info)
+                    && info?.Instance?.Config != null)
+                    info.Instance.Config.TryGetEntry("Client", "setPointKey", out _teclaHearthstone);
+                return _teclaHearthstone?.Value ?? KeyCode.P;
+            }
+        }
 
         /// <summary>Aesir 18: <paramref name="ponto"/> 1 ou 2 (fora disso cai no 1).</summary>
         public static void SetHearthStonePosition(int ponto = 1)
