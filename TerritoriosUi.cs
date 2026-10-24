@@ -17,13 +17,14 @@ namespace Deadheim
         internal static bool IsOpen => _instance != null && _instance._aberta;
 
         private bool _aberta;
-        private Rect _rect = new Rect(120f, 90f, 640f, 470f);
+        private Rect _rect = new Rect(120f, 90f, 640f, 500f);
         private Vector2 _scrollLista, _scrollPermitidos;
 
         private string _selecionado;
         private string _novoNome = "";
         private string _novoRaio = "50";
         private string _raio = "";
+        private string _prioridade = "0";
         private bool _construir, _estruturas, _seguro, _interacao;
         private List<string> _permitidos = new List<string>();
         private string _novoPermitido = "";
@@ -62,6 +63,7 @@ namespace Deadheim
         {
             _selecionado = t.Nome;
             _raio = t.Raio.ToString("0", CultureInfo.InvariantCulture);
+            _prioridade = t.Prioridade.ToString(CultureInfo.InvariantCulture);
             _construir = t.Construir; _estruturas = t.Estruturas; _seguro = t.Seguro; _interacao = t.Interacao;
             _permitidos = new List<string>(t.Permitidos);
         }
@@ -75,7 +77,7 @@ namespace Deadheim
             GUILayout.Label($"Territorios ({Territorios.Todos.Count})");
             _scrollLista = GUILayout.BeginScrollView(_scrollLista, GUILayout.Height(300f));
             foreach (Territorios.Territorio t in Territorios.Todos.ToArray())
-                if (GUILayout.Toggle(t.Nome == _selecionado, $"{t.Nome}  ({t.Raio:0} m)", GUI.skin.button) && t.Nome != _selecionado)
+                if (GUILayout.Toggle(t.Nome == _selecionado, $"{t.Nome}  ({t.Raio:0} m, p{t.Prioridade})", GUI.skin.button) && t.Nome != _selecionado)
                     Selecionar(t);
             GUILayout.EndScrollView();
 
@@ -113,7 +115,11 @@ namespace Deadheim
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Raio (m):", GUILayout.Width(70f));
                 _raio = GUILayout.TextField(_raio, 5, GUILayout.Width(60f));
+                GUILayout.Space(12f);
+                GUILayout.Label("Prioridade:", GUILayout.Width(70f));
+                _prioridade = GUILayout.TextField(_prioridade, 4, GUILayout.Width(45f));
                 GUILayout.EndHorizontal();
+                GUILayout.Label("(onde se sobrepoe a outro, vale o de prioridade maior)");
 
                 GUILayout.Space(4f);
                 _construir = GUILayout.Toggle(_construir, "Bloquear construcao e desmonte");
@@ -148,9 +154,10 @@ namespace Deadheim
                 GUILayout.FlexibleSpace();
                 GUILayout.BeginHorizontal();
                 bool raioOk = float.TryParse(_raio, NumberStyles.Float, CultureInfo.InvariantCulture, out float raio);
-                GUI.enabled = raioOk;
+                bool prioridadeOk = int.TryParse(_prioridade, NumberStyles.Integer, CultureInfo.InvariantCulture, out int prioridade);
+                GUI.enabled = raioOk && prioridadeOk;
                 if (GUILayout.Button("Aplicar"))
-                    Territorios.PedirEditar(atual.Nome, raio, _construir, _estruturas, _seguro, _interacao, _permitidos);
+                    Territorios.PedirEditar(atual.Nome, raio, _construir, _estruturas, _seguro, _interacao, _permitidos, prioridade);
                 GUI.enabled = true;
                 if (GUILayout.Button("Desfazer")) Selecionar(atual);
                 if (GUILayout.Button("Remover"))
