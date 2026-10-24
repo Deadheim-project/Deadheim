@@ -20,6 +20,8 @@ namespace Deadheim
     /// A lista fica no servidor, um arquivo de texto por mundo (como o Lugares.cs), e e enviada
     /// a cada cliente ao entrar e a cada mudanca. Quem constroi e quem apanha decide no proprio
     /// cliente, como o resto do mod; so o admin consegue mudar a lista (conferido no servidor).
+    /// Territorios podem se sobrepor: no ponto em comum valem so as regras do de maior prioridade
+    /// (empate: o criado primeiro).
     /// </summary>
     [HarmonyPatch]
     internal static class Territorios
@@ -29,6 +31,7 @@ namespace Deadheim
         private const float RaioPadrao = 50f;
         private const float RaioMaximo = 3000f;
         private const int NomeMaximo = 32;
+        private const int PrioridadeMaxima = 999;
 
         public static ConfigEntry<bool> Ativo;
 
@@ -48,6 +51,8 @@ namespace Deadheim
             /// <summary>Bloqueia stands de item/armadura, itens no chao e baus para quem nao e permitido.</summary>
             public bool Interacao;
             public List<string> Permitidos = new List<string>();
+            /// <summary>Onde dois territorios se sobrepoem, vale o de prioridade maior.</summary>
+            public int Prioridade;
 
             public bool Contem(Vector3 p)
             {
@@ -65,6 +70,7 @@ namespace Deadheim
                     "estruturas=" + (Estruturas ? "invulneraveis" : "normais"),
                     "seguro=" + (Seguro ? "sim" : "nao"),
                     "interacao=" + (Interacao ? "bloqueada" : "livre"),
+                    "prioridade=" + Prioridade,
                 });
         }
 
@@ -91,9 +97,11 @@ namespace Deadheim
         {
             if (Ativo == null || !Ativo.Value) return null;
             List<Territorio> lista = Lista;
+            Territorio melhor = null;
             for (int i = 0; i < lista.Count; i++)
-                if (lista[i].Contem(ponto)) return lista[i];
-            return null;
+                if (lista[i].Contem(ponto) && (melhor == null || lista[i].Prioridade > melhor.Prioridade))
+                    melhor = lista[i];
+            return melhor;
         }
 
         /// <summary>Nome do territorio seguro que cobre o ponto, para o PvP (ou null).</summary>
@@ -141,6 +149,7 @@ namespace Deadheim
                             Nome = c[0], X = x, Z = z, Raio = r,
                             Construir = c[4] == "1", Estruturas = c[5] == "1", Seguro = c[6] == "1",
                             Interacao = c.Length > 8 && c[8] == "1",
+                            Prioridade = c.Length > 9 && int.TryParse(c[9], NumberStyles.Integer, CultureInfo.InvariantCulture, out int pr) ? pr : 0,
                             Permitidos = (c.Length > 7 ? c[7] : "").Split(',').Select(n => n.Trim()).Where(n => n.Length > 0).ToList(),
                         });
                     }
@@ -167,7 +176,8 @@ namespace Deadheim
                     t.Raio.ToString("R", CultureInfo.InvariantCulture),
                     t.Construir ? "1" : "0", t.Estruturas ? "1" : "0", t.Seguro ? "1" : "0",
                     string.Join(",", t.Permitidos),
-                    t.Interacao ? "1" : "0"));
+                    t.Interacao ? "1" : "0",
+                    t.Prioridade.ToString(CultureInfo.InvariantCulture)));
                 string temp = _path + ".tmp";
                 File.WriteAllLines(temp, linhas);
                 File.Copy(temp, _path, true);
@@ -205,6 +215,8 @@ namespace Deadheim
                 pkg.Write(string.Join(",", t.Permitidos));
                 pkg.Write(t.Interacao);
             }
+            // As prioridades vao depois da lista: cliente antigo le os territorios e ignora o resto.
+            foreach (Territorio t in _lista) pkg.Write(t.Prioridade);
             ZRoutedRpc.instance.InvokeRoutedRPC(peerId, ToClient, pkg);
         }
 
@@ -229,6 +241,8 @@ namespace Deadheim
                     t.Interacao = pkg.ReadBool();
                     nova.Add(t);
                 }
+                if (pkg.GetPos() < pkg.Size())
+                    foreach (Territorio t in nova) t.Prioridade = pkg.ReadInt();
                 _lista = nova;
             }
             catch (Exception ex)
@@ -282,8 +296,11 @@ namespace Deadheim
                         bool construir = pkg.ReadBool(), estruturas = pkg.ReadBool(), seguro = pkg.ReadBool();
                         string permitidos = pkg.ReadString() ?? "";
                         bool interacao = pkg.ReadBool();
+                        int prioridade = pkg.GetPos() < pkg.Size() ? pkg.ReadInt() : (t?.Prioridade ?? 0);
                         if (t == null) { Pvp.PvpNet.Message(real, $"Nao achei '{nome}'."); return; }
                         if (!(raio >= 1f && raio <= RaioMaximo)) { Pvp.PvpNet.Message(real, $"Raio de 1 a {RaioMaximo:0} m."); return; }
+                        if (Math.Abs(prioridade) > PrioridadeMaxima) { Pvp.PvpNet.Message(real, $"Prioridade de -{PrioridadeMaxima} a {PrioridadeMaxima}."); return; }
+                        t.Prioridade = prioridade;
                         t.Raio = raio; t.Construir = construir; t.Estruturas = estruturas; t.Seguro = seguro; t.Interacao = interacao;
                         t.Permitidos = permitidos.Split(',').Select(Limpar).Where(s => s.Length > 0 && !s.Contains(',')).Distinct().ToList();
                         Pvp.PvpNet.Message(real, $"'{nome}' atualizado: raio {raio:0} m, {t.Flags()}.");
@@ -318,13 +335,14 @@ namespace Deadheim
             Pedir(pkg);
         }
 
-        internal static void PedirEditar(string nome, float raio, bool construir, bool estruturas, bool seguro, bool interacao, IEnumerable<string> permitidos)
+        internal static void PedirEditar(string nome, float raio, bool construir, bool estruturas, bool seguro, bool interacao, IEnumerable<string> permitidos, int prioridade)
         {
             ZPackage pkg = new ZPackage();
             pkg.Write("editar"); pkg.Write(nome); pkg.Write(raio);
             pkg.Write(construir); pkg.Write(estruturas); pkg.Write(seguro);
             pkg.Write(string.Join(",", permitidos));
             pkg.Write(interacao);
+            pkg.Write(prioridade);
             Pedir(pkg);
         }
 
@@ -503,7 +521,7 @@ namespace Deadheim
         // -------------------------------------------------------------------- comando /territorio
 
         private const string Ajuda =
-            "territorio (sem argumentos abre a janela) | criar <nome> [raio] | remover <nome> | raio <nome> <metros> | construir|estruturas|seguro|interacao <nome> <on|off> | permitir|negar <nome> <jogador> | lista | aqui";
+            "territorio (sem argumentos abre a janela) | criar <nome> [raio] | remover <nome> | raio <nome> <metros> | prioridade <nome> <numero> | construir|estruturas|seguro|interacao <nome> <on|off> | permitir|negar <nome> <jogador> | lista | aqui";
 
         [HarmonyPatch(typeof(Terminal), nameof(Terminal.InitTerminal))]
         private static class ComandoPatch
@@ -560,6 +578,7 @@ namespace Deadheim
             if (alvo == null) { ctx.AddString($"Nao achei '{nome}'. Use: territorio lista"); return; }
 
             float novoRaio = alvo.Raio;
+            int prioridadeNova = alvo.Prioridade;
             bool construir = alvo.Construir, estruturas = alvo.Estruturas, seguro = alvo.Seguro, interacao = alvo.Interacao;
             List<string> permitidos = new List<string>(alvo.Permitidos);
             string valor = args.Length >= 4 ? args[3] : "";
@@ -569,6 +588,10 @@ namespace Deadheim
                 case "raio":
                     if (!float.TryParse(valor, NumberStyles.Float, CultureInfo.InvariantCulture, out novoRaio))
                     { ctx.AddString("territorio raio <nome> <metros>"); return; }
+                    break;
+                case "prioridade":
+                    if (!int.TryParse(valor, NumberStyles.Integer, CultureInfo.InvariantCulture, out prioridadeNova))
+                    { ctx.AddString("territorio prioridade <nome> <numero> (maior vence onde se sobrepoem)"); return; }
                     break;
                 case "construir":
                 case "estruturas":
@@ -597,7 +620,7 @@ namespace Deadheim
                     return;
             }
 
-            PedirEditar(alvo.Nome, novoRaio, construir, estruturas, seguro, interacao, permitidos);
+            PedirEditar(alvo.Nome, novoRaio, construir, estruturas, seguro, interacao, permitidos, prioridadeNova);
         }
     }
 }
