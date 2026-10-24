@@ -244,6 +244,7 @@ namespace Deadheim.Pvp
                     bool wasPk = PvpState.IsPk;
                     bool wasPermanent = PvpState.IsPkPermanent;
                     PvpConfig.PkPenalty penalty = PvpState.PkPenalty;
+                    bool hasTier = PvpConfig.TryGetLocalTier(wasPermanent, PvpState.PkStreak, out PvpConfig.PkTier tier);
                     // O PK paga pelo nivel; com PkPenaltyOnPveDeath desligado, so quando e morto por jogador.
                     bool pkPays = wasPk && (byPlayer || PvpConfig.PkPenaltyOnPveDeath.Value);
 
@@ -270,12 +271,14 @@ namespace Deadheim.Pvp
 
                     bool wasAggressor = PvpState.IsAggressor;
                     // Antes do vanilla criar a tumba: moedas e carga que ficam para quem matou. A carga, por
-                    // padrao, so cai do PK (PvpCargoOnlyPk); as moedas caem de todos, cada um com a sua taxa.
+                    // padrao, so cai do PK (PvpCargoOnlyPk); as moedas caem de todos. O PK usa as taxas do
+                    // nivel dele em PkTiers, ou PkCoinDropPercent / PvpCargoDropPercent se o nivel nao tiver.
                     bool loot = byPlayer && !arena;
-                    int coinsDropped = loot
-                        ? DropCoins(__instance, pos, wasPk ? PvpConfig.PkCoinDropPercent.Value : PvpConfig.PvpCoinDropPercent.Value)
-                        : 0;
-                    int cargoDropped = loot && (wasPk || !PvpConfig.PvpCargoOnlyPk.Value) ? DropCargo(__instance, pos) : 0;
+                    float coinPercent = !wasPk ? PvpConfig.PvpCoinDropPercent.Value
+                        : hasTier && tier.CoinPercent >= 0f ? tier.CoinPercent : PvpConfig.PkCoinDropPercent.Value;
+                    float cargoPercent = wasPk && hasTier && tier.CargoPercent >= 0f ? tier.CargoPercent : PvpConfig.PvpCargoDropPercent.Value;
+                    int coinsDropped = loot ? DropCoins(__instance, pos, coinPercent) : 0;
+                    int cargoDropped = loot && (wasPk || !PvpConfig.PvpCargoOnlyPk.Value) ? DropCargo(__instance, pos, cargoPercent) : 0;
 
                     PvpState.ForgetAttacker();
                     PvpState.ClearAggressor();
@@ -300,9 +303,9 @@ namespace Deadheim.Pvp
             /// tumba. A fracao que sobra vira sorteio: 50% de uma pilha de 1 cai metade das vezes.
             /// Moedas nunca caem.
             /// </summary>
-            private static int DropCargo(Player player, Vector3 pos)
+            private static int DropCargo(Player player, Vector3 pos, float percent)
             {
-                float percent = Mathf.Clamp(PvpConfig.PvpCargoDropPercent.Value, 0f, 100f);
+                percent = Mathf.Clamp(percent, 0f, 100f);
                 Inventory inventory = player.GetInventory();
                 if (percent <= 0f || inventory == null) return 0;
 

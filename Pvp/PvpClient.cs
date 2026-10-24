@@ -79,8 +79,9 @@ namespace Deadheim.Pvp
                     if (pkg.GetPos() < pkg.Size()) RelogioServidor.Sincronizar(pkg.ReadDouble());
                     _pveReadyIn = pkg.GetPos() < pkg.Size() ? pkg.ReadDouble() : 0d;
                     _pveReadyAt = PvpState.Mono;
+                    int pkStreak = pkg.GetPos() < pkg.Size() ? pkg.ReadInt() : 0;
                     PvpState.ApplyServerTimers(pk, pending, hunted, BountyPot > 0 && BountyUntilDeath);
-                    PvpState.ApplyPk(pkPermanent, (PvpConfig.PkPenalty)pkPenalty);
+                    PvpState.ApplyPk(pkPermanent, (PvpConfig.PkPenalty)pkPenalty, pkStreak);
                     PvpState.ApplyPkCount(Player.m_localPlayer, pkCount);
                     break;
                 }

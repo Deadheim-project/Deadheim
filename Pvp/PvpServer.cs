@@ -120,6 +120,8 @@ namespace Deadheim.Pvp
             pkg.Write(record.pvePermanent);
             pkg.Write(Now);
             pkg.Write(PvpPve.SwitchReadyIn(record));
+            // Sequencia de PK: o cliente escolhe por ela o nivel (PkTiers) e o saque desse nivel.
+            pkg.Write(pk ? record.pkStreak : 0);
             PvpNet.SendToClient(peer.PeerId, pkg);
         }
 

@@ -161,11 +161,13 @@ namespace Deadheim.Pvp
                 "Mais longe, a morte conta como PvE. 0 = sem limite.");
 
             const string pk = "PvP - PK";
-            PkTiers = Bind(config, pk, "PkTiers", "1:60:Skills,2:120:Skills,3:1440:Unequipped,5:-1:All",
-                "Niveis de PK pela quantidade de abates que deram PK seguidos: Abates:Minutos:Perda,... " +
+            PkTiers = Bind(config, pk, "PkTiers", "1:60:Skills:3:50,2:120:Skills:3:50,3:1440:Unequipped:3:50,5:-1:All:3:50",
+                "Niveis de PK pela quantidade de abates que deram PK seguidos: Abates:Minutos:Perda:Moedas:Carga,... " +
                 "Minutos -1 = PK permanente ate ser morto por jogador (fica no mapa de todos). " +
                 "Perda ao morrer marcado: Skills = so skill (x PkSkillLossMultiplier); Unequipped = skill e tudo que nao esta " +
-                "equipado cai no chao; All = skill e o inventario inteiro cai no chao. A contagem zera quando a marca some. " +
+                "equipado cai no chao; All = skill e o inventario inteiro cai no chao. " +
+                "Moedas e Carga = % das moedas e da carga que cai no chao quando o PK desse nivel morre para jogador; " +
+                "sem elas valem PkCoinDropPercent e PvpCargoDropPercent. A contagem zera quando a marca some. " +
                 "Nao gera PK: arena, castelo em raid, alvo PK, alvo cacado ou alvo agressor (AggressorRule).");
             PkSkillLossMultiplier = Bind(config, pk, "PkSkillLossMultiplier", 2f,
                 "Multiplicador da perda de skill de quem morre marcado como PK.");
@@ -341,7 +343,8 @@ namespace Deadheim.Pvp
             PvpCoinDropPercent = Bind(config, loot, "PvpCoinDropPercent", 3f,
                 "Porcentagem das moedas que cai no chao quando quem NAO e PK morre para jogador. 0 = desligado. Nao vale na arena.");
             PkCoinDropPercent = Bind(config, loot, "PkCoinDropPercent", 3f,
-                "Porcentagem das moedas que cai no chao quando um PK morre para jogador. 0 = desligado. Nao vale na arena.");
+                "Porcentagem das moedas que cai no chao quando um PK morre para jogador, se o nivel dele em PkTiers nao " +
+                "tiver a propria. 0 = desligado. Nao vale na arena.");
             PvpCargoTypes = Bind(config, loot, "PvpCargoTypes", "Material,Consumable,Trophy,Fish",
                 "Tipos de item que contam como carga (ItemType do jogo): Material (minerio, metal, madeira...), " +
                 "Consumable (comida, hidromel), Trophy, Fish, Misc, Ammo...");
@@ -421,7 +424,21 @@ namespace Deadheim.Pvp
             /// <summary>Minutos de PK; 0 ou menos = permanente.</summary>
             public float Minutes;
             public PkPenalty Penalty;
+            /// <summary>% das moedas que cai na morte por jogador; negativo = PkCoinDropPercent.</summary>
+            public float CoinPercent;
+            /// <summary>% da carga que cai na morte por jogador; negativo = PvpCargoDropPercent.</summary>
+            public float CargoPercent;
             public bool Permanent => Minutes <= 0f;
+        }
+
+        /// <summary>
+        /// Nivel de PK do jogador local para o saque: o permanente usa o ultimo nivel permanente
+        /// (um admin pode marcar permanente sem a sequencia ter chegado la).
+        /// </summary>
+        public static bool TryGetLocalTier(bool permanent, int streak, out PkTier tier)
+        {
+            if (permanent && TryGetTier(int.MaxValue, out tier) && tier.Permanent) return true;
+            return TryGetTier(Math.Max(1, streak), out tier);
         }
 
         private static string _tiersText;
@@ -444,17 +461,27 @@ namespace Deadheim.Pvp
                         || !float.TryParse(p[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float minutes))
                     {
                         if (!string.IsNullOrWhiteSpace(raw))
-                            Debug.LogWarning($"[Deadheim PvP] PkTiers: entrada ignorada '{raw}'. Formato: Abates:Minutos:Perda");
+                            Debug.LogWarning($"[Deadheim PvP] PkTiers: entrada ignorada '{raw}'. Formato: Abates:Minutos:Perda:Moedas:Carga");
                         continue;
                     }
                     PkPenalty penalty = PkPenalty.Skills;
                     if (p.Length >= 3 && !Enum.TryParse(p[2].Trim(), true, out penalty)) penalty = PkPenalty.Skills;
-                    _tiers.Add(new PkTier { Kills = Math.Max(1, kills), Minutes = minutes, Penalty = penalty });
+                    _tiers.Add(new PkTier
+                    {
+                        Kills = Math.Max(1, kills), Minutes = minutes, Penalty = penalty,
+                        CoinPercent = TierPercent(p, 3), CargoPercent = TierPercent(p, 4),
+                    });
                 }
                 _tiers.Sort((a, b) => a.Kills.CompareTo(b.Kills));
                 return _tiers;
             }
         }
+
+        /// <summary>Campo opcional de porcentagem do PkTiers; ausente ou invalido = -1 (usa a config geral).</summary>
+        private static float TierPercent(string[] p, int index)
+            => p.Length > index && float.TryParse(p[index].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float v) && v >= 0f
+                ? v
+                : -1f;
 
         /// <summary>Nivel de PK de quem acumula <paramref name="streak"/> abates que deram PK.</summary>
         public static bool TryGetTier(int streak, out PkTier tier)

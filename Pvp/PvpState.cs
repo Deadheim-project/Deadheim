@@ -64,6 +64,7 @@ namespace Deadheim.Pvp
         private static double _pkUntil;
         private static bool _pkPermanent;
         private static PvpConfig.PkPenalty _pkPenalty;
+        private static int _pkStreak;
         private static bool _huntedForever;
         private static float _lastTick;
         private static double _huntPendingUntil;
@@ -91,6 +92,8 @@ namespace Deadheim.Pvp
         public static bool IsPkPermanent => _pkPermanent;
         /// <summary>O que o PK perde ao morrer, pelo nivel atual (PkTiers).</summary>
         public static PvpConfig.PkPenalty PkPenalty => _pkPenalty;
+        /// <summary>Abates seguidos que deram PK (escolhe o nivel em PkTiers); 0 sem PK.</summary>
+        public static int PkStreak => _pkStreak;
         public static bool IsHunted => _huntedForever || _huntedUntil > Mono;
         /// <summary>Bounty sem fim: so acaba morrendo para jogador.</summary>
         public static bool IsHuntedForever => _huntedForever;
@@ -137,6 +140,7 @@ namespace Deadheim.Pvp
             _pkUntil = 0d;
             _pkPermanent = false;
             _pkPenalty = PvpConfig.PkPenalty.Skills;
+            _pkStreak = 0;
             _huntedForever = false;
             _huntPendingUntil = 0d;
             _huntedUntil = 0d;
@@ -208,10 +212,11 @@ namespace Deadheim.Pvp
             _huntedForever = huntedUntilDeath && huntPendingRemaining <= 0d;
         }
 
-        public static void ApplyPk(bool permanent, PvpConfig.PkPenalty penalty)
+        public static void ApplyPk(bool permanent, PvpConfig.PkPenalty penalty, int streak = 0)
         {
             _pkPermanent = permanent;
             _pkPenalty = penalty;
+            _pkStreak = Math.Max(0, streak);
         }
 
         public static void ApplyPkCount(Player player, int count)
@@ -262,6 +267,7 @@ namespace Deadheim.Pvp
             _pkUntil = 0d;
             _pkPermanent = false;
             _pkPenalty = PvpConfig.PkPenalty.Skills;
+            _pkStreak = 0;
         }
 
         public static void MarkCombat()
