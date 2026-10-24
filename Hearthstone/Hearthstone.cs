@@ -17,17 +17,21 @@ namespace Hearthstone
 		// 2.1.1: a pedra respeita a recusa do Deadheim (__runOriginal) e so gasta se teleportar;
 		// ponto de retorno gravado com ponto decimal. MinimumRequiredVersion = Version: todo
 		// cliente precisa da correcao, senao a pedra continua escapando de luta.
-		public const string Version = "2.1.1";
+		// 2.1.2: tecla de definir o ponto na cama configuravel (setPointKey, de cada jogador). So
+		// muda o cliente, entao o minimo continua 2.1.1.
+		public const string Version = "2.1.2";
+		public const string MinimumVersion = "2.1.1";
 
 		private Harmony harmony = new Harmony(PluginGUID);
 
 		public static ConfigEntry<bool> allowTeleportWithoutRestriction;
+		public static ConfigEntry<KeyCode> setPointKey;
 
 		private ConfigSync configSync = new ConfigSync(PluginGUID)
 		{
 			DisplayName = "Hearthstone",
 			CurrentVersion = Version,
-			MinimumRequiredVersion = Version
+			MinimumRequiredVersion = MinimumVersion
 		};
 
 		private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
@@ -46,6 +50,9 @@ namespace Hearthstone
 		private void Awake()
 		{
 			Hearthstone.allowTeleportWithoutRestriction = this.config<bool>("General", "allowTeleportWithoutRestriction", false, "Allow teleport without restriction", true);
+			// Do jogador, nao do servidor: cada um escolhe a sua tecla. O Deadheim le esta mesma
+			// entrada para o ponto do /retreat (o ponto e o mesmo) e para o Shift+tecla do Aesir.
+			Hearthstone.setPointKey = this.config<KeyCode>("Client", "setPointKey", KeyCode.P, "Tecla para definir o ponto de retorno olhando para a sua cama.", false);
 			Item item = new Item("hearthstone", "Hearthstone", "assets");
 			item.RequiredItems.Add("Crystal", 3);
 			item.RequiredItems.Add("Coins", 30);
@@ -93,7 +100,9 @@ namespace Hearthstone
 
 				if (ownerId == localPlayer.GetPlayerID())
 				{
-					if (Input.GetKeyDown(KeyCode.P))
+					// Shift+tecla fica com o Deadheim (segundo ponto do Aesir): aqui gravaria o primeiro junto.
+					bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+					if (Input.GetKeyDown(setPointKey.Value) && !shift)
 					{
 						SetHearthStonePosition();
 						localPlayer.Message(MessageHud.MessageType.Center, "Here is your new Hearthstone spawn", 0, null);

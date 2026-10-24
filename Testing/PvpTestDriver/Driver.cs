@@ -912,6 +912,8 @@ namespace PvpTestDriver
             }
 
             yield return Wait(CombatWait);
+            // A recarga e a do /retreat, que o teste anterior acabou de marcar.
+            PvpModule.ClearRetreatCooldown(Me);
             Vector3 home = Me.transform.position;
             Deadheim.Retreat.SetHearthStonePosition();
             yield return MoveTo(home + Vector3.forward * 30f);
@@ -939,6 +941,15 @@ namespace PvpTestDriver
             Check("pedra/fora-de-luta-teleporta-e-gasta-uma", went && CountItem(Me, "Hearthstone") == stones - 1
                                                              && Utils.DistanceXZ(Me.transform.position, home) < 3f,
                 $"usou={went} pedras={CountItem(Me, "Hearthstone")}/{stones} distancia={Utils.DistanceXZ(Me.transform.position, home):0.0}");
+
+            // Recarga compartilhada: a pedra marcou a do /retreat e agora ela mesma fica recusada.
+            string refusal = PvpModule.RetreatRefusal(Me);
+            Check("pedra/marca-recarga-do-retreat", refusal != null && refusal.Contains("recarga"), refusal);
+            int left = CountItem(Me, "Hearthstone");
+            bool again = Me.ConsumeItem(Me.GetInventory(), Me.GetInventory().GetItem(name));
+            Check("pedra/bloqueada-pela-recarga", !again && CountItem(Me, "Hearthstone") == left,
+                $"usou={again} pedras={CountItem(Me, "Hearthstone")}/{left}");
+            PvpModule.ClearRetreatCooldown(Me);
             Me.GetInventory().RemoveItem(name, CountItem(Me, "Hearthstone"));
         }
 

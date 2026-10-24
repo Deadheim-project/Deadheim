@@ -91,6 +91,13 @@ namespace Deadheim.Pvp
             SaveRetreat(player);
         }
 
+        /// <summary>Zera a recarga do /retreat e da pedra (usado pelo PvpTestDriver).</summary>
+        public static void ClearRetreatCooldown(Player player)
+        {
+            _retreatReadyAt = 0d;
+            SaveRetreat(player);
+        }
+
         /// <summary>
         /// Recarga do /retreat gravada como segundos que faltam e descontada so com o jogo aberto.
         /// O horario de parede do 7.3.0 zerava ao adiantar o relogio do Windows.

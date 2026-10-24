@@ -72,10 +72,10 @@ namespace Hearthstone
                     // Lê o dono usando o ZDOVars (mais seguro e atualizado)
                     long ownerId = ___m_nview.GetZDO().GetLong(ZDOVars.s_owner, 0L);
 
-                    // 2. Adiciona o texto de P se for a cama do jogador
+                    // 2. Adiciona o texto da tecla (setPointKey) se for a cama do jogador
                     if (ownerId == Player.m_localPlayer.GetPlayerID() || Traverse.Create(__instance).Method("IsCurrent").GetValue<bool>())
                     {
-                        __result += Localization.instance.Localize($"\n[<color=yellow><b>P</b></color>] Set hearthstone");
+                        __result += Localization.instance.Localize($"\n[<color=yellow><b>{Hearthstone.setPointKey.Value}</b></color>] Definir ponto da Hearthstone");
                     }
                 }
             }
