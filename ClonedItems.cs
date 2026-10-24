@@ -546,6 +546,34 @@ namespace Deadheim
                 SetLayerRecursively(root.GetChild(i), layer);
         }
 
+        // Antes da 7.8.1 o palco do ícone criava um ZDO "PetIconModel" (perto da origem) a cada vez que
+        // um cliente entrava; o servidor gravou todos no mundo e eles seguem fazendo quem passa perto
+        // spamar "Missing prefab hash: 1461255765". O servidor apaga esses órfãos ao carregar o mundo.
+        [HarmonyPatch(typeof(ZDOMan), nameof(ZDOMan.Load))]
+        private static class PurgePetIconZdosPatch
+        {
+            private static readonly int PetIconModelHash = "PetIconModel".GetStableHashCode();
+            // m_objectsByID é privado no assembly original: acesso direto pelo publicizado dá FieldAccessException.
+            private static readonly AccessTools.FieldRef<ZDOMan, Dictionary<ZDOID, ZDO>> ObjectsById =
+                AccessTools.FieldRefAccess<ZDOMan, Dictionary<ZDOID, ZDO>>("m_objectsByID");
+
+            private static void Postfix(ZDOMan __instance)
+            {
+                List<ZDO> orphans = ObjectsById(__instance).Values
+                    .Where(zdo => zdo != null && zdo.GetPrefab() == PetIconModelHash)
+                    .ToList();
+                if (orphans.Count == 0) return;
+
+                long sessionId = ZDOMan.GetSessionID();
+                foreach (ZDO zdo in orphans)
+                {
+                    zdo.SetOwner(sessionId);
+                    __instance.DestroyZDO(zdo);
+                }
+                Debug.Log($"[Deadheim] {orphans.Count} ZDO(s) órfão(s) de 'PetIconModel' removido(s) do mundo.");
+            }
+        }
+
         private static void AddAdminWards()
         {
             AddBigdminWard();
