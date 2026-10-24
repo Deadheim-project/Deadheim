@@ -16,7 +16,8 @@ namespace Deadheim.Craft
     /// A quantidade usa a fabricacao em lote que o Valheim 1.0 ja tem (Shift = x5): o jogo
     /// multiplica requisitos, custo, espaco no inventario, bonus e skill por m_multiCraftAmount.
     /// Aqui esse numero vira o escolhido no painel, e o lote e ligado pelo m_touchMultiCrafting
-    /// (o mesmo que o toque longo do jogo usa), sem precisar segurar Shift.
+    /// (o mesmo que o toque longo do jogo usa), sem precisar segurar Shift. Com quantidade 1 (e
+    /// para quem nao e Aesir) o lote volta ao valor vanilla, e o Shift faz o x5 normal.
     ///
     /// Os controles sao clonados do proprio jogo: o campo de busca do menu de construcao e o
     /// botao Fabricar, para ficarem com a cara do Valheim.
@@ -311,11 +312,28 @@ namespace Deadheim.Craft
             return !(estacao && estacao.m_upgrader);
         }
 
+        // Lote do Shift no vanilla (m_multiCraftAmount = 5 no 1.0), lido antes da primeira troca.
+        private static int? _loteVanilla;
+        // O m_touchMultiCrafting ligado agora e nosso (e nao o toque longo do jogo).
+        private static bool _loteNosso;
+
+        /// <summary>
+        /// Com a quantidade (Aesir) acima de 1, o lote vira ela. Fora isso o jogo fica como o
+        /// vanilla: Shift fabrica m_multiCraftAmount original para qualquer jogador.
+        /// </summary>
         private static void AplicarLote(InventoryGui gui, bool aceita)
         {
-            int lote = aceita ? Quantidade : 1;
-            gui.m_multiCraftAmount = lote;
-            gui.m_touchMultiCrafting = lote > 1;
+            if (_loteVanilla == null) _loteVanilla = gui.m_multiCraftAmount;
+            if (aceita && Quantidade > 1)
+            {
+                gui.m_multiCraftAmount = Quantidade;
+                gui.m_touchMultiCrafting = true;
+                _loteNosso = true;
+                return;
+            }
+            gui.m_multiCraftAmount = _loteVanilla.Value;
+            if (_loteNosso) gui.m_touchMultiCrafting = false;
+            _loteNosso = false;
         }
 
         private static void MostrarControles(InventoryGui gui, bool mostrar)
@@ -380,15 +398,6 @@ namespace Deadheim.Craft
                 // Durante a contagem o lote fica o do clique: o DoCrafting le o m_multiCraftAmount no fim.
                 if (!fabricando) AplicarLote(__instance, aceita);
                 MostrarControles(__instance, aceita && !fabricando);
-            }
-
-            private static void Postfix(InventoryGui __instance)
-            {
-                // Com quantidade 1 e Shift apertado, o jogo escreveria "Fabricar x 1".
-                if (Quantidade != 1 || !__instance.m_selectedRecipe.Recipe) return;
-                TMP_Text texto = __instance.m_craftButton.GetComponentInChildren<TMP_Text>();
-                if (texto && texto.text.EndsWith(" x 1", StringComparison.Ordinal))
-                    texto.text = texto.text.Substring(0, texto.text.Length - 4);
             }
         }
 
