@@ -52,6 +52,7 @@ namespace Deadheim
         public static ConfigEntry<bool> ResetWorldDay;
         public static ConfigEntry<int> SkillCap;
         public static ConfigEntry<string> PortalMaterials;
+        public static ConfigEntry<string> PortalStoneMaterials;
         public static ConfigEntry<int> CartographyTableAmount;
         public static ConfigEntry<bool> EdgeOfWorldKills;
         public static ConfigEntry<bool> MonsterScalingAlliesOnly;
@@ -206,6 +207,9 @@ new ConfigDescription("boatWindSpeedmultiplier")));
 
             PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:50,GreydwarfEye:30,SurtlingCore:5",
     new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
+
+            PortalStoneMaterials = Synced(Config.Bind("Portal Mats", "PortalStoneMaterials", "PortalToken:2,GreydwarfEye:30,Grausten:50,MoltenCore:5",
+    new ConfigDescription("Materiais do Portal de Pedra (portal_stone). Formato: PrefabName:Amount,PrefabName:Amount")));
 
             CartographyTableAmount = Synced(Config.Bind("Server config", "CartographyTableAmount", 0,
     new ConfigDescription("Quantidade de cada material da mesa de cartografia. 0 = receita do jogo.")));
