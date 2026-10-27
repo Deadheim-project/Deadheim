@@ -13,7 +13,13 @@ namespace Deadheim
         {
             public static void UpdatePortalMaterials()
             {
-                GameObject portalwood = Prefabs.Get("portal_wood");
+                ApplyMaterials("portal_wood", Plugin.PortalMaterials.Value);
+                ApplyMaterials("portal_stone", Plugin.PortalStoneMaterials.Value);
+            }
+
+            private static void ApplyMaterials(string portalPrefab, string config)
+            {
+                GameObject portalwood = Prefabs.Get(portalPrefab);
                 if (portalwood == null) return;
 
                 var portalwoodPiece = portalwood.GetComponent<Piece>();
@@ -22,7 +28,7 @@ namespace Deadheim
                 List<Piece.Requirement> newRequirements = new List<Piece.Requirement>();
 
                 // Quebra a string "Item:1,Item:2" em pedaços separados pela vírgula
-                string[] matEntries = Plugin.PortalMaterials.Value.Split(',');
+                string[] matEntries = config.Split(',');
 
                 foreach (string entry in matEntries)
                 {
@@ -67,7 +73,7 @@ namespace Deadheim
                 if (newRequirements.Count > 0)
                 {
                     portalwoodPiece.m_resources = newRequirements.ToArray();
-                    Debug.Log("[Deadheim] Materiais do portal atualizados dinamicamente!");
+                    Debug.Log($"[Deadheim] Materiais do {portalPrefab} atualizados dinamicamente!");
                 }
                 else
                 {

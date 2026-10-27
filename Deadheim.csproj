@@ -145,6 +145,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdminImortal.cs" />
+    <Compile Include="AdminPainel.cs" />
+    <Compile Include="SemMarcaTrapaca.cs" />
+    <Compile Include="TotemCidade.cs" />
     <Compile Include="AesirFaceis.cs" />
     <Compile Include="AesirPull.cs" />
     <Compile Include="AesirCraft.cs" />

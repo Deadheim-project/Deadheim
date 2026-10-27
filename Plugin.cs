@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.8.15";
+        public const string Version = "7.8.17";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -28,11 +28,14 @@ namespace Deadheim
         // 7.5.8 fixa as moedas no slot (Moedas.cs): um cliente anterior ainda as derrubaria na morte por jogador.
         // 7.5.9 responde aos NPCs de bounty e de PvE (bountyboard, pveres): um cliente anterior nao os entende.
         // 7.8.2 traz a TransmogApi (NPC Alfaiate do NpcValheim) e a previa: um cliente anterior nao os tem.
+        // 7.8.16: a receita do Portal de Pedra e o dano zero na Ward de Territorio rodam no cliente (quem
+        // constroi, dono da ZDO da peca): um cliente anterior faria o portal com a receita do jogo.
+        // 7.8.17 traz o Totem da Cidade (prefab novo): um cliente anterior nao o carrega e spama "Missing prefab hash".
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.8.2",
+            MinimumRequiredVersion = "7.8.17",
             ModRequired = true,
             IsLocked = true
         };
@@ -52,6 +55,7 @@ namespace Deadheim
         public static ConfigEntry<bool> ResetWorldDay;
         public static ConfigEntry<int> SkillCap;
         public static ConfigEntry<string> PortalMaterials;
+        public static ConfigEntry<string> PortalStoneMaterials;
         public static ConfigEntry<int> CartographyTableAmount;
         public static ConfigEntry<bool> EdgeOfWorldKills;
         public static ConfigEntry<bool> MonsterScalingAlliesOnly;
@@ -207,6 +211,9 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             PortalMaterials = Synced(Config.Bind("Portal Mats", "PortalMaterials", "PortalToken:1,FineWood:50,GreydwarfEye:30,SurtlingCore:5",
     new ConfigDescription("Dynamic materials for the portal. Format: PrefabName:Amount,PrefabName:Amount")));
 
+            PortalStoneMaterials = Synced(Config.Bind("Portal Mats", "PortalStoneMaterials", "PortalToken:2,GreydwarfEye:30,Grausten:50,MoltenCore:5",
+    new ConfigDescription("Materiais do Portal de Pedra (portal_stone). Formato: PrefabName:Amount,PrefabName:Amount")));
+
             CartographyTableAmount = Synced(Config.Bind("Server config", "CartographyTableAmount", 0,
     new ConfigDescription("Quantidade de cada material da mesa de cartografia. 0 = receita do jogo.")));
 
@@ -221,6 +228,9 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Montarias.Bind(Config);
             Forja.Bind(Config);
             AdminImortal.Bind(Config);
+            AdminPainel.Bind(Config);
+            SemMarcaTrapaca.Bind(Config);
+            TotemCidade.Bind(Config);
             SkillsTeste.Bind(Config); // TEMPORARIO: remover no lancamento
             Treinador.Init();
             AesirConfig.Bind(Config);
