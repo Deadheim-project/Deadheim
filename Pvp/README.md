@@ -114,7 +114,7 @@ matador=<id> ultimoGolpe=<tipo> castelo=<nome> ...`) e o servidor tambem
 |---|---|---|
 | PvP para todos | Ligado fora das zonas seguras; o botao do inventario fica travado | `ForcePvp` |
 | Reducao de dano PvP | Dano de jogador em jogador x0.5, aplicado **depois da armadura** (a armadura do Valheim e quadratica: cortar o golpe cru pela metade tirava ~75% do dano de quem usa armadura) | `DamageMultiplier` |
-| Reducao de dano em ward | Jogador: dentro de ward **ligado e abastecido** onde voce tem permissao, o dano PvP que voce recebe e x0.5 de novo. Estrutura: ward de jogador segue o `[Wards] DamagePercent` (0 = invulneravel), a Ward de Territorio ativa nao deixa dano nenhum e a RaidWard segue o `Ward Damage Reduction %` do RaidSystem | `WardDefenseMultiplier` |
+| Reducao de dano em ward | Jogador: dentro de ward **ligado e abastecido** onde voce tem permissao, o dano PvP que voce recebe e x0.5 de novo. Estrutura: ward de jogador segue o `[Wards] DamagePercent` (0 = invulneravel), a Ward de Territorio ativa nao deixa dano nenhum (nem do dono nem de quem tem acesso; desmontar com o martelo continua liberado) e a RaidWard segue o `Ward Damage Reduction %` do RaidSystem | `WardDefenseMultiplier` |
 | Dono do territorio sem FF | Mesma guilda nao se fere; e quem tem permissao no mesmo ward nao se fere dentro dele | `NoFriendlyFireGuild`, `NoFriendlyFireTerritory` |
 | Guilda ou party | Guilda do mod **Guilds** e grupo do mod **Groups** | `NoFriendlyFireGuild`, `NoFriendlyFireGroup` |
 | Morto por jogador | Fica **imune a PvP**: nao da nem leva dano de jogador; PvE normal. Conta so com o jogo aberto | `ImmunityMinutes` (10) |

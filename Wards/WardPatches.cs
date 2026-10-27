@@ -189,6 +189,14 @@ namespace Deadheim.Wards
                     if (__instance == null || hit == null) return true;
 
                     Vector3 pos = __instance.transform.position;
+                    // Ward de Territorio ativa: ninguem danifica, nem o dono nem quem tem acesso.
+                    PrivateArea territory = WardCore.GetIndestructibleWard(pos);
+                    if (territory != null)
+                    {
+                        territory.FlashShield(false);
+                        return false;
+                    }
+
                     Player attacker = hit.GetAttacker() as Player;
                     PrivateArea ward = WardCore.GetProtectingWard(pos, attacker);
                     if (ward == null) return true;
@@ -199,13 +207,6 @@ namespace Deadheim.Wards
                     // A versao antiga media a distancia do jogador local, o que estourava
                     // NullReference no servidor dedicado e bloqueava dano no mundo inteiro.
                     if (WardCore.InFullProtectionZone(pos))
-                    {
-                        ward.FlashShield(false);
-                        return false;
-                    }
-
-                    // Ward de Territorio ativa: indestrutivel tambem fora do spawn (la a ward comum e raidavel).
-                    if (WardCore.IsIndestructible(ward))
                     {
                         ward.FlashShield(false);
                         return false;

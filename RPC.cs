@@ -28,6 +28,7 @@ namespace Deadheim
             Plugin.PlayerWardCount = Convert.ToInt32(counts[1]);
             Plugin.PlayerTerritoryWardCount = counts.Length > 2 ? Convert.ToInt32(counts[2]) : 999;
             Plugin.PlayerSafeAreaWardCount = counts.Length > 3 ? Convert.ToInt32(counts[3]) : 999;
+            TotemCidade.Contagem = counts.Length > 4 ? Convert.ToInt32(counts[4]) : 999;
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]

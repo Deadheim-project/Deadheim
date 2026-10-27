@@ -240,7 +240,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 <section id="essencial">
   <h2>O essencial</h2>
   <ul class="essencial">
-    <li><b>PvP em todo o mapa</b>Fora das zonas seguras, qualquer jogador da sua faixa de chefes pode atacar você, e você a ele. Não lutam entre si: aliados (guilda e grupo), quem escolheu o PvE e quem acabou de morrer (10 minutos imune). A ilha inicial protege quem está começando.</li>
+    <li><b>PvP em todo o mapa</b>Fora das zonas seguras, qualquer jogador da sua faixa de chefes pode atacar você, e você a ele. Não lutam entre si: aliados (guilda e grupo), quem escolheu o PvE e quem acabou de morrer (3 minutos imune). A ilha inicial protege quem está começando.</li>
     <li><b>Lute com quem está no seu nível</b>Você só fere e só é ferido por quem está quase nos mesmos chefes que você: até um chefe de diferença. Chefe morto e passe de chefe contam igual.</li>
     <li><b>Morrer para jogador custa caro</b>Metade dos materiais e da comida que você carrega cai no chão para quem quiser pegar.</li>
     <li><b>Matar te marca</b>Quem mata vira PK e perde mais ao morrer. Revidar quem te atacou primeiro não marca.</li>
@@ -296,7 +296,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
   <p>Barco, carroça e montaria não deixam ninguém seguro. Barco e carroça tomam dano de jogador: dá para afundar barco e quebrar carroça, e a carga cai. Qualquer golpe derruba você da montaria.</p>
 
   <h3>Imunidade depois de morrer</h3>
-  <p>Morreu para jogador fora da arena? Você fica <strong>10 minutos imune</strong>: não dá nem leva dano de jogador. Relogar não tira a imunidade, e ela só conta com você no jogo.</p>
+  <p>Morreu para jogador fora da arena? Você fica <strong>3 minutos imune</strong>: não dá nem leva dano de jogador. Relogar não tira a imunidade, e ela só conta com você no jogo.</p>
 
   <h3>Em combate</h3>
   <ul>
@@ -321,7 +321,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
         <tr><td><strong>Moedas</strong></td><td>Ficam com você</td><td>Ficam com você</td></tr>
         <tr><td><strong>Tokens do Deadheim</strong> (Portal, Território)</td><td>Nunca caem</td><td>Ficam na tumba</td></tr>
         <tr><td><strong>Skill</strong></td><td>Perda normal do jogo (nenhuma na arena)</td><td>Perda normal do jogo</td></tr>
-        <tr><td><strong>Imunidade a PvP</strong></td><td>10 minutos</td><td>Não</td></tr>
+        <tr><td><strong>Imunidade a PvP</strong></td><td>3 minutos</td><td>Não</td></tr>
         <tr><td><strong>Ranking</strong></td><td>Conta no <code>/rank</code> e, entre guildas diferentes, no Ranking de Guerra</td><td>Não conta</td></tr>
       </tbody>
     </table>
@@ -416,7 +416,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
     </div>
     <div>
       <h4><span class="tag perigo">Raidável</span> Resto do mapa</h4>
-      <p>O que o ward cobre toma <strong>25% do dano</strong>, de jogador e de monstro. Dá para invadir, só demora mais.</p>
+      <p>O que o ward cobre toma só <strong>1% do dano</strong>, de jogador e de monstro (na área protegida, nada). Dá para invadir, mas leva muito tempo.</p>
     </div>
   </div>
   <p class="muted">A área protegida vale para construções. Para jogadores, a zona segura de PvP é só a ilha inicial.</p>
@@ -426,7 +426,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
     <table>
       <thead><tr><th>Ward</th><th class="num">Raio</th><th>Custo</th><th>Observação</th></tr></thead>
       <tbody>
-        <tr><td><strong>Pedra-guardiã</strong> (o ward do jogo)</td><td class="num">32 m</td><td>Receita do jogo</td><td>Cobre a construção em volta, como no jogo. Fora da área protegida, o que ela cobre toma 25% do dano</td></tr>
+        <tr><td><strong>Pedra-guardiã</strong> (o ward do jogo)</td><td class="num">32 m</td><td>Receita do jogo</td><td>Cobre a construção em volta, como no jogo. Fora da área protegida, o que ela cobre toma 1% do dano</td></tr>
         <tr><td><strong>Ward de Território</strong></td><td class="num">32 m</td><td>1 Territory Token, 100 Pedra, 5 Núcleo de Surtling</td><td>Uma por jogador. Ativa, nada no raio toma dano de quem não tem acesso</td></tr>
       </tbody>
     </table>
@@ -608,6 +608,10 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 
   <h3>Pedra de retorno</h3>
   <p>Olhe para a sua cama e aperte <kbd>P</kbd> para marcar o ponto de retorno. A <strong>Pedra de retorno</strong> é feita na Bancada (3 Cristal, 30 moedas, 20 Fragmento de Osso) e leva você até esse ponto uma vez. Não funciona em combate, caçado ou carregando minério.</p>
+
+  <h3>Totem da Cidade</h3>
+  <p>O <strong>Totem da Cidade</strong> fica no martelo, na aba Diversos (20 Pedra, 10 Olho de Greydwarf, 50 moedas, perto de uma Bancada). Ele só pode ser posto <strong>dentro de um ward seu</strong>, um por jogador (dois para VIP). Aperte <kbd>E</kbd> nele e você vai direto para o Teleportador da cidade.</p>
+  <p>É <strong>só de ida</strong>: ninguém chega à sua base por ele. Só usa quem tem acesso ao ward (você, a sua guilda e quem você adicionou), com o ward ligado. Valem as travas da pedra: não funciona em combate, caçado ou carregando minério. Para voltar, use <strong>Voltar para casa</strong> no Teleportador: ele leva você ao totem que <strong>você</strong> construiu, e a ninguém mais. A Pedra de retorno e o <code>/retreat</code> continuam valendo. Só o dono desmonta o totem.</p>
 </section>
 
 <section id="vip">

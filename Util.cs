@@ -18,8 +18,9 @@ namespace Deadheim
             int territoryCount = Wards.WardCore.CountTerritoryWardsOf(creatorId);
 
             int safeAreaCount = Wards.WardCore.CountWardsInSafeAreaOf(creatorId);
+            int totemCount = GetCreatorPrefabCount(TotemCidade.PrefabName.GetStableHashCode(), creatorId);
 
-            return $"{portalCount},{wardCount},{territoryCount},{safeAreaCount}";
+            return $"{portalCount},{wardCount},{territoryCount},{safeAreaCount},{totemCount}";
         }
 
         private static int GetCreatorPrefabCount(int prefabHash, long creatorId)

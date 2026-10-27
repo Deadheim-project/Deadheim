@@ -233,7 +233,7 @@ namespace Deadheim.Wards
             return Math.Max(0d, total - elapsed);
         }
 
-        /// <summary>Ward de Territorio ativa: o que ela cobre nao toma dano de quem nao tem acesso.</summary>
+        /// <summary>Ward de Territorio ativa: o que ela cobre nao toma dano de ninguem, nem do dono (GetIndestructibleWard).</summary>
         public static bool IsIndestructible(PrivateArea area)
         {
             if (!WardProfiles.TerritoryWardEnabled.Value) return false;
@@ -289,6 +289,24 @@ namespace Deadheim.Wards
                 if (first == null) first = area;
             }
             return first;
+        }
+
+        /// <summary>
+        /// Ward de Territorio ativa que cobre o ponto, para qualquer atacante: nem o dono nem quem
+        /// tem acesso danificam estrutura dentro dela (antes o dono quebrava o que os membros
+        /// construiram). Desmontar com o martelo nao passa por dano e continua liberado.
+        /// </summary>
+        public static PrivateArea GetIndestructibleWard(Vector3 point)
+        {
+            if (WardBridge.Governed(point)) return null;
+
+            foreach (PrivateArea area in PrivateArea.m_allAreas)
+            {
+                if (area == null || !IsIndestructible(area)) continue;
+                if (!area.IsEnabled() || !area.IsInside(point, 0f)) continue;
+                return area;
+            }
+            return null;
         }
 
         /// <summary>Atalho dos patches: bloqueia, pisca o escudo e avisa o jogador local.</summary>

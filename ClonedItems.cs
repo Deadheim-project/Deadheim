@@ -549,9 +549,17 @@ namespace Deadheim
         // Antes da 7.8.1 o palco do ícone criava um ZDO "PetIconModel" (perto da origem) a cada vez que
         // um cliente entrava; o servidor gravou todos no mundo e eles seguem fazendo quem passa perto
         // spamar "Missing prefab hash: 1461255765". O servidor apaga esses órfãos ao carregar o mundo.
-        [HarmonyPatch(typeof(ZDOMan), nameof(ZDOMan.Load))]
+        // No jogo 1.0 o mundo carrega por LoadChunks; Load só roda para mundo no formato antigo.
+        [HarmonyPatch]
         private static class PurgePetIconZdosPatch
         {
+            private static IEnumerable<MethodBase> TargetMethods()
+            {
+                return new[] { "LoadChunks", "Load" }
+                    .Select(name => (MethodBase)AccessTools.DeclaredMethod(typeof(ZDOMan), name))
+                    .Where(method => method != null);
+            }
+
             private static readonly int PetIconModelHash = "PetIconModel".GetStableHashCode();
             // m_objectsByID é privado no assembly original: acesso direto pelo publicizado dá FieldAccessException.
             private static readonly AccessTools.FieldRef<ZDOMan, Dictionary<ZDOID, ZDO>> ObjectsById =

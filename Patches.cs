@@ -87,21 +87,89 @@ namespace Deadheim
             }
         }
 
+        // Admin ve todo mundo no mapa. A lista de jogadores do vanilla (RPC PlayerList, a cada 2 s)
+        // so leva a posicao de quem a deixou publica: os outros chegam no cliente com m_position
+        // zerado, e era por isso que apareciam todos em 0,0,0. Logo depois dela o servidor manda
+        // so aos admins a posicao de todos (peer.m_refPos, que o cliente envia sempre, publica ou nao).
+        private const string AdminPosicoesRpc = "DeadheimAdminPosicoes";
+        private static readonly Dictionary<ZDOID, Vector3> _adminPosicoes = new Dictionary<ZDOID, Vector3>();
+        private static float _adminPosicoesEm = -999f;
+
+        [HarmonyPatch(typeof(Game), "Start")]
+        private class AdminPosicoesRegistra
+        {
+            private static void Postfix()
+            {
+                _adminPosicoes.Clear();
+                ZRoutedRpc.instance?.Register<ZPackage>(AdminPosicoesRpc, NoClienteAdminPosicoes);
+            }
+        }
+
+        [HarmonyPatch(typeof(ZNet), "SendPlayerList")]
+        private class AdminPosicoesEnvia
+        {
+            private static void Postfix(ZNet __instance)
+            {
+                if (!__instance.IsServer() || ZRoutedRpc.instance == null) return;
+
+                List<ZNetPeer> admins = null;
+                List<ZNetPeer> prontos = new List<ZNetPeer>();
+                foreach (ZNetPeer peer in __instance.GetPeers())
+                {
+                    if (peer == null || !peer.IsReady() || peer.m_characterID.IsNone()) continue;
+                    prontos.Add(peer);
+                    if (peer.m_socket != null && __instance.IsAdmin(peer.m_socket.GetHostName()))
+                        (admins ??= new List<ZNetPeer>()).Add(peer);
+                }
+                if (admins == null) return;
+
+                ZPackage pkg = new ZPackage();
+                pkg.Write(prontos.Count);
+                foreach (ZNetPeer peer in prontos)
+                {
+                    pkg.Write(peer.m_characterID);
+                    pkg.Write(peer.m_refPos);
+                }
+                foreach (ZNetPeer admin in admins)
+                    ZRoutedRpc.instance.InvokeRoutedRPC(admin.m_uid, AdminPosicoesRpc, pkg);
+            }
+        }
+
+        private static void NoClienteAdminPosicoes(long sender, ZPackage pkg)
+        {
+            if (ZRoutedRpc.instance == null || sender != ZRoutedRpc.instance.GetServerPeerID()) return;
+            _adminPosicoes.Clear();
+            int n = pkg.ReadInt();
+            for (int i = 0; i < n; i++)
+            {
+                ZDOID id = pkg.ReadZDOID();
+                _adminPosicoes[id] = pkg.ReadVector3();
+            }
+            _adminPosicoesEm = Time.time;
+        }
+
         [HarmonyPatch(typeof(ZNet), nameof(ZNet.GetOtherPublicPlayers))]
         private class AdminGetOtherPublicPlayers
         {
             [HarmonyPriority(Priority.Last)]
-            private static void Postfix(List<ZNet.PlayerInfo> playerList)
+            private static void Postfix(ZNet __instance, List<ZNet.PlayerInfo> playerList)
             {
-                if (!Admin.LocalPlayerIsAdmin() || ZNet.instance == null || playerList == null) return;
+                if (!Admin.LocalPlayerIsAdmin() || playerList == null) return;
+                // Pacote velho (servidor sem esta versao, ou parou de mandar): melhor nao mostrar
+                // ninguem do que mostrar em posicao errada.
+                if (Time.time - _adminPosicoesEm > 10f) return;
 
-                string localName = Player.m_localPlayer?.m_nview?.GetZDO()?.GetString("playerName") ?? "";
-                foreach (ZNet.PlayerInfo player in ZNet.instance.GetPlayerList())
+                // ZNet.m_characterID e privado no jogo: o proprio personagem sai pela ZDO do jogador local.
+                ZDOID eu = Player.m_localPlayer != null ? Player.m_localPlayer.GetZDOID() : ZDOID.None;
+                foreach (ZNet.PlayerInfo player in __instance.GetPlayerList())
                 {
-                    if (string.IsNullOrWhiteSpace(player.m_name)) continue;
-                    if (player.m_name == localName) continue;
-                    if (playerList.Exists(existing => existing.m_name == player.m_name)) continue;
-                    playerList.Add(player);
+                    if (player.m_publicPosition) continue; // o vanilla ja colocou na lista
+                    if (player.m_characterID.IsNone() || player.m_characterID == eu) continue;
+                    if (!_adminPosicoes.TryGetValue(player.m_characterID, out Vector3 pos)) continue;
+                    ZNet.PlayerInfo oculto = player;
+                    oculto.m_position = pos;
+                    oculto.m_publicPosition = true;
+                    playerList.Add(oculto);
                 }
             }
         }
@@ -141,6 +209,7 @@ namespace Deadheim
                 Plugin.PlayerWardCount = 999;
                 Plugin.PlayerPortalCount = 999;
                 Plugin.PlayerSafeAreaWardCount = 999;
+                TotemCidade.Contagem = 999;
             }
         }
 
