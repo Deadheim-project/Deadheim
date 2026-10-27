@@ -10,8 +10,8 @@ namespace Deadheim.Troca
 {
     /// <summary>
     /// As janelas da troca, na mesma interface dos NPCs (Shared/ValheimUi): a lista de quem esta
-    /// perto para pedir a troca pelo nome, o aviso do pedido que chegou e a troca em si -- o seu
-    /// inventario com a quantidade a oferecer, a sua oferta, a do outro e os passos
+    /// perto para pedir a troca pelo nome, o aviso do pedido que chegou e a troca em si -- as suas
+    /// moedas com a quantidade a oferecer, a sua oferta, a do outro e os passos
     /// Travar -> Confirmar. Monta os widgets uma vez e so atualiza: refazer tudo a cada frame
     /// tiraria o foco do campo de quantidade.
     /// </summary>
@@ -201,12 +201,12 @@ namespace Deadheim.Troca
                 // --- seu inventario, a quantidade e Oferecer ---
                 var inv = ValheimUi.CreateInlay(conteudo, "Inventario");
                 ValheimUi.Anchor(inv, new Vector2(0f, 0f), new Vector2(0.36f, 1f), Vector2.zero, new Vector2(-6f, 0f));
-                Cabecalho(inv, "Seu inventário");
+                Cabecalho(inv, "Suas moedas");
 
                 var areaInv = ValheimUi.CreateRect("Lista", inv);
                 ValheimUi.Anchor(areaInv, Vector2.zero, Vector2.one, new Vector2(4f, 136f), new Vector2(-4f, -38f));
                 _listaInv = ValheimUi.CreateScrollList(areaInv, spacing: 3f);
-                _vazioInv = ValheimUi.CreateLabel(areaInv, "Nada para oferecer.\nItens equipados não aparecem.", 14,
+                _vazioInv = ValheimUi.CreateLabel(areaInv, "Você não tem moedas para oferecer.\nA troca é só de moedas.", 14,
                     ValheimUi.Muted, TextAlignmentOptions.Top);
                 ValheimUi.Anchor((RectTransform)_vazioInv.transform, new Vector2(0f, 1f), new Vector2(1f, 1f),
                     new Vector2(10f, -60f), new Vector2(-10f, -12f));
@@ -214,7 +214,7 @@ namespace Deadheim.Troca
                 var sel = ValheimUi.Strip(inv, TextAnchor.MiddleLeft);
                 ValheimUi.Anchor(sel, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(10f, 94f), new Vector2(-10f, 130f));
                 _iconeSel = ValheimUi.CreateItemIcon(sel, null, 32f);
-                _selecionado = ValheimUi.CreateLabel(sel, "Escolha um item acima.", 14, ValheimUi.Muted, TextAlignmentOptions.Left);
+                _selecionado = ValheimUi.CreateLabel(sel, "Sem moedas para oferecer.", 14, ValheimUi.Muted, TextAlignmentOptions.Left);
                 ValheimUi.Flexible(_selecionado.gameObject);
 
                 var qtd = ValheimUi.Strip(inv, TextAnchor.MiddleCenter, 5f);
@@ -281,7 +281,7 @@ namespace Deadheim.Troca
 
             private void Oferecer()
             {
-                if (_selNome == null) { Avisar("Escolha um item no seu inventário."); return; }
+                if (_selNome == null) { Avisar("Você não tem moedas para oferecer."); return; }
                 if (!int.TryParse(_qtd.text, out int n) || n <= 0) { Avisar("Quantidade inválida."); return; }
                 string erro = TrocaRede.Oferecer(_selNome, _selQualidade, n);
                 if (erro != null) { Avisar(erro); return; }
@@ -314,8 +314,9 @@ namespace Deadheim.Troca
             {
                 Inventory inv = Player.m_localPlayer?.GetInventory();
                 if (inv == null) return;
+                // So as moedas: e o que o servidor aceita na troca.
                 _grupos = inv.GetAllItems()
-                    .Where(i => i?.m_shared != null && i.m_dropPrefab != null && !i.m_equipped)
+                    .Where(i => i?.m_shared != null && i.m_dropPrefab != null && !i.m_equipped && i.m_dropPrefab.name == Moedas.Prefab)
                     .GroupBy(i => i.m_dropPrefab.name + "|" + i.m_quality)
                     .Select(g =>
                     {
@@ -332,6 +333,12 @@ namespace Deadheim.Troca
                     .Where(g => g.Qtd > 0)
                     .OrderBy(g => g.Rotulo).ThenBy(g => g.Qualidade)
                     .ToList();
+                // Nao ha outra coisa para escolher: as moedas ja vem selecionadas.
+                if (_selNome == null && _grupos.Count > 0)
+                {
+                    _selNome = _grupos[0].Nome;
+                    _selQualidade = _grupos[0].Qualidade;
+                }
 
                 string assin = _selNome + ":" + _selQualidade + "/" + string.Join("|", _grupos.Select(g => g.Nome + ":" + g.Qualidade + ":" + g.Qtd));
                 if (assin == _assinInv) return;
@@ -366,7 +373,7 @@ namespace Deadheim.Troca
                 if (g == null && _selNome != null) _selNome = null; // acabou (ofereceu tudo, largou, equipou)
                 Sprite icone = g != null ? ValheimUi.FindItemIcon(g.Nome) : null;
                 if (_iconeSel.sprite != icone) { _iconeSel.sprite = icone; _iconeSel.enabled = icone != null; }
-                _selecionado.text = g == null ? "Escolha um item acima."
+                _selecionado.text = g == null ? "Sem moedas para oferecer."
                     : $"{g.Rotulo}{(g.Qualidade > 1 ? " (nv " + g.Qualidade + ")" : "")}\n<size=12><color=#9a9188>{g.Qtd} para oferecer</color></size>";
                 _selecionado.color = g == null ? ValheimUi.Muted : ValheimUi.Beige;
             }
@@ -408,7 +415,7 @@ namespace Deadheim.Troca
                 if (v.MinhaConf) return "Você confirmou. Aguardando " + v.Outro + "...";
                 if (v.MinhaTrava && !v.OutroTrava) return "Aguardando " + v.Outro + " travar a oferta...";
                 if (v.MinhaTrava && v.OutroTrava) return "Confira a oferta dele e confirme. Qualquer mudança zera tudo.";
-                return "Escolha o item, a quantidade e Oferecer. Depois trave; se a oferta mudar, as travas voltam a zero.";
+                return "Escolha quantas moedas e Oferecer. Depois trave; se a oferta mudar, as travas voltam a zero.";
             }
         }
 
@@ -438,7 +445,7 @@ namespace Deadheim.Troca
                 var titulo = ValheimUi.CreateLabel(panel, "Pedido de troca", 22, ValheimUi.Orange, TextAlignmentOptions.Center, display: true);
                 ValheimUi.Anchor((RectTransform)titulo.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(20f, -48f), new Vector2(-20f, -12f));
 
-                var texto = ValheimUi.CreateLabel(panel, de + " quer trocar itens com você.", 17, ValheimUi.Beige, TextAlignmentOptions.Center);
+                var texto = ValheimUi.CreateLabel(panel, de + " quer trocar moedas com você.", 17, ValheimUi.Beige, TextAlignmentOptions.Center);
                 texto.richText = false;
                 ValheimUi.Anchor((RectTransform)texto.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(20f, -78f), new Vector2(-20f, -50f));
 

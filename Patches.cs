@@ -209,6 +209,8 @@ namespace Deadheim
                 Plugin.PlayerWardCount = 999;
                 Plugin.PlayerPortalCount = 999;
                 Plugin.PlayerSafeAreaWardCount = 999;
+                // Faltava: o proximo personagem herdava a conta de Wards de Territorio do anterior.
+                Plugin.PlayerTerritoryWardCount = 999;
                 TotemCidade.Contagem = 999;
             }
         }

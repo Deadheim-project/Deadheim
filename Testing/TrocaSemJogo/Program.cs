@@ -331,6 +331,36 @@ internal static class Program
             Check("TROCA1: entrega nova nao colide", r.Pendentes.Select(e => e.Id).Distinct().Count() == 3 && r.Pendentes.Max(e => e.Id) >= 5);
         }
 
+        // ---- so moedas: o servidor poe Permitido = "Coins" ----
+        {
+            var m = Aberta(out var s);
+            m.Permitido = "Coins";
+            int v = s.Versao;
+            Check("so moedas: outro item recusa", Oferta(m, A, Item("w", 10, "Wood"), 2) == "nao_permitido");
+            Check("so moedas: a recusa nao mexe na sessao", s.OfertaA.Count == 0 && s.Versao == v && !m.Efeitos.Any());
+            Check("so moedas: o nome tem que ser exato", Oferta(m, A, Item("c1", 5, "coins"), 2) == "nao_permitido");
+            Check("so moedas: moeda invalida continua item_invalido", Oferta(m, A, Item("c0", 0, "Coins"), 2) == "item_invalido");
+            Check("so moedas: id recusado nao fica preso", Oferta(m, A, Item("w", 10, "Coins"), 2) == null);
+            Check("so moedas: moeda entra dos dois lados", Oferta(m, A, Item("c2", 500, "Coins"), 2) == null
+                && Oferta(m, B, Item("c3", 200, "Coins"), 2) == null && s.OfertaA.Count == 2 && s.OfertaB.Count == 1);
+            v = s.Versao;
+            m.Travar(A, v, 3); m.Travar(B, v, 3);
+            m.Confirmar(A, v, 4); m.Efeitos.Clear();
+            m.Confirmar(B, v, 4);
+            Check("so moedas: cada um recebe as moedas do outro",
+                Entregas(m, A).Single().Itens.Sum(i => i.Qtd) == 200 && Entregas(m, B).Single().Itens.Sum(i => i.Qtd) == 510);
+
+            // O que ja estava devido antes da regra (qualquer item) continua sendo entregue.
+            var antes = Aberta(out _);
+            Oferta(antes, A, Item("w1", 30, "Wood"), 2);
+            var r = new TrocaMotor { Permitido = "Coins" };
+            Check("so moedas: entrega antiga de outro item carrega", r.Carregar(antes.Serializar())
+                && r.Pendentes.Single().Itens.Single().Nome == "Wood");
+            r.Reenviar(A);
+            Check("so moedas: e reenviada ao dono", Entregas(r, A).Single().Itens.Single().Nome == "Wood");
+            Check("so moedas: e o Recebido apaga", r.Recebido(A, r.Pendentes.Single().Id) && !r.Pendentes.Any());
+        }
+
         // ---- varias sessoes ao mesmo tempo ----
         {
             var m = new TrocaMotor();

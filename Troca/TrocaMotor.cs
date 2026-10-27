@@ -96,6 +96,12 @@ namespace Deadheim.Troca
         /// <summary>Arquivo de antes da troca por nome: o item ia inteiro, e o nome era "prefab|qualidade".</summary>
         private const string CabecalhoV1 = "TROCA1";
 
+        /// <summary>
+        /// Unico prefab que pode ser oferecido; null aceita qualquer um. O servidor poe "Coins": a
+        /// troca e so de moedas. Nao vale para o que ja esta devido: entrega pendente sai sempre.
+        /// </summary>
+        public string Permitido;
+
         private readonly Dictionary<long, TrocaSessao> _porJogador = new Dictionary<long, TrocaSessao>();
         private readonly Dictionary<long, TrocaEntrega> _entregas = new Dictionary<long, TrocaEntrega>();
         private long _proxSessao = 1;
@@ -148,6 +154,7 @@ namespace Deadheim.Troca
             if (s == null || s.Fase != TrocaFase.Oferta) return "sem_sessao";
             if (item == null || string.IsNullOrEmpty(item.Id) || item.Qtd <= 0 || item.Qualidade < 1) return "item_invalido";
             if (string.IsNullOrEmpty(item.Nome) || item.Nome.Length > MaxNome) return "item_invalido";
+            if (Permitido != null && item.Nome != Permitido) return "nao_permitido";
             var oferta = s.Oferta(jogador);
             if (oferta.Count >= MaxItens) return "cheio";
             if (IdEmUso(item.Id)) return "item_repetido";

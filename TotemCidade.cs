@@ -46,10 +46,6 @@ namespace Deadheim
         // runtime: lido uma vez por reflexao (a lista e sempre a mesma).
         private static List<PrivateArea> _todasAreas;
 
-        // ZDOMan.m_objectsBySector tambem e privado no jogo.
-        private static readonly AccessTools.FieldRef<ZDOMan, List<ZDO>[]> ObjetosPorSetor =
-            AccessTools.FieldRefAccess<ZDOMan, List<ZDO>[]>("m_objectsBySector");
-
         private static List<PrivateArea> TodasAreas
         {
             get
@@ -191,22 +187,8 @@ namespace Deadheim
         /// </summary>
         internal static List<Vector3> CasasDe(long playerId)
         {
-            List<ZDO> totens = new List<ZDO>();
-            List<ZDO>[] setores = ZDOMan.instance != null ? ObjetosPorSetor(ZDOMan.instance) : null;
-            if (playerId == 0L || setores == null) return new List<Vector3>();
-
-            int hash = PrefabName.GetStableHashCode();
-            foreach (List<ZDO> setor in setores)
-            {
-                if (setor == null) continue;
-                for (int i = 0; i < setor.Count; i++)
-                {
-                    ZDO zdo = setor[i];
-                    if (zdo != null && zdo.GetPrefab() == hash && zdo.GetLong(ZDOVars.s_creator, 0L) == playerId)
-                        totens.Add(zdo);
-                }
-            }
-
+            // A mesma varredura da contagem de wards e totens.
+            List<ZDO> totens = WardCore.PecasDe(playerId).Totens;
             totens.Sort((a, b) => a.m_uid.UserID != b.m_uid.UserID
                 ? a.m_uid.UserID.CompareTo(b.m_uid.UserID)
                 : a.m_uid.ID.CompareTo(b.m_uid.ID));
@@ -273,7 +255,7 @@ namespace Deadheim
 
         /// <summary>
         /// So dentro de um ward do qual o jogador e dono, e dentro do limite contado pelo servidor.
-        /// Admin coloca em qualquer lugar.
+        /// Admin coloca em qualquer lugar. A recusa nao cobra o material (ConstrucaoBarrada).
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.PlacePiece))]
         private static class ColocarPatch
@@ -314,7 +296,8 @@ namespace Deadheim
                 }
 
                 // Conta ja: o servidor so reconta em ate 10 s, e uma segunda colocacao nesse meio passaria.
-                Contagem++;
+                // So se a peca entrar: outro patch pode barrar depois deste.
+                ConstrucaoBarrada.AoColocar(() => Contagem++);
                 return true;
             }
         }

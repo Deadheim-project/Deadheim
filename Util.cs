@@ -8,43 +8,13 @@ namespace Deadheim
 {
     public static class Util
     {
-        public static int CREATORHASH = "creator".GetStableHashCode();
-
         public static string GetCreatorWardAndPortalCount(long creatorId)
         {
-            int portalCount = GetCreatorPrefabCount("portal_wood".GetStableHashCode(), creatorId);
-            // A contagem de wards mora em WardCore: e ela que sabe quais prefabs contam.
-            int wardCount = Wards.WardCore.CountWardsOf(creatorId);
-            int territoryCount = Wards.WardCore.CountTerritoryWardsOf(creatorId);
-
-            int safeAreaCount = Wards.WardCore.CountWardsInSafeAreaOf(creatorId);
-            int totemCount = GetCreatorPrefabCount(TotemCidade.PrefabName.GetStableHashCode(), creatorId);
-
-            return $"{portalCount},{wardCount},{territoryCount},{safeAreaCount},{totemCount}";
+            // Uma varredura so, em WardCore: e ela que sabe quais prefabs contam.
+            Wards.WardCore.PecasDoJogador p = Wards.WardCore.PecasDe(creatorId);
+            return $"{p.Portais},{p.Wards},{p.Territorios},{p.WardsNaAreaSegura},{p.Totens.Count}";
         }
 
-        private static int GetCreatorPrefabCount(int prefabHash, long creatorId)
-        {
-            int prefab = 0;
-            foreach (List<ZDO> zdoList in ZDOMan.instance.m_objectsBySector)
-            {
-                if (zdoList == null) continue;
-
-                for (int index = 0; index < zdoList.Count; ++index)
-                {
-                    ZDO zdo2 = zdoList[index];
-                    if (zdo2.GetPrefab() == prefabHash)
-                    {
-                        long prefabCreatorHash = zdo2.GetLong(CREATORHASH);
-                        if (prefabCreatorHash == 0) continue;
-
-                        if (prefabCreatorHash == creatorId) prefab++;
-                    }
-                }
-            }
-            return prefab;
-        }
-            
         private static byte[] ReadEmbeddedFileBytes(string name)
         {
             using MemoryStream stream = new();

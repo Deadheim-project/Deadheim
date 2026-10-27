@@ -287,7 +287,7 @@ namespace Deadheim.Wards
                                 __instance.Message(MessageHud.MessageType.Center, "Voce so pode ter uma ward na area segura. Remova a antiga primeiro.");
                                 return false;
                             }
-                            Plugin.PlayerSafeAreaWardCount++;
+                            ConstrucaoBarrada.AoColocar(() => Plugin.PlayerSafeAreaWardCount++);
                         }
 
                         // Limite 0 = sem limite: a base e raidavel, entao o limite nao protege nada.
@@ -297,9 +297,14 @@ namespace Deadheim.Wards
                             __instance.Message(MessageHud.MessageType.Center, "Limite de wards atingido (" + limit + ").");
                             return false;
                         }
+                        // Conta ja, como a de Territorio: sem isto a segunda ward nos 10 s ate a recontagem passava.
+                        if (limit > 0 && Plugin.PlayerWardCount < 999)
+                            ConstrucaoBarrada.AoColocar(() => Plugin.PlayerWardCount++);
                     }
 
-                    Minimap.instance?.AddPin(pos, Minimap.PinType.Boss, profile.Indestructible ? "TERRITORIO" : "WARD", true, false);
+                    // O pino so com a ward posta: um patch seguinte (Territorio, raid) ainda pode barrar.
+                    string pino = profile.Indestructible ? "TERRITORIO" : "WARD";
+                    ConstrucaoBarrada.AoColocar(() => Minimap.instance?.AddPin(pos, Minimap.PinType.Boss, pino, true, false));
                     WardCore.RequestWardCount();
                     return true;
                 }
@@ -358,7 +363,8 @@ namespace Deadheim.Wards
             }
 
             // Conta ja: o servidor so recontara em ate 10 s, e uma segunda colocacao nesse meio passaria.
-            Plugin.PlayerTerritoryWardCount++;
+            // So se a peca entrar: outro patch pode barrar depois deste.
+            ConstrucaoBarrada.AoColocar(() => Plugin.PlayerTerritoryWardCount++);
             return true;
         }
 

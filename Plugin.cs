@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.8.17";
+        public const string Version = "7.8.18";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -31,11 +31,13 @@ namespace Deadheim
         // 7.8.16: a receita do Portal de Pedra e o dano zero na Ward de Territorio rodam no cliente (quem
         // constroi, dono da ZDO da peca): um cliente anterior faria o portal com a receita do jogo.
         // 7.8.17 traz o Totem da Cidade (prefab novo): um cliente anterior nao o carrega e spama "Missing prefab hash".
+        // 7.8.18: a peca barrada nao cobra material (ConstrucaoBarrada) e a troca e so de moedas, as duas no
+        // cliente; a 7.8.17 nunca foi ao servidor, entao quem a tem sobe junto.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.8.17",
+            MinimumRequiredVersion = "7.8.18",
             ModRequired = true,
             IsLocked = true
         };

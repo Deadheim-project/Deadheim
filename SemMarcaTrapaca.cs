@@ -4,15 +4,17 @@ using HarmonyLib;
 namespace Deadheim
 {
     /// <summary>
-    /// Desliga a marca "cheated" do Valheim. O jogo marca item feito em estacao posta sem custo
-    /// (devcommands/Infinity Hammer dos admins) ou com material marcado, e a marca se espalha
-    /// pelo que o item mata, corta ou fabrica. Em 26/10 isso deu 414 avisos [CheatFlag] do
-    /// AzuAntiCheat em jogadores sem mod nenhum fora do launcher.
+    /// Desliga a marca "cheated" do Valheim nos itens. O jogo marca o que e fabricado ou construido
+    /// quando qualquer pilha do material na bolsa esta marcada, e a marca se espalha pelo que o
+    /// item mata, corta ou fabrica. Em 26/10 isso deu 414 avisos [CheatFlag] do AzuAntiCheat em
+    /// jogadores sem mod nenhum fora do launcher; em 27/10 o mundo tinha 1984 objetos marcados,
+    /// todos construidos ou atingidos por jogadores comuns.
     ///
-    /// Na ZDO (criatura, estrutura, estacao): o Set da marca vira false e o GetBool dela sempre
-    /// le false -- a marca que ja esta gravada no mundo deixa de valer, inclusive para o
-    /// AzuAntiCheat, que le pelo mesmo GetBool. No item: Inventory.Changed apaga m_cheated de
-    /// tudo que ja esta na bolsa ou no bau, e as checagens do inventario nunca acham item marcado.
+    /// So o item: Inventory.Changed apaga m_cheated de tudo que esta na bolsa ou no bau, item novo
+    /// nasce sem marca e as checagens do inventario nunca acham item marcado. A marca na ZDO fica
+    /// como no vanilla: criatura atingida por quem esta em voo, god ou ghost continua marcada, e o
+    /// Guard Cheated Objects do AzuAntiCheat ainda avisa disso. Arma marcada deixa de marcar
+    /// criatura, arvore ou pedra, e a marca que ja esta no mundo nao passa para o item.
     /// Precisa rodar no servidor e nos clientes (o Character.Damage roda no dono da criatura).
     /// </summary>
     public static class SemMarcaTrapaca
@@ -22,28 +24,10 @@ namespace Deadheim
         public static void Bind(ConfigFile config)
         {
             Ligado = Plugin.Synced(config.Bind("Server config", "SemMarcaTrapaca", true,
-                new ConfigDescription("Ignora e apaga a marca 'cheated' do Valheim em itens, estruturas e criaturas.")));
+                new ConfigDescription("Ignora e apaga a marca 'cheated' do Valheim nos itens. A marca de voo, god e ghost em criatura continua.")));
         }
 
         private static bool On => Ligado == null || Ligado.Value;
-
-        [HarmonyPatch(typeof(ZDO), nameof(ZDO.Set), typeof(int), typeof(bool))]
-        private static class ZdoSet
-        {
-            private static void Prefix(int hash, ref bool value)
-            {
-                if (value && hash == ZDOVars.s_cheated && On) value = false;
-            }
-        }
-
-        [HarmonyPatch(typeof(ZDO), nameof(ZDO.GetBool), typeof(int), typeof(bool))]
-        private static class ZdoGetBool
-        {
-            private static void Postfix(int hash, ref bool __result)
-            {
-                if (__result && hash == ZDOVars.s_cheated && On) __result = false;
-            }
-        }
 
         [HarmonyPatch(typeof(ItemDrop), nameof(ItemDrop.OnCreateNew), typeof(ItemDrop), typeof(bool))]
         private static class ItemNovo

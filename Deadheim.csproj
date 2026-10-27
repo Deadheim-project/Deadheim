@@ -146,6 +146,7 @@
   <ItemGroup>
     <Compile Include="AdminImortal.cs" />
     <Compile Include="AdminPainel.cs" />
+    <Compile Include="ConstrucaoBarrada.cs" />
     <Compile Include="SemMarcaTrapaca.cs" />
     <Compile Include="TotemCidade.cs" />
     <Compile Include="AesirFaceis.cs" />

@@ -10,7 +10,8 @@ using UnityEngine;
 namespace Deadheim.Troca
 {
     /// <summary>
-    /// Troca de itens entre jogadores. O servidor e a fonte da verdade (TrocaMotor); o cliente so
+    /// Troca de moedas entre jogadores: o servidor so aceita oferta de Coins (o resto passa pelo
+    /// chao ou pelo Correio). O servidor e a fonte da verdade (TrocaMotor); o cliente so
     /// mostra a janela e mexe no proprio inventario. Fluxo do item: o cliente manda a oferta, o
     /// servidor guarda em custodia e responde, SO ENTAO o cliente tira o item do inventario. A
     /// entrega ao destino fica pendente no servidor ate o cliente dizer "recebido" (e e reenviada
@@ -36,7 +37,7 @@ namespace Deadheim.Troca
         {
             const string secao = "Troca";
             Ativo = Plugin.Synced(config.Bind(secao, "TrocaAtiva", true,
-                "Liga a troca de itens entre jogadores (/trocar)."));
+                "Liga a troca de moedas entre jogadores (/trocar)."));
             Distancia = Plugin.Synced(config.Bind(secao, "TrocaDistancia", 10f,
                 new ConfigDescription("Distancia maxima, em metros, entre os dois jogadores para pedir a troca. Passando de uma vez e meia isto durante a troca, ela e cancelada.",
                     new AcceptableValueRange<float>(2f, 50f))));
@@ -53,6 +54,7 @@ namespace Deadheim.Troca
             ["sem_pedido"] = "Nao ha pedido de troca para voce.",
             ["sem_sessao"] = "Nao ha troca aberta.",
             ["item_invalido"] = "Item invalido para troca.",
+            ["nao_permitido"] = "A troca e so de moedas.",
             ["cheio"] = "A oferta esta cheia.",
             ["item_repetido"] = "Esse item ja esta na troca.",
             ["item_inexistente"] = "Esse item nao esta na oferta.",
@@ -64,6 +66,7 @@ namespace Deadheim.Troca
             ["pendencias"] = "Voce tem entregas de troca pendentes; entre de novo no servidor para recebe-las.",
             ["devagar"] = "Calma: espere alguns segundos antes de pedir outra troca.",
             ["bloqueado"] = "Esse jogador recusou ha pouco; tente mais tarde.",
+            ["bolsa"] = "A oferta passou do que cabe numa bolsa (" + MaxPilhas + " pilhas).",
         };
 
         private static readonly Dictionary<string, string> Fins = new Dictionary<string, string>
@@ -79,7 +82,7 @@ namespace Deadheim.Troca
 
         // ================================================================== servidor
 
-        private static readonly TrocaMotor _motor = new TrocaMotor();
+        private static readonly TrocaMotor _motor = new TrocaMotor { Permitido = Moedas.Prefab };
         private static string _path;
         private static bool _carregado;
         private static float _proximoTick;
@@ -208,6 +211,14 @@ namespace Deadheim.Troca
             return qtd > 0 && qtd <= MaxQtd(sh);
         }
 
+        /// <summary>Pilhas cheias que uma linha ocupa na bolsa (arredonda para cima).</summary>
+        internal static int PilhasDe(string nome, int qtd)
+        {
+            ItemDrop.ItemData.SharedData sh = Prefab(nome);
+            long max = sh != null ? Mathf.Max(1, sh.m_maxStackSize) : 1;
+            return (int)((Math.Max(0, qtd) + max - 1) / max);
+        }
+
         private static void OnToServer(long sender, ZPackage pkg)
         {
             if (!EhServidor) return;
@@ -290,6 +301,10 @@ namespace Deadheim.Troca
                     if (id.Length == 0 || id.Length > 64) return "item_invalido";
                     if (Pendencias(real) >= MaxPendencias) return "pendencias";
                     if (!ItemValido(nome, qualidade, qtd)) return "item_invalido";
+                    // A oferta inteira cabe na bolsa (8x4): mais que isso ninguem carrega, so um
+                    // cliente adulterado pediria. Antes cada linha podia ter 32 pilhas, 256 no total.
+                    int ocupadas = _motor.SessaoDe(real)?.Oferta(real).Sum(i => PilhasDe(i.Nome, i.Qtd)) ?? 0;
+                    if (ocupadas + PilhasDe(nome, qtd) > MaxPilhas) return "bolsa";
                     return _motor.Oferecer(real, new TrocaItem { Id = id, Nome = nome, Qualidade = qualidade, Qtd = qtd }, agora);
                 }
 
@@ -544,6 +559,7 @@ namespace Deadheim.Troca
         {
             if (Atual == null) return "Nao ha troca aberta.";
             if (Atual.Minha.Count + _aOferecer.Count >= TrocaMotor.MaxItens) return "A oferta esta cheia.";
+            if (nome != Moedas.Prefab) return "A troca e so de moedas.";
             ItemDrop.ItemData.SharedData sh = Prefab(nome);
             if (sh == null) return "Esse item nao pode ser trocado.";
             if (qtd <= 0) return "Quantidade invalida.";
@@ -724,7 +740,7 @@ namespace Deadheim.Troca
             {
                 // Sempre pelo nome: sem nome abre a lista de quem esta perto para escolher, em vez
                 // de pedir ao mais proximo (numa cidade cheia, o mais proximo e quase sempre outro).
-                new Terminal.ConsoleCommand("trocar", "[nome] - pede uma troca de itens ao jogador (sem nome: escolher na lista de quem esta perto)",
+                new Terminal.ConsoleCommand("trocar", "[nome] - pede uma troca de moedas ao jogador (sem nome: escolher na lista de quem esta perto)",
                     args =>
                     {
                         Player eu = Player.m_localPlayer;

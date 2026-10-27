@@ -714,12 +714,14 @@ namespace Deadheim
         private static void PlaceApproved(Player lp, Run r, Piece piece, Vector3 pos, Quaternion rot)
         {
             lp.PlacePiece(piece, pos, rot, false);
-            if (!Priv.NoPlacementCost(lp) && !ZoneSystem.instance.GetGlobalKey(piece.FreeBuildKey()))
-                lp.ConsumeResources(piece.m_resources, 0);
-            r.Placed++;
             r.Idx++;
             r.ApprovedIdx = -1;
             r.NextAt = Time.time + Mathf.Max(0.1f, PlaceIntervalSeconds.Value);
+            // Barrada por um patch do PlacePiece (Territorio, zona de raid...): sem peca, sem cobranca.
+            if (ConstrucaoBarrada.Barrada) { r.Skipped++; return; }
+            if (!Priv.NoPlacementCost(lp) && !ZoneSystem.instance.GetGlobalKey(piece.FreeBuildKey()))
+                lp.ConsumeResources(piece.m_resources, 0);
+            r.Placed++;
         }
 
         // ------------------------------------------------------------------ cliente: respostas

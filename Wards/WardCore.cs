@@ -350,15 +350,54 @@ namespace Deadheim.Wards
             return isVip ? Plugin.WardLimitVip.Value : Plugin.WardLimit.Value;
         }
 
-        /// <summary>
-        /// Servidor: conta wards criados por este jogador. Varre as ZDOs uma unica vez
-        /// somando todos os prefabs que contam para o limite, em vez de uma varredura
-        /// por prefab como fazia o Util.GetCreatorPrefabCount.
-        /// </summary>
-        public static int CountWardsOf(long playerId) => CountOf(playerId, CommonWardHashes());
+        /// <summary>As pecas com limite de um jogador, contadas pelo servidor.</summary>
+        public sealed class PecasDoJogador
+        {
+            public int Portais, Wards, WardsNaAreaSegura, Territorios;
+            /// <summary>ZDOs dos Totens da Cidade do jogador, na ordem da varredura.</summary>
+            public readonly List<ZDO> Totens = new List<ZDO>();
+        }
 
-        /// <summary>Servidor: wards comuns deste jogador dentro da area segura (so uma e permitida ali).</summary>
-        public static int CountWardsInSafeAreaOf(long playerId) => CountOf(playerId, CommonWardHashes(), InFullProtectionZone);
+        private static readonly int PortalHash = "portal_wood".GetStableHashCode();
+        private static readonly int TotemHash = TotemCidade.PrefabName.GetStableHashCode();
+
+        /// <summary>
+        /// Servidor: todas as contagens de um jogador numa varredura so das ZDOs. Antes eram cinco
+        /// (portal, ward, ward na area segura, Territorio e totem) a cada pedido de contagem, que cada
+        /// cliente com o martelo na mao manda a cada 10 s; o "Voltar para casa" do Teleportador usa a
+        /// mesma varredura para achar os totens.
+        /// </summary>
+        public static PecasDoJogador PecasDe(long playerId)
+        {
+            PecasDoJogador pecas = new PecasDoJogador();
+            if (playerId == 0L || ZDOMan.instance == null) return pecas;
+
+            HashSet<int> comuns = CommonWardHashes();
+            int territorio = WardProfiles.TerritoryWard.GetStableHashCode();
+            foreach (List<ZDO> sector in ZDOMan.instance.m_objectsBySector)
+            {
+                if (sector == null) continue;
+                for (int i = 0; i < sector.Count; i++)
+                {
+                    ZDO zdo = sector[i];
+                    if (zdo == null) continue;
+                    int prefab = zdo.GetPrefab();
+                    bool comum = comuns.Contains(prefab);
+                    if (!comum && prefab != territorio && prefab != PortalHash && prefab != TotemHash) continue;
+                    if (zdo.GetLong(ZDOVars.s_creator, 0L) != playerId) continue;
+
+                    if (comum)
+                    {
+                        pecas.Wards++;
+                        if (InFullProtectionZone(zdo.GetPosition())) pecas.WardsNaAreaSegura++;
+                    }
+                    if (prefab == territorio) pecas.Territorios++;
+                    if (prefab == PortalHash) pecas.Portais++;
+                    if (prefab == TotemHash) pecas.Totens.Add(zdo);
+                }
+            }
+            return pecas;
+        }
 
         private static HashSet<int> CommonWardHashes()
         {
@@ -367,28 +406,6 @@ namespace Deadheim.Wards
             if (WardProfiles.PlayerWardEnabled.Value)
                 hashes.Add(WardProfiles.PlayerWard.GetStableHashCode());
             return hashes;
-        }
-
-        /// <summary>Servidor: Wards de Territorio deste jogador (limite proprio, TerritoryWardLimit).</summary>
-        public static int CountTerritoryWardsOf(long playerId)
-            => CountOf(playerId, new HashSet<int> { WardProfiles.TerritoryWard.GetStableHashCode() });
-
-        private static int CountOf(long playerId, HashSet<int> hashes, Func<Vector3, bool> where = null)
-        {
-            int count = 0;
-            foreach (List<ZDO> sector in ZDOMan.instance.m_objectsBySector)
-            {
-                if (sector == null) continue;
-                for (int i = 0; i < sector.Count; i++)
-                {
-                    ZDO zdo = sector[i];
-                    if (zdo == null || !hashes.Contains(zdo.GetPrefab())) continue;
-                    if (zdo.GetLong(ZDOVars.s_creator, 0L) != playerId) continue;
-                    if (where != null && !where(zdo.GetPosition())) continue;
-                    count++;
-                }
-            }
-            return count;
         }
 
         /// <summary>
