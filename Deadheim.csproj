@@ -188,6 +188,7 @@
     <Compile Include="Shared\ConfigWatcher.cs" />
     <!-- Numero gravado com ponto e lido com ponto ou virgula (retreat, /pvpadmin). Tambem no Hearthstone. -->
     <Compile Include="Shared\Numeros.cs" />
+    <Compile Include="Shared\ValheimUi.cs" />
     <Compile Include="Portal.cs" />
     <!-- Item do servidor para o jogador local sem duplicar nem sumir. Publico: o RaidSystem usa. -->
     <Compile Include="Entrega.cs" />

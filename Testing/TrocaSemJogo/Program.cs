@@ -20,8 +20,8 @@ internal static class Program
 
     private const long A = 100, B = 200, C = 300;
 
-    private static TrocaItem Item(string id, int qtd = 1, string dados = null)
-        => new TrocaItem { Id = id, Nome = "Item " + id, Qtd = qtd, Dados = dados ?? ("dados-" + id) };
+    private static TrocaItem Item(string id, int qtd = 1, string nome = null, int qualidade = 1)
+        => new TrocaItem { Id = id, Nome = nome ?? ("Item" + id), Qualidade = qualidade, Qtd = qtd };
 
     /// <summary>Oferece e, se o servidor aceitou, o dono "grava o personagem" (Persistido), como o cliente faz.</summary>
     private static string Oferta(TrocaMotor m, long jogador, TrocaItem item, double agora)
@@ -91,9 +91,14 @@ internal static class Program
             Check("oferecer avisa os dois lados", m.Efeitos.Count(e => e.Tipo == TrocaEfeitoTipo.Sessao) == 2);
             Check("id repetido recusa", Oferta(m, A, Item("a1"), 2) == "item_repetido");
             Check("id repetido pelo outro lado recusa", Oferta(m, B, Item("a1"), 2) == "item_repetido");
-            Check("item sem dados recusa", Oferta(m, A, new TrocaItem { Id = "z", Qtd = 1, Dados = "" }, 2) == "item_invalido");
+            Check("item sem nome recusa", Oferta(m, A, new TrocaItem { Id = "z", Qtd = 1, Nome = "" }, 2) == "item_invalido");
             Check("qtd zero recusa", Oferta(m, A, Item("z", 0), 2) == "item_invalido");
-            Check("dados enormes recusam", Oferta(m, A, Item("z", 1, new string('x', TrocaMotor.MaxDados + 1)), 2) == "item_invalido");
+            Check("qtd negativa recusa", Oferta(m, A, Item("z", -5), 2) == "item_invalido");
+            Check("qualidade zero recusa", Oferta(m, A, Item("z", 1, "Wood", 0), 2) == "item_invalido");
+            Check("nome enorme recusa", Oferta(m, A, Item("z", 1, new string('x', TrocaMotor.MaxNome + 1)), 2) == "item_invalido");
+            Check("parte de uma pilha entra com a quantidade", Oferta(m, B, Item("b30", 30, "Wood"), 2) == null
+                && s.OfertaB.Single().Qtd == 30 && s.OfertaB.Single().Nome == "Wood");
+            m.Retirar(B, "b30", 2);
             for (int i = 2; i <= TrocaMotor.MaxItens; i++) Oferta(m, A, Item("a" + i), 3);
             Check("oferta lota em MaxItens", s.OfertaA.Count == TrocaMotor.MaxItens && Oferta(m, A, Item("extra"), 3) == "cheio");
 
@@ -205,7 +210,7 @@ internal static class Program
             Check("A recebe o que B deu", Entregas(m, A).Single().Itens.Select(i => i.Id).SequenceEqual(new[] { "b1" }));
             Check("B recebe o que A deu", Entregas(m, B).Single().Itens.Select(i => i.Id).OrderBy(x => x).SequenceEqual(new[] { "a1", "a2" }));
             Check("os dois recebem Fim concluida", m.Efeitos.Count(e => e.Tipo == TrocaEfeitoTipo.Fim && e.Motivo == "concluida") == 2);
-            Check("itens preservam os dados", Entregas(m, B).Single().Itens.Any(i => i.Id == "a1" && i.Dados == "dados-a1" && i.Qtd == 1));
+            Check("itens preservam nome, qualidade e quantidade", Entregas(m, B).Single().Itens.Any(i => i.Id == "a1" && i.Nome == "Itema1" && i.Qualidade == 1 && i.Qtd == 1));
             Check("nenhum item duplicado", TodosIds(m).Count == TodosIds(m).Distinct().Count() && TodosIds(m).Count == 3);
             Check("confirmar de novo nao executa outra vez", m.Confirmar(B, v, 5) == "sem_sessao");
         }
@@ -263,7 +268,7 @@ internal static class Program
         // ---- persistencia ----
         {
             var m = Aberta(out var s);
-            Oferta(m, A, Item("a1", 5, "dados com\ttab\ne linha"), 2);
+            Oferta(m, A, Item("a1", 5, "nome com\ttab\ne linha", 3), 2);
             Oferta(m, B, Item("b1"), 2);
             m.Retirar(B, "b1", 3);                       // b1 vira entrega pendente de B
             string texto = m.Serializar();
@@ -272,7 +277,8 @@ internal static class Program
             Check("carregar le o arquivo", r.Carregar(texto));
             var porDono = r.Pendentes.GroupBy(e => e.Dono).ToDictionary(g => g.Key, g => g.SelectMany(e => e.Itens).ToList());
             Check("restart devolve a oferta da sessao aberta ao dono", porDono[A].Single().Id == "a1" && porDono[A].Single().Qtd == 5);
-            Check("dados com tab e quebra de linha sobrevivem", porDono[A].Single().Dados == "dados com\ttab\ne linha");
+            Check("nome com tab e quebra de linha sobrevive", porDono[A].Single().Nome == "nome com\ttab\ne linha");
+            Check("qualidade sobrevive", porDono[A].Single().Qualidade == 3);
             Check("entrega pendente anterior sobrevive", porDono[B].Single().Id == "b1");
             Check("nao ha sessao depois do restart", r.SessaoDe(A) == null && r.SessoesAtivas == 0);
             Check("ids de entrega nao se repetem depois de carregar",
@@ -298,6 +304,31 @@ internal static class Program
             var cortado = new TrocaMotor();
             bool ok = cortado.Carregar(bom + "I\t!!!nao-base64!!!\tx\t1\ty\n");
             Check("base64 quebrado nao lanca e mantem o que veio antes", !ok && cortado.Pendentes.Sum(e => e.Itens.Count) == 2);
+        }
+
+        // ---- arquivo TROCA1 (item inteiro) vira nome + qualidade + quantidade ----
+        {
+            string Enc(string s) => Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(s));
+            string v1 = "TROCA1\nN\t5\n"
+                + "E\t3\t100\n"
+                + $"I\t{Enc("id1")}\t{Enc("Wood|1")}\t50\t{Enc("dados")}\t100\n"
+                + $"I\t{Enc("id2")}\t{Enc("SwordIron|3")}\t1\t{Enc("dados")}\t200\n"
+                + "E\t4\t200\n"
+                + $"I\t{Enc("id3")}\t{Enc("Coins")}\t7\t{Enc("dados")}\n";
+            var r = new TrocaMotor();
+            Check("TROCA1 carrega", r.Carregar(v1));
+            var itens = r.Pendentes.SelectMany(e => e.Itens).ToDictionary(i => i.Id);
+            Check("TROCA1: nome e quantidade", itens.Count == 3 && itens["id1"].Nome == "Wood" && itens["id1"].Qtd == 50 && itens["id1"].Qualidade == 1);
+            Check("TROCA1: qualidade sai do nome", itens["id2"].Nome == "SwordIron" && itens["id2"].Qualidade == 3 && itens["id2"].Origem == 200);
+            Check("TROCA1: sem qualidade nem origem = 1 e o dono", itens["id3"].Nome == "Coins" && itens["id3"].Qualidade == 1 && itens["id3"].Origem == 200);
+            Check("TROCA1: entrega carregada esta segura", itens.Values.All(i => i.Seguro));
+            Check("TROCA1 regrava como TROCA2", r.Serializar().StartsWith("TROCA2\n"));
+            var r2 = new TrocaMotor();
+            Check("TROCA2 regravado le de volta igual", r2.Carregar(r.Serializar()) && r2.Serializar() == r.Serializar());
+            r.Pedir(A, B, 0); r.Aceitar(B, 1);
+            Oferta(r, A, Item("novo"), 2);
+            r.Cancelar(A, "x");
+            Check("TROCA1: entrega nova nao colide", r.Pendentes.Select(e => e.Id).Distinct().Count() == 3 && r.Pendentes.Max(e => e.Id) >= 5);
         }
 
         // ---- varias sessoes ao mesmo tempo ----

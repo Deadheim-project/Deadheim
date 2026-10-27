@@ -10,18 +10,37 @@ namespace Deadheim
     public static class Entrega
     {
         /// <summary>
-        /// Entrega um item ja pronto (qualidade, durabilidade, dados customizados intactos), como na
-        /// troca entre jogadores. O AddItem(ItemData) completa as pilhas e deixa em m_stack o que nao
-        /// coube; esse resto cai aos pes. Devolve quanto caiu no chao.
+        /// Entrega pelo nome do prefab, na qualidade pedida (troca entre jogadores), como os NPCs
+        /// entregam: AddItem(nome, ...) com cheated false e pickedUp true, que no 1.0 contam o item
+        /// como coletado e nao como spawn de trapaca. Devolve quanto caiu no chao.
         /// </summary>
-        public static int ParaJogador(Player player, ItemDrop.ItemData item)
+        public static int ParaJogador(Player player, string prefabName, int amount, int quality)
         {
-            if (player == null || item?.m_shared == null || item.m_stack <= 0) return 0;
-            if (player.GetInventory().AddItem(item) || item.m_stack <= 0) return 0;
-            int resto = item.m_stack;
+            GameObject prefab = ObjectDB.instance != null ? ObjectDB.instance.GetItemPrefab(prefabName) : null;
+            ItemDrop item = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
+            if (player == null || item?.m_itemData?.m_shared == null || amount <= 0) return 0;
+
+            Inventory inventory = player.GetInventory();
+            ItemDrop.ItemData.SharedData shared = item.m_itemData.m_shared;
+            int q = Mathf.Clamp(quality, 1, Mathf.Max(1, shared.m_maxQuality));
             Vector3 at = player.transform.position + player.transform.forward + Vector3.up;
-            ItemDrop.DropItem(item, resto, at + Random.insideUnitSphere * 0.3f, Quaternion.identity);
-            return resto;
+
+            return Pvp.PvpCoinMath.Deliver(amount, Mathf.Max(1, shared.m_maxStackSize),
+                chunk =>
+                {
+                    int before = inventory.CountItems(shared.m_name, q, false);
+                    inventory.AddItem(prefabName, chunk, q, 0, 0L, "", false, true);
+                    return inventory.CountItems(shared.m_name, q, false) - before;
+                },
+                pile =>
+                {
+                    GameObject go = Object.Instantiate(prefab, at + Random.insideUnitSphere * 0.3f, Quaternion.identity);
+                    ItemDrop dropped = go != null ? go.GetComponent<ItemDrop>() : null;
+                    if (dropped == null) return;
+                    dropped.m_itemData.m_quality = q;
+                    dropped.m_itemData.m_durability = dropped.m_itemData.GetMaxDurability();
+                    dropped.SetStack(pile);
+                });
         }
 
         /// <summary>Devolve quanto caiu no chao.</summary>
