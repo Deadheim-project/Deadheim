@@ -8,13 +8,17 @@ namespace Deadheim.Troca
 {
     internal enum TrocaFase { Pedido, Oferta }
 
-    /// <summary>Um item em custodia. <see cref="Dados"/> e o ItemData inteiro serializado (opaco para o motor).</summary>
+    /// <summary>
+    /// Um item em custodia, como os NPCs guardam: nome do prefab ("Wood"), qualidade e quantidade.
+    /// Quem recebe ganha o item novo do prefab (durabilidade cheia, sem estilo nem nome de quem fez).
+    /// </summary>
     internal sealed class TrocaItem
     {
         public string Id = "";
+        /// <summary>Nome do prefab, nunca o nome traduzido ("$item_wood").</summary>
         public string Nome = "";
+        public int Qualidade = 1;
         public int Qtd;
-        public string Dados = "";
         /// <summary>Quem ofereceu. Entrega ao proprio Origem = devolucao; ao outro = recebimento.</summary>
         public long Origem;
         /// <summary>
@@ -84,11 +88,13 @@ namespace Deadheim.Troca
     internal sealed class TrocaMotor
     {
         public const int MaxItens = 8;
-        public const int MaxDados = 16384;
+        public const int MaxNome = 64;
         public const double PedidoSeg = 30;
         public const double InativaSeg = 180;
 
-        private const string Cabecalho = "TROCA1";
+        private const string Cabecalho = "TROCA2";
+        /// <summary>Arquivo de antes da troca por nome: o item ia inteiro, e o nome era "prefab|qualidade".</summary>
+        private const string CabecalhoV1 = "TROCA1";
 
         private readonly Dictionary<long, TrocaSessao> _porJogador = new Dictionary<long, TrocaSessao>();
         private readonly Dictionary<long, TrocaEntrega> _entregas = new Dictionary<long, TrocaEntrega>();
@@ -140,8 +146,8 @@ namespace Deadheim.Troca
         {
             var s = SessaoDe(jogador);
             if (s == null || s.Fase != TrocaFase.Oferta) return "sem_sessao";
-            if (item == null || string.IsNullOrEmpty(item.Id) || item.Qtd <= 0) return "item_invalido";
-            if (string.IsNullOrEmpty(item.Dados) || item.Dados.Length > MaxDados) return "item_invalido";
+            if (item == null || string.IsNullOrEmpty(item.Id) || item.Qtd <= 0 || item.Qualidade < 1) return "item_invalido";
+            if (string.IsNullOrEmpty(item.Nome) || item.Nome.Length > MaxNome) return "item_invalido";
             var oferta = s.Oferta(jogador);
             if (oferta.Count >= MaxItens) return "cheio";
             if (IdEmUso(item.Id)) return "item_repetido";
@@ -296,7 +302,8 @@ namespace Deadheim.Troca
                   .Append(e.Dono.ToString(CultureInfo.InvariantCulture)).Append('\n');
                 foreach (var i in e.Itens)
                     sb.Append("I\t").Append(B64(i.Id)).Append('\t').Append(B64(i.Nome)).Append('\t')
-                      .Append(i.Qtd.ToString(CultureInfo.InvariantCulture)).Append('\t').Append(B64(i.Dados)).Append('\t')
+                      .Append(i.Qualidade.ToString(CultureInfo.InvariantCulture)).Append('\t')
+                      .Append(i.Qtd.ToString(CultureInfo.InvariantCulture)).Append('\t')
                       .Append(i.Origem.ToString(CultureInfo.InvariantCulture)).Append('\n');
             }
             return sb.ToString();
@@ -304,7 +311,8 @@ namespace Deadheim.Troca
 
         /// <summary>
         /// Le o estado gravado. Texto vazio, de outra versao ou quebrado devolve false e nunca lanca;
-        /// as entregas lidas antes do ponto quebrado ficam.
+        /// as entregas lidas antes do ponto quebrado ficam. O arquivo TROCA1 (item inteiro) vira
+        /// nome + qualidade + quantidade, que ele ja guardava ao lado dos dados.
         /// </summary>
         public bool Carregar(string texto)
         {
@@ -312,7 +320,9 @@ namespace Deadheim.Troca
             _porJogador.Clear();
             if (string.IsNullOrEmpty(texto)) return false;
             var linhas = texto.Split('\n');
-            if (linhas[0].TrimEnd('\r') != Cabecalho) return false;
+            string cabecalho = linhas[0].TrimEnd('\r');
+            if (cabecalho != Cabecalho && cabecalho != CabecalhoV1) return false;
+            bool v1 = cabecalho == CabecalhoV1;
             TrocaEntrega atual = null;
             long maxId = 0;
             bool ok = true;
@@ -331,7 +341,15 @@ namespace Deadheim.Troca
                         maxId = Math.Max(maxId, atual.Id);
                     }
                     else if (p[0] == "I" && atual != null)
-                        atual.Itens.Add(new TrocaItem { Id = D64(p[1]), Nome = D64(p[2]), Qtd = int.Parse(p[3], CultureInfo.InvariantCulture), Dados = D64(p[4]), Origem = p.Length > 5 ? long.Parse(p[5], CultureInfo.InvariantCulture) : atual.Dono, Seguro = true });
+                        atual.Itens.Add(v1 ? ItemV1(p, atual.Dono) : new TrocaItem
+                        {
+                            Id = D64(p[1]),
+                            Nome = D64(p[2]),
+                            Qualidade = Math.Max(1, int.Parse(p[3], CultureInfo.InvariantCulture)),
+                            Qtd = int.Parse(p[4], CultureInfo.InvariantCulture),
+                            Origem = long.Parse(p[5], CultureInfo.InvariantCulture),
+                            Seguro = true,
+                        });
                 }
             }
             catch (Exception)
@@ -385,7 +403,22 @@ namespace Deadheim.Troca
             => _porJogador.Values.Any(s => s.OfertaA.Any(i => i.Id == id) || s.OfertaB.Any(i => i.Id == id))
                || _entregas.Values.Any(e => e.Itens.Any(i => i.Id == id));
 
-        private static TrocaItem Copia(TrocaItem i) => new TrocaItem { Id = i.Id, Nome = i.Nome ?? "", Qtd = i.Qtd, Dados = i.Dados, Origem = i.Origem, Seguro = i.Seguro };
+        /// <summary>Linha TROCA1: "I id nome|qualidade qtd dados [origem]". Os dados do item inteiro ficam para tras.</summary>
+        private static TrocaItem ItemV1(string[] p, long dono)
+        {
+            string[] nome = D64(p[2]).Split('|');
+            return new TrocaItem
+            {
+                Id = D64(p[1]),
+                Nome = nome[0],
+                Qualidade = nome.Length > 1 && int.TryParse(nome[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int q) ? Math.Max(1, q) : 1,
+                Qtd = int.Parse(p[3], CultureInfo.InvariantCulture),
+                Origem = p.Length > 5 ? long.Parse(p[5], CultureInfo.InvariantCulture) : dono,
+                Seguro = true,
+            };
+        }
+
+        private static TrocaItem Copia(TrocaItem i) => new TrocaItem { Id = i.Id, Nome = i.Nome ?? "", Qualidade = i.Qualidade, Qtd = i.Qtd, Origem = i.Origem, Seguro = i.Seguro };
         private static string B64(string s) => Convert.ToBase64String(Encoding.UTF8.GetBytes(s ?? ""));
         private static string D64(string s) => Encoding.UTF8.GetString(Convert.FromBase64String(s));
     }

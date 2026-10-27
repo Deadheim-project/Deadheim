@@ -15,15 +15,19 @@ namespace Deadheim.Troca
     /// servidor guarda em custodia e responde, SO ENTAO o cliente tira o item do inventario. A
     /// entrega ao destino fica pendente no servidor ate o cliente dizer "recebido" (e e reenviada
     /// no login), entao queda de conexao ou restart nao perdem nem duplicam item.
-    /// O item viaja inteiro (Inventory.Save de um inventario descartavel): qualidade, durabilidade,
-    /// dados customizados do transmog e do pet seguem juntos. O servidor le o item de volta e
-    /// ignora o nome/quantidade que o cliente disser: o que o outro jogador ve e o que ele recebe.
+    /// O item vai por nome, como nos NPCs (Correio, Mercador): nome do prefab, qualidade e
+    /// quantidade, que o servidor confere no ObjectDB. Da para oferecer parte de uma pilha, ou
+    /// varias pilhas juntas. Quem recebe ganha o item novo (durabilidade cheia; estilo e nome de
+    /// quem fez ficam para tras). Item equipado nao entra: tirar pelo nome poderia levar justo ele.
     /// </summary>
     [HarmonyPatch]
     internal static class TrocaRede
     {
-        private const string ToServer = "DH_Troca_ToServer";
-        private const string ToClient = "DH_Troca_ToClient";
+        // "2": a troca por nome. Cliente e servidor de versoes diferentes nao se falam em vez de se
+        // entenderem errado: um cliente antigo leria a entrega nova como item ilegivel, diria
+        // "recebido" e o item sumiria. Assim ela espera no servidor ate o jogador atualizar.
+        private const string ToServer = "DH_Troca2_ToServer";
+        private const string ToClient = "DH_Troca2_ToClient";
 
         public static ConfigEntry<bool> Ativo;
         public static ConfigEntry<float> Distancia;
@@ -176,22 +180,32 @@ namespace Deadheim.Troca
         private static string NomeDe(long uid)
             => (ZNet.instance?.GetPeer(uid)?.m_playerName ?? "?").Replace('<', ' ').Replace('>', ' ');
 
-        /// <summary>O que o jogo aceita de um item de verdade; recusa o que um cliente adulterado inventaria.</summary>
-        private static bool ItemValido(ItemDrop.ItemData item)
+        /// <summary>Pilhas cheias numa linha da oferta: o inventario inteiro, como numa entrega de NPC.</summary>
+        internal const int MaxPilhas = 32;
+
+        /// <summary>O item do jogo com esse nome de prefab, ou null.</summary>
+        internal static ItemDrop.ItemData.SharedData Prefab(string nome)
         {
-            ItemDrop.ItemData.SharedData sh = item?.m_shared;
-            if (sh == null || item.m_dropPrefab == null || string.IsNullOrEmpty(sh.m_name)) return false;
-            if (item.m_stack <= 0 || item.m_stack > Mathf.Max(1, sh.m_maxStackSize)) return false;
-            if (item.m_quality < 1 || item.m_quality > Mathf.Max(1, sh.m_maxQuality)) return false;
-            if (item.m_variant < 0 || item.m_variant > 255) return false;
-            if (sh.m_useDurability && (item.m_durability < 0f || item.m_durability > item.GetMaxDurability() + 1f)) return false;
-            if (item.m_customData != null)
-            {
-                if (item.m_customData.Count > 16) return false;
-                foreach (var kv in item.m_customData)
-                    if ((kv.Key ?? "").Length > 64 || (kv.Value ?? "").Length > 512) return false;
-            }
-            return true;
+            if (string.IsNullOrEmpty(nome) || nome.Length > TrocaMotor.MaxNome || ObjectDB.instance == null) return null;
+            GameObject prefab = ObjectDB.instance.GetItemPrefab(nome);
+            ItemDrop drop = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
+            return drop?.m_itemData?.m_shared;
+        }
+
+        /// <summary>Quanto de um item cabe numa linha da oferta.</summary>
+        internal static int MaxQtd(ItemDrop.ItemData.SharedData sh)
+        {
+            long max = (long)Mathf.Max(1, sh.m_maxStackSize) * MaxPilhas;
+            return max > int.MaxValue ? int.MaxValue : (int)max;
+        }
+
+        /// <summary>O que o jogo aceita de um item de verdade; recusa o que um cliente adulterado inventaria.</summary>
+        private static bool ItemValido(string nome, int qualidade, int qtd)
+        {
+            ItemDrop.ItemData.SharedData sh = Prefab(nome);
+            if (sh == null || string.IsNullOrEmpty(sh.m_name)) return false;
+            if (qualidade < 1 || qualidade > Mathf.Max(1, sh.m_maxQuality)) return false;
+            return qtd > 0 && qtd <= MaxQtd(sh);
         }
 
         private static void OnToServer(long sender, ZPackage pkg)
@@ -205,6 +219,7 @@ namespace Deadheim.Troca
             catch (Exception ex) { Debug.LogError("[Deadheim] Troca: pacote de " + real + " falhou: " + ex); return; }
 
             Carregar();
+            _ofertaLida = null;
             string erro;
             try { erro = Tratar(real, op, pkg); }
             catch (Exception ex)
@@ -215,7 +230,13 @@ namespace Deadheim.Troca
 
             Drenar();
             if (erro != null && Erros.TryGetValue(erro, out string texto)) Pvp.PvpNet.Message(real, texto);
+            // Oferta recusada: o cliente solta a quantidade que tinha reservado para ela.
+            if (erro != null && op == "oferecer" && !string.IsNullOrEmpty(_ofertaLida) && ZRoutedRpc.instance != null)
+                ZRoutedRpc.instance.InvokeRoutedRPC(real, ToClient, Pacote("recusada", p => p.Write(_ofertaLida)));
         }
+
+        /// <summary>Id da oferta do pacote em tratamento, para avisar a recusa.</summary>
+        private static string _ofertaLida;
 
         /// <summary>Executa um pedido do cliente. Devolve o codigo do erro, ou null.</summary>
         private static string Tratar(long real, string op, ZPackage pkg)
@@ -260,21 +281,16 @@ namespace Deadheim.Troca
 
                 case "oferecer":
                 {
-                    if (!Ativo.Value) return "desligado";
                     string id = pkg.ReadString() ?? "";
-                    string dados = pkg.ReadString() ?? "";
-                    if (id.Length == 0 || id.Length > 64 || dados.Length == 0 || dados.Length > TrocaMotor.MaxDados) return "item_invalido";
+                    _ofertaLida = id.Length <= 64 ? id : null;
+                    if (!Ativo.Value) return "desligado";
+                    string nome = pkg.ReadString() ?? "";
+                    int qualidade = pkg.ReadInt();
+                    int qtd = pkg.ReadInt();
+                    if (id.Length == 0 || id.Length > 64) return "item_invalido";
                     if (Pendencias(real) >= MaxPendencias) return "pendencias";
-                    ItemDrop.ItemData item = Ler(dados);
-                    if (!ItemValido(item)) return "item_invalido";
-                    return _motor.Oferecer(real, new TrocaItem
-                    {
-                        Id = id,
-                        // O que o outro lado le na janela vem do item de verdade, nunca do que o cliente disse.
-                        Nome = item.m_dropPrefab.name + "|" + item.m_quality,
-                        Qtd = item.m_stack,
-                        Dados = dados,
-                    }, agora);
+                    if (!ItemValido(nome, qualidade, qtd)) return "item_invalido";
+                    return _motor.Oferecer(real, new TrocaItem { Id = id, Nome = nome, Qualidade = qualidade, Qtd = qtd }, agora);
                 }
 
                 case "persistido":
@@ -325,7 +341,9 @@ namespace Deadheim.Troca
                         {
                             p.Write(i.Id);
                             p.Write(i.Origem == e.Entrega.Dono); // devolucao do que o proprio dono ofereceu
-                            p.Write(i.Dados);
+                            p.Write(i.Nome);
+                            p.Write(i.Qualidade);
+                            p.Write(i.Qtd);
                         }
                         break;
                     case TrocaEfeitoTipo.Fim:
@@ -348,7 +366,7 @@ namespace Deadheim.Troca
             foreach (List<TrocaItem> lista in new[] { s.Oferta(para), s.Oferta(outro) })
             {
                 p.Write(lista.Count);
-                foreach (TrocaItem i in lista) { p.Write(i.Id); p.Write(i.Nome); p.Write(i.Qtd); p.Write(i.Seguro); }
+                foreach (TrocaItem i in lista) { p.Write(i.Id); p.Write(i.Nome); p.Write(i.Qualidade); p.Write(i.Qtd); p.Write(i.Seguro); }
             }
         }
 
@@ -376,35 +394,6 @@ namespace Deadheim.Troca
             }
         }
 
-        // ============================================================ serializacao do item
-
-        /// <summary>O item inteiro em base64, via Inventory.Save de um inventario descartavel.</summary>
-        internal static string Escrever(ItemDrop.ItemData item)
-        {
-            Inventory inv = new Inventory("troca", null, 4, 2);
-            if (!inv.AddItem(item.Clone())) return null;
-            ZPackage p = new ZPackage();
-            inv.Save(p);
-            return p.GetBase64();
-        }
-
-        /// <summary>Le de volta; null se nao for exatamente um item valido.</summary>
-        internal static ItemDrop.ItemData Ler(string base64)
-        {
-            if (string.IsNullOrEmpty(base64)) return null;
-            try
-            {
-                Inventory inv = new Inventory("troca", null, 4, 2);
-                inv.Load(new ZPackage(base64));
-                List<ItemDrop.ItemData> itens = inv.GetAllItems();
-                return itens.Count == 1 ? itens[0] : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         // ================================================================== cliente
 
         /// <summary>O que a janela mostra. Null = sem troca.</summary>
@@ -422,8 +411,9 @@ namespace Deadheim.Troca
         internal static string PedidoDe;
         internal static float PedidoEm;
 
-        // Itens oferecidos que o servidor ainda nao confirmou: continuam no inventario ate la.
-        private static readonly Dictionary<string, ItemDrop.ItemData> _aOferecer = new Dictionary<string, ItemDrop.ItemData>();
+        // Itens oferecidos que o servidor ainda nao confirmou: continuam no inventario ate la, mas
+        // ja nao contam como disponiveis (nao da para oferecer a mesma madeira duas vezes).
+        private static readonly Dictionary<string, TrocaItem> _aOferecer = new Dictionary<string, TrocaItem>();
         private static readonly HashSet<long> _entregasFeitas = new HashSet<long>();
 
         // Livro do proprio personagem (m_customData, gravado junto com o inventario no mesmo save):
@@ -471,8 +461,59 @@ namespace Deadheim.Troca
             _aOferecer.Clear();
         }
 
-        internal static bool EmOferta => Atual != null;
-        internal static bool Pendente(ItemDrop.ItemData item) => _aOferecer.ContainsValue(item);
+        // ---- inventario por nome (prefab + qualidade), sem os itens equipados ----
+
+        /// <summary>
+        /// As pilhas do inventario que podem ir para a troca: do prefab e da qualidade, fora as
+        /// equipadas. Pelo nome do prefab e nao pelo m_shared.m_name (que e o que o
+        /// Inventory.RemoveItem(nome) compara): item clonado pode ter o mesmo nome traduzido.
+        /// </summary>
+        internal static List<ItemDrop.ItemData> Pilhas(Inventory inv, string nome, int qualidade)
+            => inv == null ? new List<ItemDrop.ItemData>() : inv.GetAllItems()
+                .Where(i => i?.m_shared != null && i.m_dropPrefab != null && !i.m_equipped
+                            && i.m_quality == qualidade && i.m_dropPrefab.name == nome)
+                .ToList();
+
+        /// <summary>Quanto ja foi oferecido e o servidor ainda nao confirmou.</summary>
+        internal static int Reservado(string nome, int qualidade)
+            => _aOferecer.Values.Where(i => i.Nome == nome && i.Qualidade == qualidade).Sum(i => i.Qtd);
+
+        /// <summary>Quanto ainda da para oferecer desse item.</summary>
+        internal static int Disponivel(string nome, int qualidade)
+        {
+            Player p = Player.m_localPlayer;
+            if (p == null) return 0;
+            return Math.Max(0, Pilhas(p.GetInventory(), nome, qualidade).Sum(i => i.m_stack) - Reservado(nome, qualidade));
+        }
+
+        /// <summary>Tira tudo ou nada: sem a quantidade inteira (largou, equipou), nao mexe em nada.</summary>
+        private static bool Tirar(Inventory inv, string nome, int qualidade, int qtd)
+        {
+            List<ItemDrop.ItemData> pilhas = Pilhas(inv, nome, qualidade);
+            if (qtd <= 0 || pilhas.Sum(i => i.m_stack) < qtd) return false;
+            int falta = qtd;
+            // As menores primeiro: sobram pilhas cheias.
+            foreach (ItemDrop.ItemData pilha in pilhas.OrderBy(i => i.m_stack))
+            {
+                int n = Math.Min(falta, pilha.m_stack);
+                inv.RemoveItem(pilha, n);
+                falta -= n;
+                if (falta <= 0) break;
+            }
+            return true;
+        }
+
+        /// <summary>Nome do item para a janela ("Madeira"), pelo prefab.</summary>
+        internal static string NomeVisivel(string nome)
+        {
+            ItemDrop.ItemData.SharedData sh = Prefab(nome);
+            if (sh == null || Localization.instance == null) return nome ?? "";
+            string texto = Localization.instance.Localize(sh.m_name);
+            return string.IsNullOrEmpty(texto) ? nome : texto;
+        }
+
+        internal static string Rotulo(TrocaItem item)
+            => item.Qtd + "x " + NomeVisivel(item.Nome) + (item.Qualidade > 1 ? "  (nv " + item.Qualidade + ")" : "");
 
         private static void Enviar(ZPackage p)
         {
@@ -495,18 +536,25 @@ namespace Deadheim.Troca
         internal static void Travar() { if (Atual != null) Enviar(Pacote("travar", p => p.Write(Atual.Versao))); }
         internal static void Confirmar() { if (Atual != null) Enviar(Pacote("confirmar", p => p.Write(Atual.Versao))); }
 
-        internal static void Oferecer(ItemDrop.ItemData item)
+        /// <summary>
+        /// Oferece <paramref name="qtd"/> do item pelo nome. Devolve o motivo da recusa para a
+        /// janela, ou null quando o pedido saiu; o item so sai do inventario quando o servidor guardar.
+        /// </summary>
+        internal static string Oferecer(string nome, int qualidade, int qtd)
         {
-            if (Atual == null || item == null || Pendente(item) || Atual.Minha.Count >= TrocaMotor.MaxItens) return;
-            string dados = Escrever(item);
-            if (dados == null || dados.Length > TrocaMotor.MaxDados)
-            {
-                Player.m_localPlayer?.Message(MessageHud.MessageType.Center, "Esse item nao pode ser trocado.");
-                return;
-            }
+            if (Atual == null) return "Nao ha troca aberta.";
+            if (Atual.Minha.Count + _aOferecer.Count >= TrocaMotor.MaxItens) return "A oferta esta cheia.";
+            ItemDrop.ItemData.SharedData sh = Prefab(nome);
+            if (sh == null) return "Esse item nao pode ser trocado.";
+            if (qtd <= 0) return "Quantidade invalida.";
+            if (qtd > MaxQtd(sh)) return "No maximo " + MaxQtd(sh) + " por vez.";
+            int tem = Disponivel(nome, qualidade);
+            if (qtd > tem) return "Voce so tem " + tem + "x " + NomeVisivel(nome) + " para oferecer.";
+
             string id = Guid.NewGuid().ToString("N");
-            _aOferecer[id] = item;
-            Enviar(Pacote("oferecer", p => { p.Write(id); p.Write(dados); }));
+            _aOferecer[id] = new TrocaItem { Id = id, Nome = nome, Qualidade = qualidade, Qtd = qtd };
+            Enviar(Pacote("oferecer", p => { p.Write(id); p.Write(nome); p.Write(qualidade); p.Write(qtd); }));
+            return null;
         }
 
         private static void OnToClient(long sender, ZPackage pkg)
@@ -526,6 +574,9 @@ namespace Deadheim.Troca
                         break;
                     case "entrega":
                         ReceberEntrega(pkg);
+                        break;
+                    case "recusada":
+                        _aOferecer.Remove(pkg.ReadString());
                         break;
                     case "fim":
                         Fechar(pkg.ReadString());
@@ -547,28 +598,26 @@ namespace Deadheim.Troca
             {
                 int n = pkg.ReadInt();
                 for (int i = 0; i < n; i++)
-                    lista.Add(new TrocaItem { Id = pkg.ReadString(), Nome = pkg.ReadString(), Qtd = pkg.ReadInt(), Seguro = pkg.ReadBool() });
+                    lista.Add(new TrocaItem { Id = pkg.ReadString(), Nome = pkg.ReadString(), Qualidade = pkg.ReadInt(), Qtd = pkg.ReadInt(), Seguro = pkg.ReadBool() });
             }
             PedidoDe = null;
             Atual = v;
             TrocaUi.Ensure();
 
-            // Custodia confirmada pelo servidor: agora o item sai do inventario. Se ele ja nao
-            // estava la (largou, moveu), o servidor descarta em vez de devolver, ou duplicaria.
+            // Custodia confirmada pelo servidor: agora a quantidade sai do inventario, pelo nome e
+            // como o servidor guardou. Se ela ja nao estava la inteira (largou, equipou), o
+            // servidor descarta em vez de devolver, ou duplicaria.
             var tirados = new List<string>();
             foreach (TrocaItem t in v.Minha)
             {
-                if (!_aOferecer.TryGetValue(t.Id, out ItemDrop.ItemData item)) continue;
-                _aOferecer.Remove(t.Id);
+                if (!_aOferecer.Remove(t.Id)) continue;
                 Player player = Player.m_localPlayer;
-                bool tirou = false;
-                if (player != null)
+                bool tirou = player != null && Tirar(player.GetInventory(), t.Nome, t.Qualidade, t.Qtd);
+                if (tirou)
                 {
-                    if (item.m_equipped) player.UnequipItem(item, false);
-                    tirou = player.GetInventory().RemoveItem(item);
-                    if (tirou) Anotar(player, ChaveSaiu, t.Id);
+                    Anotar(player, ChaveSaiu, t.Id);
+                    tirados.Add(t.Id);
                 }
-                if (tirou) tirados.Add(t.Id);
                 else Enviar(Pacote("descartar", p => p.Write(t.Id)));
             }
 
@@ -585,12 +634,12 @@ namespace Deadheim.Troca
         {
             long id = pkg.ReadLong();
             int n = pkg.ReadInt();
-            var itens = new List<(string id, bool devolucao, ItemDrop.ItemData item)>();
+            var itens = new List<(string id, bool devolucao, TrocaItem item)>();
             for (int i = 0; i < n; i++)
             {
                 string itemId = pkg.ReadString();
                 bool devolucao = pkg.ReadBool();
-                itens.Add((itemId, devolucao, Ler(pkg.ReadString())));
+                itens.Add((itemId, devolucao, new TrocaItem { Id = itemId, Nome = pkg.ReadString(), Qualidade = pkg.ReadInt(), Qtd = pkg.ReadInt() }));
             }
 
             Player player = Player.m_localPlayer;
@@ -601,20 +650,23 @@ namespace Deadheim.Troca
             if (!feita)
             {
                 List<string> saiu = LerLivro(player, ChaveSaiu);
-                int recebidos = 0;
                 foreach (var (itemId, devolucao, item) in itens)
                 {
-                    if (item == null) { Debug.LogError($"[Deadheim] Troca: item ilegivel na entrega {id}."); continue; }
+                    if (Prefab(item.Nome) == null || item.Qtd <= 0)
+                    {
+                        Debug.LogError($"[Deadheim] Troca: item desconhecido na entrega {id}: {item.Qtd}x '{item.Nome}' (nv {item.Qualidade}).");
+                        continue;
+                    }
                     // Devolucao de um item que nunca saiu do save (jogo morto antes de gravar): ele
                     // ainda esta no inventario, devolver de novo duplicaria.
                     if (devolucao && !saiu.Contains(itemId)) continue;
-                    Entrega.ParaJogador(player, item);
-                    recebidos++;
+                    int noChao = Entrega.ParaJogador(player, item.Nome, item.Qtd, item.Qualidade);
+                    player.Message(MessageHud.MessageType.TopLeft, (devolucao ? "Troca, devolvido: " : "Troca, recebido: ") + Rotulo(item));
+                    if (noChao > 0) player.Message(MessageHud.MessageType.Center, $"Inventario cheio: {noChao}x {NomeVisivel(item.Nome)} caiu no chao.");
                 }
                 _entregasFeitas.Add(id);
                 Anotar(player, ChaveFeitas, id.ToString());
                 SalvarPerfil(); // grava ANTES de confirmar: confirmado = nunca mais reenviado
-                if (recebidos > 0) player.Message(MessageHud.MessageType.TopLeft, "Voce recebeu itens da troca.");
             }
             Enviar(Pacote("recebido", p => p.Write(id)));
         }
@@ -670,7 +722,9 @@ namespace Deadheim.Troca
         {
             private static void Postfix()
             {
-                new Terminal.ConsoleCommand("trocar", "[nome] - pede uma troca de itens ao jogador (sem nome: o mais proximo)",
+                // Sempre pelo nome: sem nome abre a lista de quem esta perto para escolher, em vez
+                // de pedir ao mais proximo (numa cidade cheia, o mais proximo e quase sempre outro).
+                new Terminal.ConsoleCommand("trocar", "[nome] - pede uma troca de itens ao jogador (sem nome: escolher na lista de quem esta perto)",
                     args =>
                     {
                         Player eu = Player.m_localPlayer;
@@ -681,16 +735,8 @@ namespace Deadheim.Troca
                         string nome = args.Length >= 2 ? string.Join(" ", args.Args, 1, args.Length - 1).Trim() : null;
                         if (string.IsNullOrEmpty(nome))
                         {
-                            Player perto = Player.GetAllPlayers()
-                                .Where(p => p != null && p != eu)
-                                .OrderBy(p => Vector3.Distance(p.transform.position, eu.transform.position))
-                                .FirstOrDefault();
-                            if (perto == null || Vector3.Distance(perto.transform.position, eu.transform.position) > Distancia.Value)
-                            {
-                                args.Context.AddString("Nao ha ninguem por perto. Use: trocar <nome>");
-                                return;
-                            }
-                            nome = perto.GetPlayerName();
+                            TrocaUi.AbrirEscolha();
+                            return;
                         }
                         Pedir(nome);
                         args.Context.AddString($"Pedido de troca enviado a {nome}.");
