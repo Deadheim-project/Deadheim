@@ -16,7 +16,8 @@ namespace Deadheim
     /// para cada uma, as regras que valem la dentro:
     ///   construir  - ninguem constroi nem desmonta, a nao ser admin e os jogadores permitidos;
     ///   estruturas - as construcoes nao tomam dano nenhum (raid, monstro, jogador);
-    ///   seguro     - zona segura do PvP (ninguem se fere).
+    ///   seguro     - zona segura do PvP (ninguem se fere);
+    ///   fogo       - fogueira, tocha, braseiro e lareira nao gastam lenha (FogoInfinito).
     /// A lista fica no servidor, um arquivo de texto por mundo (como o Lugares.cs), e e enviada
     /// a cada cliente ao entrar e a cada mudanca. Quem constroi e quem apanha decide no proprio
     /// cliente, como o resto do mod; so o admin consegue mudar a lista (conferido no servidor).
@@ -53,6 +54,8 @@ namespace Deadheim
             public List<string> Permitidos = new List<string>();
             /// <summary>Onde dois territorios se sobrepoem, vale o de prioridade maior.</summary>
             public int Prioridade;
+            /// <summary>Fogo infinito: tudo que e Fireplace aqui dentro fica sempre aceso.</summary>
+            public bool Fogo;
 
             public bool Contem(Vector3 p)
             {
@@ -70,6 +73,7 @@ namespace Deadheim
                     "estruturas=" + (Estruturas ? "invulneraveis" : "normais"),
                     "seguro=" + (Seguro ? "sim" : "nao"),
                     "interacao=" + (Interacao ? "bloqueada" : "livre"),
+                    "fogo=" + (Fogo ? "infinito" : "normal"),
                     "prioridade=" + Prioridade,
                 });
         }
@@ -150,6 +154,7 @@ namespace Deadheim
                             Construir = c[4] == "1", Estruturas = c[5] == "1", Seguro = c[6] == "1",
                             Interacao = c.Length > 8 && c[8] == "1",
                             Prioridade = c.Length > 9 && int.TryParse(c[9], NumberStyles.Integer, CultureInfo.InvariantCulture, out int pr) ? pr : 0,
+                            Fogo = c.Length > 10 && c[10] == "1",
                             Permitidos = (c.Length > 7 ? c[7] : "").Split(',').Select(n => n.Trim()).Where(n => n.Length > 0).ToList(),
                         });
                     }
@@ -177,7 +182,8 @@ namespace Deadheim
                     t.Construir ? "1" : "0", t.Estruturas ? "1" : "0", t.Seguro ? "1" : "0",
                     string.Join(",", t.Permitidos),
                     t.Interacao ? "1" : "0",
-                    t.Prioridade.ToString(CultureInfo.InvariantCulture)));
+                    t.Prioridade.ToString(CultureInfo.InvariantCulture),
+                    t.Fogo ? "1" : "0"));
                 string temp = _path + ".tmp";
                 File.WriteAllLines(temp, linhas);
                 File.Copy(temp, _path, true);
@@ -217,6 +223,8 @@ namespace Deadheim
             }
             // As prioridades vao depois da lista: cliente antigo le os territorios e ignora o resto.
             foreach (Territorio t in _lista) pkg.Write(t.Prioridade);
+            // E o fogo depois das prioridades, pelo mesmo motivo.
+            foreach (Territorio t in _lista) pkg.Write(t.Fogo);
             ZRoutedRpc.instance.InvokeRoutedRPC(peerId, ToClient, pkg);
         }
 
@@ -243,6 +251,8 @@ namespace Deadheim
                 }
                 if (pkg.GetPos() < pkg.Size())
                     foreach (Territorio t in nova) t.Prioridade = pkg.ReadInt();
+                if (pkg.GetPos() < pkg.Size())
+                    foreach (Territorio t in nova) t.Fogo = pkg.ReadBool();
                 _lista = nova;
             }
             catch (Exception ex)
@@ -297,11 +307,13 @@ namespace Deadheim
                         string permitidos = pkg.ReadString() ?? "";
                         bool interacao = pkg.ReadBool();
                         int prioridade = pkg.GetPos() < pkg.Size() ? pkg.ReadInt() : (t?.Prioridade ?? 0);
+                        bool fogo = pkg.GetPos() < pkg.Size() ? pkg.ReadBool() : (t?.Fogo ?? false);
                         if (t == null) { Pvp.PvpNet.Message(real, $"Nao achei '{nome}'."); return; }
                         if (!(raio >= 1f && raio <= RaioMaximo)) { Pvp.PvpNet.Message(real, $"Raio de 1 a {RaioMaximo:0} m."); return; }
                         if (Math.Abs(prioridade) > PrioridadeMaxima) { Pvp.PvpNet.Message(real, $"Prioridade de -{PrioridadeMaxima} a {PrioridadeMaxima}."); return; }
                         t.Prioridade = prioridade;
                         t.Raio = raio; t.Construir = construir; t.Estruturas = estruturas; t.Seguro = seguro; t.Interacao = interacao;
+                        t.Fogo = fogo;
                         t.Permitidos = permitidos.Split(',').Select(Limpar).Where(s => s.Length > 0 && !s.Contains(',')).Distinct().ToList();
                         Pvp.PvpNet.Message(real, $"'{nome}' atualizado: raio {raio:0} m, {t.Flags()}.");
                         break;
@@ -335,7 +347,7 @@ namespace Deadheim
             Pedir(pkg);
         }
 
-        internal static void PedirEditar(string nome, float raio, bool construir, bool estruturas, bool seguro, bool interacao, IEnumerable<string> permitidos, int prioridade)
+        internal static void PedirEditar(string nome, float raio, bool construir, bool estruturas, bool seguro, bool interacao, IEnumerable<string> permitidos, int prioridade, bool fogo)
         {
             ZPackage pkg = new ZPackage();
             pkg.Write("editar"); pkg.Write(nome); pkg.Write(raio);
@@ -343,6 +355,7 @@ namespace Deadheim
             pkg.Write(string.Join(",", permitidos));
             pkg.Write(interacao);
             pkg.Write(prioridade);
+            pkg.Write(fogo);
             Pedir(pkg);
         }
 
@@ -521,7 +534,7 @@ namespace Deadheim
         // -------------------------------------------------------------------- comando /territorio
 
         private const string Ajuda =
-            "territorio (sem argumentos abre a janela) | criar <nome> [raio] | remover <nome> | raio <nome> <metros> | prioridade <nome> <numero> | construir|estruturas|seguro|interacao <nome> <on|off> | permitir|negar <nome> <jogador> | lista | aqui";
+            "territorio (sem argumentos abre a janela) | criar <nome> [raio] | remover <nome> | raio <nome> <metros> | prioridade <nome> <numero> | construir|estruturas|seguro|interacao|fogo <nome> <on|off> | permitir|negar <nome> <jogador> | lista | aqui";
 
         [HarmonyPatch(typeof(Terminal), nameof(Terminal.InitTerminal))]
         private static class ComandoPatch
@@ -579,7 +592,7 @@ namespace Deadheim
 
             float novoRaio = alvo.Raio;
             int prioridadeNova = alvo.Prioridade;
-            bool construir = alvo.Construir, estruturas = alvo.Estruturas, seguro = alvo.Seguro, interacao = alvo.Interacao;
+            bool construir = alvo.Construir, estruturas = alvo.Estruturas, seguro = alvo.Seguro, interacao = alvo.Interacao, fogo = alvo.Fogo;
             List<string> permitidos = new List<string>(alvo.Permitidos);
             string valor = args.Length >= 4 ? args[3] : "";
 
@@ -597,12 +610,14 @@ namespace Deadheim
                 case "estruturas":
                 case "seguro":
                 case "interacao":
+                case "fogo":
                 {
                     bool? ligado = valor == "on" ? true : valor == "off" ? (bool?)false : null;
                     if (ligado == null) { ctx.AddString($"territorio {sub} <nome> <on|off>"); return; }
                     if (sub == "construir") construir = ligado.Value;
                     else if (sub == "estruturas") estruturas = ligado.Value;
                     else if (sub == "interacao") interacao = ligado.Value;
+                    else if (sub == "fogo") fogo = ligado.Value;
                     else seguro = ligado.Value;
                     break;
                 }
@@ -620,7 +635,7 @@ namespace Deadheim
                     return;
             }
 
-            PedirEditar(alvo.Nome, novoRaio, construir, estruturas, seguro, interacao, permitidos, prioridadeNova);
+            PedirEditar(alvo.Nome, novoRaio, construir, estruturas, seguro, interacao, permitidos, prioridadeNova, fogo);
         }
     }
 }

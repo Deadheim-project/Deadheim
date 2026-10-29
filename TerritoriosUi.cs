@@ -25,7 +25,7 @@ namespace Deadheim
         private string _novoRaio = "50";
         private string _raio = "";
         private string _prioridade = "0";
-        private bool _construir, _estruturas, _seguro, _interacao;
+        private bool _construir, _estruturas, _seguro, _interacao, _fogo;
         private List<string> _permitidos = new List<string>();
         private string _novoPermitido = "";
 
@@ -64,7 +64,7 @@ namespace Deadheim
             _selecionado = t.Nome;
             _raio = t.Raio.ToString("0", CultureInfo.InvariantCulture);
             _prioridade = t.Prioridade.ToString(CultureInfo.InvariantCulture);
-            _construir = t.Construir; _estruturas = t.Estruturas; _seguro = t.Seguro; _interacao = t.Interacao;
+            _construir = t.Construir; _estruturas = t.Estruturas; _seguro = t.Seguro; _interacao = t.Interacao; _fogo = t.Fogo;
             _permitidos = new List<string>(t.Permitidos);
         }
 
@@ -126,6 +126,7 @@ namespace Deadheim
                 _estruturas = GUILayout.Toggle(_estruturas, "Estruturas invulneraveis");
                 _seguro = GUILayout.Toggle(_seguro, "Zona segura de PvP");
                 _interacao = GUILayout.Toggle(_interacao, "Bloquear stands, itens no chao e baus");
+                _fogo = GUILayout.Toggle(_fogo, "Fogo infinito (fogueira, tocha, braseiro, lareira)");
 
                 GUILayout.Space(4f);
                 GUILayout.Label("Jogadores permitidos (constroem e mexem mesmo com o bloqueio):");
@@ -157,7 +158,7 @@ namespace Deadheim
                 bool prioridadeOk = int.TryParse(_prioridade, NumberStyles.Integer, CultureInfo.InvariantCulture, out int prioridade);
                 GUI.enabled = raioOk && prioridadeOk;
                 if (GUILayout.Button("Aplicar"))
-                    Territorios.PedirEditar(atual.Nome, raio, _construir, _estruturas, _seguro, _interacao, _permitidos, prioridade);
+                    Territorios.PedirEditar(atual.Nome, raio, _construir, _estruturas, _seguro, _interacao, _permitidos, prioridade, _fogo);
                 GUI.enabled = true;
                 if (GUILayout.Button("Desfazer")) Selecionar(atual);
                 if (GUILayout.Button("Remover"))
