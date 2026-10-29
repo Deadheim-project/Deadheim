@@ -24,6 +24,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<float> ImmunityMinutes;
         public static ConfigEntry<float> CombatTagSeconds;
         public static ConfigEntry<float> KillCreditSeconds;
+        public static ConfigEntry<float> PvpCombatRegenReduction;
         public static ConfigEntry<bool> KillFeed;
         public static ConfigEntry<bool> KillerMustBeOnline;
         public static ConfigEntry<float> KillerMaxDistance;
@@ -151,6 +152,10 @@ namespace Deadheim.Pvp
                 "Segundos em combate depois de dar ou levar dano PvP. Em combate: zona segura nao protege e retreat nao funciona.");
             KillCreditSeconds = Bind(config, general, "KillCreditSeconds", 20f,
                 "Morte ate estes segundos depois de levar dano PvP conta como morte por jogador (queda, afogamento, fogo, mob).");
+            PvpCombatRegenReduction = Bind(config, general, "PvpCombatRegenReduction", 50f,
+                "Em combate PvP (CombatTagSeconds) a regeneracao de vida pela comida cai esta porcentagem. " +
+                "0 = normal, 50 = metade (cura a cada 20 s em vez de 10 s), 100 = nao regenera. " +
+                "Pocao, hidromel e cura continuam valendo.");
             KillFeed = Bind(config, general, "KillFeed", true,
                 "Anuncia no chat quem matou quem.");
             KillerMustBeOnline = Bind(config, general, "KillerMustBeOnline", true,

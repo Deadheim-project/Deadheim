@@ -149,6 +149,7 @@
     <Compile Include="ConstrucaoBarrada.cs" />
     <Compile Include="SemMarcaTrapaca.cs" />
     <Compile Include="TotemCidade.cs" />
+    <Compile Include="FogoInfinito.cs" />
     <Compile Include="AesirFaceis.cs" />
     <Compile Include="AesirPull.cs" />
     <Compile Include="AesirCraft.cs" />
@@ -232,6 +233,7 @@
     <Compile Include="Pvp\PvpRules.cs" />
     <Compile Include="Pvp\PvpServer.cs" />
     <Compile Include="Pvp\PvpState.cs" />
+    <Compile Include="Pvp\PvpRegen.cs" />
     <Compile Include="Pvp\PvpStore.cs" />
     <Compile Include="Pvp\PvpZones.cs" />
     <!-- Opcao "Deadheim" no menu do ESC: config local do jogador e, para admin, a do servidor ao vivo. -->
