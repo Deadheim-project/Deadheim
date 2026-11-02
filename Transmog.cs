@@ -582,7 +582,8 @@ namespace Deadheim
 
         private static void Say(string msg) => Player.m_localPlayer?.Message(MessageHud.MessageType.Center, msg);
 
-        private static void HandleCommand(string[] parts)
+        /// <summary>/transmog, e o botao da Central Deadheim (hub do inventario) com { "/transmog" }.</summary>
+        internal static void HandleCommand(string[] parts)
         {
             if (Player.m_localPlayer == null) return;
             if (Enabled != null && !Enabled.Value) { Say("Transmog desativado."); return; }

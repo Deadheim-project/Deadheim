@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.8.20";
+        public const string Version = "7.9.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -33,11 +33,14 @@ namespace Deadheim
         // 7.8.17 traz o Totem da Cidade (prefab novo): um cliente anterior nao o carrega e spama "Missing prefab hash".
         // 7.8.18: a peca barrada nao cobra material (ConstrucaoBarrada) e a troca e so de moedas, as duas no
         // cliente; a 7.8.17 nunca foi ao servidor, entao quem a tem sobe junto.
+        // 7.9.0: o /depositar (Aesir 14) duplicava itens no cliente (o bau recebia a pilha inteira e o
+        // jogador perdia 1); o conserto so vale se todo mundo estiver nele. Traz tambem a Central do
+        // inventario e o RaidSystem 2.2.4 depende dela (Menus.MenuBridge).
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.8.20",
+            MinimumRequiredVersion = "7.9.0",
             ModRequired = true,
             IsLocked = true
         };
@@ -119,6 +122,8 @@ namespace Deadheim
             Titulos.Tick(Player.m_localPlayer);
             Pets.Tick();
             Territorios.Tick(Player.m_localPlayer);
+            Menus.Atalhos.Tick();
+            Menus.MenuHub.Tick();
 
             Player localPlayer = Player.m_localPlayer;
             // Mesma guarda do Hearthstone: digitando no chat, o "P" maiusculo (Shift+P) gravava o ponto.
@@ -244,6 +249,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Territorios.Bind(Config);
             Troca.TrocaRede.Bind(Config);
             Plantas.Bind(Config);
+            Menus.MenuHub.Bind(Config);
             Pets.BindConfigs(Config);
             Transmog.BindConfigs(Config);
             Pets.Init();
@@ -252,6 +258,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
 
             _harmony.PatchAll();
             Ajustes.AjustesMenu.Init(_harmony);
+            Menus.Atalhos.Init(_harmony);
             DirectJoinFlow.Initialize(Logger);
             ClonedItems.LoadAssets();
 

@@ -482,7 +482,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
   <p>No lugar dos castelos vem o <strong>battleground</strong>: um mapa feito para a pancadaria, entre times de 3 ou mais jogadores, conforme o mapa. Você entra na fila como na arena; quando a partida fecha, aceita e é levado para lá, e no fim volta para o lugar onde estava. Os detalhes saem no anúncio dele.</p>
 
   <h3>Ranking de Guerra</h3>
-  <p>Abre no <kbd>PageDown</kbd>. Mostra os 10 melhores jogadores e os pontos de cada guilda. Quem não tem guilda não pontua.</p>
+  <p>Abre pela Central Deadheim (<kbd>Tab</kbd>, botão Ranking de Guerra). Mostra os 10 melhores jogadores e os pontos de cada guilda. Quem não tem guilda não pontua.</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Evento</th><th class="num">Pontos</th><th>Para quem</th></tr></thead>
@@ -492,7 +492,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
       </tbody>
     </table>
   </div>
-  <p><code>/rank</code> mostra o ranking de abates e mortes (K/D) de todos, com ou sem guilda. <kbd>PageUp</kbd> abre o painel da sua guilda com os membros.</p>
+  <p><code>/rank</code> mostra o ranking de abates e mortes (K/D) de todos, com ou sem guilda. O botão Guilda da Central Deadheim (<kbd>Tab</kbd>) abre o painel da sua guilda com os membros.</p>
 </section>
 
 <section id="economia">
@@ -509,7 +509,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
       <tbody>
         <tr><td><strong>Mercador</strong></td><td><strong>Leilão:</strong> anuncie itens e compre dos outros, mesmo com o vendedor offline. Anúncio dura 48 horas; o que não vender volta pelo correio. <strong>Balcão:</strong> o NPC compra e vende itens a preço fixo; o que você compra chega pela Caixa Postal, e a carta só sai de lá quando o item entra na sua bolsa. Compre perto do Mercador. Algumas lojas pedem o passe do chefe do bioma: ajude a matar o chefe ou pague o passe.</td></tr>
         <tr><td><strong>Caixa Postal</strong></td><td>Recebe compras do leilão e recompensas. Mande cartas para qualquer jogador pelo nome, ou para uma "casa" inteira.</td></tr>
-        <tr><td><strong>Missões</strong></td><td>Missões de coleta e de caça. O diário abre no <kbd>J</kbd>, e as recompensas chegam pelo correio.</td></tr>
+        <tr><td><strong>Missões</strong></td><td>Missões de coleta e de caça. O diário abre pela Central Deadheim (<kbd>Tab</kbd>), e as recompensas chegam pelo correio.</td></tr>
         <tr><td><strong>Teleportador</strong></td><td>Leva a destinos fixos. Não funciona em combate, para caçados nem carregando minério ou metal.</td></tr>
         <tr><td><strong>Loja Deadcoins</strong></td><td>Troca Deadcoins, a moeda de doação, pelo Portal Token e por fichas de cosméticos e serviços (título Fundador, batizar um lugar e outras). Minério e Garantia de Refino ficam nos Mercadores de bioma.</td></tr>
         <tr><td><strong>Mercadores de bioma</strong></td><td>Um por bioma, com os materiais dele, minério e a <strong>Garantia de Refino</strong>. Pedem o passe do chefe do bioma e vendem em moedas ou em Deadcoins, com limite por semana.</td></tr>
@@ -570,7 +570,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
     </div>
   </div>
   <ul>
-    <li><kbd>U</kbd> abre o menu de montarias: escolha a do <kbd>H</kbd> e pegue de volta um apito perdido.</li>
+    <li>O botão Montarias da Central Deadheim (<kbd>Tab</kbd>) abre o menu de montarias: escolha a do <kbd>H</kbd> e pegue de volta um apito perdido.</li>
     <li>Montado, <kbd>Espaço</kbd> salta e o clique dá uma investida.</li>
     <li>Não dá para montar em combate, no leme do barco nem sentado. Descer sempre dá.</li>
     <li><strong>Qualquer golpe derruba</strong> você da montaria. Ela não protege em PvP.</li>
@@ -619,7 +619,7 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
   <p>O VIP (Aesir) tem:</p>
   <ul>
     <li><code>/retreat</code>: volta ao ponto marcado na cama, com recarga de 30 minutos. Segue as mesmas travas da pedra. Com <kbd>Shift</kbd> + <kbd>P</kbd> você marca um segundo ponto e usa <code>/retreat 2</code> para ir até ele.</li>
-    <li>Loja Deadcoins de qualquer lugar do mapa, no <kbd>F7</kbd>.</li>
+    <li>Loja Deadcoins de qualquer lugar do mapa, pela Central Deadheim (<kbd>Tab</kbd>).</li>
     <li>O Baú Aesir, de 6×6.</li>
     <li>Os portais VIP.</li>
     <li><kbd>Shift</kbd> + <kbd>E</kbd> numa planta ou colmeia colhe tudo igual num raio de 10 m.</li>
@@ -647,18 +647,14 @@ footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line
       <div class="table-wrap">
         <table style="min-width: 0">
           <tbody>
-            <tr><td><kbd>Esc</kbd> → Deadheim</td><td>Seus ajustes dos mods</td></tr>
+            <tr><td><kbd>Tab</kbd></td><td>Inventário com a Central Deadheim: montarias, guilda, Ranking de Guerra, diário de missões, arena, troca e as funções Aesir (Loja Deadcoins, retreat, depositar, ordenar)</td></tr>
+            <tr><td><kbd>Esc</kbd> → Deadheim</td><td>Seus ajustes dos mods (admin: aba Admin)</td></tr>
             <tr><td><kbd>E</kbd> no NPC</td><td>Abre o NPC</td></tr>
-            <tr><td><kbd>PageUp</kbd></td><td>Painel da guilda</td></tr>
-            <tr><td><kbd>PageDown</kbd></td><td>Ranking de Guerra</td></tr>
-            <tr><td><kbd>J</kbd></td><td>Diário de missões</td></tr>
-            <tr><td><kbd>U</kbd></td><td>Menu de montarias</td></tr>
             <tr><td><kbd>H</kbd></td><td>Montar e descer</td></tr>
             <tr><td><kbd>G</kbd> perto do barco</td><td>Velas</td></tr>
             <tr><td><kbd>P</kbd> olhando a cama</td><td>Marca o ponto de retorno</td></tr>
             <tr><td><kbd>Shift</kbd> + <kbd>E</kbd></td><td>Colheita em área (VIP)</td></tr>
             <tr><td><kbd>Shift</kbd> + <kbd>P</kbd> olhando a cama</td><td>Marca o 2º ponto de retorno (VIP)</td></tr>
-            <tr><td><kbd>F7</kbd></td><td>Loja Deadcoins (VIP)</td></tr>
           </tbody>
         </table>
       </div>

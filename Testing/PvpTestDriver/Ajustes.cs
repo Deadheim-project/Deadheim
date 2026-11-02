@@ -108,20 +108,24 @@ namespace PvpTestDriver
             Check("ajustes/menu-fechado-devolve-o-menu", AlfaDoMenu() == 1f, $"alfa={AlfaDoMenu()}");
         }
 
-        /// <summary>Tecla do menu do RaidSystem (opcao local, texto): muda pelo campo da janela e volta.</summary>
+        /// <summary>
+        /// Tecla da cama do Hearthstone (opcao local, texto): muda pelo campo da janela e volta.
+        /// Ate a 7.8.20 era a "Menu Key" do RaidSystem, que saiu na 2.2.4 (menus pela Central do inventario).
+        /// </summary>
         private IEnumerator EditarLocal()
         {
-            const string raid = "Detalhes.RaidSystem";
-            ConfigEntryBase tecla = Entrada(raid, "9 - Client", "Menu Key");
+            const string mod = "Detalhes.Hearthstone";
+            const string chave = "setPointKey";
+            ConfigEntryBase tecla = Entrada(mod, "Client", chave);
             if (tecla == null)
             {
-                Log("SKIP ajustes/meus-edita: RaidSystem sem 9 - Client/Menu Key neste teste");
+                Log("SKIP ajustes/meus-edita: Hearthstone sem Client/setPointKey neste teste");
                 yield break;
             }
 
-            Selecionar(raid);
+            Selecionar(mod);
             yield return Wait(0.3f);
-            object linha = Linha("Menu Key");
+            object linha = Linha(chave);
             InputField campo = linha == null ? null : Traverse.Create(linha).Field("Campo").GetValue<InputField>();
             Check("ajustes/meus-linha-da-tecla", campo != null);
             if (campo == null) yield break;
@@ -132,7 +136,7 @@ namespace PvpTestDriver
             yield return Wait(0.3f);
             string atual = TomlTypeConverter.ConvertToString(tecla.BoxedValue, tecla.SettingType);
             Check("ajustes/meus-edita", atual == novo, $"{original} -> {atual}");
-            Check("ajustes/meus-salva-no-cfg", File.ReadAllText(tecla.ConfigFile.ConfigFilePath).Contains("Menu Key = " + novo));
+            Check("ajustes/meus-salva-no-cfg", File.ReadAllText(tecla.ConfigFile.ConfigFilePath).Contains(chave + " = " + novo));
             Check("ajustes/meus-status", Status().StartsWith("Salvo"), Status());
             yield return Foto("3-meus-ajustes-editado");
 

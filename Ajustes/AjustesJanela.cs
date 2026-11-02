@@ -15,8 +15,10 @@ namespace Deadheim.Ajustes
     ///
     /// - Meus ajustes: a config deste PC, de todos os mods carregados, menos o que o
     ///   servidor controla. Grava direto no BepInEx/config do jogador.
-    /// - Servidor (so admin): a config que o servidor esta usando, pedida a ele pela rede.
-    ///   Cada mudanca e aplicada e salva no servidor na hora; o que e sincronizado o
+    /// - Admin (so admin, 7.9.0; era "Servidor"): primeiro as Ferramentas de admin (painel,
+    ///   montarias, territorios, totem, rede -- tudo o que tinha tecla ou comando, ver
+    ///   Menus/FerramentasAdmin.cs), depois a config que o servidor esta usando, pedida a ele
+    ///   pela rede. Cada mudanca e aplicada e salva no servidor na hora; o que e sincronizado o
     ///   ServerSync entrega aos jogadores conectados.
     /// </summary>
     internal static class AjustesJanela
@@ -46,6 +48,11 @@ namespace Deadheim.Ajustes
         private static readonly Color FundoLista = new Color(0f, 0f, 0f, 0.3f);
         private static readonly Color FundoLinhaPar = new Color(0f, 0f, 0f, 0.3f);
         private static readonly Color FundoLinhaImpar = new Color(0f, 0f, 0f, 0.15f);
+        private static readonly Color CorFerramentas = new Color(1f, 0.84f, 0.35f, 1f);
+
+        /// <summary>Id da entrada "Ferramentas de admin" na lista da aba Admin (nao e um mod).</summary>
+        private const string IdFerramentas = "__ferramentas__";
+        private const float AlturaFerramenta = 66f;
 
         private static GameObject _janela;
         private static Text _cabecalho;
@@ -67,6 +74,8 @@ namespace Deadheim.Ajustes
         private static readonly Dictionary<string, Linha> _linhas = new Dictionary<string, Linha>();
         private static float _esperaAte;
         private static bool _fechando;
+        /// <summary>A area da direita mostra as Ferramentas de admin, nao opcoes de um mod.</summary>
+        private static bool _ferramentas;
 
         public static bool Aberta => _janela != null && _janela.activeSelf;
 
@@ -110,7 +119,7 @@ namespace Deadheim.Ajustes
             if (_esperaAte <= 0f || Time.unscaledTime < _esperaAte) return;
             _esperaAte = 0f;
             Status("O servidor nao respondeu. Ele precisa do Deadheim 7.1.0 ou mais novo.", CorErro);
-            if (_linhas.Count == 0) Vazio("Sem resposta do servidor.");
+            if (_linhas.Count == 0 && !_ferramentas) Vazio("Sem resposta do servidor.");
         }
 
         // ------------------------------------------------------------------- abas
@@ -121,6 +130,7 @@ namespace Deadheim.Ajustes
             PintarAba(_botaoMeus, aba == Aba.Meus);
             PintarAba(_botaoServidor, aba == Aba.Servidor);
             _esperaAte = 0f;
+            _ferramentas = false;
             _busca.text = "";
             Status("", CorTexto);
             LimparMods();
@@ -133,8 +143,17 @@ namespace Deadheim.Ajustes
                 return;
             }
 
-            Cabecalho("Servidor");
-            Vazio("Carregando a config do servidor...");
+            // As ferramentas nao dependem da resposta do servidor: aparecem ja.
+            CriarBotaoFerramentas();
+            if (string.IsNullOrEmpty(_modServidor) || _modServidor == IdFerramentas)
+            {
+                SelecionarMod(IdFerramentas);
+            }
+            else
+            {
+                Cabecalho("Admin");
+                Vazio("Carregando a config do servidor...");
+            }
             // Esperar antes de pedir: no host a resposta chega dentro do proprio PedirMods.
             Esperar();
             if (!AjustesRede.PedirMods()) SemConexao();
@@ -162,9 +181,15 @@ namespace Deadheim.Ajustes
         {
             LimparMods();
             _mods = mods ?? new List<ModAjustes>();
+            if (_aba == Aba.Servidor) CriarBotaoFerramentas();
 
             if (_mods.Count == 0)
             {
+                if (_aba == Aba.Servidor)
+                {
+                    SelecionarMod(IdFerramentas);
+                    return;
+                }
                 Cabecalho("");
                 Vazio(_aba == Aba.Meus ? "Nenhum mod com ajustes locais." : "O servidor nao tem mods com config.");
                 return;
@@ -184,7 +209,9 @@ namespace Deadheim.Ajustes
             }
 
             string escolhido = ModAtual;
-            if (string.IsNullOrEmpty(escolhido) || _mods.All(m => m.Guid != escolhido)) escolhido = _mods[0].Guid;
+            bool ferramentas = _aba == Aba.Servidor && escolhido == IdFerramentas;
+            if (string.IsNullOrEmpty(escolhido) || (!ferramentas && _mods.All(m => m.Guid != escolhido)))
+                escolhido = _aba == Aba.Servidor ? IdFerramentas : _mods[0].Guid;
             SelecionarMod(escolhido);
             RolarParaOTopo(_listaMods);
         }
@@ -195,7 +222,15 @@ namespace Deadheim.Ajustes
             else _modServidor = guid;
 
             foreach (KeyValuePair<string, Text> rotulo in _rotulosMods)
-                rotulo.Value.color = rotulo.Key == guid ? CorSelecionado : Ui.ValheimOrange;
+                rotulo.Value.color = rotulo.Key == guid ? CorSelecionado
+                    : rotulo.Key == IdFerramentas ? CorFerramentas : Ui.ValheimOrange;
+
+            if (_aba == Aba.Servidor && guid == IdFerramentas)
+            {
+                MostrarFerramentas();
+                return;
+            }
+            _ferramentas = false;
 
             ModAjustes mod = _mods.FirstOrDefault(m => m.Guid == guid);
             Cabecalho(mod == null ? guid : $"{mod.Nome} <size=14><color=#c8b89a>{mod.Versao}</color></size>");
@@ -211,6 +246,99 @@ namespace Deadheim.Ajustes
             Vazio("Carregando...");
             Esperar();
             if (!AjustesRede.PedirItens(guid)) SemConexao();
+        }
+
+        // ------------------------------------------------------- ferramentas de admin
+
+        private static void CriarBotaoFerramentas()
+        {
+            if (_rotulosMods.ContainsKey(IdFerramentas)) return;
+            GameObject botao = Ui.CreateButton("Ferramentas de admin", _listaMods, Vector2.zero, Vector2.zero, Vector2.zero, 226f, 40f);
+            botao.transform.SetAsFirstSibling();
+            Text rotulo = botao.GetComponentInChildren<Text>();
+            rotulo.fontSize = 16;
+            rotulo.color = CorFerramentas;
+            botao.GetComponent<Button>().onClick.AddListener(() => SelecionarMod(IdFerramentas));
+            _rotulosMods[IdFerramentas] = rotulo;
+        }
+
+        private static void MostrarFerramentas()
+        {
+            _ferramentas = true;
+            LimparItens();
+            Cabecalho("Ferramentas de admin");
+            Vazio("");
+            _info.text = "Tudo o que e de admin fica aqui: as janelas que antes abriam por tecla (F8 e outras) ou por comando. " +
+                         "A config do servidor esta logo abaixo, na lista da esquerda. O servidor confere a adminlist a cada pedido.";
+
+            int indice = 0;
+            foreach (Menus.FerramentasAdmin.Ferramenta ferramenta in Menus.FerramentasAdmin.Todas())
+                CriarFerramenta(ferramenta, indice++ % 2 == 0);
+            CriarComandos(indice % 2 == 0);
+            RolarParaOTopo(_listaItens);
+        }
+
+        private static void CriarFerramenta(Menus.FerramentasAdmin.Ferramenta ferramenta, bool par)
+        {
+            GameObject go = Retangulo("Ferramenta", _listaItens, LarguraLinha, AlturaFerramenta);
+            go.AddComponent<Image>().color = par ? FundoLinhaPar : FundoLinhaImpar;
+
+            const float larguraBotao = 170f;
+            float margemTexto = -(larguraBotao + 28f);
+            Text titulo = CriarTexto(go.transform, ferramenta.Titulo, 18, Ui.ValheimOrange, TextAnchor.MiddleLeft);
+            Ancorar(titulo.gameObject, new Vector2(0f, 1f), Vector2.one, new Vector2(12f, -30f), new Vector2(margemTexto, -6f));
+            Text descricao = CriarTexto(go.transform, ferramenta.Descricao, 13, CorDescricao, TextAnchor.UpperLeft);
+            Ancorar(descricao.gameObject, Vector2.zero, Vector2.one, new Vector2(12f, 4f), new Vector2(margemTexto, -32f));
+
+            bool disponivel = ferramenta.Disponivel == null || ferramenta.Disponivel();
+            if (!disponivel)
+            {
+                Text ausente = CriarTexto(go.transform, ferramenta.Ausente ?? "Indisponivel", 14, CorDescricao, TextAnchor.MiddleRight);
+                Colocar(ausente.gameObject, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-14f, 0f), new Vector2(larguraBotao, 40f));
+                return;
+            }
+
+            GameObject botao = Ui.CreateButton(ferramenta.Botao, go.transform, Vector2.zero, Vector2.zero, Vector2.zero, larguraBotao, 38f);
+            Colocar(botao, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-14f, 0f), new Vector2(larguraBotao, 38f));
+            botao.GetComponentInChildren<Text>().fontSize = 15;
+            botao.GetComponent<Button>().onClick.AddListener(() => UsarFerramenta(ferramenta));
+        }
+
+        private static void CriarComandos(bool par)
+        {
+            int linhas = Menus.FerramentasAdmin.Comandos.Split('\n').Length;
+            float altura = 40f + linhas * 19f;
+            GameObject go = Retangulo("Comandos", _listaItens, LarguraLinha, altura);
+            go.AddComponent<Image>().color = par ? FundoLinhaPar : FundoLinhaImpar;
+
+            Text titulo = CriarTexto(go.transform, "Comandos de admin (chat ou console F5)", 18, Ui.ValheimOrange, TextAnchor.MiddleLeft);
+            Ancorar(titulo.gameObject, new Vector2(0f, 1f), Vector2.one, new Vector2(12f, -32f), new Vector2(-12f, -6f));
+            Text lista = CriarTexto(go.transform, Menus.FerramentasAdmin.Comandos, 14, CorTexto, TextAnchor.UpperLeft);
+            Ancorar(lista.gameObject, Vector2.zero, Vector2.one, new Vector2(16f, 6f), new Vector2(-12f, -34f));
+        }
+
+        private static void UsarFerramenta(Menus.FerramentasAdmin.Ferramenta ferramenta)
+        {
+            string resposta;
+            try
+            {
+                if (ferramenta.FechaMenu)
+                {
+                    // A janela abre por cima do jogo: fecha esta e o menu do ESC antes.
+                    AjustesMenu.FecharJanela();
+                    Menu.instance?.Hide();
+                }
+                resposta = ferramenta.Acao?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Deadheim] Ajustes: ferramenta '{ferramenta.Titulo}' falhou: {ex}");
+                resposta = "Nao consegui abrir " + ferramenta.Titulo + ".";
+            }
+
+            if (string.IsNullOrEmpty(resposta)) return;
+            if (ferramenta.FechaMenu) Player.m_localPlayer?.Message(MessageHud.MessageType.Center, resposta);
+            else Status(resposta, CorTexto);
         }
 
         // ------------------------------------------------------------------ opcoes
@@ -608,7 +736,7 @@ namespace Deadheim.Ajustes
         {
             _esperaAte = 0f;
             Status("Sem conexao com o servidor.", CorErro);
-            if (_linhas.Count == 0) Vazio("Sem conexao com o servidor.");
+            if (_linhas.Count == 0 && !_ferramentas) Vazio("Sem conexao com o servidor.");
         }
 
         // --------------------------------------------------------------- limpeza
@@ -663,7 +791,7 @@ namespace Deadheim.Ajustes
             _botaoMeus = Ui.CreateButton("Meus ajustes", _janela.transform, centro, centro, Vector2.zero, 210f, 38f);
             Colocar(_botaoMeus, topo, centro, new Vector2(-115f, AlturaAbas), new Vector2(210f, 38f));
             _botaoMeus.GetComponent<Button>().onClick.AddListener(() => MostrarAba(Aba.Meus));
-            _botaoServidor = Ui.CreateButton("Servidor", _janela.transform, centro, centro, Vector2.zero, 210f, 38f);
+            _botaoServidor = Ui.CreateButton("Admin", _janela.transform, centro, centro, Vector2.zero, 210f, 38f);
             Colocar(_botaoServidor, topo, centro, new Vector2(115f, AlturaAbas), new Vector2(210f, 38f));
             _botaoServidor.GetComponent<Button>().onClick.AddListener(() => MostrarAba(Aba.Servidor));
 

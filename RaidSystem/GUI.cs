@@ -1,4 +1,5 @@
 ﻿using Deadheim.Vanilla;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,6 +49,54 @@ namespace RaidSystem
         public static void DestroyMenu()
         {
             if (_menu != null) _menu.SetActive(false);
+        }
+
+        /// <summary>Abre o painel da guilda (sem fechar se ja estiver aberto). Chamado pela Central Deadheim.</summary>
+        public static void ShowMenu()
+        {
+            if (_menu != null && _menu.activeSelf) return;
+            ToggleMenu();
+        }
+
+        /// <summary>Abre o Ranking de Guerra (sem fechar se ja estiver aberto). Chamado pela Central Deadheim.</summary>
+        public static void ShowScoreboard()
+        {
+            if (_scoreboard != null && _scoreboard.activeSelf) return;
+            ToggleScoreboard();
+        }
+
+        /// <summary>Algum painel do RaidSystem na tela: o cursor fica livre e o personagem parado.</summary>
+        public static bool AlgumAberto =>
+            (_menu != null && _menu.activeSelf) || (_scoreboard != null && _scoreboard.activeSelf);
+
+        public static void FecharTudo()
+        {
+            if (_menu != null) _menu.SetActive(false);
+            if (_scoreboard != null) _scoreboard.SetActive(false);
+        }
+
+        // Antes os paineis abriam por tecla no meio do jogo, com o cursor preso na camera: so dava
+        // para clicar abrindo o inventario junto. Agora, com um painel aberto, o personagem nao anda
+        // nem ataca e o cursor fica livre, como nas janelas do Deadheim (TerritoriosUi).
+        [HarmonyPatch(typeof(Player), nameof(Player.TakeInput))]
+        private static class TakeInputPatch
+        {
+            private static void Postfix(Player __instance, ref bool __result)
+            {
+                if (AlgumAberto && __instance == Player.m_localPlayer) __result = false;
+            }
+        }
+
+        [HarmonyPatch(typeof(GameCamera), nameof(GameCamera.UpdateMouseCapture))]
+        private static class MouseCapturePatch
+        {
+            private static bool Prefix()
+            {
+                if (!AlgumAberto) return true;
+                ZCursor.LockState = CursorLockMode.None;
+                ZCursor.Show();
+                return false;
+            }
         }
 
         public static void LoadMenu()

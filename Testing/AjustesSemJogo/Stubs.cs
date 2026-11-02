@@ -93,6 +93,9 @@ public class Game
 
 namespace Deadheim { public class Plugin { public const string PluginGUID = "Detalhes.Deadheim"; } }
 
+// O AjustesDados esconde de "Meus ajustes" as teclas de menu que o Deadheim tirou dos outros mods.
+namespace Deadheim.Menus { internal static class Atalhos { public static bool Removida(string guid, string secao, string chave) => false; } }
+
 // O AjustesRede tambem avisa o menu de admin do Juiz de Guerra (NpcValheim) pela PvpApi.
 namespace Deadheim.Pvp
 {

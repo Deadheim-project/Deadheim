@@ -16,12 +16,14 @@ namespace RaidSystem
     // 7.0.0 traz o PvpBridge: castelos e abates classificados vem do modulo de PvP.
     // 7.3.1 traz RemetenteRpc (remetente de verdade), RelogioServidor (hora do servidor no
     // cliente), Entrega (item sem duplicar nem sumir) e PvpBridge.KnownGuild/IsPveOrImmune.
-    [BepInDependency("Detalhes.Deadheim", "7.3.1")]
+    // 2.2.4 entrega os paineis ao hub do inventario do Deadheim (Menus.MenuBridge, 7.9.0) e tira as
+    // teclas PageUp/PageDown: os menus sao abertos pela Central Deadheim (Tab).
+    [BepInDependency("Detalhes.Deadheim", "7.9.0")]
     public class RaidSystemPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = "Detalhes.RaidSystem";
         public const string PluginName = "RaidSystem";
-        public const string PluginVersion = "2.2.3";
+        public const string PluginVersion = "2.2.4";
         public const string DefaultWebhookUrl = "";
         public static RaidSystemPlugin Instance { get; private set; }
         private Harmony _harmony;
@@ -60,8 +62,6 @@ namespace RaidSystem
         public static ConfigEntry<string> WebhookUrl;
         public static ConfigEntry<string> ConquestMessage;
         public static ConfigEntry<string> ScoreboardTitle;
-        public static ConfigEntry<KeyCode> KeyboardShortcut;
-        public static ConfigEntry<KeyCode> ScoreboardShortcut;
 
         // Economia de territorio (Fases 1-3)
         public static ConfigEntry<Toggle> OrePortalEnabled;
@@ -102,11 +102,28 @@ namespace RaidSystem
 
             Player lp = Player.m_localPlayer;
             if (!lp || lp.IsDead() || lp.InCutscene() || lp.IsTeleporting()) return;
-            if (Ui.IsTyping()) return;
-            if (Input.GetKeyDown(KeyboardShortcut.Value))
-            { GUI.ToggleMenu(); ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RaidSystem_RequestFullSync", new ZPackage()); }
-            if (Input.GetKeyDown(ScoreboardShortcut.Value))
-            { GUI.ToggleScoreboard(); ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RaidSystem_RequestScores", new ZPackage()); }
+            // Sem teclas desde a 2.2.4: os paineis abrem pela Central Deadheim (Tab). ESC fecha.
+            if (GUI.AlgumAberto && Input.GetKeyDown(KeyCode.Escape) && !Ui.IsTyping()) GUI.FecharTudo();
+        }
+
+        /// <summary>Painel da guilda (era o PageUp), pela Central Deadheim.</summary>
+        public static void AbrirPainelGuilda()
+        {
+            Player lp = Player.m_localPlayer;
+            if (!lp || lp.IsDead()) return;
+            GUI.ShowMenu();
+            if (ZRoutedRpc.instance != null)
+                ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RaidSystem_RequestFullSync", new ZPackage());
+        }
+
+        /// <summary>Ranking de Guerra (era o PageDown), pela Central Deadheim.</summary>
+        public static void AbrirRanking()
+        {
+            Player lp = Player.m_localPlayer;
+            if (!lp || lp.IsDead()) return;
+            GUI.ShowScoreboard();
+            if (ZRoutedRpc.instance != null)
+                ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RaidSystem_RequestScores", new ZPackage());
         }
 
         private void OnDestroy() => _harmony?.UnpatchSelf();
@@ -118,6 +135,9 @@ namespace RaidSystem
         /// </summary>
         private static void RegisterDeadheimBridges()
         {
+            Deadheim.Menus.MenuBridge.AbrirGuilda = AbrirPainelGuilda;
+            Deadheim.Menus.MenuBridge.AbrirRanking = AbrirRanking;
+
             Deadheim.Pvp.PvpBridge.CastleAt = CastleDefense.CastleAt;
             Deadheim.Pvp.PvpBridge.CastleOwner = Util.GetTerritoryOwner;
             Deadheim.Pvp.PvpBridge.CastleSafeAt = CastleDefense.IsFallenAt;
@@ -201,9 +221,6 @@ namespace RaidSystem
             DefenseTributeCharges = config("10 - Economia", "Defense Tribute Charges", 3,
                 "Cargas de tributo extras (materiais do tier do castelo, em Tribute.json) para a guilda que segura o castelo " +
                 "a janela de raid inteira. Resgata na RaidWard. 0 = desligado.");
-
-            KeyboardShortcut = config("9 - Client", "Menu Key", KeyCode.PageUp, "Open raid menu.", false);
-            ScoreboardShortcut = config("9 - Client", "Scoreboard Key", KeyCode.PageDown, "Open scoreboard.", false);
         }
 
         private void WriteDefaultConfigExample()
@@ -255,9 +272,6 @@ namespace RaidSystem
 
                 AppendConfig(sb, "8 - UI Text", "Conquest Message", "conquistou o territorio em:", "Center-screen conquest notification text.");
                 AppendConfig(sb, "8 - UI Text", "Scoreboard Title", "Ranking de Guerra", "Scoreboard title.");
-
-                AppendConfig(sb, "9 - Client", "Menu Key", "PageUp", "Client key to open the raid menu.");
-                AppendConfig(sb, "9 - Client", "Scoreboard Key", "PageDown", "Client key to open the scoreboard.");
 
                 AppendConfig(sb, "10 - Economia", "Ore Portal Enabled", "On", "Portals accept ore when the destination is territory held by your guild.");
                 AppendConfig(sb, "10 - Economia", "Ore Portal Min Tier", "1", "Minimum territory tier that grants the ore portal.");

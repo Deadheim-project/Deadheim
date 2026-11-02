@@ -336,25 +336,28 @@ namespace Deadheim
             {
                 new Terminal.ConsoleCommand("totem_destino", "Admin: grava a sua posicao como chegada do Totem da Cidade", (Terminal.ConsoleEvent)(args =>
                 {
-                    Player player = Player.m_localPlayer;
-                    if (player == null) return;
-                    if (!Admin.LocalPlayerIsAdmin())
-                    {
-                        args.Context.AddString("So admin.");
-                        return;
-                    }
-
-                    string valor = FormatarPonto(player.transform.position);
-                    // Pelo mesmo pedido do menu de ajustes: o servidor confere a adminlist e grava a cfg dele.
-                    if (!Ajustes.AjustesRede.Definir(Plugin.PluginGUID, Secao, Destino.Definition.Key, valor))
-                    {
-                        args.Context.AddString("Sem conexao com o servidor.");
-                        return;
-                    }
-                    _esperandoDestino = true;
-                    args.Context.AddString("Pedido enviado: chegada do " + Nome + " = " + valor);
+                    string resposta = GravarDestino();
+                    if (resposta != null) args.Context.AddString(resposta);
                 }));
             }
+        }
+
+        /// <summary>
+        /// /totem_destino e o botao da aba Admin (ESC -> Deadheim): pede ao servidor para gravar a
+        /// posicao do admin como chegada do totem. Devolve a mensagem para o admin (null sem jogador).
+        /// </summary>
+        internal static string GravarDestino()
+        {
+            Player player = Player.m_localPlayer;
+            if (player == null) return null;
+            if (!Admin.LocalPlayerIsAdmin()) return "So admin.";
+
+            string valor = FormatarPonto(player.transform.position);
+            // Pelo mesmo pedido do menu de ajustes: o servidor confere a adminlist e grava a cfg dele.
+            if (!Ajustes.AjustesRede.Definir(Plugin.PluginGUID, Secao, Destino.Definition.Key, valor))
+                return "Sem conexao com o servidor.";
+            _esperandoDestino = true;
+            return "Pedido enviado: chegada do " + Nome + " = " + valor;
         }
 
         private static void AvisarDestino()

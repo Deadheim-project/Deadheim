@@ -5,9 +5,15 @@ janela no visual do Valheim (painel de madeira, fonte e botoes do jogo) com duas
 
 - **Meus ajustes** (todo jogador): a config deste PC de todos os mods carregados, menos o que o
   servidor controla. Grava direto no `BepInEx/config` do jogador, na hora.
-- **Servidor** (so admin): a config que o servidor esta usando, de todos os mods que o servidor
-  tem, pedida a ele pela rede. Cada mudanca e aplicada e salva no cfg do servidor na hora. O que e
-  sincronizado (ServerSync) chega a todos os jogadores conectados sem reiniciar nada.
+- **Admin** (so admin; ate a 7.8.20 se chamava "Servidor"): tudo o que e de admin num lugar so.
+  - **Ferramentas de admin** (primeira entrada da lista): Painel de Admin do NpcValheim (mensagem
+    global, ir ate/puxar jogador, buffs, bestiario, arenas), aba de admin das Montarias,
+    Territorios, chegada do Totem da Cidade, painel de rede e marcar incidente (AdaptiveNet), e a
+    lista dos comandos de admin. Antes cada um tinha tecla (F8 em tres mods, F9) ou comando; as
+    teclas sairam (ver `Menus/README.md`).
+  - **A config do servidor**: de todos os mods que o servidor tem, pedida a ele pela rede. Cada
+    mudanca e aplicada e salva no cfg do servidor na hora. O que e sincronizado (ServerSync) chega
+    a todos os jogadores conectados sem reiniciar nada.
 
 Cobre qualquer mod do launcher, sem lista fixa: Deadheim (PvP, Wards, Montarias...), RaidSystem,
 Hearthstone, NPCs, Velas, AdaptiveNet, Guilds, Groups, ServerCharacters, CLLC, AzuAntiCheat e os
@@ -19,11 +25,13 @@ opcionais. O que conta e o `ConfigFile` que o BepInEx ja tem aberto para cada mo
   com `IsAdminOnly`). Essas opcoes nunca aparecem em "Meus ajustes": no cliente elas valem o que
   o servidor mandou, e a regra de PvP roda no cliente de quem leva o golpe.
 - Opcao com `Browsable = false` nao aparece; com `ReadOnly = true` aparece travada.
+- As teclas de menu que o Deadheim tira dos outros mods (`Menus/Atalhos.cs`) nao aparecem em
+  "Meus ajustes": o menu agora esta na Central do inventario ou na aba Admin.
 - Opcao que so o servidor usa e nao e sincronizada (segredo, como o webhook do RaidSystem):
   o mod marca `Browsable = Application.isBatchMode`. No cliente ela some de "Meus ajustes" (e do
-  F1); no servidor dedicado continua na aba Servidor.
+  F1); no servidor dedicado continua na aba Admin.
 - Admin e quem esta na `adminlist.txt` do servidor, a mesma lista que o ServerSync e os
-  devcommands usam. A aba Servidor so aparece para admin, e o servidor confere de novo a cada
+  devcommands usam. A aba Admin so aparece para admin, e o servidor confere de novo a cada
   pedido pela conexao de verdade (`ZRpc`), nao pelo id que o cliente escreve no pacote.
 
 ## Como funciona
@@ -59,7 +67,7 @@ Alguns mods so leem certas opcoes quando iniciam; essas passam a valer no proxim
 
 - **No jogo** (passo `ajustes` do `Testing/run-pvp-test.ps1`): abre o ESC, confere o botao
   (texto, sem sobrepor os outros, dentro da tela), abre a janela, edita pelos controles dela e
-  testa a aba Servidor contra o servidor dedicado. Tira fotos de cada tela em `<Root>\fotos`.
+  testa a aba Admin contra o servidor dedicado. Tira fotos de cada tela em `<Root>\fotos`.
 
       Testing\run-pvp-test.ps1 -Solo -Steps ajustes           como jogador comum
       Testing\run-pvp-test.ps1 -Solo -Steps ajustes -Admin    como admin

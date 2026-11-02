@@ -46,56 +46,52 @@ namespace Deadheim
 			{
 				new Terminal.ConsoleCommand("retreat", "go back home (Aesir: 'retreat 2' usa o segundo ponto)", (Terminal.ConsoleEvent)(args =>
 				{
-                    if (!VipList.VipListApi.IsLocalPlayerVip())
-                    {
-                       args.Context.AddString("Only Aesir can use this command");
-                       return;
-                    }
-
                     // Aesir 18: "retreat 2" usa o segundo ponto, se a chave estiver ligada.
                     int ponto = args.Length > 1 && args[1] == "2" ? 2 : 1;
-                    if (ponto == 2 && (AesirConfig.Aesir18DoisPontos == null || !AesirConfig.Aesir18DoisPontos.Value))
-                    {
-                        args.Context.AddString("Segundo ponto desligado neste servidor.");
-                        return;
-                    }
-
-                    // allowAllItems e' novo no Valheim 1.0. false mantem a regra de sempre --
-                    // minerio e outros itens marcados continuam impedindo o teleporte; true
-                    // ignoraria essa restricao, que nao e' o que este comando fazia.
-                    if (!Player.m_localPlayer.IsTeleportable(false))
-                    {
-                        args.Context.AddString("Can't teleport");
-                        return;
-                    }
-
-                    // Cooldown, combate e cacado: o retreat nao pode ser a saida de uma luta.
-                    string refusal = Pvp.PvpModule.RetreatRefusal(Player.m_localPlayer);
-                    if (refusal != null)
-                    {
-                        args.Context.AddString(refusal);
-                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, refusal);
-                        return;
-                    }
-
-                    Vector3 teleportPosition = GetHearthStonePosition(ponto);
-
-                    if (teleportPosition == Vector3.zero)
-                    {
-                        args.Context.AddString(ponto == 2 ? "Voce precisa definir o segundo ponto (Shift+P na cama)." : "You need to set hearthstone spawn point");
-                        return;
-                    }
-
-                    // TeleportTo devolve false se ja estiver teleportando, na recarga do vanilla ou se o
-                    // PvP recusar: a recarga do retreat so conta quando o teleporte sai (B3).
-                    if (Player.m_localPlayer.TeleportTo(teleportPosition, Player.m_localPlayer.transform.rotation, true))
-                        Pvp.PvpModule.MarkRetreatUsed(Player.m_localPlayer);
-                    else
-                        args.Context.AddString("O teleporte nao saiu agora; tente de novo em instantes.");
-
-                }));			
+                    string recusa = TentarRetreat(ponto);
+                    if (recusa != null) args.Context.AddString(recusa);
+                }));
 			}
 		}
+
+        /// <summary>
+        /// O /retreat inteiro, para o comando e para o botao da Central Deadheim (hub do inventario).
+        /// Devolve null quando o teleporte saiu, ou o motivo de nao ter saido.
+        /// </summary>
+        public static string TentarRetreat(int ponto)
+        {
+            Player player = Player.m_localPlayer;
+            if (player == null) return "Entre no mundo primeiro.";
+            if (!VipList.VipListApi.IsLocalPlayerVip()) return "Only Aesir can use this command";
+
+            if (ponto == 2 && (AesirConfig.Aesir18DoisPontos == null || !AesirConfig.Aesir18DoisPontos.Value))
+                return "Segundo ponto desligado neste servidor.";
+
+            // allowAllItems e' novo no Valheim 1.0. false mantem a regra de sempre --
+            // minerio e outros itens marcados continuam impedindo o teleporte; true
+            // ignoraria essa restricao, que nao e' o que este comando fazia.
+            if (!player.IsTeleportable(false)) return "Can't teleport";
+
+            // Cooldown, combate e cacado: o retreat nao pode ser a saida de uma luta.
+            string refusal = Pvp.PvpModule.RetreatRefusal(player);
+            if (refusal != null)
+            {
+                player.Message(MessageHud.MessageType.Center, refusal);
+                return refusal;
+            }
+
+            Vector3 teleportPosition = GetHearthStonePosition(ponto);
+            if (teleportPosition == Vector3.zero)
+                return ponto == 2 ? "Voce precisa definir o segundo ponto (Shift+P na cama)." : "You need to set hearthstone spawn point";
+
+            // TeleportTo devolve false se ja estiver teleportando, na recarga do vanilla ou se o
+            // PvP recusar: a recarga do retreat so conta quando o teleporte sai (B3).
+            if (!player.TeleportTo(teleportPosition, player.transform.rotation, true))
+                return "O teleporte nao saiu agora; tente de novo em instantes.";
+
+            Pvp.PvpModule.MarkRetreatUsed(player);
+            return null;
+        }
 
 
         [HarmonyPatch(typeof(Chat), nameof(Chat.Awake))]

@@ -331,61 +331,92 @@ namespace Deadheim
         {
             private static void Postfix()
             {
-                new Terminal.ConsoleCommand("depositar", "(Aesir) deposita do seu inventario nos baus proximos que ja tem o item", args => Depositar(args.Context));
-                new Terminal.ConsoleCommand("ordenar", "(Aesir) ordena por nome o bau com a janela aberta", args => Ordenar(args.Context));
+                new Terminal.ConsoleCommand("depositar", "(Aesir) deposita do seu inventario nos baus proximos que ja tem o item", args => Depositar(args.Context.AddString));
+                new Terminal.ConsoleCommand("ordenar", "(Aesir) ordena por nome o bau com a janela aberta", args => Ordenar(args.Context.AddString));
                 new Terminal.ConsoleCommand("etiqueta", "(Aesir) etiqueta <nome> - renomeia o bau que voce esta olhando", args => Etiquetar(args));
             }
         }
 
-        private static bool PodeUsar(Terminal context, ConfigEntry<bool> chave)
+        private static bool PodeUsar(Terminal context, ConfigEntry<bool> chave) => PodeUsar(context != null ? context.AddString : (Action<string>)null, chave);
+
+        private static bool PodeUsar(Action<string> dizer, ConfigEntry<bool> chave)
         {
             if (Player.m_localPlayer == null) return false;
-            if (!VipList.VipListApi.IsLocalPlayerVip()) { context?.AddString("So Aesir."); return false; }
-            if (!chave.Value) { context?.AddString("Desligado neste servidor."); return false; }
+            if (!VipList.VipListApi.IsLocalPlayerVip()) { dizer?.Invoke("So Aesir."); return false; }
+            if (!chave.Value) { dizer?.Invoke("Desligado neste servidor."); return false; }
             return true;
         }
 
-        private static void Depositar(Terminal context)
+        /// <summary>Ha um bau com a janela aberta (o /ordenar e o botao da Central dependem disso).</summary>
+        internal static bool BauAberto() =>
+            InventoryGui.instance != null && CurrentContainer?.GetValue(InventoryGui.instance) is Container c && c != null;
+
+        private static bool EhOBauAberto(Container container) =>
+            InventoryGui.instance != null && ReferenceEquals(CurrentContainer?.GetValue(InventoryGui.instance), container);
+
+        /// <summary>
+        /// /depositar e o botao da Central. Antes (ate 7.8.20) o bau recebia a pilha inteira
+        /// (AddItem do Clone) e o jogador perdia so 1 unidade: duplicava itens. Agora sai do
+        /// inventario exatamente o que entrou no bau.
+        /// </summary>
+        internal static void Depositar(Action<string> dizer)
         {
-            if (!PodeUsar(context, AesirConfig.Aesir14DepositarAtivo)) return;
+            if (!PodeUsar(dizer, AesirConfig.Aesir14DepositarAtivo)) return;
             Player player = Player.m_localPlayer;
             Inventory minha = player.GetInventory();
-            int depositados = 0;
+            int pilhas = 0, unidades = 0;
+            HashSet<Container> vistos = new HashSet<Container>();
 
             foreach (Collider col in Physics.OverlapSphere(player.transform.position, AesirConfig.Aesir14DepositarRaio.Value))
             {
                 Container container = col.GetComponentInParent<Container>();
-                if (container == null || !PrivateArea.CheckAccess(container.transform.position)) continue;
+                // Um bau tem varios colliders: sem isto o mesmo bau seria visitado varias vezes.
+                if (container == null || !vistos.Add(container)) continue;
+                if (!PrivateArea.CheckAccess(container.transform.position)) continue;
+                // Bau privado de outro jogador, ou aberto por outra pessoa agora: nao.
+                if (!container.CheckAccess(player.GetPlayerID())) continue;
+                if (container.IsInUse() && !EhOBauAberto(container)) continue;
                 Inventory inv = container.GetInventory();
-                if (inv == null) continue;
+                if (inv == null || inv == minha) continue;
+                // So o dono da ZDO grava o bau (Container.Save): sem ser dono, o que entrasse ficaria
+                // so na tela deste cliente e sumiria. Toma a posse, como o jogo faz ao abrir.
+                ZNetView nview = container.m_nview;
+                if (nview == null || !nview.IsValid()) continue;
+                if (!nview.IsOwner()) nview.ClaimOwnership();
 
                 foreach (ItemDrop.ItemData item in minha.GetAllItems().ToList())
                 {
-                    if (item == null || minha.CountItems(item.m_shared.m_name, -1, false) <= 0) continue;
+                    if (item == null || item.m_stack <= 0 || item.m_equipped) continue;
                     if (inv.CountItems(item.m_shared.m_name, -1, false) <= 0) continue; // so completa pilha que ja existe no bau
 
-                    int tinha = minha.CountItems(item.m_shared.m_name, -1, false);
-                    if (!inv.AddItem(item.Clone())) continue;
-                    minha.RemoveItem(item.m_shared.m_name, 1, -1, false);
-                    if (tinha > 0) depositados++;
+                    // AddItem pode guardar so parte da pilha: o que nao coube fica no m_stack da copia.
+                    ItemDrop.ItemData copia = item.Clone();
+                    int antes = copia.m_stack;
+                    bool coubeTudo = inv.AddItem(copia);
+                    int guardado = coubeTudo ? antes : antes - copia.m_stack;
+                    if (guardado <= 0) continue;
+
+                    minha.RemoveItem(item, guardado);
+                    pilhas++;
+                    unidades += guardado;
                 }
             }
-            if (depositados > 0) context?.AddString($"Depositado(s) {depositados} item(ns).");
-            else context?.AddString("Nada para depositar (so completa pilha que o bau ja tem).");
+            if (pilhas > 0) dizer?.Invoke($"Depositado(s) {unidades} item(ns) em {pilhas} pilha(s).");
+            else dizer?.Invoke("Nada para depositar (so completa pilha que o bau ja tem).");
         }
 
-        private static void Ordenar(Terminal context)
+        internal static void Ordenar(Action<string> dizer)
         {
-            if (!PodeUsar(context, AesirConfig.Aesir15OrdenarAtivo)) return;
+            if (!PodeUsar(dizer, AesirConfig.Aesir15OrdenarAtivo)) return;
             Container container = CurrentContainer?.GetValue(InventoryGui.instance) as Container;
-            if (container == null) { context?.AddString("Abra um bau primeiro."); return; }
+            if (container == null) { dizer?.Invoke("Abra um bau primeiro."); return; }
 
             container.StackAll();
             Inventory inv = container.GetInventory();
             List<ItemDrop.ItemData> itens = inv.GetAllItemsSortedByName();
             foreach (ItemDrop.ItemData item in itens) inv.RemoveItem(item);
             foreach (ItemDrop.ItemData item in itens) inv.AddItem(item);
-            context?.AddString("Bau ordenado.");
+            dizer?.Invoke("Bau ordenado.");
         }
 
         private static void Etiquetar(Terminal.ConsoleEventArgs args)
