@@ -283,18 +283,25 @@ namespace Deadheim
                 if (op == "set")
                 {
                     string item = pkg.ReadString(), app = pkg.ReadString();
-                    if (RequireNpc.Value && item != app) { Pvp.PvpNet.Message(real, NpcOnly); return; }
+                    if (RequireNpc.Value && item != app)
+                    {
+                        AesirLog.D(35, peer.Name + ": /transmog " + item + " -> " + app + " negado: so pelo Alfaiate (RequireNpc=true).");
+                        Pvp.PvpNet.Message(real, NpcOnly);
+                        return;
+                    }
                     string why = ApplyPairs(peer, new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>(item, app) });
                     if (why != null) Pvp.PvpNet.Message(real, why);
                 }
                 else if (op == "off")
                 {
-                    ApplyOff(peer, pkg.ReadString());
+                    string item = pkg.ReadString();
+                    ApplyOff(peer, item);
+                    AesirLog.D(35, peer.Name + ": voltou ao visual real (" + (item == "*" ? "tudo" : item) + ").");
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogError("[Deadheim] Transmog: pacote do cliente " + real + " falhou: " + ex);
+                AesirLog.Erro(35, ex);
             }
         }
 
@@ -343,7 +350,11 @@ namespace Deadheim
         internal static string ApplyPairs(Pvp.PvpPeer peer, List<KeyValuePair<string, string>> pairs)
         {
             string why = CheckPairs(peer, pairs);
-            if (why != null) return why;
+            if (why != null)
+            {
+                AesirLog.D(35, peer.Name + ": troca negada (" + string.Join(", ", pairs.Select(kv => kv.Key + "->" + kv.Value)) + "): " + why);
+                return why;
+            }
             Data d = DataOf(peer.PlayerId);
             foreach (var kv in pairs)
             {
@@ -390,7 +401,7 @@ namespace Deadheim
             }
             catch (Exception ex)
             {
-                Debug.LogError("[Deadheim] Transmog: pacote do servidor falhou: " + ex);
+                AesirLog.Erro(35, ex);
             }
         }
 
@@ -582,14 +593,20 @@ namespace Deadheim
 
         private static void Say(string msg) => Player.m_localPlayer?.Message(MessageHud.MessageType.Center, msg);
 
-        /// <summary>/transmog, e o botao da Central Deadheim (hub do inventario) com { "/transmog" }.</summary>
+        /// <summary>/transmog, o botao da Central Deadheim (hub do inventario) com { "/transmog" } e a tecla
+        /// do AesirTeclas, com so o nome (abre a janela).</summary>
         internal static void HandleCommand(string[] parts)
         {
             if (Player.m_localPlayer == null) return;
             if (Enabled != null && !Enabled.Value) { Say("Transmog desativado."); return; }
             if (parts.Length > 1 && parts[1].Equals("off", StringComparison.OrdinalIgnoreCase)) { SendOff(parts.Length > 2 ? parts[2] : "*"); return; }
             if (RequireNpc != null && RequireNpc.Value) { Say(NpcOnly); return; }
-            if (RequireVip.Value && !VipList.VipListApi.IsLocalPlayerVip()) { Say("Transmog e exclusivo Aesir (VIP)."); return; }
+            if (RequireVip.Value && !VipList.VipListApi.IsLocalPlayerVip())
+            {
+                Say("Transmog e exclusivo Aesir (VIP).");
+                AesirLog.D(35, "/transmog negado: nao e VIP (RequireVip=true).");
+                return;
+            }
             if (parts.Length <= 1) { TransmogUi.Toggle(); return; }
             if (parts.Length >= 3) SendSet(parts[1], parts[2]);
             else Say("Uso: /transmog <real> <aparencia> | /transmog off <real|*>");

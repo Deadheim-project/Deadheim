@@ -17,7 +17,7 @@ esta na tela (Tab ou um bau aberto). Cabecalho com o nome do personagem e o selo
   (J), Arena, Troca de moedas (`/trocar`). Cada botao mostra uma linha de estado: a guilda do
   jogador, a habilidade de montaria...
 - **Aesir**: Loja Deadcoins (era o F7), Retreat e Retreat 2 (com a recarga na linha de estado),
-  Depositar nos baus, Ordenar bau aberto (so com um bau aberto), Transmog (se nao exigir o NPC),
+  Transmog (se nao exigir o NPC),
   Plantas salvas. Para quem nao e Aesir os botoes aparecem travados (icone apagado, marca AESIR);
   clicar abre a janela do Aesir com a funcao destacada.
 - **Seja Aesir / Voce e Aesir**: janela com todos os beneficios, agrupados, e como apoiar (preco,

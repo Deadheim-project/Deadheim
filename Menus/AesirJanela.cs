@@ -226,9 +226,9 @@ namespace Deadheim.Menus
             if (Ligado(AesirConfig.Aesir12RepararAreaAtivo))
                 yield return new Beneficio(bancada, "Reparar com o martelo conserta tudo por perto (Shift)");
             if (Ligado(AesirConfig.Aesir14DepositarAtivo))
-                yield return new Beneficio(bancada, "Depositar: completa as pilhas dos baús próximos");
+                yield return new Beneficio(bancada, "Depositar: completa as pilhas dos baús próximos (Alt+G olhando o baú)");
             if (Ligado(AesirConfig.Aesir15OrdenarAtivo))
-                yield return new Beneficio(bancada, "Ordenar o baú aberto com um clique");
+                yield return new Beneficio(bancada, "Ordenar o baú aberto (Alt+O)");
             if (Ligado(AesirConfig.Aesir16EtiquetaAtivo))
                 yield return new Beneficio(bancada, "Dar nome aos baús (/etiqueta)");
             if (Ligado(Plantas.Enabled))

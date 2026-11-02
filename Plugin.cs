@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.9.0";
+        public const string Version = "7.9.1";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -124,6 +124,9 @@ namespace Deadheim
             Territorios.Tick(Player.m_localPlayer);
             Menus.MenuHub.Tick();
             Ranking.RankingRede.Tick();
+            AesirLog.Tick();
+            AesirTeclas.Tick();
+            AesirPlantioArea.Tick();
 
             Player localPlayer = Player.m_localPlayer;
             // Mesma guarda do Hearthstone: digitando no chat, o "P" maiusculo (Shift+P) gravava o ponto.
@@ -151,10 +154,14 @@ namespace Deadheim
                                 if (keyDown)
                                 {
                                     // Aesir 18 (14/10/2026): Shift+tecla grava o segundo ponto, so para VIP com a chave ligada.
-                                    bool segundoPonto = shift
-                                        && AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value
-                                        && VipList.VipListApi.IsLocalPlayerVip();
+                                    bool chave18 = AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value;
+                                    bool vip = VipList.VipListApi.IsLocalPlayerVip();
+                                    bool segundoPonto = shift && chave18 && vip;
                                     Retreat.SetHearthStonePosition(segundoPonto ? 2 : 1);
+                                    if (shift && !segundoPonto)
+                                        AesirLog.D(18, "Shift+" + Retreat.TeclaDoPonto + " na cama: segundo ponto negado (" + (!chave18 ? "Aesir18DoisPontos=false" : "nao e VIP") + "), gravou o ponto 1.");
+                                    else if (segundoPonto)
+                                        AesirLog.D(18, "gravou o segundo ponto de retreat.");
                                     Player.m_localPlayer.Message(MessageHud.MessageType.Center,
                                         segundoPonto ? "Seu novo segundo ponto de Retreat" : "Seu novo ponto de Retreat", 0, null);
                                 }
@@ -242,6 +249,8 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             SkillsTeste.Bind(Config); // TEMPORARIO: remover no lancamento
             Treinador.Init();
             AesirConfig.Bind(Config);
+            AesirLog.Bind(Config);
+            AesirTeclas.Bind(Config);
             AesirPullConfig.Bind(Config);
             AesirCraftConfig.Bind(Config);
             VipSlotsConfig.Bind(Config);

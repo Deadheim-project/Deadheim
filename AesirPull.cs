@@ -207,10 +207,7 @@ namespace Deadheim
             private static void Postfix(Fireplace __instance)
             {
                 try { MaybeRefuel(__instance); }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[Deadheim Aesir10] Erro ao abastecer fogueira: {ex.Message}");
-                }
+                catch (Exception ex) { AesirLog.Erro(10, ex); }
             }
         }
 
@@ -241,12 +238,21 @@ namespace Deadheim
             NextTry[id] = now + AesirPullConfig.PullIntervalSeconds.Value;
 
             string fuelName = FuelName(fire);
-            if (string.IsNullOrEmpty(fuelName)) return;
-            if (!AesirChests.OwnerIsVip(Priv.FirePiece(fire))) return;
+            string nomeFogo = Utils.GetPrefabName(fire.gameObject);
+            if (string.IsNullOrEmpty(fuelName)) { AesirLog.D(10, "fogueira " + nomeFogo + " sem combustivel definido."); return; }
+            if (!AesirChests.OwnerIsVip(Priv.FirePiece(fire)))
+            {
+                AesirLog.D(10, "fogueira " + nomeFogo + " com pouco combustivel: nao e sua (OnlyOwnerVip=true), nao puxa.");
+                return;
+            }
 
             Container chest = AesirChests.FindWith(fire.transform.position,
                 AesirPullConfig.Radius.Value, local.GetPlayerID(), fuelName);
-            if (chest == null) return;
+            if (chest == null)
+            {
+                AesirLog.D(10, "fogueira " + nomeFogo + " com pouco combustivel: nenhum bau com " + fuelName + " que voce abra num raio de " + AesirPullConfig.Radius.Value + " m.");
+                return;
+            }
 
             // Quantas unidades faltam, no maximo 50 (nao esvazia um estoque gigante de uma vez).
             int want = Mathf.Clamp(Mathf.CeilToInt(fire.m_maxFuel - fuel), 1, 50);
@@ -257,6 +263,7 @@ namespace Deadheim
 
             // O mesmo caminho do jogo: RPC no dono, que soma e mostra o efeito.
             fireView.InvokeRPC("RPC_AddFuelAmount", (float)take);
+            AesirLog.D(10, "fogueira " + nomeFogo + ": puxou " + take + "x " + fuelName + " do bau " + Utils.GetPrefabName(chest.gameObject) + ".");
             local.Message(MessageHud.MessageType.TopLeft,
                 $"Aesir: {take}x {Localization.instance.Localize(fuelName)} do bau para a fogueira.");
         }
@@ -290,10 +297,7 @@ namespace Deadheim
             {
                 if (__result) return; // achou no chao: o vanilla resolveu
                 try { MaybeFeed(__instance, humanoid); }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[Deadheim Aesir10] Erro ao alimentar animal: {ex.Message}");
-                }
+                catch (Exception ex) { AesirLog.Erro(10, ex); }
             }
         }
 
@@ -324,14 +328,20 @@ namespace Deadheim
 
             string food = FoodName(ai);
             if (string.IsNullOrEmpty(food)) return;
+            string nomeBicho = Utils.GetPrefabName(ai.gameObject);
             // Sem OwnerIsVip aqui: bicho nao tem Piece, e o dono ja foi checado por
             // IsOwnerLocal (o campo "owner" da ZDO). Com OnlyOwnerVip ligado -- o padrao --
             // a checagem de peca devolvia false e nenhum animal era alimentado nunca.
 
             Container chest = AesirChests.FindWith(ai.transform.position,
                 AesirPullConfig.Radius.Value, local.GetPlayerID(), food);
-            if (chest == null) return;
+            if (chest == null)
+            {
+                AesirLog.D(10, nomeBicho + " com fome: nenhum bau com " + food + " que voce abra num raio de " + AesirPullConfig.Radius.Value + " m.");
+                return;
+            }
             if (!AesirChests.Take(chest, food, 1)) return;
+            AesirLog.D(10, nomeBicho + ": comeu 1x " + food + " do bau " + Utils.GetPrefabName(chest.gameObject) + ".");
 
             // Simula o que o consumo no chao faz: sacia, gera o efeito e anima o bicho. O
             // m_onConsumedItem nao e chamado de proposito -- o Tameable.OnConsumedItem so

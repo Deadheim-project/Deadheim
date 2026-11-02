@@ -374,7 +374,16 @@ namespace Deadheim.Craft
             private static float? _duracaoOriginal;
             private static float? _duracaoLoteOriginal;
 
+            // UpdateRecipe roda a cada frame com o inventario aberto: loga so quando a decisao muda.
+            private static bool? _ultimaDecisao;
+
             private static void Prefix(InventoryGui __instance, Player player)
+            {
+                try { Atualizar(__instance, player); }
+                catch (Exception e) { Deadheim.AesirLog.Erro(11, e); }
+            }
+
+            private static void Atualizar(InventoryGui __instance, Player player)
             {
                 if (_duracaoOriginal == null)
                 {
@@ -382,6 +391,14 @@ namespace Deadheim.Craft
                     _duracaoLoteOriginal = __instance.m_multiCraftDuration;
                 }
                 bool rapido = SoVip;
+                if (_ultimaDecisao != rapido)
+                {
+                    _ultimaDecisao = rapido;
+                    bool soVip = Deadheim.AesirConfig.Aesir11SoVip.Value;
+                    Deadheim.AesirLog.D(11, rapido
+                        ? "lote e fabricacao rapida liberados (" + (soVip ? "e VIP" : "Aesir11SoVip=false, liberado a todos") + ")."
+                        : "lote e fabricacao rapida negados: nao e VIP (Aesir11SoVip=true).");
+                }
                 __instance.m_craftDuration = rapido ? TempoDeFabricacao : _duracaoOriginal.Value;
                 __instance.m_multiCraftDuration = rapido ? TempoDeFabricacao : _duracaoLoteOriginal.Value;
 
@@ -405,7 +422,16 @@ namespace Deadheim.Craft
         private static class LoteNoClique
         {
             private static void Prefix(InventoryGui __instance)
-                => AplicarLote(__instance, AceitaQuantidade(__instance, Player.m_localPlayer));
+            {
+                try
+                {
+                    bool aceita = AceitaQuantidade(__instance, Player.m_localPlayer);
+                    AplicarLote(__instance, aceita);
+                    if (aceita && Quantidade > 1)
+                        Deadheim.AesirLog.D(11, "fabricou em lote: " + Quantidade + "x " + __instance.m_selectedRecipe.Recipe?.m_item?.name + ".");
+                }
+                catch (Exception e) { Deadheim.AesirLog.Erro(11, e); }
+            }
         }
 
         /// <summary>Fechou o inventario: a busca volta vazia.</summary>

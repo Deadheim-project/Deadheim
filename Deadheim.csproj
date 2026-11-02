@@ -151,6 +151,11 @@
     <Compile Include="TotemCidade.cs" />
     <Compile Include="FogoInfinito.cs" />
     <Compile Include="AesirFaceis.cs" />
+    <Compile Include="AesirLog.cs" />
+    <Compile Include="AesirDicas.cs" />
+    <Compile Include="AesirTeclas.cs" />
+    <Compile Include="AesirPlantioArea.cs" />
+    <Compile Include="AesirBotaoOrdenar.cs" />
     <Compile Include="AesirPull.cs" />
     <Compile Include="AesirCraft.cs" />
     <Compile Include="VipSlots.cs" />

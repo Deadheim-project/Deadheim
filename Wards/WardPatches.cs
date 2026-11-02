@@ -25,6 +25,46 @@ namespace Deadheim.Wards
             return Plugin.DungeonPrefabs.Value.Split(',').Any(p => p.Trim() == name);
         }
 
+        // ------------------------------------------------------------ diagnostico do piscar
+
+        private static float _nextFlashLog;
+
+        /// <summary>
+        /// Registra quem pediu para a ward piscar (inclusive o jogo base), no maximo uma linha a
+        /// cada 2 s. Existe para achar de onde vem a ward piscando sozinha: o log do jogador
+        /// mostra o chamador, o raio e se o pedido veio de outro cliente (RPC) ou deste.
+        /// </summary>
+        private static void LogFlash(PrivateArea area, string origem)
+        {
+            if (Time.time < _nextFlashLog) return;
+            _nextFlashLog = Time.time + 2f;
+            var frames = new System.Diagnostics.StackTrace(2, false).GetFrames();
+            string quem = frames == null ? "?" : string.Join(" < ", frames.Take(4).Select(f =>
+            {
+                var m = f.GetMethod();
+                return m == null ? "?" : (m.DeclaringType != null ? m.DeclaringType.Name : "") + "." + m.Name;
+            }));
+            Debug.Log($"[Wards] pisca ({origem}) ward em {area.transform.position:F0}: {quem}");
+        }
+
+        [HarmonyPatch(typeof(PrivateArea), nameof(PrivateArea.FlashShield))]
+        public static class FlashLocalLogPatch
+        {
+            private static void Prefix(PrivateArea __instance)
+            {
+                try { LogFlash(__instance, "neste cliente"); } catch { }
+            }
+        }
+
+        [HarmonyPatch(typeof(PrivateArea), "RPC_FlashShield")]
+        public static class FlashRemoteLogPatch
+        {
+            private static void Prefix(PrivateArea __instance, long uid)
+            {
+                try { LogFlash(__instance, "RPC de " + uid); } catch { }
+            }
+        }
+
         // ---------------------------------------------------------------- ciclo de vida
 
         /// <summary>
@@ -189,15 +229,18 @@ namespace Deadheim.Wards
                     if (__instance == null || hit == null) return true;
 
                     Vector3 pos = __instance.transform.position;
+                    // Dano de fogo, chuva, mob ou queda de peca tambem passa por aqui, sem jogador:
+                    // piscar o escudo a cada um deixava a ward piscando sozinha.
+                    Player attacker = hit.GetAttacker() as Player;
+
                     // Ward de Territorio ativa: ninguem danifica, nem o dono nem quem tem acesso.
                     PrivateArea territory = WardCore.GetIndestructibleWard(pos);
                     if (territory != null)
                     {
-                        territory.FlashShield(false);
+                        if (attacker != null) WardCore.Flash(territory);
                         return false;
                     }
 
-                    Player attacker = hit.GetAttacker() as Player;
                     PrivateArea ward = WardCore.GetProtectingWard(pos, attacker);
                     if (ward == null) return true;
 
@@ -208,14 +251,14 @@ namespace Deadheim.Wards
                     // NullReference no servidor dedicado e bloqueava dano no mundo inteiro.
                     if (WardCore.InFullProtectionZone(pos))
                     {
-                        ward.FlashShield(false);
+                        if (attacker != null) WardCore.Flash(ward);
                         return false;
                     }
 
                     float percent = Mathf.Clamp(WardProfiles.DamagePercent.Value, 0f, 100f);
                     if (percent <= 0f)
                     {
-                        ward.FlashShield(false);
+                        if (attacker != null) WardCore.Flash(ward);
                         return false;
                     }
 

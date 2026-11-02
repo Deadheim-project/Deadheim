@@ -11,7 +11,8 @@ namespace Deadheim.Menus
     /// <summary>
     /// Central Deadheim (7.9.0): com o inventario aberto (Tab, ou ao abrir um bau), um painel ao
     /// lado mostra os menus que o jogador pode usar agora -- montarias, guilda, ranking, missoes,
-    /// arena, troca -- e as funcoes Aesir: Loja Deadcoins, retreat, depositar, ordenar, plantas.
+    /// arena, troca -- e as funcoes Aesir: Loja Deadcoins, retreat, plantas. Depositar, ordenar e
+    /// etiqueta nao: sao do bau, com tecla (AesirTeclas).
     /// Quem nao e Aesir ve as funcoes Aesir travadas; clicar abre a janela do Aesir (AesirJanela),
     /// com todos os beneficios e como doar.
     ///
@@ -30,8 +31,17 @@ namespace Deadheim.Menus
             Esquerda
         }
 
+        /// <summary>Icones = barra centralizada embaixo do personagem (02/11/2026, padrao); Lista = o
+        /// painel ao lado do inventario, com uma linha de estado por botao.</summary>
+        public enum Formato
+        {
+            Icones,
+            Lista
+        }
+
         public static ConfigEntry<bool> Mostrar;
         public static ConfigEntry<Lado> Posicao;
+        public static ConfigEntry<Formato> Forma;
 
         public static ConfigEntry<string> AesirPreco;
         public static ConfigEntry<string> DoacaoComo;
@@ -43,6 +53,7 @@ namespace Deadheim.Menus
         private const float Largura = 360f;
         private const float Altura = 660f;
         private const float AlturaBotao = 48f;
+        private const float LadoIcone = 76f;
         private const float AvisoSeg = 6f;
 
         internal static readonly Color Dourado = new Color(1f, 0.84f, 0.35f, 1f);
@@ -57,6 +68,11 @@ namespace Deadheim.Menus
         private static string _aviso;
         private static float _avisoAte;
         private static bool _semGuiLogado;
+        private static bool _icones;
+        private static Entrada _sobre;
+        /// <summary>O menu do botao Aesir na barra de icones: as funcoes Aesir e o convite.</summary>
+        private static RectTransform _menuAesir;
+        private static Entrada _botaoAesir;
 
         public static void Bind(ConfigFile config)
         {
@@ -66,6 +82,9 @@ namespace Deadheim.Menus
             Posicao = config.Bind(secao, "Lado", Lado.Direita,
                 "Lado da tela em que a Central aparece com o inventario aberto.");
             Posicao.SettingChanged += (_, __) => Posicionar();
+            Forma = config.Bind(secao, "Formato", Formato.Icones,
+                "Icones = barra de icones centralizada embaixo do personagem; Lista = painel ao lado do inventario (usa o Lado).");
+            Forma.SettingChanged += (_, __) => Desmontar();
 
             AesirPreco = Plugin.Synced(config.Bind(secao, "AesirPreco", "R$ 20 por mês, com 100 Deadcoins de bônus todo mês.",
                 "Preco do Aesir, mostrado na janela do Aesir (Central Deadheim)."));
@@ -110,6 +129,8 @@ namespace Deadheim.Menus
             if (!_canvas.activeSelf)
             {
                 _canvas.SetActive(true);
+                // O inventario abre sempre com o menu Aesir fechado.
+                if (_menuAesir != null) _menuAesir.gameObject.SetActive(false);
                 Atualizar();
             }
             else if (Time.unscaledTime >= _proximaAtualizacao)
@@ -122,7 +143,7 @@ namespace Deadheim.Menus
         {
             _aviso = texto;
             _avisoAte = Time.unscaledTime + AvisoSeg;
-            if (_status != null) _status.text = texto ?? "";
+            if (_status != null && (!_icones || _sobre == null)) _status.text = texto ?? "";
         }
 
         // ------------------------------------------------------------ o que mostra
@@ -202,31 +223,7 @@ namespace Deadheim.Menus
                 },
                 RetreatEntrada(1),
                 RetreatEntrada(2),
-                new Entrada
-                {
-                    Titulo = "Depositar nos baús", Icone = "FineWood", Aesir = true,
-                    Visivel = () => Ligado(AesirConfig.Aesir14DepositarAtivo),
-                    Detalhe = () => $"Completa as pilhas dos baús em até {AesirConfig.Aesir14DepositarRaio?.Value ?? 10f:0} m",
-                    Acao = () =>
-                    {
-                        string resposta = null;
-                        AesirBaus.Depositar(texto => resposta = texto);
-                        return resposta;
-                    }
-                },
-                new Entrada
-                {
-                    Titulo = "Ordenar baú aberto", Icone = "Wood", Aesir = true,
-                    Visivel = () => Ligado(AesirConfig.Aesir15OrdenarAtivo),
-                    Detalhe = () => AesirBaus.BauAberto() ? "Organiza o baú aberto por nome" : "Abra um baú para ordenar",
-                    Indisponivel = () => AesirBaus.BauAberto() ? null : "Abra um baú (E) e use o botão com ele aberto.",
-                    Acao = () =>
-                    {
-                        string resposta = null;
-                        AesirBaus.Ordenar(texto => resposta = texto);
-                        return resposta;
-                    }
-                },
+                // Depositar, ordenar e etiqueta sao do bau: tecla olhando para ele (AesirTeclas), nao aqui.
                 new Entrada
                 {
                     Titulo = "Transmog", Icone = "ArmorLeatherChest", Aesir = true, FechaInventario = true,
@@ -286,6 +283,19 @@ namespace Deadheim.Menus
 
         // ------------------------------------------------------------------ montar
 
+        /// <summary>Some com o que esta montado; o proximo Tick monta no formato da config.</summary>
+        private static void Desmontar()
+        {
+            if (_canvas != null) UnityEngine.Object.Destroy(_canvas);
+            _canvas = null;
+            _painel = null;
+            _nome = _selo = _cabAesir = _extras = _status = _rotuloAesir = null;
+            _sobre = null;
+            _menuAesir = null;
+            _botaoAesir = null;
+            _entradas.Clear();
+        }
+
         private static void Montar()
         {
             _canvas = ValheimUi.CreateCanvas("Deadheim_Central", Ordem);
@@ -293,6 +303,13 @@ namespace Deadheim.Menus
             {
                 if (!_semGuiLogado) Debug.LogError("[Deadheim] Central: GUI do jogo nao encontrada, hub nao montado.");
                 _semGuiLogado = true;
+                return;
+            }
+
+            _icones = Forma == null || Forma.Value == Formato.Icones;
+            if (_icones)
+            {
+                MontarIcones();
                 return;
             }
 
@@ -347,9 +364,192 @@ namespace Deadheim.Menus
             _status.richText = true;
         }
 
+        /// <summary>
+        /// A barra de icones: centralizada embaixo do personagem, acima das dicas de tecla do
+        /// inventario. Um icone por entrada (o titulo embaixo), os Aesir depois de um filete
+        /// dourado, e por ultimo o do Aesir (beneficios / seja Aesir). Passar o mouse mostra o
+        /// titulo e a linha de estado acima da barra; os avisos aparecem no mesmo lugar.
+        /// </summary>
+        private static void MontarIcones()
+        {
+            _painel = ValheimUi.CreatePanel(_canvas.transform, 0f, LadoIcone + 24f);
+            _painel.anchorMin = _painel.anchorMax = new Vector2(0.5f, 0f);
+            _painel.pivot = new Vector2(0.5f, 0f);
+            _painel.anchoredPosition = new Vector2(0f, 64f);
+            var layout = _painel.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(12, 12, 12, 12);
+            layout.spacing = 8f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            var ajuste = _painel.gameObject.AddComponent<ContentSizeFitter>();
+            ajuste.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            _entradas.Clear();
+            _entradas.AddRange(MontarEntradas());
+            foreach (Entrada e in _entradas)
+                if (!e.Aesir) CriarIcone(e);
+
+            var filete = ValheimUi.CreateRect("Filete", _painel);
+            var imagem = filete.gameObject.AddComponent<Image>();
+            imagem.color = new Color(Dourado.r, Dourado.g, Dourado.b, 0.55f);
+            imagem.raycastTarget = false;
+            ValheimUi.SetWidth(filete.gameObject, 2f);
+            ValheimUi.SetHeight(filete.gameObject, LadoIcone - 10f);
+
+            // Um botao so de Aesir (02/11/2026, pedido do usuario): as funcoes Aesir e o convite
+            // ficam no menu dele, que abre acima da barra.
+            _botaoAesir = new Entrada
+            {
+                Titulo = "Aesir", Icone = "Thunderstone", Destaque = true,
+                Detalhe = () => VipList.VipListApi.IsLocalPlayerVip()
+                    ? "Suas funções Aesir e os benefícios"
+                    : "O que o Aesir dá e como apoiar",
+                Acao = () => { AlternarMenuAesir(); return null; }
+            };
+            _entradas.Add(_botaoAesir);
+            CriarIcone(_botaoAesir);
+            MontarMenuAesir();
+
+            // A linha de cima: o que o mouse aponta, ou o aviso / a dica de sempre.
+            _status = ValheimUi.CreateLabel(_canvas.transform, "", 16, ValheimUi.Beige, TextAlignmentOptions.Bottom);
+            var rtStatus = (RectTransform)_status.transform;
+            rtStatus.anchorMin = rtStatus.anchorMax = new Vector2(0.5f, 0f);
+            rtStatus.pivot = new Vector2(0.5f, 0f);
+            rtStatus.sizeDelta = new Vector2(900f, 48f);
+            rtStatus.anchoredPosition = new Vector2(0f, 64f + LadoIcone + 30f);
+            _status.richText = true;
+        }
+
+        /// <summary>
+        /// O menu do Aesir: titulo e situacao (ativo / exclusivo de quem apoia), uma linha por funcao
+        /// Aesir (icone, nome e estado, como na lista; travada para quem nao e Aesir e, ao clicar,
+        /// abre a janela do Aesir naquela funcao), o que mais o Aesir da e o botao dos beneficios.
+        /// </summary>
+        private static void MontarMenuAesir()
+        {
+            _menuAesir = ValheimUi.CreatePanel(_canvas.transform, 400f, 0f);
+            _menuAesir.anchorMin = _menuAesir.anchorMax = new Vector2(0.5f, 0f);
+            _menuAesir.pivot = new Vector2(1f, 0f);
+            var layout = _menuAesir.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(16, 16, 14, 16);
+            layout.spacing = 6f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            var ajuste = _menuAesir.gameObject.AddComponent<ContentSizeFitter>();
+            ajuste.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var titulo = ValheimUi.CreateLabel(_menuAesir, "Aesir", 24, Dourado, TextAlignmentOptions.Center, display: true);
+            ValheimUi.SetHeight(titulo.gameObject, 30f);
+            _cabAesir = ValheimUi.CreateLabel(_menuAesir, "", 13, ValheimUi.Muted, TextAlignmentOptions.Center);
+            _cabAesir.richText = true;
+            ValheimUi.SetHeight(_cabAesir.gameObject, 20f);
+
+            foreach (Entrada e in _entradas)
+                if (e.Aesir) CriarBotao(_menuAesir, e);
+
+            _extras = ValheimUi.CreateLabel(_menuAesir, "", 12, ValheimUi.Muted, TextAlignmentOptions.TopLeft);
+            _extras.richText = true;
+            ValheimUi.SetHeight(_extras.gameObject, 52f);
+
+            Button beneficios = ValheimUi.CreateButton(_menuAesir, "", 0f, 44f, 17);
+            _rotuloAesir = beneficios.GetComponentInChildren<TextMeshProUGUI>();
+            _rotuloAesir.color = Dourado;
+            _rotuloAesir.richText = true;
+            beneficios.onClick.AddListener(() => AesirJanela.Abrir(null));
+
+            _menuAesir.gameObject.SetActive(false);
+        }
+
+        private static void AlternarMenuAesir()
+        {
+            if (_menuAesir == null) return;
+            bool abrir = !_menuAesir.gameObject.activeSelf;
+            if (abrir)
+            {
+                // Acima da barra, alinhado a direita dela (onde fica o botao Aesir).
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_painel);
+                _menuAesir.anchoredPosition = new Vector2(_painel.rect.width / 2f, _painel.anchoredPosition.y + _painel.rect.height + 6f);
+                Atualizar();
+            }
+            _menuAesir.gameObject.SetActive(abrir);
+            if (_status != null) _status.gameObject.SetActive(!abrir);
+        }
+
+        private static void CriarIcone(Entrada e)
+        {
+            Button botao = ValheimUi.CreateButton(_painel, "", LadoIcone, LadoIcone, 12);
+            e.Objeto = botao.gameObject;
+
+            e.IconeImg = ValheimUi.CreateItemIcon(botao.transform, e.Icone, 40f);
+            ValheimUi.Anchor((RectTransform)e.IconeImg.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-20f, -48f), new Vector2(20f, -8f));
+            e.IconeImg.raycastTarget = false;
+
+            e.Rotulo = botao.GetComponentInChildren<TextMeshProUGUI>();
+            e.Rotulo.text = e.Titulo;
+            e.Rotulo.fontSize = 12;
+            e.Rotulo.alignment = TextAlignmentOptions.Bottom;
+            ValheimUi.Anchor((RectTransform)e.Rotulo.transform, Vector2.zero, new Vector2(1f, 0f), new Vector2(3f, 4f), new Vector2(-3f, 22f));
+
+            if (e.Destaque)
+            {
+                // O convite do Aesir: moldura dourada, como o botao "Seja Aesir" da lista.
+                var moldura = botao.gameObject.AddComponent<Outline>();
+                moldura.effectColor = Dourado;
+                moldura.effectDistance = new Vector2(2f, -2f);
+            }
+            if (e.Aesir)
+            {
+                e.Marca = ValheimUi.CreateLabel(botao.transform, "A", 12, Dourado, TextAlignmentOptions.TopRight, display: true);
+                ValheimUi.Anchor((RectTransform)e.Marca.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-18f, -18f), new Vector2(-5f, -3f));
+            }
+
+            var gatilho = botao.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+            var entrar = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
+            entrar.callback.AddListener(_ => { _sobre = e; MostrarSobre(); });
+            var sair = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
+            sair.callback.AddListener(_ => { if (_sobre == e) _sobre = null; MostrarSobre(); });
+            gatilho.triggers.Add(entrar);
+            gatilho.triggers.Add(sair);
+
+            botao.onClick.AddListener(() => Clicar(e));
+        }
+
+        /// <summary>A linha acima da barra: o icone sob o mouse, senao o aviso, senao a dica.</summary>
+        private static void MostrarSobre()
+        {
+            if (_status == null || !_icones) return;
+            if (_sobre != null)
+            {
+                bool aesir = VipList.VipListApi.IsLocalPlayerVip();
+                string detalhe;
+                try
+                {
+                    detalhe = _sobre.Travado(aesir) ? "Exclusivo Aesir: clique para conhecer"
+                        : _sobre.Indisponivel?.Invoke() ?? _sobre.Detalhe?.Invoke() ?? "";
+                }
+                catch (Exception) { detalhe = ""; }
+                _status.text = "<color=#ffa13c>" + _sobre.Titulo + "</color>" + (detalhe.Length > 0 ? "  ·  " + detalhe : "");
+                return;
+            }
+            if (_aviso != null && Time.unscaledTime < _avisoAte) { _status.text = _aviso; return; }
+            _aviso = null;
+            // Sem nada sob o mouse: a propaganda do Aesir, a mesma linha que a lista mostra.
+            _status.text = Propaganda(VipList.VipListApi.IsLocalPlayerVip());
+        }
+
+        /// <summary>O que o Aesir da, para quem nao e ("Tambem no Aesir") e para quem e ("Tambem ativo").</summary>
+        private static string Propaganda(bool aesir) => aesir
+            ? "<color=#7fd08a>Aesir ativo:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais."
+            : "<color=#ffd75a>Seja Aesir:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir] e mais. <color=#ffd75a>Clique em Seja Aesir.</color>";
+
         private static void Posicionar()
         {
-            if (_painel == null) return;
+            if (_painel == null || _icones) return;
             bool esquerda = Posicao != null && Posicao.Value == Lado.Esquerda;
             Vector2 ancora = new Vector2(esquerda ? 0f : 1f, 0.5f);
             _painel.anchorMin = ancora;
@@ -399,6 +599,36 @@ namespace Deadheim.Menus
             if (_canvas == null || player == null) return;
 
             bool aesir = VipList.VipListApi.IsLocalPlayerVip();
+            if (_icones)
+            {
+                if (_cabAesir != null)
+                    _cabAesir.text = aesir ? "<color=#7fd08a>ativo</color>" : "exclusivo de quem apoia o servidor";
+                if (_extras != null) _extras.text = Propaganda(aesir);
+                if (_rotuloAesir != null) _rotuloAesir.text = aesir ? "Ver todos os benefícios" : "Seja Aesir: como apoiar";
+                foreach (Entrada e in _entradas)
+                {
+                    try
+                    {
+                        bool visivel = e.Visivel == null || e.Visivel();
+                        if (e.Objeto.activeSelf != visivel) e.Objeto.SetActive(visivel);
+                        if (!visivel) continue;
+                        bool travado = e.Travado(aesir);
+                        string motivo = travado ? null : e.Indisponivel?.Invoke();
+                        e.Rotulo.color = e.Destaque ? Dourado : travado || motivo != null ? ValheimUi.Muted : ValheimUi.Orange;
+                        e.IconeImg.color = travado ? Travado : motivo != null ? Apagado : Color.white;
+                        if (e.Destaque) e.Rotulo.text = aesir ? "Aesir" : "Seja Aesir";
+                        // As linhas do menu Aesir (montadas como na lista).
+                        if (e.Sub != null) e.Sub.text = travado ? "Exclusivo Aesir: clique para conhecer" : motivo ?? e.Detalhe?.Invoke() ?? "";
+                        if (e.Marca != null && !e.Destaque && e.Sub != null) e.Marca.text = travado ? "AESIR" : "";
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning("[Deadheim] Central: '" + e.Titulo + "' falhou ao atualizar: " + ex.Message);
+                    }
+                }
+                MostrarSobre();
+                return;
+            }
             _nome.text = player.GetPlayerName();
             _selo.text = aesir ? "AESIR" : "<color=#9e9480>VIAJANTE</color>";
             _cabAesir.text = aesir
@@ -430,8 +660,8 @@ namespace Deadheim.Menus
             }
 
             _extras.text = aesir
-                ? "<color=#7fd08a>Também ativo:</color> colheita em área (Shift+E), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais."
-                : "<color=#ffd75a>Também no Aesir:</color> colheita em área (Shift+E), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais.";
+                ? "<color=#7fd08a>Também ativo:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais."
+                : "<color=#ffd75a>Também no Aesir:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais.";
 
             _rotuloAesir.text = aesir ? "Você é Aesir · benefícios" : "Seja Aesir";
 
@@ -487,6 +717,8 @@ namespace Deadheim.Menus
             public string Icone;
             public bool Aesir;
             public bool FechaInventario;
+            /// <summary>O convite do Aesir na barra de icones (moldura e titulo dourados).</summary>
+            public bool Destaque;
 
             /// <summary>null = sempre. Falso esconde a linha (mod ausente, funcao desligada no servidor).</summary>
             public Func<bool> Visivel;

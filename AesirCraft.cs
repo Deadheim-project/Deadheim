@@ -1,5 +1,6 @@
 using BepInEx.Configuration;
 using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -38,12 +39,18 @@ namespace Deadheim
         private static float _cachedAt = -10f;
         private static Vector3 _cachedOrigin;
         private static bool _busy;
+        // Os Have* rodam a cada frame com o painel aberto: log com trava de tempo.
+        private static float _logNegado = -999f, _logReceita = -999f, _logPeca = -999f;
 
         private static bool Active(Player player)
         {
             if (player == null || player != Player.m_localPlayer) return false;
             if (AesirCraftConfig.Enabled == null || !AesirCraftConfig.Enabled.Value) return false;
-            if (AesirCraftConfig.VipOnly.Value && !VipList.VipListApi.IsLocalPlayerVip()) return false;
+            if (AesirCraftConfig.VipOnly.Value && !VipList.VipListApi.IsLocalPlayerVip())
+            {
+                if (AesirLog.Pode(ref _logNegado, 300f)) AesirLog.D(13, "baus na fabricacao negados: nao e VIP (VipOnly=true).");
+                return false;
+            }
             return true;
         }
 
@@ -101,6 +108,12 @@ namespace Deadheim
         {
             private static void Postfix(Player __instance, Recipe piece, bool discover, int qualityLevel, ref bool __result)
             {
+                try { Conferir(__instance, piece, discover, qualityLevel, ref __result); }
+                catch (Exception e) { AesirLog.Erro(13, e); }
+            }
+
+            private static void Conferir(Player __instance, Recipe piece, bool discover, int qualityLevel, ref bool __result)
+            {
                 if (__result || discover || _busy || piece == null) return;
                 if (!Active(__instance)) return;
                 Inventory inv = __instance.GetInventory();
@@ -117,6 +130,8 @@ namespace Deadheim
                     if (have + InChests(__instance, name) < need) return;   // continua faltando
                 }
                 __result = true;
+                if (AesirLog.Pode(ref _logReceita, 10f))
+                    AesirLog.D(13, "receita " + piece.m_item?.name + " liberada contando os baus (" + Nearby(__instance).Count + " bau(s) no raio de " + AesirCraftConfig.Radius.Value + " m).");
             }
         }
 
@@ -127,6 +142,12 @@ namespace Deadheim
         private static class HavePieceRequirementsPatch
         {
             private static void Postfix(Player __instance, Piece piece, Player.RequirementMode mode, ref bool __result)
+            {
+                try { Conferir(__instance, piece, mode, ref __result); }
+                catch (Exception e) { AesirLog.Erro(13, e); }
+            }
+
+            private static void Conferir(Player __instance, Piece piece, Player.RequirementMode mode, ref bool __result)
             {
                 if (__result || _busy || piece == null || mode != Player.RequirementMode.CanBuild) return;
                 if (!Active(__instance)) return;
@@ -144,6 +165,8 @@ namespace Deadheim
                     if (have + InChests(__instance, name) < need) return;   // continua faltando
                 }
                 __result = true;
+                if (AesirLog.Pode(ref _logPeca, 10f))
+                    AesirLog.D(13, "peca " + Utils.GetPrefabName(piece.gameObject) + " liberada contando os baus (" + Nearby(__instance).Count + " bau(s) no raio de " + AesirCraftConfig.Radius.Value + " m).");
             }
         }
 
@@ -158,6 +181,7 @@ namespace Deadheim
                 if (multiplier < 1) multiplier = 1;
 
                 _busy = true;
+                var tirados = new List<string>();
                 try
                 {
                     foreach (Piece.Requirement req in requirements)
@@ -175,11 +199,14 @@ namespace Deadheim
                             if (ci == null) continue;
                             int take = Mathf.Min(missing, ci.CountItems(name, -1, false));
                             if (take <= 0) continue;
-                            if (AesirChests.Take(c, name, take)) missing -= take;
+                            if (AesirChests.Take(c, name, take)) { missing -= take; tirados.Add(take + "x " + name); }
                         }
+                        if (missing > 0) tirados.Add("faltaram " + missing + "x " + name);
                     }
                     _cachedAt = -10f;   // os baus mudaram: refaz a lista na proxima consulta
+                    if (tirados.Count > 0) AesirLog.D(13, "consumiu dos baus: " + string.Join(", ", tirados) + ".");
                 }
+                catch (Exception e) { AesirLog.Erro(13, e); }
                 finally { _busy = false; }
             }
         }

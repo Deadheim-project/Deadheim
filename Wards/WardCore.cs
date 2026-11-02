@@ -309,13 +309,27 @@ namespace Deadheim.Wards
             return null;
         }
 
+        private static readonly System.Collections.Generic.Dictionary<PrivateArea, float> _nextFlash
+            = new System.Collections.Generic.Dictionary<PrivateArea, float>();
+
+        /// <summary>Pisca o escudo, no maximo uma vez por segundo e meio por ward.</summary>
+        public static void Flash(PrivateArea ward)
+        {
+            if (ward == null) return;
+            if (_nextFlash.TryGetValue(ward, out float next) && Time.time < next) return;
+            _nextFlash[ward] = Time.time + 1.5f;
+            ward.FlashShield(false);
+        }
+
         /// <summary>Atalho dos patches: bloqueia, pisca o escudo e avisa o jogador local.</summary>
         public static bool IsBlocked(Vector3 point, Player player, string message = null)
         {
             PrivateArea ward = GetProtectingWard(point, player);
             if (ward == null) return false;
 
-            ward.FlashShield(false);
+            // Mob ou fogo mexendo numa plantacao protegida e bloqueado sem piscar: sem jogador
+            // o escudo ficava piscando enquanto durasse o ataque.
+            if (player != null) Flash(ward);
             if (!string.IsNullOrEmpty(message) && player != null && player == Player.m_localPlayer)
                 player.Message(MessageHud.MessageType.Center, message);
             return true;

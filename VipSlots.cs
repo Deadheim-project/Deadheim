@@ -72,7 +72,27 @@ namespace Deadheim
         /// <summary>Ajusta o resultado de ZNet.GetNrOfPlayers() no teste de lotacao do RPC_PeerInfo.</summary>
         public static int Ocupacao(int n)
         {
-            return Vaga(_hostAtual) ? n - VipSlotsConfig.ReservedSlots.Value : n;
+            try
+            {
+                int limite = Limite();
+                if (Vaga(_hostAtual))
+                {
+                    int reservadas = VipSlotsConfig.ReservedSlots.Value;
+                    if (n >= limite)
+                        AesirLog.D(19, "VIP " + _hostAtual + " entrando com o servidor cheio (" + n + "/" + limite + "): "
+                            + (n - reservadas < limite ? "entra pela vaga reservada (+" + reservadas + ")." : "recusado, as " + reservadas + " vagas reservadas ja estao ocupadas."));
+                    return n - reservadas;
+                }
+                if (n >= limite)
+                    AesirLog.D(19, "servidor cheio (" + n + "/" + limite + "): " + _hostAtual + " recusado ("
+                        + (VipSlotsConfig.Enabled == null || !VipSlotsConfig.Enabled.Value ? "VipSlots Enabled=false" : "nao e VIP") + ").");
+                return n;
+            }
+            catch (System.Exception e)
+            {
+                AesirLog.Erro(19, e);
+                return n;
+            }
         }
 
         [HarmonyPatch(typeof(ZNet), "RPC_PeerInfo")]

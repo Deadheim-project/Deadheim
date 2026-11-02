@@ -45,52 +45,83 @@ namespace Deadheim
 			private static void Postfix()
 			{
 				new Terminal.ConsoleCommand("retreat", "go back home (Aesir: 'retreat 2' usa o segundo ponto)", (Terminal.ConsoleEvent)(args =>
-				{
-                    // Aesir 18: "retreat 2" usa o segundo ponto, se a chave estiver ligada.
-                    int ponto = args.Length > 1 && args[1] == "2" ? 2 : 1;
-                    string recusa = TentarRetreat(ponto);
-                    if (recusa != null) args.Context.AddString(recusa);
-                }));
+					Usar(args.Length > 1 && args[1] == "2" ? 2 : 1, args.Context.AddString)));
 			}
 		}
 
         /// <summary>
-        /// O /retreat inteiro, para o comando e para o botao da Central Deadheim (hub do inventario).
-        /// Devolve null quando o teleporte saiu, ou o motivo de nao ter saido.
+        /// O /retreat inteiro, para o comando, o botao da Central Deadheim (hub do inventario) e a tecla
+        /// (AesirTeclas). Devolve null quando o teleporte saiu, ou o motivo de nao ter saido. Cada recusa
+        /// vai ao log do Aesir 18 (e ao do servidor).
         /// </summary>
         public static string TentarRetreat(int ponto)
         {
-            Player player = Player.m_localPlayer;
-            if (player == null) return "Entre no mundo primeiro.";
-            if (!VipList.VipListApi.IsLocalPlayerVip()) return "Only Aesir can use this command";
-
-            if (ponto == 2 && (AesirConfig.Aesir18DoisPontos == null || !AesirConfig.Aesir18DoisPontos.Value))
-                return "Segundo ponto desligado neste servidor.";
-
-            // allowAllItems e' novo no Valheim 1.0. false mantem a regra de sempre --
-            // minerio e outros itens marcados continuam impedindo o teleporte; true
-            // ignoraria essa restricao, que nao e' o que este comando fazia.
-            if (!player.IsTeleportable(false)) return "Can't teleport";
-
-            // Cooldown, combate e cacado: o retreat nao pode ser a saida de uma luta.
-            string refusal = Pvp.PvpModule.RetreatRefusal(player);
-            if (refusal != null)
+            try
             {
-                player.Message(MessageHud.MessageType.Center, refusal);
-                return refusal;
+                Player player = Player.m_localPlayer;
+                if (player == null) return "Entre no mundo primeiro.";
+                if (!VipList.VipListApi.IsLocalPlayerVip())
+                {
+                    AesirLog.D(18, "retreat negado: nao e VIP.");
+                    return "Only Aesir can use this command";
+                }
+
+                // Aesir 18: o ponto 2 so com a chave ligada.
+                if (ponto == 2 && (AesirConfig.Aesir18DoisPontos == null || !AesirConfig.Aesir18DoisPontos.Value))
+                {
+                    AesirLog.D(18, "retreat 2 negado: Aesir18DoisPontos=false.");
+                    return "Segundo ponto desligado neste servidor.";
+                }
+
+                // allowAllItems e' novo no Valheim 1.0. false mantem a regra de sempre --
+                // minerio e outros itens marcados continuam impedindo o teleporte; true
+                // ignoraria essa restricao, que nao e' o que este comando fazia.
+                if (!player.IsTeleportable(false))
+                {
+                    AesirLog.D(18, "retreat " + ponto + " negado: carrega item nao teleportavel.");
+                    return "Can't teleport";
+                }
+
+                // Cooldown, combate e cacado: o retreat nao pode ser a saida de uma luta.
+                string refusal = Pvp.PvpModule.RetreatRefusal(player);
+                if (refusal != null)
+                {
+                    AesirLog.D(18, "retreat " + ponto + " negado pelo PvP: " + refusal);
+                    player.Message(MessageHud.MessageType.Center, refusal);
+                    return refusal;
+                }
+
+                Vector3 teleportPosition = GetHearthStonePosition(ponto);
+                if (teleportPosition == Vector3.zero)
+                {
+                    AesirLog.D(18, "retreat " + ponto + " negado: ponto " + ponto + " nao gravado (ou ilegivel).");
+                    return ponto == 2 ? "Voce precisa definir o segundo ponto (Shift+" + TeclaDoPonto + " na cama)." : "You need to set hearthstone spawn point";
+                }
+
+                // TeleportTo devolve false se ja estiver teleportando, na recarga do vanilla ou se o
+                // PvP recusar: a recarga do retreat so conta quando o teleporte sai (B3).
+                if (!player.TeleportTo(teleportPosition, player.transform.rotation, true))
+                {
+                    AesirLog.D(18, "retreat " + ponto + ": TeleportTo recusou (ja teleportando ou recarga).");
+                    return "O teleporte nao saiu agora; tente de novo em instantes.";
+                }
+
+                Pvp.PvpModule.MarkRetreatUsed(player);
+                AesirLog.D(18, "retreat " + ponto + ": teleportou.");
+                return null;
             }
+            catch (Exception e)
+            {
+                AesirLog.Erro(18, e);
+                return "Erro no retreat; tente de novo.";
+            }
+        }
 
-            Vector3 teleportPosition = GetHearthStonePosition(ponto);
-            if (teleportPosition == Vector3.zero)
-                return ponto == 2 ? "Voce precisa definir o segundo ponto (Shift+P na cama)." : "You need to set hearthstone spawn point";
-
-            // TeleportTo devolve false se ja estiver teleportando, na recarga do vanilla ou se o
-            // PvP recusar: a recarga do retreat so conta quando o teleporte sai (B3).
-            if (!player.TeleportTo(teleportPosition, player.transform.rotation, true))
-                return "O teleporte nao saiu agora; tente de novo em instantes.";
-
-            Pvp.PvpModule.MarkRetreatUsed(player);
-            return null;
+        /// <summary>O TentarRetreat com a recusa no console ou na tela (<paramref name="dizer"/>).</summary>
+        internal static void Usar(int ponto, Action<string> dizer)
+        {
+            string recusa = TentarRetreat(ponto);
+            if (recusa != null) dizer?.Invoke(recusa);
         }
 
 
@@ -119,8 +150,16 @@ namespace Deadheim
                     if (!HearthstoneCarregado)
                         __result += Localization.instance.Localize($"\n[<color=yellow><b>{tecla}</b></color>] Definir ponto de retreat");
                     // Aesir 18: segundo ponto, com Shift+tecla.
-                    if (AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value && VipList.VipListApi.IsLocalPlayerVip())
+                    bool vip = VipList.VipListApi.IsLocalPlayerVip();
+                    bool dois = AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value;
+                    if (dois && vip)
                         __result += Localization.instance.Localize($"\n[<color=yellow><b>Shift+{tecla}</b></color>] Definir o segundo ponto de retreat");
+                    // A volta ao ponto sai por tecla de qualquer lugar (AesirTeclas): a cama lembra quais.
+                    if (vip)
+                    {
+                        __result += AesirTeclas.Dica(AesirTeclas.Retreat, "Voltar ao ponto de retreat (de qualquer lugar)");
+                        if (dois) __result += AesirTeclas.Dica(AesirTeclas.Retreat2, "Voltar ao segundo ponto");
+                    }
                 }
             }
         }

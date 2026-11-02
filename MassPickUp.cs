@@ -37,10 +37,21 @@ namespace MassFarming
         [HarmonyPatch(typeof(Player), "Interact")]
         public static void Prefix(Player __instance, GameObject go, bool hold, bool alt)
         {
+            try { Colher(__instance, go, hold, alt); }
+            catch (System.Exception e) { Deadheim.AesirLog.Erro(5, e); }
+        }
+
+        private static void Colher(Player __instance, GameObject go, bool hold, bool alt)
+        {
             // Aesir 5 (14/10/2026, decisao do usuario): colheita/extracao em massa so para VIP.
             if (Deadheim.AesirConfig.Aesir5SoVip != null && Deadheim.AesirConfig.Aesir5SoVip.Value
                 && !VipList.VipListApi.IsLocalPlayerVip())
+            {
+                // So loga a tentativa de verdade (Shift+E de quem esta jogando), nao toda interacao.
+                if (!hold && __instance == Player.m_localPlayer && Input.GetKey(KeyCode.LeftShift))
+                    Deadheim.AesirLog.D(5, "Shift+E negado: nao e VIP (Aesir5SoVip=true).");
                 return;
+            }
 
             if (__instance.InAttack() || __instance.InDodge())
             {
@@ -62,6 +73,7 @@ namespace MassFarming
             {
                 var interactMask = (int)m_interactMaskField.GetValue(__instance);
                 var colliders = Physics.OverlapSphere(go.transform.position, 10f, interactMask);
+                int colhidos = 0;
 
                 foreach (var collider in colliders)
                 {
@@ -70,27 +82,35 @@ namespace MassFarming
                     {
                         if (nearbyPickable.m_itemPrefab.name == targetedPickable.m_itemPrefab.name)
                         {
+                            // O retorno do Interact e se a animacao toca, nao se colheu: conta antes.
+                            if (nearbyPickable.CanBePicked()) colhidos++;
                             nearbyPickable.Interact(__instance, false, alt);
                         }
                     }
                 }
+                Deadheim.AesirLog.D(5, "colheita em massa: " + colhidos + "x " + targetedPickable.m_itemPrefab.name + " a mais num raio de 10 m.");
             }
             else if (interactible is Beehive beehive)
             {
                 var interactMask = (int)m_interactMaskField.GetValue(__instance);
                 var colliders = Physics.OverlapSphere(go.transform.position, 10f, interactMask);
+                var vistas = new System.Collections.Generic.HashSet<Beehive>();
+                int semAcesso = 0;
 
                 foreach (var collider in colliders)
                 {
                     if (collider?.gameObject?.GetComponentInParent<Beehive>() is Beehive nearbyBeehive &&
-                        nearbyBeehive != beehive)
+                        nearbyBeehive != beehive && vistas.Add(nearbyBeehive))
                     {
                         if (PrivateArea.CheckAccess(nearbyBeehive.transform.position))
                         {
                             _ExtractMethod.Invoke(nearbyBeehive, null);
                         }
+                        else semAcesso++;
                     }
                 }
+                Deadheim.AesirLog.D(5, "extracao em massa: " + (vistas.Count - semAcesso) + " colmeia(s) a mais"
+                    + (semAcesso > 0 ? ", " + semAcesso + " sem acesso (ward)" : "") + ".");
             }
         }
     }

@@ -285,8 +285,12 @@ namespace Deadheim
         private static void Reply(long peerId, ZPackage pkg)
             => ZRoutedRpc.instance.InvokeRoutedRPC(peerId, RpcToClient, pkg);
 
+        // Jogador do pedido que o servidor esta tratando agora (so para o log das recusas).
+        private static string _nomeAtual = "";
+
         private static ZPackage Head(string op, bool ok, string msg)
         {
+            if (!ok && !string.IsNullOrEmpty(msg)) AesirLog.D(24, _nomeAtual + ": '" + op + "' recusado pelo servidor: " + msg);
             var pkg = new ZPackage();
             pkg.Write(op); pkg.Write(ok); pkg.Write(msg ?? "");
             return pkg;
@@ -309,8 +313,9 @@ namespace Deadheim
 
             try
             {
+                _nomeAtual = peer.Name;
                 string op = pkg.ReadString();
-                if (!Enabled.Value) { Reply(real, Head(op, false, "Plantas desabilitadas no servidor.")); return; }
+                if (!Enabled.Value) { Reply(real, Head(op, false, "Plantas desabilitadas no servidor (Blueprints Enabled=false).")); return; }
 
                 bool vip = IsVipPeer(real);
                 // VIP expirado: ainda lista e apaga, mas nao salva nem coloca.
@@ -339,7 +344,7 @@ namespace Deadheim
             }
             catch (Exception ex)
             {
-                Debug.LogError("[Deadheim Plantas] erro no RPC do servidor: " + ex);
+                AesirLog.Erro(24, ex);
             }
         }
 
@@ -375,7 +380,7 @@ namespace Deadheim
             }
             if (idx >= 0) list[idx] = planta; else list.Add(planta);
             SaveFile();
-            Debug.Log("[Deadheim Plantas] " + peer.Name + " salvou '" + name + "' (" + planta.Pecas.Count + " pecas).");
+            AesirLog.D(24, peer.Name + " salvou '" + name + "' (" + planta.Pecas.Count + " de " + n + " pecas aceitas).");
             SendList(peerId, peer.PlayerId, true, "Planta '" + name + "' salva (" + planta.Pecas.Count + " pecas).");
         }
 
@@ -384,7 +389,7 @@ namespace Deadheim
             string name = pkg.ReadString();
             List<Planta> list = ListOf(peer.PlayerId);
             int removed = list.RemoveAll(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (removed > 0) SaveFile();
+            if (removed > 0) { SaveFile(); AesirLog.D(24, peer.Name + " apagou '" + name + "'."); }
             SendList(peerId, peer.PlayerId, removed > 0, removed > 0 ? "Planta apagada." : "Planta nao encontrada.");
         }
 
@@ -416,7 +421,7 @@ namespace Deadheim
             foreach (Peca p in planta.Pecas) WritePeca(ok, p);
             ok.Write(anchor.x); ok.Write(anchor.y); ok.Write(anchor.z); ok.Write(yaw);
             Reply(peerId, ok);
-            Debug.Log("[Deadheim Plantas] " + peer.Name + " comecou a colocar '" + name + "'.");
+            AesirLog.D(24, peer.Name + " comecou a colocar '" + name + "' (" + planta.Pecas.Count + " pecas).");
         }
 
         private static void ServerCheck(long peerId, Pvp.PvpPeer peer, ZPackage pkg)
@@ -483,7 +488,18 @@ namespace Deadheim
         internal class Entry { public string Name; public int Count; }
 
         internal static readonly List<Entry> Saved = new List<Entry>();
-        internal static string Status = "";
+        private static string _status = "";
+
+        /// <summary>A mensagem da janela. Cada mensagem nova tambem vai ao log do Aesir 24.</summary>
+        internal static string Status
+        {
+            get => _status;
+            set
+            {
+                if (!string.IsNullOrEmpty(value) && value != _status) AesirLog.D(24, value);
+                _status = value ?? "";
+            }
+        }
         internal static bool ListLoaded;
 
         internal class Run
@@ -637,6 +653,12 @@ namespace Deadheim
         /// <summary>Chamado todo frame pelo PlantasUi (so no cliente).</summary>
         internal static void Tick()
         {
+            try { TickColocacao(); }
+            catch (Exception e) { AesirLog.Erro(24, e); }
+        }
+
+        private static void TickColocacao()
+        {
             Run r = Current;
             Player lp = Player.m_localPlayer;
             if (r == null) return;
@@ -771,7 +793,7 @@ namespace Deadheim
             }
             catch (Exception ex)
             {
-                Debug.LogError("[Deadheim Plantas] erro no RPC do cliente: " + ex);
+                AesirLog.Erro(24, ex);
             }
         }
 
