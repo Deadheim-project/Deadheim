@@ -44,14 +44,18 @@ O admin muda tudo isso na aba Admin, ao vivo, sem reiniciar. **Preencha `DoacaoP
 
 ## Teclas sem padrao
 
+**RaidSystem 2.2.4**: sem tecla nenhuma. PageUp (painel da guilda) e PageDown (Ranking de Guerra)
+sairam do codigo junto com a secao `[9 - Client]`; os dois paineis abrem so pela Central (Guilda e
+Ranking de Guerra) e fecham no botao Close ou com ESC.
+
+Nos outros mods:
+
 As teclas que abriam menus continuam na config de cada mod, mas **vazias por padrao** (None). Quem
 quiser um atalho define a tecla em ESC > Deadheim > Meus ajustes. Os nomes das chaves mudaram para a
 tecla gravada num cfg antigo nao voltar sozinha.
 
 | Era | Mod (versao) | Chave nova (vazia) | Agora abre por |
 | --- | --- | --- | --- |
-| PageUp | RaidSystem 2.2.4 | `[9 - Client] Menu Shortcut` | Central: Guilda |
-| PageDown | RaidSystem 2.2.4 | `[9 - Client] Scoreboard Shortcut` | Central: Ranking de Guerra |
 | J | NpcValheim 0.1.90 | `[Quests] AtalhoDiario` | Central: Diario de missoes |
 | F7 | NpcValheim 0.1.90 | `[VIP] AtalhoLoja` | Central: Loja Deadcoins (Aesir) |
 | F8 | NpcValheim 0.1.90 | `[Admin] AtalhoPainel` | Admin: Painel de Admin |

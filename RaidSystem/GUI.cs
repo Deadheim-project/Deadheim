@@ -65,14 +65,6 @@ namespace RaidSystem
             ToggleScoreboard();
         }
 
-        public static bool MenuAberto => _menu != null && _menu.activeSelf;
-        public static bool ScoreboardAberto => _scoreboard != null && _scoreboard.activeSelf;
-
-        public static void FecharScoreboard()
-        {
-            if (_scoreboard != null) _scoreboard.SetActive(false);
-        }
-
         /// <summary>Algum painel do RaidSystem na tela: o cursor fica livre e o personagem parado.</summary>
         public static bool AlgumAberto =>
             (_menu != null && _menu.activeSelf) || (_scoreboard != null && _scoreboard.activeSelf);
