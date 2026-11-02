@@ -187,7 +187,7 @@ namespace Deadheim.Ranking
 
         private static string MontarResumo(RankingRede.Foto foto, Player player)
         {
-            RankingContexto ctx = RankingRede.Contexto(foto.TemGuerra, foto.TemNivel);
+            RankingContexto ctx = RankingRede.Contexto(foto.TemGuerra, foto.TemNivel, foto.TemArena, foto.TemMissoes);
             Categoria lenda = Categorias.Todas(ctx).FirstOrDefault(c => c.Id == Categorias.Lenda);
             if (lenda == null) return "Os melhores do mundo, em cada categoria";
             List<Linha> linhas = Classificacao.Classificar(foto.Jogadores, lenda, false);
@@ -538,7 +538,9 @@ namespace Deadheim.Ranking
         private void Redesenhar()
         {
             RankingRede.Foto foto = RankingRede.Atual;
-            _ctx = RankingRede.Contexto(foto != null && foto.TemGuerra, foto != null && foto.TemNivel);
+            _ctx = foto != null
+                ? RankingRede.Contexto(foto.TemGuerra, foto.TemNivel, foto.TemArena, foto.TemMissoes)
+                : RankingRede.Contexto(false, false, false, false);
             _cats = Categorias.Todas(_ctx);
             RefazerCategorias();
 
@@ -609,7 +611,7 @@ namespace Deadheim.Ranking
                 }
                 else if (foto != null && b.Id == IdFeitos)
                 {
-                    pos = foto.Feitos.Count + "/" + _ctx.OrdemChefes.Count;
+                    pos = Math.Max(foto.Feitos.Count, foto.ChefesDoMundo.Count) + "/" + _ctx.OrdemChefes.Count;
                 }
                 b.Posicao.text = pos;
             }
@@ -800,13 +802,18 @@ namespace Deadheim.Ranking
                 string nomeChefe = Esc(Localizar(chefe)) + "  <size=13><color=#9e9480>" +
                                    (derrotaram == 0 ? "ninguém derrotou ainda" : derrotaram == 1 ? "1 viking derrotou" : derrotaram + " vikings derrotaram") +
                                    "</color></size>";
-                string quem = f == null ? "<color=#9e9480>seja o primeiro!</color>"
-                    : Esc(f.Nome) + (string.IsNullOrEmpty(f.Guilda) ? "" : " <color=#9e9480>[" + Esc(f.Guilda) + "]</color>");
-                string quando = f == null ? "" : f.Antigo ? "antes do ranking · " + Data(f.Em, false) : Data(f.Em, true);
+                bool mundoDerrotou = foto.ChefesDoMundo.Contains(chefe);
+                string quem = f != null
+                    ? Esc(f.Nome) + (string.IsNullOrEmpty(f.Guilda) ? "" : " <color=#9e9480>[" + Esc(f.Guilda) + "]</color>")
+                    : mundoDerrotou ? "<color=#9e9480>derrotado, sem registro</color>" : "<color=#9e9480>seja o primeiro!</color>";
+                string quando = f == null ? (mundoDerrotou ? "antes do ranking" : "")
+                    : f.Antigo ? "antes do ranking · " + Data(f.Em, false) : Data(f.Em, true);
                 PreencherLinha(_linhas[i], i, meu, i + 1, "", Trofeu(chefe), nomeChefe, quem, quando,
                     f != null ? foto.Achar(f.Id) : null);
             }
             _vazio.text = chefes.Count == 0 ? "Nenhum chefe configurado (PvP > BossOrder)." : "";
+            _descricaoCabecalho.text = "O primeiro viking a derrotar cada chefe neste mundo." +
+                (foto.DiaDoMundo > 0 ? $"  <color=#ffd75a>Dia {foto.DiaDoMundo} · o mundo já derrotou {foto.ChefesDoMundo.Count} de {chefes.Count} chefes.</color>" : "");
 
             Rodape(meus > 0 ? meus.ToString() : "—",
                 meus > 0
@@ -954,7 +961,8 @@ namespace Deadheim.Ranking
             }
             int idade = Mathf.Max(0, Mathf.RoundToInt(Time.unscaledTime - RankingRede.RecebidaEm));
             string quando = idade < 5 ? "atualizado agora" : idade < 60 ? $"atualizado há {idade} s" : $"atualizado há {idade / 60} min";
-            string mundo = string.IsNullOrEmpty(foto.Mundo) ? "" : Esc(foto.Mundo) + "  ·  ";
+            string mundo = (string.IsNullOrEmpty(foto.Mundo) ? "" : Esc(foto.Mundo) + "  ·  ")
+                           + (foto.DiaDoMundo > 0 ? "dia " + foto.DiaDoMundo + "  ·  " : "");
             _subtitulo.text = $"{mundo}{foto.Jogadores.Count} vikings  ·  <color=#7fd08a>{foto.Online.Count} online</color>  ·  {quando}  ·  <color=#7a7262>setas do teclado trocam a categoria · clique num nome para ver a ficha</color>";
         }
 

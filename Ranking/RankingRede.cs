@@ -41,7 +41,7 @@ namespace Deadheim.Ranking
         private const string OpMensagem = "msg";
         private const string OpFeito = "feito";
 
-        private const int VersaoFoto = 1;
+        private const int VersaoFoto = 2;
         private const float RelatoCadaSeg = 60f;
         private const float RelatoMinimoSeg = 15f;
         private const float PedidoMinimoSeg = 3f;
@@ -144,7 +144,6 @@ namespace Deadheim.Ranking
 
         private static float _proximoRelato = 5f;
         private static float _ultimoPedido = -999f;
-        private static bool _chavesLogadas;
 
         private static void LimparCliente()
         {
@@ -244,114 +243,11 @@ namespace Deadheim.Ranking
             try
             {
                 PlayerProfile perfil = Game.instance != null ? Game.instance.GetPlayerProfile() : null;
-                object stats = Primeiro(Campo(perfil, "m_playerStats"));
-                Dictionary<string, double> contadores = Contadores(stats);
-
-                if (!_chavesLogadas && contadores.Count > 0)
-                {
-                    _chavesLogadas = true;
-                    Debug.Log("[Deadheim] Ranking: contadores do perfil: " + string.Join(", ", contadores.Keys.OrderBy(k => k)));
-                }
-
-                Copiar(contadores, relato, Chave.Monstros, "EnemyKills");
-                Copiar(contadores, relato, Chave.Mortes, "Deaths");
-                Copiar(contadores, relato, Chave.Construcoes, "Builds");
-                if (!Copiar(contadores, relato, Chave.Fabricacoes, "CraftsOrUpgrades"))
-                    relato[Chave.Fabricacoes] = Ler(contadores, "Crafts") + Ler(contadores, "Upgrades");
-                Copiar(contadores, relato, Chave.Arvores, "Tree", "TreeChops");
-                Copiar(contadores, relato, Chave.Mineracao, "MineHits", "Mines");
-                if (!Copiar(contadores, relato, Chave.Distancia, "DistanceTraveled"))
-                    relato[Chave.Distancia] = Ler(contadores, "DistanceWalk") + Ler(contadores, "DistanceRun")
-                                              + Ler(contadores, "DistanceSail") + Ler(contadores, "DistanceAir");
-                Copiar(contadores, relato, Chave.Navegacao, "DistanceSail");
-                Copiar(contadores, relato, Chave.Domados, "CreatureTamed");
-
-                // Chefes: abates por nome interno, no mesmo lugar que a faixa de PvP le (PvpBosses).
-                IDictionary inimigos = Primeiro(Campo(stats, "m_enemyStats")) as IDictionary;
-                if (inimigos != null)
-                {
-                    int distintos = 0;
-                    double abates = 0d;
-                    foreach (string chefe in Pvp.PvpBosses.Order)
-                    {
-                        if (!inimigos.Contains(chefe)) continue;
-                        double n = Convert.ToDouble(inimigos[chefe]);
-                        if (n <= 0d) continue;
-                        distintos++;
-                        abates += n;
-                        relato[Chave.PrefixoChefe + chefe] = n;
-                    }
-                    relato[Chave.Chefes] = distintos;
-                    relato[Chave.ChefesAbates] = abates;
-                }
+                RankingPerfil.LerEstatisticas(perfil, relato);
             }
             catch (Exception ex) { Debug.LogWarning("[Deadheim] Ranking: perfil ilegivel: " + ex.Message); }
 
             return relato;
-        }
-
-        private static object Campo(object dono, string nome)
-        {
-            if (dono == null) return null;
-            FieldInfo campo = dono.GetType().GetField(nome, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            return campo?.GetValue(dono);
-        }
-
-        /// <summary>Lista ou vetor (um por preset de mundo): o primeiro. Outro valor: ele mesmo.</summary>
-        private static object Primeiro(object valor)
-        {
-            if (valor is IDictionary) return valor;
-            if (valor is IList lista) return lista.Count > 0 ? lista[0] : null;
-            return valor;
-        }
-
-        /// <summary>O dicionario de contadores (chave = PlayerStatType): m_stats, ou o primeiro com chave enum.</summary>
-        private static Dictionary<string, double> Contadores(object stats)
-        {
-            var saida = new Dictionary<string, double>(StringComparer.Ordinal);
-            if (stats == null) return saida;
-
-            IDictionary mapa = stats as IDictionary ?? Primeiro(Campo(stats, "m_stats")) as IDictionary;
-            if (mapa == null)
-            {
-                foreach (FieldInfo campo in stats.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                {
-                    IDictionary candidato = Primeiro(campo.GetValue(stats)) as IDictionary;
-                    Type tipo = candidato?.GetType();
-                    if (tipo != null && tipo.IsGenericType && tipo.GetGenericArguments()[0].IsEnum)
-                    {
-                        mapa = candidato;
-                        break;
-                    }
-                }
-            }
-            if (mapa == null) return saida;
-
-            foreach (DictionaryEntry e in mapa)
-            {
-                if (e.Key == null) continue;
-                try { saida[e.Key.ToString()] = Convert.ToDouble(e.Value); }
-                catch (Exception) { }
-            }
-            return saida;
-        }
-
-        private static double Ler(Dictionary<string, double> contadores, string nome)
-        {
-            double v;
-            return contadores.TryGetValue(nome, out v) ? v : 0d;
-        }
-
-        private static bool Copiar(Dictionary<string, double> contadores, Dictionary<string, double> relato, string chave, params string[] nomes)
-        {
-            foreach (string nome in nomes)
-            {
-                double v;
-                if (!contadores.TryGetValue(nome, out v)) continue;
-                relato[chave] = v;
-                return true;
-            }
-            return false;
         }
 
         public static bool PedirAdmin(string acao, string nome)
@@ -489,11 +385,12 @@ namespace Deadheim.Ranking
                 _fotoPronta = null;
                 _ultimoRelatoDe.Clear();
                 _ultimoPedidoDe.Clear();
+                RankingImportar.Limpar();
             }
         }
 
         /// <summary>O contexto das categorias, com a config de agora (pesos, chefes, mods presentes).</summary>
-        internal static RankingContexto Contexto(bool temGuerra, bool temNivel)
+        internal static RankingContexto Contexto(bool temGuerra, bool temNivel, bool temArena, bool temMissoes)
         {
             return new RankingContexto
             {
@@ -501,6 +398,8 @@ namespace Deadheim.Ranking
                 PesosLenda = RankingContexto.LerPesos(PesosLenda != null ? PesosLenda.Value : Categorias.PesosPadrao),
                 TemGuerra = temGuerra,
                 TemNivel = temNivel,
+                TemArena = temArena,
+                TemMissoes = temMissoes,
                 MostrarRiqueza = MostrarRiqueza == null || MostrarRiqueza.Value,
             };
         }
@@ -519,6 +418,14 @@ namespace Deadheim.Ranking
                 ContarOnline(passou);
             }
 
+            // O que o mundo ja tem guardado: perfis dos personagens, arena e missoes do NpcValheim.
+            try
+            {
+                double hora = Agora;
+                if (RankingImportar.Tick(Dados, hora, RankingTempo.Semana(hora, Fuso), EstaOnline, RegistrarFeito)) _sujo = true;
+            }
+            catch (Exception ex) { Debug.LogWarning("[Deadheim] Ranking: falha ao importar: " + ex.Message); }
+
             if (agora >= _proximoMinuto)
             {
                 _proximoMinuto = agora + 60f;
@@ -532,6 +439,33 @@ namespace Deadheim.Ranking
                 _proximoSalvar = agora + 120f;
                 Salvar();
             }
+        }
+
+        private static HashSet<long> _online = new HashSet<long>();
+        private static float _onlineEm = -999f;
+
+        private static bool EstaOnline(long id)
+        {
+            if (Time.realtimeSinceStartup - _onlineEm > 2f)
+            {
+                _onlineEm = Time.realtimeSinceStartup;
+                _online = new HashSet<long>(Pvp.PvpPeer.Online().Select(p => p.PlayerId));
+            }
+            return _online.Contains(id);
+        }
+
+        /// <summary>
+        /// Primeiro do mundo a derrotar um chefe (relato ao vivo ou perfil importado). Feito de
+        /// verdade e anunciado; o que ja vinha no historico fica marcado "antes do ranking".
+        /// </summary>
+        private static void RegistrarFeito(RankingJogador j, string chefe, bool antigo, double em)
+        {
+            RankingBase dados = Dados;
+            if (j == null || string.IsNullOrEmpty(chefe) || dados.Feito(chefe) != null) return;
+            dados.Feitos.Add(new RankingFeito { Chefe = chefe, Id = j.Id, Nome = j.Nome, Guilda = j.Guilda, Em = em, Antigo = antigo });
+            Debug.Log($"[Deadheim] Ranking: feito do mundo: {j.Nome} e o primeiro a derrotar {chefe}" + (antigo ? " (antes do ranking)." : "."));
+            if (!antigo) AnunciarFeito(j, chefe);
+            _sujo = true;
         }
 
         private static void ContarOnline(float segundos)
@@ -642,7 +576,7 @@ namespace Deadheim.Ranking
             if (dados.DiaFoto != dia)
             {
                 bool temNivel = dados.Jogadores.Any(j => j.Valor(Chave.Nivel) > 0d);
-                RankingRegras.FotoDoDia(dados, Categorias.Todas(Contexto(_temGuerra, temNivel)), dia);
+                RankingRegras.FotoDoDia(dados, Categorias.Todas(Contexto(_temGuerra, temNivel, RankingImportar.TemArena, RankingImportar.TemMissoes)), dia);
                 _sujo = true;
                 Debug.Log("[Deadheim] Ranking: posicoes do dia guardadas (setas de subiu/desceu).");
             }
@@ -704,13 +638,7 @@ namespace Deadheim.Ranking
                 Debug.Log($"[Deadheim] Ranking: primeiro relato de {j.Nome} ({j.Id}): " +
                           string.Join(" ", j.Valores.Where(p => !p.Key.StartsWith(Chave.PrefixoChefe, StringComparison.Ordinal))
                               .Select(p => p.Key + "=" + Numero.Inteiro(p.Value))));
-            foreach (KeyValuePair<string, bool> chefe in chefesNovos)
-            {
-                if (dados.Feito(chefe.Key) != null) continue;
-                dados.Feitos.Add(new RankingFeito { Chefe = chefe.Key, Id = j.Id, Nome = j.Nome, Guilda = j.Guilda, Em = hora, Antigo = chefe.Value });
-                Debug.Log($"[Deadheim] Ranking: feito do mundo: {j.Nome} e o primeiro a derrotar {chefe.Key}" + (chefe.Value ? " (registrado)." : "."));
-                if (!chefe.Value) AnunciarFeito(j, chefe.Key);
-            }
+            foreach (KeyValuePair<string, bool> chefe in chefesNovos) RegistrarFeito(j, chefe.Key, chefe.Value, hora);
             _sujo = true;
         }
 
@@ -773,6 +701,10 @@ namespace Deadheim.Ranking
                 InicioSemana = RankingTempo.InicioSemana(RankingTempo.Semana(agora, Fuso), Fuso),
                 TemGuerra = _temGuerra,
                 TemNivel = visiveis.Any(j => j.Valor(Chave.Nivel) > 0d),
+                TemArena = RankingImportar.TemArena,
+                TemMissoes = RankingImportar.TemMissoes,
+                DiaDoMundo = RankingImportar.DiaDoMundo(),
+                ChefesDoMundo = RankingImportar.ChefesDoMundo(),
                 Jogadores = visiveis,
                 Feitos = dados.Feitos,
                 Online = online,
@@ -877,6 +809,11 @@ namespace Deadheim.Ranking
             public double InicioSemana;
             public bool TemGuerra;
             public bool TemNivel;
+            public bool TemArena;
+            public bool TemMissoes;
+            /// <summary>Dia do mundo (como o jogo conta) e chefes que o mundo ja derrotou (chaves globais).</summary>
+            public int DiaDoMundo;
+            public List<string> ChefesDoMundo = new List<string>();
             public List<RankingJogador> Jogadores = new List<RankingJogador>();
             public List<RankingFeito> Feitos = new List<RankingFeito>();
             public HashSet<long> Online = new HashSet<long>();
@@ -912,6 +849,11 @@ namespace Deadheim.Ranking
                 pkg.Write(BitConverter.DoubleToInt64Bits(InicioSemana));
                 pkg.Write(TemGuerra);
                 pkg.Write(TemNivel);
+                pkg.Write(TemArena);
+                pkg.Write(TemMissoes);
+                pkg.Write(DiaDoMundo);
+                pkg.Write(ChefesDoMundo.Count);
+                foreach (string c in ChefesDoMundo) pkg.Write(c ?? "");
 
                 pkg.Write(chaves.Count);
                 foreach (string k in chaves) pkg.Write(k);
@@ -974,7 +916,12 @@ namespace Deadheim.Ranking
                     InicioSemana = BitConverter.Int64BitsToDouble(pkg.ReadLong()),
                     TemGuerra = pkg.ReadBool(),
                     TemNivel = pkg.ReadBool(),
+                    TemArena = pkg.ReadBool(),
+                    TemMissoes = pkg.ReadBool(),
+                    DiaDoMundo = pkg.ReadInt(),
                 };
+                int nChefesMundo = pkg.ReadInt();
+                for (int i = 0; i < nChefesMundo; i++) foto.ChefesDoMundo.Add(pkg.ReadString());
 
                 int nChaves = pkg.ReadInt();
                 var chaves = new string[nChaves];

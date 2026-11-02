@@ -21,6 +21,12 @@ namespace Deadheim.Ranking
         public const string Guerra = "guerra";
         public const string GuerraConquistas = "guerra.c";
         public const string Online = "online";
+        /// <summary>Arena do NpcValheim: maior rating pessoal, vitorias e partidas da temporada.</summary>
+        public const string Arena = "arena";
+        public const string ArenaVitorias = "arena.v";
+        public const string ArenaPartidas = "arena.j";
+        /// <summary>Missoes concluidas (NpcValheim), repetiveis contam cada vez.</summary>
+        public const string Missoes = "missoes";
 
         // ---- do perfil do jogador (o cliente relata; o servidor confere)
         public const string Habilidades = "skills";
@@ -44,7 +50,8 @@ namespace Deadheim.Ranking
 
         public static bool EhDoServidor(string chave) =>
             chave == PvpAbates || chave == PvpMortes || chave == PvpPk || chave == Guerra
-            || chave == GuerraConquistas || chave == Online;
+            || chave == GuerraConquistas || chave == Online || chave == Arena || chave == ArenaVitorias
+            || chave == ArenaPartidas || chave == Missoes;
     }
 
     /// <summary>
@@ -136,6 +143,11 @@ namespace Deadheim.Ranking
         public double UltimoRelato;
         /// <summary>Semana de BaseSemana (RankingTempo.Semana).</summary>
         public int Semana;
+        /// <summary>
+        /// Hora (UTC) do arquivo do personagem que o servidor importou por ultimo (ServerCharacters).
+        /// 0 = nunca importado. Arquivo com a mesma hora nao e lido de novo.
+        /// </summary>
+        public double UltimoPerfil;
 
         public Dictionary<string, double> Valores = new Dictionary<string, double>(StringComparer.Ordinal);
         /// <summary>Valores no comeco da semana: o ranking da semana e a diferenca.</summary>
@@ -248,6 +260,8 @@ namespace Deadheim.Ranking
             if (j == null || relato == null) return chefesNovos;
 
             bool primeiroRelato = j.UltimoRelato <= 0d;
+            // Sem historico nenhum (nem relato, nem perfil importado): o que chega e o passado.
+            bool semHistorico = primeiroRelato && j.UltimoPerfil <= 0d;
             double segundos = primeiroRelato ? 0d : Math.Max(0d, agora - j.UltimoRelato);
 
             foreach (KeyValuePair<string, double> par in relato)
@@ -261,15 +275,68 @@ namespace Deadheim.Ranking
                 j.Valores[par.Key] = aceito;
 
                 // Chave nova no meio da semana: a semana conta a partir daqui, nao o historico.
-                if (!j.BaseSemana.ContainsKey(par.Key)) j.BaseSemana[par.Key] = primeiroRelato || !tinha ? aceito : antes;
+                if (!j.BaseSemana.ContainsKey(par.Key)) j.BaseSemana[par.Key] = BaseNova(regra, semHistorico, tinha, antes, aceito);
 
                 if (par.Key.StartsWith(Chave.PrefixoChefe, StringComparison.Ordinal) && (!tinha || antes <= 0d) && aceito > 0d)
-                    chefesNovos.Add(new KeyValuePair<string, bool>(par.Key.Substring(Chave.PrefixoChefe.Length), primeiroRelato || !tinha));
+                    chefesNovos.Add(new KeyValuePair<string, bool>(par.Key.Substring(Chave.PrefixoChefe.Length), semHistorico));
             }
 
             if (j.Semana == 0) j.Semana = semana;
             j.UltimoRelato = agora;
             return chefesNovos;
+        }
+
+        /// <summary>
+        /// O perfil do personagem guardado no servidor (ServerCharacters), lido do disco. E do
+        /// proprio servidor, entao nao tem teto por segundo: contador fica com o maior entre o que
+        /// ja havia e o arquivo (o relato ao vivo pode estar a frente do arquivo); medida (soma
+        /// das habilidades, moedas) so e trocada com o jogador offline, porque com ele online o
+        /// relato e mais novo. A primeira importacao e o historico: nao conta na semana, e chefe
+        /// que ja estava la vira feito "antes do ranking". Chefe que aparece numa importacao
+        /// seguinte foi derrotado de verdade desde a anterior, por volta de
+        /// <paramref name="horaArquivo"/>.
+        /// </summary>
+        public static List<KeyValuePair<string, bool>> AplicarDoPerfil(RankingJogador j, IDictionary<string, double> valores,
+            double horaArquivo, bool online, int semana)
+        {
+            var chefesNovos = new List<KeyValuePair<string, bool>>();
+            if (j == null || valores == null) return chefesNovos;
+            bool primeira = j.UltimoPerfil <= 0d && j.UltimoRelato <= 0d;
+
+            foreach (KeyValuePair<string, double> par in valores)
+            {
+                Regra regra;
+                if (!Regra.TryGet(par.Key, out regra)) continue;
+                double novo = par.Value;
+                if (double.IsNaN(novo) || double.IsInfinity(novo) || novo < 0d) continue;
+                if (novo > regra.Teto) novo = regra.Teto;
+
+                double antes;
+                bool tinha = j.Valores.TryGetValue(par.Key, out antes);
+                double aceito = regra.Contador ? Math.Max(tinha ? antes : 0d, novo) : (online && tinha ? antes : novo);
+                j.Valores[par.Key] = aceito;
+                if (!j.BaseSemana.ContainsKey(par.Key)) j.BaseSemana[par.Key] = BaseNova(regra, primeira, tinha, antes, aceito);
+
+                if (par.Key.StartsWith(Chave.PrefixoChefe, StringComparison.Ordinal) && (!tinha || antes <= 0d) && aceito > 0d)
+                    chefesNovos.Add(new KeyValuePair<string, bool>(par.Key.Substring(Chave.PrefixoChefe.Length), primeira));
+            }
+
+            if (j.Semana == 0) j.Semana = semana;
+            if (horaArquivo > j.UltimoPerfil) j.UltimoPerfil = horaArquivo;
+            return chefesNovos;
+        }
+
+        /// <summary>
+        /// Base da semana de uma chave que ainda nao tinha base. Sem historico, o que chegou e o
+        /// passado (nao conta). Contador que aparece pela primeira vez no meio da semana (o jogo
+        /// so cria o contador no primeiro animal domado, por exemplo) comeca do zero: conta inteiro.
+        /// Medida nova comeca dela mesma.
+        /// </summary>
+        private static double BaseNova(Regra regra, bool semHistorico, bool tinha, double antes, double aceito)
+        {
+            if (semHistorico) return aceito;
+            if (tinha) return antes;
+            return regra.Contador ? 0d : aceito;
         }
 
         /// <summary>Numero que so o servidor sabe (PvP, guerra, tempo online).</summary>
@@ -334,6 +401,8 @@ namespace Deadheim.Ranking
         public Dictionary<string, double> PesosLenda = new Dictionary<string, double>(StringComparer.Ordinal);
         public bool TemGuerra;
         public bool TemNivel;
+        public bool TemArena;
+        public bool TemMissoes;
         public bool MostrarRiqueza = true;
 
         public double Lenda(RankingJogador j, bool semana)
@@ -377,7 +446,7 @@ namespace Deadheim.Ranking
         public const string GrupoRiqueza = "Riqueza";
 
         public const string PesosPadrao =
-            "skills=2|chefes=150|chefes.k=10|monstros=1|pvp.k=15|guerra=5|build=0.2|craft=0.5|arvores=0.5|mina=0.1|dist=0.002|mar=0.004|domados=5|online=0.0005";
+            "skills=2|chefes=150|chefes.k=10|monstros=1|pvp.k=15|guerra=5|arena.v=20|missoes=25|build=0.2|craft=0.5|arvores=0.5|mina=0.1|dist=0.002|mar=0.004|domados=5|online=0.0005";
 
         /// <summary>Todas as categorias, na ordem da lista da janela.</summary>
         public static List<Categoria> Todas(RankingContexto ctx)
@@ -417,6 +486,19 @@ namespace Deadheim.Ranking
                 },
                 new Categoria
                 {
+                    Id = "arena", Titulo = "Arena", Grupo = GrupoCombate, Icone = "SwordBlackmetal", Unidade = "de rating",
+                    Descricao = "Maior rating pessoal nos times de arena (na semana: vitórias).",
+                    // Rating sem partida e so o valor inicial: fica fora da lista.
+                    Valor = (j, s) => j.Valor(Chave.ArenaPartidas) <= 0d ? 0d : s ? j.DaSemana(Chave.ArenaVitorias) : j.Valor(Chave.Arena),
+                    Detalhe = (j, s) =>
+                    {
+                        double v = j.Valor(Chave.ArenaVitorias), n = j.Valor(Chave.ArenaPartidas);
+                        return Numero.Inteiro(v) + (v == 1d ? " vitória" : " vitórias") + " em " + Numero.Inteiro(n) + (n == 1d ? " partida" : " partidas");
+                    },
+                    Disponivel = c => c.TemArena,
+                },
+                new Categoria
+                {
                     Id = "chefes", Titulo = "Chefes", Grupo = GrupoCombate, Icone = "TrophyEikthyr", Unidade = "chefes",
                     Descricao = "Chefes diferentes derrotados (na semana: chefes novos).",
                     Valor = (j, s) => j.Le(Chave.Chefes, s),
@@ -438,6 +520,13 @@ namespace Deadheim.Ranking
                     Descricao = "Soma dos níveis de todas as habilidades (na semana: níveis ganhos).",
                     Valor = (j, s) => Math.Floor(j.Le(Chave.Habilidades, s)),
                     Detalhe = (j, s) => s ? null : "maior: " + Numero.Inteiro(j.Valor(Chave.HabilidadeMaior)),
+                },
+                new Categoria
+                {
+                    Id = "missoes", Titulo = "Missões", Grupo = GrupoProgresso, Icone = "Feathers", Unidade = "missões",
+                    Descricao = "Missões concluídas nos NPCs (as repetíveis contam cada vez).",
+                    Valor = (j, s) => j.Le(Chave.Missoes, s),
+                    Disponivel = c => c.TemMissoes,
                 },
                 new Categoria
                 {
@@ -544,6 +633,8 @@ namespace Deadheim.Ranking
                 case Chave.Domados: return "domar";
                 case Chave.Online: return "tempo";
                 case Chave.Nivel: return "nível";
+                case Chave.ArenaVitorias: return "arena";
+                case Chave.Missoes: return "missões";
                 default: return chave;
             }
         }
@@ -713,6 +804,7 @@ namespace Deadheim.Ranking
                 Campo(sb, "primeira", Numero.Gravar(j.PrimeiraVez));
                 Campo(sb, "ultima", Numero.Gravar(j.UltimaVez));
                 Campo(sb, "relato", Numero.Gravar(j.UltimoRelato));
+                if (j.UltimoPerfil > 0d) Campo(sb, "perfil", Numero.Gravar(j.UltimoPerfil));
                 sb.Append("\tsemana=").Append(j.Semana.ToString(CultureInfo.InvariantCulture));
                 Campo(sb, "v", Mapa(j.Valores));
                 Campo(sb, "b", Mapa(j.BaseSemana));
@@ -777,6 +869,7 @@ namespace Deadheim.Ranking
                                 PrimeiraVez = Dbl(campos, "primeira"),
                                 UltimaVez = Dbl(campos, "ultima"),
                                 UltimoRelato = Dbl(campos, "relato"),
+                                UltimoPerfil = Dbl(campos, "perfil"),
                                 Semana = Int(campos, "semana"),
                             };
                             LerMapa(Texto(campos, "v"), j.Valores);

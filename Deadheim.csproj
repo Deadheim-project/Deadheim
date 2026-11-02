@@ -183,6 +183,8 @@
     <Compile Include="Troca\TrocaUi.cs" />
     <Compile Include="Ranking\RankingDados.cs" />
     <Compile Include="Ranking\RankingRede.cs" />
+    <Compile Include="Ranking\RankingPerfil.cs" />
+    <Compile Include="Ranking\RankingImportar.cs" />
     <Compile Include="Ranking\RankingJanela.cs" />
     <Compile Include="TransmogApi.cs" />
     <Compile Include="Patches.cs" />

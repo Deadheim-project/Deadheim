@@ -69,13 +69,49 @@ internal static class Program
         Checar(ana.Valor(Chave.Moedas) == 0 && ana.Valor(Chave.Construcoes) == 0, "NaN e negativo viram zero");
 
         var novos2 = RankingRegras.Aplicar(ana, R(Chave.PrefixoChefe + "$enemy_gdking", 1), segunda + 300, semana);
-        Checar(novos2.Count == 1 && novos2[0].Value, "chave de chefe nova no meio do jogo conta como 'antigo' (nao havia valor)");
+        Checar(novos2.Count == 1 && !novos2[0].Value, "chefe que aparece depois do primeiro relato e feito de verdade (o cliente so manda chefe com abate)");
         var novos3 = RankingRegras.Aplicar(ana, R(Chave.PrefixoChefe + "$enemy_bonemass", 0), segunda + 360, semana);
         var novos4 = RankingRegras.Aplicar(ana, R(Chave.PrefixoChefe + "$enemy_bonemass", 1), segunda + 420, semana);
         Checar(novos3.Count == 0 && novos4.Count == 1 && !novos4[0].Value, "chefe que vai de 0 a 1 com o ranking ligado e feito de verdade");
 
         Checar(!Regra.TryGet(Chave.PrefixoChefe, out _) && !Regra.TryGet(Chave.PrefixoChefe + new string('x', 80), out _),
             "chave de chefe vazia ou enorme e recusada");
+
+        // ---------------------------------------------------------------- perfil do servidor
+        var base2 = new RankingBase();
+        RankingJogador gil = base2.Obter(50, "Gil", 0);
+        var chefesPerfil = RankingRegras.AplicarDoPerfil(gil, R(Chave.Monstros, 4000, Chave.Habilidades, 650,
+            Chave.PrefixoChefe + "$enemy_eikthyr", 2, Chave.PvpAbates, 50), segunda - 86400, false, semana);
+        Checar(gil.Valor(Chave.Monstros) == 4000 && gil.Valor(Chave.Habilidades) == 650, "perfil importado entra inteiro, sem teto por segundo");
+        Checar(gil.Valor(Chave.PvpAbates) == 0, "perfil nao escreve numero do servidor");
+        Checar(gil.DaSemana(Chave.Monstros) == 0, "primeira importacao nao conta na semana");
+        Checar(chefesPerfil.Count == 1 && chefesPerfil[0].Value, "chefe da primeira importacao e feito 'antes do ranking'");
+        Checar(gil.UltimoPerfil == segunda - 86400, "guarda a hora do arquivo importado");
+
+        RankingRegras.Aplicar(gil, R(Chave.Monstros, 99999), segunda, semana);
+        Checar(gil.Valor(Chave.Monstros) == 4000 + 10 * Regra.FolgaSeg, "relato depois da importacao tem teto a partir do perfil (nao e mais 'primeiro')");
+
+        RankingRegras.AplicarDoPerfil(gil, R(Chave.Monstros, 4500, Chave.Habilidades, 700), segunda + 600, true, semana);
+        Checar(gil.Valor(Chave.Monstros) == 4000 + 10 * Regra.FolgaSeg, "contador fica com o maior (relato ao vivo a frente do arquivo)");
+        Checar(gil.Valor(Chave.Habilidades) == 650, "com o jogador online a medida do arquivo nao troca a do relato");
+        RankingRegras.AplicarDoPerfil(gil, R(Chave.Monstros, 9000, Chave.Habilidades, 700), segunda + 1200, false, semana);
+        Checar(gil.Valor(Chave.Monstros) == 9000 && gil.Valor(Chave.Habilidades) == 700, "offline, o arquivo atualiza contador e medida");
+        Checar(gil.DaSemana(Chave.Monstros) == 5000, "importacao seguinte conta na semana");
+        var chefe2 = RankingRegras.AplicarDoPerfil(gil, R(Chave.PrefixoChefe + "$enemy_gdking", 1), segunda + 1800, false, semana);
+        Checar(chefe2.Count == 1 && !chefe2[0].Value, "chefe novo numa importacao seguinte e feito de verdade");
+
+        // arena: so quem jogou
+        var ctxArena = new RankingContexto { PesosLenda = RankingContexto.LerPesos(Categorias.PesosPadrao), TemArena = true, TemMissoes = true };
+        Categoria arena = Categorias.Todas(ctxArena).First(c => c.Id == "arena");
+        RankingJogador h1 = new RankingJogador { Id = 61, Nome = "H1" }, h2 = new RankingJogador { Id = 62, Nome = "H2" };
+        RankingRegras.DefinirDoServidor(h1, Chave.Arena, 1500); RankingRegras.DefinirDoServidor(h1, Chave.ArenaPartidas, 0);
+        RankingRegras.DefinirDoServidor(h2, Chave.Arena, 1620); RankingRegras.DefinirDoServidor(h2, Chave.ArenaPartidas, 8);
+        RankingRegras.DefinirDoServidor(h2, Chave.ArenaVitorias, 5);
+        var linhasArena = Classificacao.Classificar(new[] { h1, h2 }, arena, false);
+        Checar(linhasArena.Count == 1 && linhasArena[0].Jogador == h2 && arena.Detalhe(h2, false) == "5 vitórias em 8 partidas",
+            "arena: rating sem partida fica fora, detalhe com vitorias");
+        Checar(Categorias.Todas(ctxArena).Any(c => c.Id == "missoes") && !Categorias.Todas(new RankingContexto()).Any(c => c.Id == "arena" || c.Id == "missoes"),
+            "Arena e Missoes so aparecem com o NpcValheim");
 
         // ---------------------------------------------------------------- semana
         RankingRegras.Aplicar(ana, R(Chave.Monstros, 6300), segunda + 3600, semana);
@@ -87,6 +123,8 @@ internal static class Program
         Checar(ana.Valor(Chave.PvpAbates) == 7 && ana.DaSemana(Chave.PvpAbates) == 0, "numero do servidor novo comeca a semana nele");
         RankingRegras.DefinirDoServidor(ana, Chave.PvpAbates, 9);
         Checar(ana.DaSemana(Chave.PvpAbates) == 2, "numero do servidor conta na semana");
+        RankingRegras.Aplicar(ana, R(Chave.Domados, 2), segunda + 7200, semana + 1);
+        Checar(ana.DaSemana(Chave.Domados) == 2, "contador que aparece no meio da semana conta inteiro");
         RankingRegras.DefinirDoServidor(ana, Chave.Monstros, 1);
         Checar(ana.Valor(Chave.Monstros) == 6300, "DefinirDoServidor nao mexe em chave do cliente");
 
@@ -162,6 +200,8 @@ internal static class Program
         Checar(ana2.Valor(Chave.PrefixoChefe + "$enemy_eikthyr") == 3, "ida e volta: chave com $ e :");
         Checar(ana2.PosOntem.Count == ana.PosOntem.Count && ana2.PosOntem[caca.Id] == ana.PosOntem[caca.Id], "ida e volta: posicoes de ontem");
         Checar(lido.Achar(5).Oculto && !lido.Achar(2).Oculto, "ida e volta: oculto");
+        ana.UltimoPerfil = 12345.5;
+        Checar(RankingFormato.Ler(RankingFormato.Escrever(dados), out _).Achar(1).UltimoPerfil == 12345.5, "ida e volta: hora do perfil importado");
         Checar(lido.Feitos.Count == 1 && lido.Feitos[0].Nome == "Ana Tab" && lido.Feitos[0].Antigo && lido.Feitos[0].Em == segunda,
             "ida e volta: feito");
         Checar(RankingFormato.Escrever(lido) == RankingFormato.Escrever(RankingFormato.Ler(RankingFormato.Escrever(lido), out _)),
