@@ -98,8 +98,10 @@ namespace Deadheim.Ranking
             if (_pasta != null) return _pasta;
             try
             {
-                Type fonte = typeof(PlayerProfile).Assembly.GetTypes().FirstOrDefault(x => x.IsEnum && x.Name == "FileSource" && x.DeclaringType?.Name == "FileHelpers")
-                             ?? AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("FileHelpers+FileSource", false)).FirstOrDefault(x => x != null);
+                // Pelo nome: GetTypes() num assembly de jogo com mods pode lancar ReflectionTypeLoadException.
+                Type fonte = AppDomain.CurrentDomain.GetAssemblies()
+                    .Select(a => { try { return a.GetType("FileHelpers+FileSource", false); } catch (Exception) { return null; } })
+                    .FirstOrDefault(x => x != null && x.IsEnum);
                 if (fonte == null) return null;
                 _fonteLocal = Enum.Parse(fonte, "Local");
 
