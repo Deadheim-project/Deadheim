@@ -122,7 +122,6 @@ namespace Deadheim
             Titulos.Tick(Player.m_localPlayer);
             Pets.Tick();
             Territorios.Tick(Player.m_localPlayer);
-            Menus.Atalhos.Tick();
             Menus.MenuHub.Tick();
 
             Player localPlayer = Player.m_localPlayer;
@@ -258,7 +257,6 @@ new ConfigDescription("boatWindSpeedmultiplier")));
 
             _harmony.PatchAll();
             Ajustes.AjustesMenu.Init(_harmony);
-            Menus.Atalhos.Init(_harmony);
             DirectJoinFlow.Initialize(Logger);
             ClonedItems.LoadAssets();
 

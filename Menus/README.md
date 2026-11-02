@@ -42,23 +42,28 @@ linha de baixo da Central.
 O admin muda tudo isso na aba Admin, ao vivo, sem reiniciar. **Preencha `DoacaoPix` e
 `DoacaoDiscord` antes de abrir o servidor.**
 
-## Teclas tiradas
+## Teclas sem padrao
 
-| Tecla | Mod | Agora |
-| --- | --- | --- |
-| PageUp / PageDown | RaidSystem | Central: Guilda / Ranking de Guerra (tirado no proprio RaidSystem, 2.2.4) |
-| J | NpcValheim | Central: Diario de missoes |
-| F7 | NpcValheim | Central: Loja Deadcoins (Aesir) |
-| F8 | NpcValheim | Admin: Painel de Admin |
-| U | Montarias | Central: Montarias |
-| F8 (fixo no codigo) | Montarias | Admin: Montarias (admin) |
-| F8 / F9 | AdaptiveNet | Admin: Painel de rede / Marcar incidente |
+As teclas que abriam menus continuam na config de cada mod, mas **vazias por padrao** (None). Quem
+quiser um atalho define a tecla em ESC > Deadheim > Meus ajustes. Os nomes das chaves mudaram para a
+tecla gravada num cfg antigo nao voltar sozinha.
 
-O Deadheim nao compila esses mods: `Atalhos.cs` zera a tecla no cliente (KeyCode.None /
-KeyboardShortcut.Empty) no primeiro frame, de novo se o mod recarregar o cfg, e esconde a opcao de
-"Meus ajustes". O F8 fixo do Montarias e barrado por patch no `AdminMenu.Toggle`. As janelas sao
-abertas por reflexao (`Integracoes.cs`), com os mesmos passos que a tecla fazia; se um mod renomear
-algo, so aquele botao falha e o log diz o nome que sumiu.
+| Era | Mod (versao) | Chave nova (vazia) | Agora abre por |
+| --- | --- | --- | --- |
+| PageUp | RaidSystem 2.2.4 | `[9 - Client] Menu Shortcut` | Central: Guilda |
+| PageDown | RaidSystem 2.2.4 | `[9 - Client] Scoreboard Shortcut` | Central: Ranking de Guerra |
+| J | NpcValheim 0.1.90 | `[Quests] AtalhoDiario` | Central: Diario de missoes |
+| F7 | NpcValheim 0.1.90 | `[VIP] AtalhoLoja` | Central: Loja Deadcoins (Aesir) |
+| F8 | NpcValheim 0.1.90 | `[Admin] AtalhoPainel` | Admin: Painel de Admin |
+| U | Montarias 0.3.27 | `[Geral] AtalhoMenu` | Central: Montarias |
+| F8 (fixo no codigo) | Montarias 0.3.27 | `[Geral] AtalhoAdmin` | Admin: Montarias (admin) |
+| Ctrl+F9 (fixo no codigo) | Montarias 0.3.27 | `[Geral] AtalhoFotos` | comando `montarias_fotos` |
+| F8 | AdaptiveNet 0.5.4 | `[Diagnostics] OverlayShortcut` | Admin: Painel de rede |
+| F9 | AdaptiveNet 0.5.4 | `[Diagnostics] IncidentMarkerShortcut` | Admin: Marcar incidente de rede |
+
+As janelas sao abertas por reflexao (`Integracoes.cs`), com os mesmos passos que a tecla fazia; se
+um mod renomear algo, so aquele botao falha e o log diz o nome que sumiu. As dicas do Montarias que
+citavam a tecla dizem "Central (Tab)" quando ela esta vazia.
 
 Continuam: H (montar, e entrar na arena), P / Shift+P na cama, G perto do barco, Shift+E na planta,
 E nos NPCs. Os comandos de chat tambem continuam (`/retreat`, `/depositar`, `/territorio`...).
@@ -71,7 +76,6 @@ E nos NPCs. Os comandos de chat tambem continuam (`/retreat`, `/depositar`, `/te
 | `AesirJanela.cs` | Janela do Aesir: beneficios e doacao |
 | `FerramentasAdmin.cs` | As ferramentas da aba Admin (desenhadas pela `Ajustes/AjustesJanela.cs`) |
 | `Integracoes.cs` | Abre as janelas do NpcValheim, Montarias e AdaptiveNet por reflexao |
-| `Atalhos.cs` | Zera as teclas dos outros mods e barra o F8 do Montarias |
 | `MenuBridge.cs` | Delegates que o RaidSystem preenche (painel da guilda, ranking) |
 
 ## Correcao junto

@@ -11,8 +11,8 @@ namespace Deadheim.Menus
     /// <summary>
     /// Abre as janelas dos outros mods do launcher (NpcValheim, Montarias, AdaptiveNet) a partir
     /// do hub do inventario e da aba Admin. O Deadheim nao referencia esses assemblies: tudo e
-    /// por reflexao, com os mesmos passos que a tecla de cada mod fazia (as teclas foram tiradas,
-    /// ver Atalhos.cs). Cada metodo devolve null quando abriu, ou a mensagem para o jogador.
+    /// por reflexao, com os mesmos passos que a tecla de cada mod fazia (as teclas agora vem vazias
+    /// na config de cada mod). Cada metodo devolve null quando abriu, ou a mensagem para o jogador.
     ///
     /// Se um mod mudar um nome, so aquele botao para de funcionar (e o log diz qual nome sumiu);
     /// o resto do hub segue.

@@ -105,7 +105,7 @@ namespace Deadheim.Ajustes
             List<ModAjustes> mods = new List<ModAjustes>();
             foreach (PluginInfo info in Plugins())
             {
-                int itens = Entradas(info.Instance.Config).Count(e => Mostra(info.Metadata.GUID, e, local));
+                int itens = Entradas(info.Instance.Config).Count(e => Mostra(e, local));
                 if (itens == 0) continue;
 
                 mods.Add(new ModAjustes
@@ -132,7 +132,7 @@ namespace Deadheim.Ajustes
             // Ordena por secao (os mods numeram as secoes, "1 - Geral") e mantem, dentro
             // de cada uma, a ordem em que o autor fez o Bind.
             return Entradas(config)
-                .Where(e => Mostra(guid, e, local))
+                .Where(e => Mostra(e, local))
                 .OrderBy(e => e.Definition.Section, StringComparer.OrdinalIgnoreCase)
                 .Select(Descrever)
                 .ToList();
@@ -210,17 +210,6 @@ namespace Deadheim.Ajustes
             ConfigFile config = Config(guid);
             if (config == null) return null;
             return Entradas(config).FirstOrDefault(e => e.Definition.Section == secao && e.Definition.Key == chave);
-        }
-
-        /// <summary>
-        /// Como o Mostra abaixo, e mais: em "Meus ajustes" nao entram as teclas de menu que o
-        /// Deadheim tirou dos outros mods (Menus/Atalhos.cs) -- o menu agora esta na Central do
-        /// inventario ou na aba Admin, e a tecla seria zerada de novo de qualquer jeito.
-        /// </summary>
-        private static bool Mostra(string guid, ConfigEntryBase entrada, bool local)
-        {
-            if (!Mostra(entrada, local)) return false;
-            return !local || !Menus.Atalhos.Removida(guid, entrada.Definition.Section, entrada.Definition.Key);
         }
 
         private static bool Mostra(ConfigEntryBase entrada, bool local)

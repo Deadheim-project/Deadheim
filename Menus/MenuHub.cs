@@ -15,7 +15,8 @@ namespace Deadheim.Menus
     /// Quem nao e Aesir ve as funcoes Aesir travadas; clicar abre a janela do Aesir (AesirJanela),
     /// com todos os beneficios e como doar.
     ///
-    /// Substitui as teclas que cada mod tinha (U, J, F7, PageUp, PageDown): ver Atalhos.cs.
+    /// Substitui as teclas que cada mod tinha (U, J, F7, PageUp, PageDown), que agora vem vazias na
+    /// config de cada mod (ver Menus/README.md).
     /// O que e de admin fica na aba Admin do ESC -> Deadheim (FerramentasAdmin).
     ///
     /// A janela e montada uma vez e so atualizada (a cada meio segundo e a cada clique). Fica num

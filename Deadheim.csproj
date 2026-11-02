@@ -243,7 +243,6 @@
     <Compile Include="Ajustes\AjustesRede.cs" />
     <Compile Include="Menus\MenuBridge.cs" />
     <Compile Include="Menus\Integracoes.cs" />
-    <Compile Include="Menus\Atalhos.cs" />
     <Compile Include="Menus\MenuHub.cs" />
     <Compile Include="Menus\AesirJanela.cs" />
     <Compile Include="Menus\FerramentasAdmin.cs" />

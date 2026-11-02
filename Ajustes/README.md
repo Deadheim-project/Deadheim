@@ -10,7 +10,7 @@ janela no visual do Valheim (painel de madeira, fonte e botoes do jogo) com duas
     global, ir ate/puxar jogador, buffs, bestiario, arenas), aba de admin das Montarias,
     Territorios, chegada do Totem da Cidade, painel de rede e marcar incidente (AdaptiveNet), e a
     lista dos comandos de admin. Antes cada um tinha tecla (F8 em tres mods, F9) ou comando; as
-    teclas sairam (ver `Menus/README.md`).
+    teclas agora vem vazias na config de cada mod (ver `Menus/README.md`).
   - **A config do servidor**: de todos os mods que o servidor tem, pedida a ele pela rede. Cada
     mudanca e aplicada e salva no cfg do servidor na hora. O que e sincronizado (ServerSync) chega
     a todos os jogadores conectados sem reiniciar nada.
@@ -25,8 +25,6 @@ opcionais. O que conta e o `ConfigFile` que o BepInEx ja tem aberto para cada mo
   com `IsAdminOnly`). Essas opcoes nunca aparecem em "Meus ajustes": no cliente elas valem o que
   o servidor mandou, e a regra de PvP roda no cliente de quem leva o golpe.
 - Opcao com `Browsable = false` nao aparece; com `ReadOnly = true` aparece travada.
-- As teclas de menu que o Deadheim tira dos outros mods (`Menus/Atalhos.cs`) nao aparecem em
-  "Meus ajustes": o menu agora esta na Central do inventario ou na aba Admin.
 - Opcao que so o servidor usa e nao e sincronizada (segredo, como o webhook do RaidSystem):
   o mod marca `Browsable = Application.isBatchMode`. No cliente ela some de "Meus ajustes" (e do
   F1); no servidor dedicado continua na aba Admin.

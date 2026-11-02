@@ -7,7 +7,8 @@ namespace Deadheim.Menus
     /// Tudo o que e de admin, num lugar so (7.9.0): a primeira entrada da aba Admin do
     /// ESC -> Deadheim (AjustesJanela). Antes cada coisa tinha a sua tecla ou comando: F8 do
     /// NpcValheim (painel), F8 do Montarias (aba de admin), F8/F9 do AdaptiveNet, /territorio,
-    /// /totem_destino. As teclas sairam (Atalhos.cs); os comandos continuam, para quem prefere.
+    /// /totem_destino. As teclas agora vem vazias na config de cada mod (quem quiser define uma);
+    /// os comandos continuam, para quem prefere.
     ///
     /// O servidor confere a adminlist em cada pedido de verdade (painel, territorios, cfg): estes
     /// botoes so aparecem para admin porque a aba so aparece para admin.

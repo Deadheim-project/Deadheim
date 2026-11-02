@@ -16,8 +16,8 @@ namespace RaidSystem
     // 7.0.0 traz o PvpBridge: castelos e abates classificados vem do modulo de PvP.
     // 7.3.1 traz RemetenteRpc (remetente de verdade), RelogioServidor (hora do servidor no
     // cliente), Entrega (item sem duplicar nem sumir) e PvpBridge.KnownGuild/IsPveOrImmune.
-    // 2.2.4 entrega os paineis ao hub do inventario do Deadheim (Menus.MenuBridge, 7.9.0) e tira as
-    // teclas PageUp/PageDown: os menus sao abertos pela Central Deadheim (Tab).
+    // 2.2.4 entrega os paineis ao hub do inventario do Deadheim (Menus.MenuBridge, 7.9.0); as teclas
+    // (eram PageUp/PageDown) vem vazias: os menus sao abertos pela Central Deadheim (Tab).
     [BepInDependency("Detalhes.Deadheim", "7.9.0")]
     public class RaidSystemPlugin : BaseUnityPlugin
     {
@@ -62,6 +62,8 @@ namespace RaidSystem
         public static ConfigEntry<string> WebhookUrl;
         public static ConfigEntry<string> ConquestMessage;
         public static ConfigEntry<string> ScoreboardTitle;
+        public static ConfigEntry<KeyCode> KeyboardShortcut;
+        public static ConfigEntry<KeyCode> ScoreboardShortcut;
 
         // Economia de territorio (Fases 1-3)
         public static ConfigEntry<Toggle> OrePortalEnabled;
@@ -102,8 +104,20 @@ namespace RaidSystem
 
             Player lp = Player.m_localPlayer;
             if (!lp || lp.IsDead() || lp.InCutscene() || lp.IsTeleporting()) return;
-            // Sem teclas desde a 2.2.4: os paineis abrem pela Central Deadheim (Tab). ESC fecha.
-            if (GUI.AlgumAberto && Input.GetKeyDown(KeyCode.Escape) && !Ui.IsTyping()) GUI.FecharTudo();
+            if (Ui.IsTyping()) return;
+            // ESC fecha os paineis (abertos pela Central Deadheim, no Tab).
+            if (GUI.AlgumAberto && Input.GetKeyDown(KeyCode.Escape)) GUI.FecharTudo();
+            // Atalhos opcionais, vazios por padrao desde a 2.2.4. Com tecla, a mesma tecla fecha.
+            if (Input.GetKeyDown(KeyboardShortcut.Value))
+            {
+                if (GUI.MenuAberto) GUI.DestroyMenu();
+                else AbrirPainelGuilda();
+            }
+            if (Input.GetKeyDown(ScoreboardShortcut.Value))
+            {
+                if (GUI.ScoreboardAberto) GUI.FecharScoreboard();
+                else AbrirRanking();
+            }
         }
 
         /// <summary>Painel da guilda (era o PageUp), pela Central Deadheim.</summary>
@@ -221,6 +235,13 @@ namespace RaidSystem
             DefenseTributeCharges = config("10 - Economia", "Defense Tribute Charges", 3,
                 "Cargas de tributo extras (materiais do tier do castelo, em Tribute.json) para a guilda que segura o castelo " +
                 "a janela de raid inteira. Resgata na RaidWard. 0 = desligado.");
+
+            // 2.2.4: sem tecla por padrao (os paineis abrem pela Central Deadheim, no Tab). Os nomes mudaram
+            // (Menu Key = PageUp, Scoreboard Key = PageDown) para a tecla gravada num cfg antigo nao voltar.
+            KeyboardShortcut = config("9 - Client", "Menu Shortcut", KeyCode.None,
+                "Tecla que abre o painel da guilda. None = sem tecla (abre pela Central Deadheim, no Tab).", false);
+            ScoreboardShortcut = config("9 - Client", "Scoreboard Shortcut", KeyCode.None,
+                "Tecla que abre o Ranking de Guerra. None = sem tecla (abre pela Central Deadheim, no Tab).", false);
         }
 
         private void WriteDefaultConfigExample()
@@ -272,6 +293,9 @@ namespace RaidSystem
 
                 AppendConfig(sb, "8 - UI Text", "Conquest Message", "conquistou o territorio em:", "Center-screen conquest notification text.");
                 AppendConfig(sb, "8 - UI Text", "Scoreboard Title", "Ranking de Guerra", "Scoreboard title.");
+
+                AppendConfig(sb, "9 - Client", "Menu Shortcut", "None", "Client key for the guild panel. None = opened from the Deadheim Central (Tab).");
+                AppendConfig(sb, "9 - Client", "Scoreboard Shortcut", "None", "Client key for the war ranking. None = opened from the Deadheim Central (Tab).");
 
                 AppendConfig(sb, "10 - Economia", "Ore Portal Enabled", "On", "Portals accept ore when the destination is territory held by your guild.");
                 AppendConfig(sb, "10 - Economia", "Ore Portal Min Tier", "1", "Minimum territory tier that grants the ore portal.");
