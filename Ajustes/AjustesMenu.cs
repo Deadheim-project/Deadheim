@@ -9,13 +9,17 @@ using UnityEngine.UI;
 namespace Deadheim.Ajustes
 {
     /// <summary>
-    /// Poe a opcao "Deadheim" no menu do ESC, logo abaixo de Configuracoes. O botao e uma
-    /// copia do proprio botao do jogo (mesma arte, fonte, som e realce), so com o texto e o
-    /// clique trocados. A janela abre no lugar do menu e fecha com ESC, voltando ao menu.
+    /// Poe as opcoes "Deadheim" e "Ranking" no menu do ESC, logo abaixo de Configuracoes. Os
+    /// botoes sao copias do proprio botao do jogo (mesma arte, fonte, som e realce), so com o
+    /// texto e o clique trocados. A janela abre no lugar do menu e fecha com ESC, voltando ao menu.
     /// </summary>
     internal static class AjustesMenu
     {
         public const string TextoBotao = "Deadheim";
+        public const string TextoRanking = "Ranking";
+
+        /// <summary>O prefixo do Menu.Update entrou: e ele que trata o ESC das janelas do Deadheim.</summary>
+        public static bool MenuCorrigido { get; private set; }
 
         private static GameObject _botao;
         private static Transform _dialogo;
@@ -41,6 +45,7 @@ namespace Deadheim.Ajustes
                     return;
                 }
                 harmony.Patch(update, prefix: new HarmonyMethod(typeof(AjustesMenu), nameof(AntesDoMenuUpdate)));
+                MenuCorrigido = true;
             }
             catch (Exception ex)
             {
@@ -80,6 +85,23 @@ namespace Deadheim.Ajustes
             }
         }
 
+        /// <summary>ESC > Ranking: o menu some (como na janela Deadheim) e o ranking abre no lugar.</summary>
+        public static void AbrirRanking()
+        {
+            if (Ui.IsTyping()) return;
+            Menu menu = Menu.instance;
+            if (menu == null) return;
+
+            _dialogo = Dialogo(menu);
+            OcultarDialogo(true);
+            Ranking.RankingJanela.Abrir(Ranking.RankingJanela.Origem.Esc);
+            // Nao abriu (ranking desligado, UI do jogo ainda carregando): o menu volta.
+            if (!Ranking.RankingJanela.Aberta) OcultarDialogo(false);
+        }
+
+        /// <summary>O ranking aberto pelo ESC fechou: o menu do ESC volta a aparecer.</summary>
+        public static void DevolverMenu() => OcultarDialogo(false);
+
         public static void AbrirJanela()
         {
             if (Ui.IsTyping()) return;
@@ -106,9 +128,17 @@ namespace Deadheim.Ajustes
         /// </summary>
         private static bool AntesDoMenuUpdate()
         {
-            if (!AjustesJanela.Aberta) return true;
             if (!Input.GetKeyDown(KeyCode.Escape)) return true;
 
+            // O ranking vem antes: aberto pela Central (sem menu), o ESC nao pode abrir o menu;
+            // aberto pelo ESC, fecha a ficha ou o ranking e o menu continua.
+            if (Ranking.RankingJanela.Aberta)
+            {
+                Ranking.RankingJanela.Voltar();
+                return false;
+            }
+
+            if (!AjustesJanela.Aberta) return true;
             FecharJanela();
             return false;
         }
@@ -135,22 +165,33 @@ namespace Deadheim.Ajustes
             LayoutGroup layout = rectModelo.parent.GetComponent<LayoutGroup>();
             float passo = Passo(rectModelo, layout);
 
-            GameObject copia = UnityEngine.Object.Instantiate(modelo.gameObject, rectModelo.parent, false);
-            copia.name = "Deadheim";
-            copia.transform.SetSiblingIndex(rectModelo.GetSiblingIndex() + 1);
+            Button deadheim = Copiar(modelo, "Deadheim", TextoBotao, AbrirJanela, layout, passo, dialogo);
+            // O Ranking vem logo abaixo do Deadheim, copiado do mesmo modelo.
+            Copiar(deadheim, "Ranking", TextoRanking, AbrirRanking, layout, passo, dialogo);
+
+            _botao = deadheim.gameObject;
+            _dialogo = dialogo;
+        }
+
+        /// <summary>Copia o botao do menu para logo abaixo de <paramref name="acima"/>, com outro texto e clique.</summary>
+        private static Button Copiar(Button acima, string nome, string texto, UnityEngine.Events.UnityAction clique,
+            LayoutGroup layout, float passo, Transform dialogo)
+        {
+            RectTransform rectAcima = (RectTransform)acima.transform;
+            GameObject copia = UnityEngine.Object.Instantiate(acima.gameObject, rectAcima.parent, false);
+            copia.name = nome;
+            copia.transform.SetSiblingIndex(rectAcima.GetSiblingIndex() + 1);
             LimparCopia(copia);
-            TrocarTexto(copia, TextoBotao);
+            TrocarTexto(copia, texto);
 
             Button botao = copia.GetComponent<Button>();
             // Um evento novo derruba tambem os listeners persistentes da copia (o OnSettings).
             botao.onClick = new Button.ButtonClickedEvent();
-            botao.onClick.AddListener(AbrirJanela);
+            botao.onClick.AddListener(clique);
 
-            AjustarNavegacao(modelo, botao);
-            AbrirEspaco(rectModelo, (RectTransform)copia.transform, layout, passo, dialogo);
-
-            _botao = copia;
-            _dialogo = dialogo;
+            AjustarNavegacao(acima, botao);
+            AbrirEspaco(rectAcima, (RectTransform)copia.transform, layout, passo, dialogo);
+            return botao;
         }
 
         /// <summary>m_menuDialog e Transform em umas versoes e GameObject em outras.</summary>

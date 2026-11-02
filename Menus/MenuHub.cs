@@ -134,6 +134,13 @@ namespace Deadheim.Menus
                 // ---- menus de todos
                 new Entrada
                 {
+                    Titulo = "Ranking", Icone = "TrophyDragonQueen", FechaInventario = true,
+                    Visivel = () => Ranking.RankingRede.Ligado,
+                    Detalhe = Ranking.RankingJanela.ResumoCentral,
+                    Acao = () => { Ranking.RankingJanela.Abrir(Ranking.RankingJanela.Origem.Central); return null; }
+                },
+                new Entrada
+                {
                     Titulo = "Montarias", Icone = "SaddleLox", FechaInventario = true,
                     Visivel = () => Integracoes.TemMontarias,
                     Detalhe = () => Vazio(Integracoes.ResumoMontarias(), "Suas montarias e a habilidade de montar"),

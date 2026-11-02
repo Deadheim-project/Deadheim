@@ -181,6 +181,9 @@
     <Compile Include="Troca\TrocaMotor.cs" />
     <Compile Include="Troca\TrocaRede.cs" />
     <Compile Include="Troca\TrocaUi.cs" />
+    <Compile Include="Ranking\RankingDados.cs" />
+    <Compile Include="Ranking\RankingRede.cs" />
+    <Compile Include="Ranking\RankingJanela.cs" />
     <Compile Include="TransmogApi.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Plugin.cs" />

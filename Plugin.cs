@@ -123,6 +123,7 @@ namespace Deadheim
             Pets.Tick();
             Territorios.Tick(Player.m_localPlayer);
             Menus.MenuHub.Tick();
+            Ranking.RankingRede.Tick();
 
             Player localPlayer = Player.m_localPlayer;
             // Mesma guarda do Hearthstone: digitando no chat, o "P" maiusculo (Shift+P) gravava o ponto.
@@ -249,6 +250,7 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Troca.TrocaRede.Bind(Config);
             Plantas.Bind(Config);
             Menus.MenuHub.Bind(Config);
+            Ranking.RankingRede.Bind(Config);
             Pets.BindConfigs(Config);
             Transmog.BindConfigs(Config);
             Pets.Init();

@@ -4,7 +4,8 @@ Os menus nao abrem mais por teclas espalhadas em cada mod. Sao dois lugares:
 
 | Onde | Quem | O que tem |
 | --- | --- | --- |
-| **Tab** (inventario) -> **Central Deadheim** | todos | Montarias, Guilda, Ranking de Guerra, Diario de missoes, Arena, Troca de moedas e as funcoes Aesir |
+| **Tab** (inventario) -> **Central Deadheim** | todos | Ranking, Montarias, Guilda, Ranking de Guerra, Diario de missoes, Arena, Troca de moedas e as funcoes Aesir |
+| **ESC -> Ranking** | todos | O Ranking do mundo (ver `Ranking/README.md`) |
 | **ESC -> Deadheim -> Admin** | so admin | Ferramentas de admin (painel, montarias, territorios, totem, rede, comandos) e a config do servidor |
 
 ## Central Deadheim (hub do inventario)
@@ -12,7 +13,7 @@ Os menus nao abrem mais por teclas espalhadas em cada mod. Sao dois lugares:
 Painel ao lado do inventario (direita por padrao; `[Central] Lado`), aberto sempre que o inventario
 esta na tela (Tab ou um bau aberto). Cabecalho com o nome do personagem e o selo AESIR/VIAJANTE.
 
-- **Menus**: Montarias (era o U), Guilda (PageUp), Ranking de Guerra (PageDown), Diario de missoes
+- **Menus**: Ranking (a sua posicao na Lenda na linha de estado; ver `Ranking/README.md`), Montarias (era o U), Guilda (PageUp), Ranking de Guerra (PageDown), Diario de missoes
   (J), Arena, Troca de moedas (`/trocar`). Cada botao mostra uma linha de estado: a guilda do
   jogador, a habilidade de montaria...
 - **Aesir**: Loja Deadcoins (era o F7), Retreat e Retreat 2 (com a recarga na linha de estado),
