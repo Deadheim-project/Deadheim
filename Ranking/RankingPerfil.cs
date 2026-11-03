@@ -46,6 +46,12 @@ namespace Deadheim.Ranking
                                            + Ler(contadores, "DistanceSail") + Ler(contadores, "DistanceAir");
             Copiar(contadores, destino, Chave.Navegacao, "DistanceSail");
             Copiar(contadores, destino, Chave.Domados, "CreatureTamed");
+            foreach (TipoMorte tipo in TiposDeMorte.Todos)
+            {
+                double soma = 0d;
+                foreach (string nome in tipo.Contadores) soma += Ler(contadores, nome);
+                destino[tipo.Chave] = soma;
+            }
 
             // Chefes: abates por nome interno, no mesmo lugar que a faixa de PvP le (PvpBosses).
             IDictionary inimigos = Primeiro(Campo(stats, "m_enemyStats")) as IDictionary;

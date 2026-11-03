@@ -69,6 +69,7 @@ namespace PvpTestDriver
         private const string CastleName = "CasteloTeste";
         private const string CastleOwner = "Lobos";
         private const float CastleOffset = 53f;
+        private const float CastleRadius = 30f;
 
         private Vector3 _castle;
         private const string DummyName = "Dummy";
@@ -335,12 +336,14 @@ namespace PvpTestDriver
             _wardA = FindLand(_temple, 50f, 80f, _openA, _temple);
             _wardB = FindLand(_temple, 50f, 80f, _openA, _wardA, _temple);
             _ship = _openA + Vector3.forward * 8f;
-            // Mesmo deslocamento que o run-pvp-test.ps1 usa para escrever a zona do RaidSystem.
             _castle = FindLand(new Vector3(_temple.x - CastleOffset, 0f, _temple.z - CastleOffset), 0f, 20f);
             _deathFactor = Me.GetSkills().m_DeathLowerFactor * Game.m_skillReductionRate;
             Log($"posicoes: templo={_temple} seguro={_safe} aberto={_openA} wardA={_wardA} wardB={_wardB} castelo={_castle} fatorMorte={_deathFactor} " +
                 $"janelaSemPerda={Me.m_hardDeathCooldown}s");
-            Check("setup/raidsystem-ligado", PvpBridge.CastleAt != null && PvpBridge.CastleOwner != null);
+            // Sem o RaidSystem ninguem registra castelo: o teste registra o dele, para cobrir o gancho.
+            Vector3 castleCenter = _castle;
+            PvpBridge.CastleAt = p => new Vector2(p.x - castleCenter.x, p.z - castleCenter.z).magnitude <= CastleRadius ? CastleName : null;
+            PvpBridge.CastleOwner = p => PvpBridge.CastleAt(p) != null ? CastleOwner : null;
             Log("ilha: " + PvpZones.DescribeIsland());
             Log("plugins: " + string.Join(", ", BepInEx.Bootstrap.Chainloader.PluginInfos.Values
                 .Select(i => i.Metadata.Name + " " + i.Metadata.Version)));
@@ -729,7 +732,7 @@ namespace PvpTestDriver
         }
 
         /// <summary>
-        /// Castelo do RaidSystem, eu invasor (Corvos) e o Dummy da guilda dona (Lobos). La a
+        /// Castelo de teste (registrado no PvpBridge), eu invasor (Corvos) e o Dummy da guilda dona (Lobos). La a
         /// imunidade nao vale; morrer la nao tira skill nem da imunidade; o Dummy defendeu, entao
         /// o servidor paga a recompensa do bioma e nao o marca como PK.
         /// </summary>
@@ -769,8 +772,6 @@ namespace PvpTestDriver
             int expected = PvpConfig.CastleRewardFor(WorldGenerator.instance.GetBiome(_castle));
             Check("castelo-invasor/defensor-ganha-recompensa", log.Contains($"Recompensa de defesa: {DummyName} +{expected} "), Tail(log));
             Check("castelo-invasor/defensor-nao-vira-pk", !log.Contains($"{DummyName} ({DummyId}) agora e PK"), Tail(log));
-            Check("castelo-invasor/raidsystem-recebeu-o-abate", log.Contains($"[RaidSystem] Abate de {DummyName} em {_myName}")
-                                                                || log.Contains($"[RaidSystem] Abate registrado: {DummyName}"), Tail(log));
             ClearGuilds();
         }
 

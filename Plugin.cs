@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.9.1";
+        public const string Version = "7.10.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -35,12 +35,12 @@ namespace Deadheim
         // cliente; a 7.8.17 nunca foi ao servidor, entao quem a tem sobe junto.
         // 7.9.0: o /depositar (Aesir 14) duplicava itens no cliente (o bau recebia a pilha inteira e o
         // jogador perdia 1); o conserto so vale se todo mundo estiver nele. Traz tambem a Central do
-        // inventario e o RaidSystem 2.2.4 depende dela (Menus.MenuBridge).
+        // inventario.
         private static readonly ConfigSync ServerConfigSync = new ConfigSync(PluginGUID)
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.9.0",
+            MinimumRequiredVersion = "7.10.0",
             ModRequired = true,
             IsLocked = true
         };
@@ -250,6 +250,8 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Treinador.Init();
             AesirConfig.Bind(Config);
             AesirLog.Bind(Config);
+            AesirFogo.Bind(Config);
+            AesirLapide.Bind(Config);
             AesirTeclas.Bind(Config);
             AesirPullConfig.Bind(Config);
             AesirCraftConfig.Bind(Config);

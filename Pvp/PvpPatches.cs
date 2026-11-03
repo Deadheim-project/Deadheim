@@ -1,4 +1,5 @@
 using Deadheim.Vanilla;
+using Deadheim.Shared;
 using HarmonyLib;
 using System;
 using UnityEngine;
@@ -15,7 +16,7 @@ namespace Deadheim.Pvp
         {
             if (player == null || string.IsNullOrEmpty(text) || Time.time < _nextRefusalMessage) return;
             _nextRefusalMessage = Time.time + 2f;
-            player.Message(MessageHud.MessageType.Center, text);
+            player.Message(MessageHud.MessageType.Center, Avisos.Recusa(text));
         }
 
         // ------------------------------------------------------------------- dano
@@ -332,7 +333,7 @@ namespace Deadheim.Pvp
                     dropped += amount;
                 }
                 if (dropped > 0)
-                    player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>{dropped} item(ns) da carga cairam no chao.</color>");
+                    player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp("Carga perdida", $"{dropped} item(ns) cairam no chao."));
                 return dropped;
             }
 
@@ -354,7 +355,7 @@ namespace Deadheim.Pvp
                 Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.6f;
                 if (!TryDrop(coins, amount, at)) return 0;
                 inventory.RemoveItem(coins, amount);
-                player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>{amount} moedas cairam no chao.</color>");
+                player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp("Moedas perdidas", $"{amount} moedas cairam no chao."));
                 return amount;
             }
 
@@ -382,7 +383,7 @@ namespace Deadheim.Pvp
                     dropped++;
                 }
                 if (dropped > 0)
-                    player.Message(MessageHud.MessageType.TopLeft, $"<color=#ff5050>PK: {dropped} item(ns) cairam no chao.</color>");
+                    player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp("PK: itens perdidos", $"{dropped} item(ns) cairam no chao."));
                 return dropped;
             }
 
@@ -434,7 +435,7 @@ namespace Deadheim.Pvp
 
                 if (multiplier <= 0f)
                 {
-                    __instance.m_player?.Message(MessageHud.MessageType.TopLeft, "Sem perda de skill nesta morte.");
+                    __instance.m_player?.Message(MessageHud.MessageType.TopLeft, Avisos.Ok("Sem perda de skill", "Nesta morte suas skills ficam intactas."));
                     return false;
                 }
 
@@ -448,13 +449,13 @@ namespace Deadheim.Pvp
                     Treinador.ConsumeProtection(local);
                     __instance.LowerAllSkills(factor);
                     local?.Message(MessageHud.MessageType.TopLeft,
-                        $"<color=#7fd4ff>Protecao do Treinador: perda de skill -{cut * 100f:0}%</color>");
+                        Avisos.Info("Protecao do Treinador", $"Perda de skill reduzida em {cut * 100f:0}%."));
                     return false;
                 }
 
                 __instance.LowerAllSkills(factor);
                 __instance.m_player?.Message(MessageHud.MessageType.TopLeft,
-                    $"<color=#ff5050>PK: perda de skill x{multiplier:0.#}</color>");
+                    Avisos.Pvp("PK: perda de skill maior", $"Voce perdeu skill x{multiplier:0.#} nesta morte."));
                 return false;
             }
         }
@@ -528,7 +529,7 @@ namespace Deadheim.Pvp
                 if (owner == 0L || owner == me) return true;
                 if (PvpConfig.TombstoneGuildAccess.Value && PvpGuilds.SameGuild(Player.GetPlayer(owner), player)) return true;
 
-                player.Message(MessageHud.MessageType.Center, "Esta tumba pertence a " + __instance.GetOwnerName() + ".");
+                player.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Tumba de " + __instance.GetOwnerName(), "So o dono abre esta tumba."));
                 __result = false;
                 return false;
             }
@@ -568,9 +569,9 @@ namespace Deadheim.Pvp
 
                 string refusal = null;
                 if (PvpState.IsHunted && !PvpConfig.HuntedCanUsePortals.Value)
-                    refusal = "Cacado nao pode teleportar.";
+                    refusal = "Cacado: nao da para teleportar.";
                 else if (PvpState.InEscapeCombat && PvpConfig.CombatBlocksTeleport.Value)
-                    refusal = $"Em combate! Teleporte liberado em {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
+                    refusal = $"Em combate: teleporte liberado em {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
                 if (refusal == null) return true;
 
                 Refuse(__instance, refusal);

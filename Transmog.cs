@@ -35,7 +35,6 @@ namespace Deadheim
         public static ConfigEntry<bool> Enabled;
         public static ConfigEntry<bool> SameWeightClass;
         public static ConfigEntry<bool> DisabledInArena;
-        public static ConfigEntry<bool> DisabledInRaidZone;
         public static ConfigEntry<string> Blacklist;
         public static ConfigEntry<int> MaxChoices;
         public static ConfigEntry<bool> RequireNpc;
@@ -53,8 +52,6 @@ namespace Deadheim
                 new ConfigDescription("Se verdadeiro, so troca a aparencia entre pecas da mesma classe de peso (pesada = movimento reduzido). Falso = livre dentro do slot.")));
             DisabledInArena = Plugin.Synced(config.Bind("Transmog", "DisabledInArena", true,
                 new ConfigDescription("Em arena o visual real e mostrado (sem transmog).")));
-            DisabledInRaidZone = Plugin.Synced(config.Bind("Transmog", "DisabledInRaidZone", true,
-                new ConfigDescription("Dentro de zona de raid o visual real e mostrado (sem transmog).")));
             Blacklist = Plugin.Synced(config.Bind("Transmog", "Blacklist", "",
                 new ConfigDescription("Prefabs (separados por virgula) que nunca podem ser aparencia nem alvo, ex.: itens de chefe/NPC.")));
             MaxChoices = Plugin.Synced(config.Bind("Transmog", "MaxChoices", 40,
@@ -477,8 +474,7 @@ namespace Deadheim
         }
 
         internal static bool IsSuppressedAt(Vector3 pos) =>
-            (DisabledInArena.Value && Pvp.PvpZones.IsArena(pos)) ||
-            (DisabledInRaidZone.Value && Wards.WardBridge.Governed(pos));
+            DisabledInArena.Value && Pvp.PvpZones.IsArena(pos);
 
         // Previa da tela do Alfaiate: so no proprio personagem, nunca publicada na ZDO.
         private static readonly Dictionary<int, int> _preview = new Dictionary<int, int>();

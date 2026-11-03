@@ -25,8 +25,7 @@ namespace Deadheim.Pvp
         public static void Init(ConfigFile config)
         {
             PvpConfig.Bind(config);
-            // Acesso de guilda aos wards pelo Guilds mesmo sem o RaidSystem. Com ele instalado,
-            // o RaidSystem registra o proprio resolvedor depois e prevalece (e o mesmo Guilds).
+            // Acesso de guilda aos wards pelo mod Guilds.
             if (Wards.WardBridge.GuildOfPlayer == null)
                 Wards.WardBridge.GuildOfPlayer = PvpGuilds.GuildOf;
             Vanilla.Prefabs.PiecesReady += PvpHud.RegisterStatusEffects;
@@ -65,9 +64,9 @@ namespace Deadheim.Pvp
         {
             if (!PvpConfig.Active) return null;
             // A mesma regra do portal (HuntedCanUsePortals), que a descricao da config promete para a pedra e o retreat.
-            if (PvpState.IsHunted && !PvpConfig.HuntedCanUsePortals.Value) return "Cacado nao pode teleportar.";
-            if (PvpState.InEscapeCombat) return $"Em combate! Aguarde {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
-            if (pveBlocks && PvpState.InPveCombat) return $"Em combate com monstro! Aguarde {Mathf.CeilToInt(PvpState.PveCombatRemaining)}s.";
+            if (PvpState.IsHunted && !PvpConfig.HuntedCanUsePortals.Value) return "Cacado: nao da para teleportar.";
+            if (PvpState.InEscapeCombat) return $"Em combate: aguarde {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
+            if (pveBlocks && PvpState.InPveCombat) return $"Em combate com monstro: aguarde {Mathf.CeilToInt(PvpState.PveCombatRemaining)}s.";
             return null;
         }
 
@@ -79,7 +78,7 @@ namespace Deadheim.Pvp
             double cooldown = PvpConfig.RetreatCooldownMinutes.Value * 60d;
             if (cooldown <= 0d) return null;
             double left = Math.Min(RetreatRemaining, cooldown);
-            return left > 0d ? "Retreat em recarga: " + PvpClient.FormatDuration(left) + "." : null;
+            return left > 0d ? "Retreat em recarga: faltam " + PvpClient.FormatDuration(left) + "." : null;
         }
 
         public static double RetreatRemaining => Math.Max(0d, _retreatReadyAt - PvpState.Mono);

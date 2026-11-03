@@ -244,6 +244,10 @@ namespace Deadheim.Menus
             if (Ligado(Transmog.Enabled) && Ligado(Transmog.RequireVip))
                 yield return new Beneficio(visual, "Transmog: a aparência que quiser no seu equipamento");
             yield return new Beneficio(visual, "Velas exclusivas, nome e skins na montaria");
+            if (Ligado(AesirFogo.Ativo))
+                yield return new Beneficio(visual, "Fogo da tocha de outra cor (Alt+F com a tocha na mão)");
+            if (Ligado(AesirLapide.Ativo))
+                yield return new Beneficio(visual, "Tumba com cruz dourada ao morrer");
         }
     }
 }

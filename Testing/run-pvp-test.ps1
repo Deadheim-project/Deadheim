@@ -34,7 +34,7 @@ param(
     [string]$ServerDir = '',
     [string]$ClientDir = '',
     [string]$BepInExCore = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\core'),
-    # O RaidSystem exige o Guilds; vem do perfil do launcher, o mesmo que os jogadores usam.
+    # O Guilds vem do perfil do launcher, o mesmo que os jogadores usam.
     [string]$GuildsDll = (Join-Path $env:APPDATA 'DeadheimLauncher\profiles\Default\game\BepInEx\plugins\guilds\Guilds.dll'),
     # Terceiros do pacote PvP, do perfil do launcher (o que ele baixou do Hexium). O que nao
     # estiver la fica de fora do teste, com aviso.
@@ -96,7 +96,6 @@ if (-not $ServerDir) { throw 'Nao achei o servidor dedicado (bibliotecas da Stea
 $deadheimDll = Join-Path $repo 'bin\Release\Deadheim.dll'
 $vipDll = Join-Path $repo 'bin\Release\VipList.dll'
 $driverDll = Join-Path $PSScriptRoot 'PvpTestDriver\bin\Release\PvpTestDriver.dll'
-$raidDll = Join-Path $repo 'bin\Release\RaidSystem.dll'
 # A pedra do Hearthstone: o passo retreat consome a pedra de verdade (o bloqueio em luta depende dos dois mods).
 $hearthDll = Join-Path $repo 'bin\Release\Hearthstone.dll'
 
@@ -108,12 +107,8 @@ foreach ($name in $PackMods) {
 }
 $antiCheat = $packDlls | Where-Object { (Split-Path $_ -Leaf) -eq 'AzuAnticheat.dll' }
 
-# Castelo de teste: zona do RaidSystem a este deslocamento do templo, com dono "Lobos".
-# O PvpTestDriver (Solo.cs, CastleOffset) procura terra dentro dela com o mesmo numero.
-$castleOffset = 53
-$castleRadius = 30
 
-foreach ($f in @($deadheimDll, $vipDll, $driverDll, $raidDll, $hearthDll, $GuildsDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
+foreach ($f in @($deadheimDll, $vipDll, $driverDll, $hearthDll, $GuildsDll, "$ServerDir\valheim_server.exe", "$ClientDir\valheim.exe", "$BepInExCore\BepInEx.Preloader.dll")) {
     if (-not (Test-Path $f)) { throw "Nao encontrei $f" }
 }
 
@@ -228,24 +223,6 @@ PvpCargoDropPercent = 50
 # Debug.Log dos mods so aparece no -logFile. E nele que se espera.
 $serverLog = "$Root\server-unity.log"
 
-function Write-RaidSystem([int]$tx, [int]$tz) {
-    $cx = $tx - $castleOffset
-    $cz = $tz - $castleOffset
-    $cfg = @"
-[2 - Raid Rules]
-Raid Hours (UTC) = 0-24
-Raid Zones = CasteloTeste,$cx,$cz,$castleRadius,$castleRadius,*,1,0
-"@
-    Set-Content -Path "$Root\server\BepInEx\config\Detalhes.RaidSystem.cfg" -Value $cfg -Encoding UTF8
-
-    # Territorio ja dominado, como se a guilda Lobos tivesse conquistado o castelo.
-    New-Item -ItemType Directory -Force "$Root\server\BepInEx\config\RaidSystem" | Out-Null
-    $data = @"
-{"players":[],"scores":[],"territories":[{"Name":"CasteloTeste","X":$cx,"Y":0,"Z":$cz,"OwnerTeamId":"Lobos","LastConquestTimestamp":0,"PendingTribute":0,"LastTributeUtc":0}]}
-"@
-    Set-Content -Path "$Root\server\BepInEx\config\RaidSystem\RaidData.json" -Value $data -Encoding UTF8
-}
-
 function Start-Server {
     if (Test-Path $serverLog) { Remove-Item $serverLog -Force }
     $env:SteamAppId = '892970'
@@ -297,10 +274,10 @@ $prefsBackup = "$Root\valheim-prefs.reg"
 try {
     # ------------------------------------------------------------ servidor: mundo e templo
     Write-Step "Montando arvores BepInEx em $Root"
-    New-BepInExTree "$Root\server" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll) + $packDlls)
-    New-BepInExTree "$Root\clientA" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
-    New-BepInExTree "$Root\clientB" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
-    New-BepInExTree "$Root\clientS" (@($deadheimDll, $vipDll, $raidDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\server" (@($deadheimDll, $vipDll, $hearthDll, $GuildsDll) + $packDlls)
+    New-BepInExTree "$Root\clientA" (@($deadheimDll, $vipDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\clientB" (@($deadheimDll, $vipDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
+    New-BepInExTree "$Root\clientS" (@($deadheimDll, $vipDll, $hearthDll, $GuildsDll, $driverDll) + $packDlls)
     if ($antiCheat) {
         # AzuAntiCheat: a whitelist do servidor e o espelho das pastas de plugin do cliente.
         $whitelist = "$Root\server\BepInEx\config\AzuAntiCheat_Whitelist"
@@ -336,7 +313,6 @@ try {
     Set-Content -Path "$Root\saves-server\adminlist.txt" -Value $adminLines -Encoding ASCII
     if (Test-Path "$Root\fotos") { Remove-Item -Recurse -Force "$Root\fotos" }
     Write-ServerConfig 'Radius' "ArenaTeste,$tx,$tz,15"
-    Write-RaidSystem ([int]$tx) ([int]$tz)
     Write-Step "Servidor (2a subida, config de teste; arena no templo $tx,$tz)"
     Start-Server | Out-Null
     if (-not (Wait-Log $serverLog 'Templo inicial em x=' 300)) { throw 'O servidor nao subiu de novo.' }

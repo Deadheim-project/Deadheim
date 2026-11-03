@@ -1,5 +1,6 @@
 using BepInEx;
 using BepInEx.Configuration;
+using Deadheim.Shared;
 using Deadheim.Vanilla;
 using HarmonyLib;
 using System;
@@ -397,7 +398,7 @@ namespace Deadheim
                 if (__instance == null || __instance != Player.m_localPlayer) return true;
                 Territorio t = Em(__instance.transform.position);
                 if (t == null || PodeConstruir(__instance, t)) return true;
-                __instance.Message(MessageHud.MessageType.Center, $"Territorio {t.Nome}: construcao bloqueada.");
+                __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Construcao bloqueada", "Territorio " + t.Nome + ": aqui so quem tem permissao constroi."));
                 return false;
             }
         }
@@ -411,7 +412,7 @@ namespace Deadheim
                 Territorio t = Em(piece.transform.position);
                 if (t == null || PodeConstruir(__instance, t)) return;
                 __result = false;
-                __instance.Message(MessageHud.MessageType.Center, $"Territorio {t.Nome}: nao da para desmontar aqui.");
+                __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Nao da para desmontar", "Territorio " + t.Nome + ": as pecas daqui estao protegidas."));
             }
         }
 
@@ -423,7 +424,7 @@ namespace Deadheim
             if (alvo == null || player == null || player != Player.m_localPlayer) return false;
             Territorio t = Em(alvo.transform.position);
             if (t == null || !t.Interacao || Admin.LocalPlayerIsAdmin() || t.Permite(player.GetPlayerName())) return false;
-            player.Message(MessageHud.MessageType.Center, $"Territorio {t.Nome}: voce nao pode mexer nisso.");
+            player.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Voce nao pode mexer nisso", "Territorio " + t.Nome + ": interacao restrita."));
             return true;
         }
 
@@ -526,9 +527,23 @@ namespace Deadheim
 
             string agora = Em(player.transform.position)?.Nome;
             if (agora == _dentro) return;
-            if (_dentro != null) player.Message(MessageHud.MessageType.Center, "Saindo do territorio " + _dentro);
-            if (agora != null) player.Message(MessageHud.MessageType.Center, "Territorio " + agora + ": " + Em(player.transform.position).Flags());
+            if (agora == null)
+                player.Message(MessageHud.MessageType.Center, Avisos.Info("Saindo de " + _dentro));
+            else
+                player.Message(MessageHud.MessageType.Center, Avisos.Territorio("Territorio " + agora, Resumo(Em(player.transform.position))));
             _dentro = agora;
+        }
+
+        /// <summary>Uma linha curta do que vale no territorio, para quem entra (o Flags() completo e para o admin).</summary>
+        private static string Resumo(Territorio t)
+        {
+            if (t == null) return null;
+            List<string> regras = new List<string>();
+            if (t.Seguro) regras.Add("zona segura");
+            if (t.Construir) regras.Add("construcao restrita");
+            if (t.Estruturas) regras.Add("estruturas protegidas");
+            if (t.Interacao) regras.Add("interacao restrita");
+            return regras.Count == 0 ? "Sem restricoes" : string.Join(" • ", regras);
         }
 
         // -------------------------------------------------------------------- comando /territorio

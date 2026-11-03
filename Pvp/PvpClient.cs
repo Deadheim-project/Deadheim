@@ -1,3 +1,4 @@
+using Deadheim.Shared;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -175,7 +176,7 @@ namespace Deadheim.Pvp
             string itemName = Localization.instance != null
                 ? Localization.instance.Localize(drop.m_itemData.m_shared.m_name)
                 : prefabName;
-            ShowMessage($"<color=#ffd700>+{amount} {itemName}</color> - {reason}", true);
+            ShowMessage(Avisos.Territorio($"+{amount} {itemName}", reason), true);
         }
 
         /// <summary>
@@ -190,7 +191,7 @@ namespace Deadheim.Pvp
                 || !player.m_nview.IsValid() || !player.m_nview.IsOwner()) return;
             _punishPending = false;
 
-            ShowMessage("<color=#ff5050>Voce deslogou em combate e morreu onde saiu.</color>", true);
+            ShowMessage(Avisos.Pvp("Deslogou em combate", "Voce morreu onde saiu."), true);
             HitData hit = new HitData { m_hitType = HitData.HitType.Undefined, m_point = player.GetCenterPoint() };
             hit.m_damage.m_damage = 1e7f;
             player.m_nview.InvokeRPC("RPC_Damage", hit);

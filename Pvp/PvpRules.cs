@@ -190,10 +190,10 @@ namespace Deadheim.Pvp
         {
             switch (verdict)
             {
-                case Verdict.AttackerProtected: return "Voce esta protegido (zona segura ou imunidade) e nao pode atacar jogadores.";
-                case Verdict.VictimProtected: return "Este jogador esta protegido.";
-                case Verdict.Ally: return "Aliado: sem fogo amigo.";
-                case Verdict.BossGap: return "Diferenca de chefes grande demais: o PvP entre voces nao da dano.";
+                case Verdict.AttackerProtected: return "Voce esta protegido: zona segura ou imunidade impedem atacar jogadores.";
+                case Verdict.VictimProtected: return "Alvo protegido: este jogador esta em zona segura ou imune.";
+                case Verdict.Ally: return "Aliado: sem fogo amigo entre guilda e grupo.";
+                case Verdict.BossGap: return "Chefes muito diferentes: o PvP entre voces nao da dano.";
                 default: return null;
             }
         }

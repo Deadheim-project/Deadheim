@@ -14,7 +14,7 @@ namespace Deadheim
     /// chegada da cidade. Volta-se pela pedra de retorno, pelo /retreat ou pelo Teleportador do NpcValheim
     /// ("Voltar para casa"), que leva cada jogador so ao totem que ele mesmo construiu: nao existe rota de
     /// ninguem para a base de ninguem.
-    /// - Colocar: so dentro de ward do qual o jogador e dono, com limite por jogador contado pelo servidor
+    /// - Colocar: so dentro de ward do qual o jogador e dono ou da sua guilda, com limite por jogador contado pelo servidor
     ///   (5o valor do DeadheimPortalAndTotemCount).
     /// - Usar: quem tem acesso ao ward ligado que cobre o totem (dono, guilda, adicionados), com as travas
     ///   da pedra (combate, cacado, minerio). Sem recarga.
@@ -107,6 +107,8 @@ namespace Deadheim
                 UnityEngine.Object.DestroyImmediate(portal);
             }
 
+            Estilizar(_prefab);
+
             Piece piece = _prefab.GetComponent<Piece>();
             if (piece != null)
             {
@@ -116,6 +118,49 @@ namespace Deadheim
             }
 
             Debug.Log("[Deadheim] " + PrefabName + " criado a partir do " + VanillaPrefab + ".");
+        }
+
+        // Dourado de cidade: o portal de pedra do jogo e azul-esbranquicado.
+        private static readonly Color Ouro = new Color(1f, 0.72f, 0.18f, 1f);
+
+        /// <summary>
+        /// Visual proprio: pedra aquecida, brilho e particulas douradas e luz ambar, para nao ser lido como
+        /// "mais um portal". Materiais copiados por renderer: o portal_stone original nao muda.
+        /// </summary>
+        private static void Estilizar(GameObject go)
+        {
+            try
+            {
+                foreach (Renderer r in go.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (r is ParticleSystemRenderer) continue;
+                    Material[] copias = r.sharedMaterials;
+                    for (int i = 0; i < copias.Length; i++)
+                    {
+                        if (copias[i] == null) continue;
+                        Material m = new Material(copias[i]);
+                        if (m.HasProperty("_Color")) m.color = Color.Lerp(m.color, Ouro, 0.45f);
+                        if (m.HasProperty("_EmissionColor"))
+                        {
+                            m.EnableKeyword("_EMISSION");
+                            m.SetColor("_EmissionColor", Ouro * 0.9f);
+                        }
+                        copias[i] = m;
+                    }
+                    r.sharedMaterials = copias;
+                }
+                foreach (ParticleSystem ps in go.GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    ParticleSystem.MainModule main = ps.main;
+                    main.startColor = new ParticleSystem.MinMaxGradient(Ouro, new Color(1f, 0.92f, 0.55f, 1f));
+                }
+                foreach (Light luz in go.GetComponentsInChildren<Light>(true))
+                    luz.color = Ouro;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[Deadheim] Totem da Cidade: nao consegui estilizar o visual: " + ex.Message);
+            }
         }
 
         /// <summary>A cada ObjectDB novo (os itens do custo so existem a partir dai).</summary>
@@ -215,28 +260,28 @@ namespace Deadheim
                 if (area.IsEnabled()) return null;
             }
 
-            if (!coberto) return "Este totem esta fora de ward e nao funciona.";
-            return temAcesso ? "O ward desta base esta desligado ou sem combustivel."
-                             : "So quem tem acesso ao ward desta base usa o totem.";
+            if (!coberto) return "Totem fora de ward: so funciona dentro de um ward.";
+            return temAcesso ? "Ward desligado: abasteca o ward desta base."
+                             : "Sem acesso: so quem tem acesso ao ward desta base usa o totem.";
         }
 
         internal static void Viajar(Vector3 posTotem, Player player)
         {
             if (player == null) return;
 
-            string recusa = Ligado.Value ? RecusaDeAcesso(posTotem, player) : Nome + " esta desligado no servidor.";
+            string recusa = Ligado.Value ? RecusaDeAcesso(posTotem, player) : Nome + " desligado no servidor.";
             Vector3 destino = Vector3.zero;
             if (recusa == null && !TryDestino(out destino))
-                recusa = "O admin ainda nao definiu a chegada da cidade.";
+                recusa = "Cidade indisponivel: o admin ainda nao definiu a chegada.";
             // As mesmas travas da pedra e do /retreat: o totem nao pode ser a saida de uma luta.
             if (recusa == null)
                 recusa = Pvp.PvpModule.TeleportRefusal(Pvp.PvpConfig.RetreatBlockedByPveCombat.Value);
             if (recusa == null && !player.IsTeleportable(false))
-                recusa = "Carregando minerio ou metal voce nao viaja pelo totem.";
+                recusa = "Carga pesada: carregando minerio ou metal voce nao viaja pelo totem.";
 
             if (recusa != null)
             {
-                player.Message(MessageHud.MessageType.Center, recusa);
+                Avisos.Mostrar(player, Avisos.Recusa(recusa));
                 return;
             }
 
@@ -244,11 +289,11 @@ namespace Deadheim
             Vector2 lado = UnityEngine.Random.insideUnitCircle * 2f;
             if (!player.TeleportTo(destino + new Vector3(lado.x, 0f, lado.y), player.transform.rotation, true))
             {
-                player.Message(MessageHud.MessageType.Center, "O teleporte nao saiu agora; tente de novo em instantes.");
+                player.Message(MessageHud.MessageType.Center, Avisos.Info("O teleporte nao saiu", "Tente de novo em instantes."));
                 return;
             }
 
-            player.Message(MessageHud.MessageType.Center, "Indo para a cidade...");
+            player.Message(MessageHud.MessageType.Center, Avisos.Ok("Indo para a cidade..."));
         }
 
         // ------------------------------------------------------------- colocar e remover
@@ -266,14 +311,14 @@ namespace Deadheim
 
                 if (!Ligado.Value)
                 {
-                    __instance.Message(MessageHud.MessageType.Center, Nome + " esta desligado no servidor.");
+                    __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(Nome + " desligado", "O servidor desativou este recurso."));
                     return false;
                 }
                 if (Admin.LocalPlayerIsAdmin()) return true;
 
                 if (!DentroDoProprioWard(pos, __instance.GetPlayerID()))
                 {
-                    __instance.Message(MessageHud.MessageType.Center, "O " + Nome + " so pode ficar dentro de um ward seu.");
+                    __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Coloque dentro de um ward", "O totem fica em ward seu ou de alguem da sua guilda."));
                     return false;
                 }
 
@@ -284,14 +329,14 @@ namespace Deadheim
                 if (Contagem >= 999)
                 {
                     WardCore.RequestWardCount();
-                    __instance.Message(MessageHud.MessageType.Center, "Conferindo seus totens com o servidor. Tente de novo.");
+                    __instance.Message(MessageHud.MessageType.Center, Avisos.Info("Conferindo seus totens", "Tente de novo em instantes."));
                     return false;
                 }
                 if (Contagem >= limite)
                 {
                     __instance.Message(MessageHud.MessageType.Center,
-                        limite == 1 ? "Voce ja tem um " + Nome + ". Remova o antigo primeiro."
-                                    : "Limite de Totens da Cidade atingido (" + limite + ").");
+                        limite == 1 ? Avisos.Bloqueio("Voce ja tem um " + Nome, "Remova o antigo primeiro.")
+                                    : Avisos.Bloqueio("Limite de totens atingido (" + limite + ")", "Remova um para colocar outro."));
                     return false;
                 }
 
@@ -307,8 +352,8 @@ namespace Deadheim
             foreach (PrivateArea area in TodasAreas)
             {
                 if (area == null || WardProfiles.For(area) == null) continue;
-                Piece piece = area.GetComponent<Piece>();
-                if (piece != null && piece.GetCreator() == playerId && area.IsInside(pos, 0f)) return true;
+                // Dono ou membro da mesma guilda do dono do ward (IsPermitted traz a guilda embutida).
+                if (area.IsInside(pos, 0f) && WardCore.IsPermittedIn(area, playerId)) return true;
             }
             return false;
         }
@@ -323,7 +368,7 @@ namespace Deadheim
                 if (piece.GetCreator() == __instance.GetPlayerID() || Admin.LocalPlayerIsAdmin()) return;
 
                 __result = false;
-                __instance.Message(MessageHud.MessageType.Center, "So o dono desmonta o " + Nome + ".");
+                __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("So o dono desmonta", "Este totem foi construido por outro jogador."));
             }
         }
 
@@ -364,7 +409,7 @@ namespace Deadheim
         {
             if (!_esperandoDestino) return;
             _esperandoDestino = false;
-            Player.m_localPlayer?.Message(MessageHud.MessageType.Center, "Chegada do " + Nome + " gravada: " + Destino.Value);
+            Player.m_localPlayer?.Message(MessageHud.MessageType.Center, Avisos.Ok("Chegada do totem gravada", Destino.Value));
         }
     }
 

@@ -63,7 +63,7 @@ namespace Deadheim.Pvp
         public static ConfigEntry<string> BossOrder;
         public static ConfigEntry<bool> BossPassCounts;
 
-        // ------------------------------------------------------- castelo (RaidSystem)
+        // ------------------------------------------------------- castelo (gancho PvpBridge; sem o RaidSystem nao ha castelo)
         public static ConfigEntry<bool> CastleNoSkillLoss;
         public static ConfigEntry<bool> CastleIgnoresImmunity;
         public static ConfigEntry<string> CastleRewardItem;
@@ -248,7 +248,7 @@ namespace Deadheim.Pvp
                 "O passe de chefe do NpcValheim (ganho ajudando a matar o chefe ou comprado no Mestre dos Passes) conta " +
                 "para o nivel como a morte do chefe. Desligado, so a morte conta. Sem o NpcValheim, so a morte conta.");
 
-            // Castelo e zona de guerra do RaidSystem (Raid Zones). Sem o RaidSystem, nao ha castelo.
+            // Castelo e zona de guerra registrada no PvpBridge. O RaidSystem foi removido, entao hoje nao ha castelo.
             const string castle = "PvP - Castelo";
             CastleNoSkillLoss = Bind(config, castle, "CastleNoSkillLoss", true,
                 "Quem morre para jogador dentro de um castelo do RaidSystem nao perde skill, atacante ou defensor.");

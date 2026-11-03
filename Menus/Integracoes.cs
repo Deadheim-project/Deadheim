@@ -28,6 +28,25 @@ namespace Deadheim.Menus
         public static bool TemNpcValheim => Carregado(NpcValheimGuid);
         public static bool TemMontarias => Carregado(MontariasGuid);
         public static bool TemAdaptiveNet => Carregado(AdaptiveNetGuid);
+        public static bool TemGuilds => AccessTools.TypeByName("Guilds.Interface") != null;
+
+        /// <summary>
+        /// Painel do mod Guilds (blaxxun): o mesmo que a tecla dele abre -- sem guilda a tela de criar/procurar,
+        /// com guilda o painel de gestao. ESC fecha (o Update do proprio Guilds cuida).
+        /// </summary>
+        public static string AbrirGuilds() => Tentar("o painel da guilda", () =>
+        {
+            Type ui = Tipo("Guilds.Interface");
+            Type api = Tipo("Guilds.API");
+            MethodInfo own = AccessTools.Method(api, "GetOwnGuild");
+            Exigir(own, "Guilds.API.GetOwnGuild");
+            string campo = own.Invoke(null, null) == null ? "NoGuildUI" : "GuildManagementUI";
+            FieldInfo f = AccessTools.Field(ui, campo);
+            Exigir(f, "Guilds.Interface." + campo);
+            GameObject painel = f.GetValue(null) as GameObject;
+            Exigir(painel, "Guilds.Interface." + campo + " (ainda nao carregado)");
+            painel.SetActive(true);
+        });
 
         // ------------------------------------------------------------------ NpcValheim
 
@@ -102,7 +121,7 @@ namespace Deadheim.Menus
             // Uma pagina que sumiu numa versao nova do NpcValheim fica de fora; as outras abrem.
             foreach ((string rotulo, string nomeTipo) in paginas)
             {
-                Type tipoView = AccessTools.TypeByName(nomeTipo);
+                Type tipoView = TipoPorNome(nomeTipo);
                 if (tipoView == null)
                 {
                     Debug.LogWarning($"[Deadheim] Menus: {nomeTipo} nao existe nesta versao do NpcValheim; a aba '{rotulo}' fica de fora.");
@@ -127,6 +146,13 @@ namespace Deadheim.Menus
             return Tentar("Montarias", () => Invocar("ValheimMontarias.MountMenu", "Open"));
         }
 
+        /// <summary>Menu de pets (lista, bonus e invocar/guardar), que mora no mod Montarias.</summary>
+        public static string AbrirPets()
+        {
+            if (!TemMontarias) return "O menu de pets vem do mod Montarias, que nao esta instalado.";
+            return Tentar("Pets", () => Invocar("ValheimMontarias.Pets.PetMenu", "Open"));
+        }
+
         /// <summary>Aba de admin das montarias (era o F8 fixo no codigo do Montarias).</summary>
         public static string AbrirMontariasAdmin()
         {
@@ -145,7 +171,7 @@ namespace Deadheim.Menus
             if (!TemMontarias) return "";
             try
             {
-                Type api = AccessTools.TypeByName("ValheimMontarias.MontariasApi");
+                Type api = TipoPorNome("ValheimMontarias.MontariasApi");
                 if (api == null) return "";
                 if (!(AccessTools.Method(api, "LocalKnown")?.Invoke(null, null) is bool sabe) || !sabe) return "";
                 if (!(AccessTools.Method(api, "LocalRank")?.Invoke(null, null) is int rank)) return "";
@@ -165,7 +191,7 @@ namespace Deadheim.Menus
             get
             {
                 if (!TemAdaptiveNet) return false;
-                FieldInfo campo = AccessTools.Field(AccessTools.TypeByName("AdaptiveNet.DiagnosticsOverlay"), "_visible");
+                FieldInfo campo = AccessTools.Field(TipoPorNome("AdaptiveNet.DiagnosticsOverlay"), "_visible");
                 return campo?.GetValue(null) is bool v && v;
             }
         }
@@ -212,9 +238,30 @@ namespace Deadheim.Menus
             }
         }
 
+        private static readonly Dictionary<string, Type> _tipos = new Dictionary<string, Type>();
+
+        /// <summary>
+        /// O tipo pelo nome completo, guardado. Nao usa AccessTools.TypeByName: ele varre os tipos de
+        /// todos os assemblies, e no cliente sem YamlDotNet (opcional no launcher) a varredura do
+        /// NpcValheim falha em NpcConfigStore/QuestStore e o HarmonyX escreve um aviso enorme no log a
+        /// cada chamada (a Central chamava a cada meio segundo). Assembly.GetType nao varre.
+        /// </summary>
+        internal static Type TipoPorNome(string nome)
+        {
+            if (_tipos.TryGetValue(nome, out Type tipo)) return tipo;
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try { tipo = assembly.GetType(nome, false); }
+                catch (Exception) { tipo = null; }
+                if (tipo != null) break;
+            }
+            _tipos[nome] = tipo;
+            return tipo;
+        }
+
         private static Type Tipo(string nome)
         {
-            Type tipo = AccessTools.TypeByName(nome);
+            Type tipo = TipoPorNome(nome);
             if (tipo == null) throw new MissingMemberException(nome);
             return tipo;
         }
@@ -230,7 +277,7 @@ namespace Deadheim.Menus
 
         private static void InvocarOpcional(string tipo, string metodo)
         {
-            Type t = AccessTools.TypeByName(tipo);
+            Type t = TipoPorNome(tipo);
             MethodInfo m = t != null ? AccessTools.Method(t, metodo) : null;
             m?.Invoke(null, new object[m.GetParameters().Length]);
         }

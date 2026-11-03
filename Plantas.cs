@@ -410,8 +410,6 @@ namespace Deadheim
                 fail = "Aguarde " + Mathf.CeilToInt(until - now) + " s para colocar outra planta.";
             else if (Vector3.Distance(anchor, peer.Position) > MaxReach.Value + 10f)
                 fail = "Ponto de colocacao longe demais.";
-            else if (Wards.WardBridge.Governed(anchor) || Wards.WardBridge.Governed(peer.Position))
-                fail = "Nao e possivel colocar plantas em zona de raid.";
 
             if (fail != null) { Reply(peerId, Head("begin", false, fail)); return; }
 
@@ -458,12 +456,6 @@ namespace Deadheim
 
             if (!IsAllowed(peca.Prefab)) { Reply(peerId, Res(ResSkip, "Peca nao permitida.")); return; }
             if (Vector3.Distance(pos, peer.Position) > MaxReach.Value + 15f) { Reply(peerId, Res(ResRetry, "Longe demais.")); return; }
-            if (Wards.WardBridge.Governed(pos))
-            {
-                EndSession(peerId);
-                Reply(peerId, Res(ResFatal, "Zona de raid: colocacao cancelada."));
-                return;
-            }
             if (Location.IsInsideNoBuildLocation(pos)) { Reply(peerId, Res(ResSkip, "Zona sem construcao.")); return; }
             if (ServerWardBlocks(pos, peer.PlayerId)) { Reply(peerId, Res(ResSkip, "Ward alheio.")); return; }
 
@@ -473,7 +465,6 @@ namespace Deadheim
 
         private static bool ServerWardBlocks(Vector3 pos, long playerId)
         {
-            if (Wards.WardBridge.Governed(pos)) return false;
             foreach (PrivateArea area in Priv.AllAreas())
             {
                 if (area == null || !Priv.AreaEnabled(area) || !Priv.AreaInside(area, pos, 0f)) continue;
@@ -606,7 +597,6 @@ namespace Deadheim
 
             Vector3 anchor = LookPoint(lp);
             float yaw = Mathf.Round(lp.transform.eulerAngles.y / 22.5f) * 22.5f;
-            if (Wards.WardBridge.Governed(anchor)) { Status = "Nao e possivel colocar plantas em zona de raid."; return; }
 
             _startName = name; _startAnchor = anchor; _startYaw = yaw;
             Starting = true;
@@ -688,8 +678,6 @@ namespace Deadheim
             if (piece == null || !IsAllowed(peca.Prefab)) { r.Skipped++; r.Idx++; return; }
 
             // Travas locais, antes de pedir o OK ao servidor.
-            if (Wards.WardBridge.Governed(pos) || Wards.WardBridge.Governed(lp.transform.position))
-            { CancelPlace("Zona de raid: colocacao cancelada."); return; }
             if (AlreadyThere(peca.Prefab, pos, rot)) { r.Existing++; r.Idx++; return; }
             if (Location.IsInsideNoBuildLocation(pos) || !PrivateArea.CheckAccess(pos, 0f, false, false)
                 || (piece.m_onlyInBiome != 0 && (Heightmap.FindBiome(pos) & piece.m_onlyInBiome) == 0))

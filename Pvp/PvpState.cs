@@ -370,7 +370,7 @@ namespace Deadheim.Pvp
             // Castelo que ja caiu nesta janela de raid vira zona segura: a luta ali acabou.
             string fallenCastle = castle != null && PvpBridge.CastleSafe(pos) ? castle : null;
             if (fallenCastle != null) castle = null;
-            // Castelo do RaidSystem e zona de guerra: la a imunidade nao segura ninguem.
+            // Castelo (PvpBridge) e zona de guerra: la a imunidade nao segura ninguem.
             bool warZone = arena || (castle != null && PvpConfig.CastleIgnoresImmunity.Value);
             bool hunted = IsHunted;
             bool immune = IsImmune;

@@ -13,7 +13,7 @@ namespace Deadheim
 
         public static void Bind(ConfigFile config)
         {
-            Ligado = Plugin.Synced(config.Bind("Server config", "TesteSkills100", true,
+            Ligado = Plugin.Synced(config.Bind("Server config", "TesteSkills100", false,
                 new ConfigDescription("TEMPORARIO (servidor em teste): todos os jogadores ficam com 100 em todas as skills ao nascer. Desligar/remover no lancamento.")));
             Ligado.SettingChanged += (_, __) => Aplicar(Player.m_localPlayer);
         }

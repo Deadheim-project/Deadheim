@@ -1,4 +1,5 @@
 using Deadheim.Vanilla;
+using Deadheim.Shared;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -31,8 +32,8 @@ namespace Deadheim.Pvp
 
             string why = PvpState.ZoneLabel;
             player.Message(MessageHud.MessageType.Center, enabled
-                ? "<color=#ff5050>PvP ATIVO</color>" + (string.IsNullOrEmpty(why) ? string.Empty : " - " + why)
-                : "<color=#7CFC00>PvP desligado</color>" + (string.IsNullOrEmpty(why) ? string.Empty : " - " + why));
+                ? Avisos.Pvp("PvP ATIVO", string.IsNullOrEmpty(why) ? "Cuidado: outros jogadores podem atacar voce." : why)
+                : Avisos.Ok("PvP desligado", string.IsNullOrEmpty(why) ? "Ninguem pode atacar voce agora." : why));
         }
 
         public static void ResetSession()

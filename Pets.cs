@@ -19,6 +19,10 @@ namespace Deadheim
     {
         private const string ZdoPetKey = "dh_pet";
         private const string ZdoPetNameKey = "dh_petnome";
+        // Guardados só no personagem (m_customData): pets desbloqueados (ids separados por vírgula)
+        // e o último pet ativo, para a tecla de invocar/dispensar.
+        private const string UnlockedKey = "dh_pets_unlocked";
+        private const string LastPetKey = "dh_pet_last";
         private const string RpcToServer = "DH_Pet_ToServer";
         private const string RpcToClient = "DH_Pet_ToClient";
         // D3: tabela de verdade (servidor envia, clientes obedecem)
@@ -90,6 +94,7 @@ namespace Deadheim
             public string SitParam;     // ex: "sleeping" (bool), null se não tiver
             public float WalkSpeed;     // lido de Character.m_walkSpeed antes de Strip
             public float RunSpeed;      // lido de Character.m_runSpeed antes de Strip
+            public bool Flying;         // prefab com RandomFlyingBird (corvo): voa em vez de andar
         }
 
         internal static void BindConfigs(ConfigFile config)
@@ -212,7 +217,26 @@ namespace Deadheim
         /// <summary>Cliente: o jogador local tem esse pet?</summary>
         private static bool LocalOwns(PetDef def)
         {
-            return HasPetItem(Player.m_localPlayer, def);
+            // Desbloqueado (item já consumido) ou, durante a transição, ainda com o item no inventário.
+            return def != null && (IsUnlocked(Player.m_localPlayer, def.Id) || HasPetItem(Player.m_localPlayer, def));
+        }
+
+        private static HashSet<string> ReadUnlocked(Player player)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (player != null && player.m_customData.TryGetValue(UnlockedKey, out string raw) && !string.IsNullOrEmpty(raw))
+                foreach (string id in raw.Split(','))
+                    if (id.Trim().Length > 0) set.Add(id.Trim());
+            return set;
+        }
+
+        private static bool IsUnlocked(Player player, string id) =>
+            player != null && !string.IsNullOrEmpty(id) && ReadUnlocked(player).Contains(id);
+
+        private static void Unlock(Player player, string id)
+        {
+            var set = ReadUnlocked(player);
+            if (set.Add(id)) player.m_customData[UnlockedKey] = string.Join(",", set);
         }
 
         private static string ItemPrefab(PetDef def) => "Pet_" + def.Id;
@@ -241,10 +265,110 @@ namespace Deadheim
                     return false;
                 }
                 if (!HasPetItem(Player.m_localPlayer, def)) return false;
-                string active = Player.m_localPlayer.m_customData.TryGetValue(ZdoPetKey, out string current) ? current : "";
-                SendToServer(string.Equals(active, def.Id, StringComparison.OrdinalIgnoreCase) ? "off" : "set", def.Id, "");
+                if (IsUnlocked(Player.m_localPlayer, def.Id))
+                {
+                    // Já está na lista: o item não é gasto. Quem quer trocar o pet usa o menu de pets.
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center,
+                        "Você já desbloqueou este pet. Invoque-o pelo menu de pets (o item não foi gasto).");
+                    return false;
+                }
+                // Consumível: gasta o item, desbloqueia o pet para sempre neste personagem e já o invoca.
+                inventory.RemoveOneItem(item);
+                Unlock(Player.m_localPlayer, def.Id);
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center,
+                    "Pet desbloqueado! Ele fica na sua lista de pets.");
+                SendActivate(def.Id);
                 return false;
             }
+        }
+
+        // ----------------------------------------------------------------- API (Montarias)
+        // Só tipos primitivos: o menu de pets do mod Montarias chama por reflexão.
+
+        public static string[] CatalogIds() =>
+            _catalog == null ? Array.Empty<string>() : _catalog.Keys.ToArray();
+
+        /// <summary>Pet já desbloqueado (consumido) pelo jogador local.</summary>
+        public static bool IsUnlocked(string id) => IsUnlocked(Player.m_localPlayer, id);
+
+        /// <summary>O jogador local tem o item do pet (ainda não consumido) no inventário.</summary>
+        public static bool HasItem(string id) =>
+            _catalog != null && _catalog.TryGetValue(id ?? "", out PetDef def) && HasPetItem(Player.m_localPlayer, def);
+
+        /// <summary>Id do pet ativo do jogador local, ou "".</summary>
+        public static string ActiveId()
+        {
+            Player lp = Player.m_localPlayer;
+            if (lp == null || !lp.m_customData.TryGetValue(ZdoPetKey, out string id)) return "";
+            return id ?? "";
+        }
+
+        /// <summary>Pet cujos bônus valem agora: ativo, do jogador e fora das zonas onde o pet fica oculto
+        /// (arena, partida, raid). Em cache por 0,5 s, pois os bônus são lidos a cada quadro.</summary>
+        public static string ActiveIdForBuffs()
+        {
+            float now = Time.realtimeSinceStartup;
+            if (now - _buffCheckAt < 0.5f) return _buffId;
+            _buffCheckAt = now;
+            _buffId = "";
+            Player lp = Player.m_localPlayer;
+            if (lp == null || PetEnabled == null || !PetEnabled.Value || _catalog == null) return _buffId;
+            string id = ActiveId();
+            if (id.Length == 0 || !_catalog.TryGetValue(id, out PetDef def) || !LocalOwns(def)) return _buffId;
+            try { if (ShouldHide(lp)) return _buffId; } catch { }
+            _buffId = def.Id;
+            return _buffId;
+        }
+        private static float _buffCheckAt;
+        private static string _buffId = "";
+
+        /// <summary>Invoca o pet (precisa estar desbloqueado ou no inventário). Devolve false se não pôde.</summary>
+        public static bool Activate(string id)
+        {
+            Player lp = Player.m_localPlayer;
+            if (lp == null || ZRoutedRpc.instance == null || _catalog == null) return false;
+            if (!_catalog.TryGetValue(id ?? "", out PetDef def)) return false;
+            if (!LocalOwns(def))
+            {
+                lp.Message(MessageHud.MessageType.Center, "Você ainda não tem este pet.");
+                return false;
+            }
+            SendActivate(def.Id);
+            return true;
+        }
+
+        /// <summary>Guarda o pet ativo.</summary>
+        public static void Dismiss()
+        {
+            if (Player.m_localPlayer == null || ZRoutedRpc.instance == null) return;
+            if (ActiveId().Length > 0) SendToServer("off");
+        }
+
+        /// <summary>Tecla de atalho: dispensa o pet ativo; sem pet ativo, invoca o último (ou o primeiro desbloqueado).</summary>
+        public static void ToggleQuick()
+        {
+            Player lp = Player.m_localPlayer;
+            if (lp == null || ZRoutedRpc.instance == null || _catalog == null) return;
+            if (ActiveId().Length > 0) { Dismiss(); return; }
+            string pick = null;
+            if (lp.m_customData.TryGetValue(LastPetKey, out string last) && _catalog.TryGetValue(last ?? "", out PetDef ld) && LocalOwns(ld))
+                pick = ld.Id;
+            if (pick == null)
+                foreach (PetDef def in _catalog.Values)
+                    if (LocalOwns(def)) { pick = def.Id; break; }
+            if (pick == null)
+            {
+                lp.Message(MessageHud.MessageType.Center, "Você ainda não tem nenhum pet.");
+                return;
+            }
+            SendActivate(pick);
+        }
+
+        private static void SendActivate(string id)
+        {
+            Player lp = Player.m_localPlayer;
+            string name = lp != null && lp.m_customData.TryGetValue(ZdoPetNameKey, out string n) ? n : "";
+            SendToServer("set", id, name ?? "");
         }
 
         /// <summary>Lista os pets que o jogador local tem.</summary>
@@ -304,6 +428,7 @@ namespace Deadheim
             private static void Prefix()
             {
                 DestroyAll();
+                _textsFixed = false;
                 // D3: limpar tabela local ao deslogar
                 _serverTable.Clear();
                 _tableReceived = false;
@@ -442,6 +567,7 @@ namespace Deadheim
             Player lp = Player.m_localPlayer;
             if (lp == null) return;
             if (writePet) lp.m_customData[ZdoPetKey] = petId ?? "";
+            if (writePet && !string.IsNullOrEmpty(petId)) lp.m_customData[LastPetKey] = petId;
             if (writeName) lp.m_customData[ZdoPetNameKey] = name ?? "";
             if (lp.m_nview != null && lp.m_nview.IsValid())
             {
@@ -505,6 +631,9 @@ namespace Deadheim
 
             float now = Time.realtimeSinceStartup;
 
+            if (!_textsFixed && ObjectDB.instance != null && ObjectDB.instance.m_items.Count > 0)
+                FixItemTexts();
+
             // D3: revalidação VIP a cada 60 s (no servidor: remove Aesir de quem perdeu o VIP)
             if (ZNet.instance != null && ZNet.instance.IsServer() && now - _lastOwnershipCheck > OwnershipCheckInterval)
             {
@@ -522,6 +651,23 @@ namespace Deadheim
             catch (Exception ex)
             {
                 Debug.LogError($"[Deadheim Pets] Erro no scan de jogadores: {ex}");
+            }
+        }
+
+        private static bool _textsFixed;
+
+        /// <summary>O item do pet agora é consumível: troca a descrição (definida em ClonedItems) no prefab.</summary>
+        private static void FixItemTexts()
+        {
+            _textsFixed = true;
+            foreach (PetDef def in _catalog.Values)
+            {
+                GameObject prefab = ObjectDB.instance.GetItemPrefab(ItemPrefab(def));
+                ItemDrop drop = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
+                if (drop == null) continue;
+                drop.m_itemData.m_shared.m_description =
+                    "Consumível: use para desbloquear este pet de forma permanente no seu personagem. " +
+                    "Depois ele fica no menu de pets, onde você o invoca e vê os bônus. Pode ser negociado antes de usar.";
             }
         }
 
@@ -763,6 +909,9 @@ namespace Deadheim
                 Debug.LogWarning($"[Deadheim Pets] Prefab '{def.PrefabName}' (pet '{def.Id}') não encontrado.");
                 return null;
             }
+
+            // Ave que voa: o prefab traz o RandomFlyingBird (visto pelo nome do tipo, antes do Strip).
+            def.Flying = original.GetComponentInChildren<RandomFlyingBird>(true) != null;
 
             GameObject template = CreateTemplate(def, original);
             if (template == null) return null;
@@ -1009,6 +1158,8 @@ namespace Deadheim
                         _hasSpeed = true;
                     if (p.name == "onGround" && p.type == AnimatorControllerParameterType.Bool)
                         _hasOnGround = true;
+                    if (p.name == "flying" && p.type == AnimatorControllerParameterType.Bool)
+                        _hasFlyingParam = true;
                     if (!string.IsNullOrEmpty(def.SitParam) && p.name == def.SitParam && p.type == AnimatorControllerParameterType.Bool)
                         _hasSleep = true;
                 }
@@ -1088,24 +1239,172 @@ namespace Deadheim
             }
         }
 
-        private static Vector3 Grounded(Vector3 p)
+        // Camadas que o pet pisa: terreno E peças de construção (pisos, escadas, telhados), não só o chão.
+        private static int _surfaceMask = -1;
+        private static int SurfaceMask
         {
-            if (ZoneSystem.instance != null) p.y = ZoneSystem.instance.GetGroundHeight(p);
-            return p;
+            get
+            {
+                if (_surfaceMask < 0)
+                    _surfaceMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "terrain");
+                return _surfaceMask;
+            }
+        }
+
+        private const float StepUp = 1.2f;
+
+        /// <summary>Altura da superfície sob p: raycast para baixo a partir de fromY em terreno e peças;
+        /// sem acerto, cai para a altura do terreno.</summary>
+        private static float SurfaceY(Vector3 p, float fromY)
+        {
+            if (Physics.Raycast(new Vector3(p.x, fromY, p.z), Vector3.down, out RaycastHit hit, 14f,
+                    SurfaceMask, QueryTriggerInteraction.Ignore))
+                return hit.point.y;
+            return ZoneSystem.instance != null ? ZoneSystem.instance.GetGroundHeight(p) : p.y;
+        }
+
+        /// <summary>Ponto atrás/ao lado do dono, puxado para perto dele se houver parede no caminho
+        /// (para o pet não ficar do lado de fora da casa).</summary>
+        private static Vector3 ClipToOwner(Vector3 ownerPos, Vector3 desired)
+        {
+            Vector3 from = ownerPos + Vector3.up;
+            Vector3 to = new Vector3(desired.x, from.y, desired.z);
+            if (Physics.Linecast(from, to, out RaycastHit hit, SurfaceMask, QueryTriggerInteraction.Ignore))
+            {
+                Vector3 n = hit.normal; n.y = 0f;
+                Vector3 p = hit.point + n.normalized * 0.4f;
+                return new Vector3(p.x, desired.y, p.z);
+            }
+            return desired;
+        }
+
+        private Vector3 _vel;
+        private bool _perched;
+        private bool _flying;
+        private float _ownerIdle;
+        private float _orbit;
+        private float _stuck;
+        private Vector3 _perchPoint;
+        private bool _hasFlyingParam;
+        private const float PerchDelay = 5f;
+
+        private static Vector3 FlatForward(Transform t)
+        {
+            Vector3 f = t.forward; f.y = 0f;
+            return f.sqrMagnitude > 0.001f ? f.normalized : Vector3.forward;
+        }
+
+        /// <summary>Voo da ave: acompanha o piso do dono (casa) com altitude suave, gira em volta quando
+        /// ele para, pousa depois de PerchDelay parado e decola quando ele volta a andar.</summary>
+        private void UpdateFlight(bool away)
+        {
+            float dt = Mathf.Min(Time.deltaTime, 0.1f);
+            Vector3 ownerPos = _target.transform.position;
+            Vector3 cur = transform.position;
+            Vector3 fwd = FlatForward(_target.transform);
+            Vector3 right = Vector3.Cross(Vector3.up, fwd);
+
+            if (away || Vector3.Distance(cur, ownerPos) > TeleportDistance)
+            {
+                Vector3 p = ownerPos - fwd * FollowDistance;
+                p.y = SurfaceY(p, ownerPos.y + StepUp) + 1.9f;
+                transform.position = p;
+                _vel = Vector3.zero;
+                _perched = false;
+                return;
+            }
+
+            float ownerSpeed = _target.GetVelocity().magnitude;
+            bool moving = ownerSpeed > 0.6f;
+            _ownerIdle = moving ? 0f : _ownerIdle + dt;
+
+            float flatDist = Vector2.Distance(new Vector2(cur.x, cur.z), new Vector2(ownerPos.x, ownerPos.z));
+            if (_perched && (moving || flatDist > 6f)) _perched = false;
+            if (!_perched && !moving && _ownerIdle > PerchDelay)
+            {
+                _perched = true;
+                _perchPoint = ownerPos + right * 1.8f - fwd * 0.5f;
+            }
+
+            Vector3 anchor;
+            if (_perched) anchor = _perchPoint;
+            else if (moving) anchor = ownerPos - fwd * FollowDistance + right * (Mathf.Sin(Time.time * 0.9f) * 1.2f);
+            else
+            {
+                _orbit += dt * 0.9f;
+                anchor = ownerPos + new Vector3(Mathf.Cos(_orbit), 0f, Mathf.Sin(_orbit)) * 2.4f;
+            }
+            anchor = ClipToOwner(ownerPos, anchor);
+
+            // Piso de quem o pássaro acompanha (andar de cima, telhado do chão...) e teto para não atravessar.
+            float surf = SurfaceY(anchor, ownerPos.y + StepUp);
+            float hover = _perched ? 0.05f : 1.9f + Mathf.Sin(Time.time * 2.1f) * 0.25f + (moving ? 0f : 0.3f);
+            if (!_perched && Physics.Raycast(new Vector3(anchor.x, surf + 0.3f, anchor.z), Vector3.up,
+                    out RaycastHit roof, hover + 0.6f, SurfaceMask, QueryTriggerInteraction.Ignore))
+                hover = Mathf.Max(0.5f, roof.distance - 0.7f);
+            Vector3 goal = new Vector3(anchor.x, surf + hover, anchor.z);
+            if (!_perched && flatDist > 3f)
+                goal.y = Mathf.Max(goal.y, SurfaceY(cur, cur.y + 0.5f) + 1f);
+
+            float dist = Vector3.Distance(cur, goal);
+            float maxSpeed = _perched ? 4f : Mathf.Clamp(Mathf.Max(5f, ownerSpeed * 1.7f, dist * 1.6f), 5f, 16f);
+            float smooth = _perched ? 0.3f : (moving ? 0.35f : 0.55f);
+            Vector3 next = Vector3.SmoothDamp(cur, goal, ref _vel, smooth, maxSpeed, dt);
+
+            // Parede no caminho: sobe em vez de atravessar.
+            Vector3 lo = cur + Vector3.up * 0.3f;
+            Vector3 hi = new Vector3(next.x, lo.y, next.z);
+            if ((hi - lo).sqrMagnitude > 0.0001f &&
+                Physics.Linecast(lo, hi, SurfaceMask, QueryTriggerInteraction.Ignore))
+            {
+                next = cur + Vector3.up * (3f * dt);
+                _vel = new Vector3(0f, 1f, 0f);
+            }
+            transform.position = next;
+
+            bool landed = _perched && Vector3.Distance(next, goal) < 0.25f;
+            _flying = !landed;
+
+            Quaternion targetRot;
+            Vector3 flatVel = new Vector3(_vel.x, 0f, _vel.z);
+            if (landed)
+            {
+                Vector3 look = ownerPos - next; look.y = 0f;
+                targetRot = look.sqrMagnitude > 0.01f ? Quaternion.LookRotation(look.normalized) : transform.rotation;
+            }
+            else if (flatVel.sqrMagnitude > 0.5f)
+            {
+                Vector3 dir = flatVel.normalized;
+                float turn = Vector3.SignedAngle(FlatForward(transform), dir, Vector3.up);
+                float bank = Mathf.Clamp(-turn * 0.6f, -30f, 30f);
+                float pitch = Mathf.Clamp(-_vel.y * 5f, -25f, 25f);
+                targetRot = Quaternion.LookRotation(dir) * Quaternion.Euler(pitch, 0f, bank);
+            }
+            else
+            {
+                targetRot = Quaternion.LookRotation(FlatForward(transform));
+            }
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 1f - Mathf.Exp(-5f * dt));
         }
 
         private void UpdateMovement(bool away)
         {
+            if (Def.Flying) { UpdateFlight(away); return; }
+
             Vector3 targetPos = _target.transform.position;
             Vector3 currentPos = transform.position;
+            Vector3 ownerFwd = FlatForward(_target.transform);
 
             if (away || Vector3.Distance(currentPos, targetPos) > TeleportDistance)
             {
-                transform.position = Grounded(targetPos - _target.transform.forward * FollowDistance);
+                Vector3 p = targetPos - ownerFwd * FollowDistance;
+                p.y = SurfaceY(p, targetPos.y + StepUp);
+                transform.position = p;
                 return;
             }
 
-            Vector3 desiredPos = Grounded(targetPos - _target.transform.forward * FollowDistance);
+            Vector3 desiredPos = ClipToOwner(targetPos, targetPos - ownerFwd * FollowDistance);
+            desiredPos.y = currentPos.y;
             float ownerSpeed = _target.GetVelocity().magnitude;
             // D6: velocidade de movimento do pet proporcional à do dono, dentro do range walk/run do prefab
             float walkSpeed = Def.WalkSpeed > 0f ? Def.WalkSpeed : 2f;
@@ -1114,7 +1413,23 @@ namespace Deadheim
             // alcanca o dono: se ficou para tras, corre mais que ele (o pet pequeno tem passo curto)
             float gap = Vector3.Distance(currentPos, desiredPos);
             if (gap > 1f) moveSpeed = Mathf.Max(moveSpeed, ownerSpeed * 1.2f, Mathf.Min(gap * 2f, 12f));
-            transform.position = Vector3.MoveTowards(currentPos, desiredPos, moveSpeed * Time.deltaTime);
+            Vector3 next = Vector3.MoveTowards(currentPos, desiredPos, moveSpeed * Time.deltaTime);
+            // Altura: superfície sob o próprio pet (chão, piso, degrau), a no máximo StepUp acima dele.
+            float surfaceY = SurfaceY(next, currentPos.y + StepUp);
+            next.y = Mathf.MoveTowards(currentPos.y, surfaceY, Mathf.Max(8f, moveSpeed * 3f) * Time.deltaTime);
+            transform.position = next;
+
+            // Dono em outro andar, pet embaixo sem como subir por degraus: depois de um tempo, vai até ele.
+            float flat = Vector2.Distance(new Vector2(next.x, next.z), new Vector2(targetPos.x, targetPos.z));
+            if (Mathf.Abs(targetPos.y - next.y) > 2.5f && flat < 3.5f) _stuck += Time.deltaTime; else _stuck = 0f;
+            if (_stuck > 1.5f)
+            {
+                _stuck = 0f;
+                Vector3 p = ClipToOwner(targetPos, targetPos - ownerFwd * FollowDistance);
+                p.y = SurfaceY(p, targetPos.y + StepUp);
+                transform.position = p;
+                return;
+            }
 
             Vector3 moveDir = desiredPos - currentPos;
             moveDir.y = 0f;
@@ -1133,6 +1448,15 @@ namespace Deadheim
             // D6: velocidade real do pet em m/s (não normalizada 0-1) para o parâmetro forward_speed
             float petSpeed = (transform.position - _lastPetPos).magnitude / dt;
             _lastPetPos = transform.position;
+
+            if (Def.Flying)
+            {
+                // Ave: "flying" ligado enquanto voa, desligado quando pousa; onGround é o inverso.
+                if (_hasFlyingParam) _animator.SetBool("flying", _flying);
+                if (_hasOnGround) _animator.SetBool("onGround", !_flying);
+                if (_hasSpeed) _animator.SetFloat(Def.SpeedParam, _vel.magnitude);
+                return;
+            }
 
             // D6: onGround = true sempre (o pet anda no chão; sem isso o controlador pode ficar em queda)
             if (_hasOnGround) _animator.SetBool("onGround", true);

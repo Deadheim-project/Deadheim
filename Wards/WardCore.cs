@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Deadheim.Shared;
 using Deadheim.Vanilla;
 using UnityEngine;
 
@@ -172,7 +173,7 @@ namespace Deadheim.Wards
 
             if (GetFuel(area) >= MaxFuel)
             {
-                user.Message(MessageHud.MessageType.Center, "Ward ja esta cheio.");
+                user.Message(MessageHud.MessageType.Center, Avisos.Info("Ward ja esta cheio"));
                 return true;
             }
 
@@ -184,7 +185,7 @@ namespace Deadheim.Wards
             zdo.Set(ZdoFuelTick, ZNet.instance.GetTime().Ticks);
 
             user.Message(MessageHud.MessageType.Center,
-                "Ward abastecido: " + Mathf.FloorToInt(GetFuel(area)) + "/" + Mathf.FloorToInt(MaxFuel));
+                Avisos.Ok("Ward abastecido", Mathf.FloorToInt(GetFuel(area)) + "/" + Mathf.FloorToInt(MaxFuel) + " cargas"));
             return true;
         }
 
@@ -265,12 +266,9 @@ namespace Deadheim.Wards
 
         /// <summary>
         /// Devolve o ward que protege este ponto contra este jogador, ou null se nao ha.
-        /// Sai fora onde outro plugin governa, por exemplo zona de raid do RaidSystem.
         /// </summary>
         public static PrivateArea GetProtectingWard(Vector3 point, Player player)
         {
-            if (WardBridge.Governed(point)) return null;
-
             long playerId = player != null ? player.GetPlayerID() : 0L;
             PrivateArea first = null;
 
@@ -298,8 +296,6 @@ namespace Deadheim.Wards
         /// </summary>
         public static PrivateArea GetIndestructibleWard(Vector3 point)
         {
-            if (WardBridge.Governed(point)) return null;
-
             foreach (PrivateArea area in PrivateArea.m_allAreas)
             {
                 if (area == null || !IsIndestructible(area)) continue;

@@ -223,12 +223,6 @@ namespace Deadheim
             Player local = Player.m_localPlayer;
             if (local == null || !VipList.VipListApi.IsLocalPlayerVip()) return;
 
-            // Durante a janela de raid, a fogueira de base inimiga nao puxa de bau alheio.
-            // O Deadheim nao referencia o RaidSystem (mods separados): quem diz "aqui manda o
-            // raid" e o WardBridge, que o RaidSystem registra no Awake dele. Sem RaidSystem
-            // instalado o delegate e null e este trecho nao faz nada.
-            if (Wards.WardBridge.Governed(fire.transform.position)) return;
-
             float fuel = fireView.GetZDO().GetFloat(ZDOVars.s_fuel);
             if (fuel > fire.m_maxFuel * AesirPullConfig.FireplaceThreshold.Value) return;
 

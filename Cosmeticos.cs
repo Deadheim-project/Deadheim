@@ -288,7 +288,10 @@ namespace Deadheim
     internal static class Titulos
     {
         private const string ZdoTitulo = "dh_titulo";
-        private static string _ultimoPublicado = "";
+
+        // Character.m_nview e protegido no assembly original; nao ler o campo diretamente.
+        private static readonly System.Reflection.FieldInfo CampoNView = AccessTools.Field(typeof(Character), "m_nview");
+        private static ZNetView Rede(Player player) => player != null ? CampoNView?.GetValue(player) as ZNetView : null;
 
         internal static string LocalTag()
         {
@@ -300,14 +303,20 @@ namespace Deadheim
             return tag;
         }
 
-        /// <summary>Chamado do Plugin.Update(): publica o titulo do jogador local, so quando muda.</summary>
+        /// <summary>
+        /// Chamado do Plugin.Update(): publica o titulo do jogador local quando a ZDO dele nao o tem.
+        /// Ate 02/11/2026 comparava com o ultimo valor publicado, guardado no jogo aberto: o
+        /// personagem recriado (morte, ou reconectar sem fechar o jogo) nascia sem tag e nunca
+        /// ganhava de novo, porque o titulo "nao tinha mudado".
+        /// </summary>
         internal static void Tick(Player player)
         {
-            if (player == null || player.m_nview == null || !player.m_nview.IsValid()) return;
+            ZNetView nview = Rede(player);
+            if (nview == null || !nview.IsValid()) return;
+            ZDO zdo = nview.GetZDO();
             string tag = LocalTag();
-            if (tag == _ultimoPublicado) return;
-            _ultimoPublicado = tag;
-            player.m_nview.GetZDO().Set(ZdoTitulo, tag);
+            if (zdo.GetString(ZdoTitulo, "") == tag) return;
+            zdo.Set(ZdoTitulo, tag);
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.GetHoverName))]
@@ -315,8 +324,10 @@ namespace Deadheim
         {
             private static void Postfix(Player __instance, ref string __result)
             {
-                if (__instance == null || __instance == Player.m_localPlayer || __instance.m_nview == null || !__instance.m_nview.IsValid()) return;
-                string tag = __instance.m_nview.GetZDO().GetString(ZdoTitulo, "");
+                if (__instance == null || __instance == Player.m_localPlayer) return;
+                ZNetView nview = Rede(__instance);
+                if (nview == null || !nview.IsValid()) return;
+                string tag = nview.GetZDO().GetString(ZdoTitulo, "");
                 if (!string.IsNullOrEmpty(tag)) __result = $"<color=#d8ab4a>{tag}</color> " + __result;
             }
         }

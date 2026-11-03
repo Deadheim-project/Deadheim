@@ -45,6 +45,9 @@ namespace Deadheim.Ranking
         public const string Domados = "domados";
         public const string Moedas = "moedas";
 
+        /// <summary>Mortes por causa: "mt:monstro", "mt:queda"... (ver TiposDeMorte).</summary>
+        public const string PrefixoMorte = "mt:";
+
         /// <summary>Abates de um chefe: "chefe:$enemy_eikthyr".</summary>
         public const string PrefixoChefe = "chefe:";
 
@@ -52,6 +55,41 @@ namespace Deadheim.Ranking
             chave == PvpAbates || chave == PvpMortes || chave == PvpPk || chave == Guerra
             || chave == GuerraConquistas || chave == Online || chave == Arena || chave == ArenaVitorias
             || chave == ArenaPartidas || chave == Missoes;
+    }
+
+    /// <summary>Causa de morte: id da chave, nome da lista e os contadores DeathBy* do jogo que somam nela.</summary>
+    internal sealed class TipoMorte
+    {
+        public string Id, Titulo, Icone, Descricao;
+        public string[] Contadores;
+        public string Chave => Deadheim.Ranking.Chave.PrefixoMorte + Id;
+    }
+
+    internal static class TiposDeMorte
+    {
+        public static readonly TipoMorte[] Todos =
+        {
+            new TipoMorte { Id = "monstro", Titulo = "Mortes por monstros", Icone = "TrophyGreydwarfBrute", Contadores = new[] { "DeathByEnemyHit" },
+                Descricao = "Vezes que um monstro ou criatura matou você." },
+            new TipoMorte { Id = "jogador", Titulo = "Mortes por jogadores", Icone = "SwordIron", Contadores = new[] { "DeathByPlayerHit" },
+                Descricao = "Vezes que outro jogador matou você (PvP, inclusive na arena se o jogo registrar)." },
+            new TipoMorte { Id = "queda", Titulo = "Mortes por queda", Icone = "TrophyDeer", Contadores = new[] { "DeathByFall", "DeathByImpact" },
+                Descricao = "Quedas e impactos fatais." },
+            new TipoMorte { Id = "afogado", Titulo = "Mortes por afogamento", Icone = "TrophySerpent", Contadores = new[] { "DeathByDrowning", "DeathByWater", "DeathByAshlandsOcean" },
+                Descricao = "Afogado ou na água/oceano de cinzas." },
+            new TipoMorte { Id = "fogo", Titulo = "Mortes por fogo e lava", Icone = "Torch", Contadores = new[] { "DeathByBurning", "DeathByCinderFire", "DeathByIncinerator", "DeathByAshlandsLava", "DeathBySmoke" },
+                Descricao = "Queimado, fogo de cinzas, incinerador, lava ou fumaça." },
+            new TipoMorte { Id = "clima", Titulo = "Mortes por frio e veneno", Icone = "Ruby", Contadores = new[] { "DeathByFreezing", "DeathByPoisoned" },
+                Descricao = "Congelado ou envenenado." },
+            new TipoMorte { Id = "outras", Titulo = "Mortes por acidente", Icone = "Hammer", Contadores = new[] { "DeathByTree", "DeathByTreeTier0", "DeathByTreeTier1", "DeathByTreeTier2", "DeathByTreeTier3", "DeathByTreeTier4", "DeathByTreeTier5", "DeathByCart", "DeathByBoat", "DeathByStructural", "DeathByTurret", "DeathByStalagtite", "DeathByCatapult", "DeathByDrawBridge", "DeathByEdgeOfWorld", "DeathBySelf", "DeathByUndefined" },
+                Descricao = "Árvore caindo, carroça, barco, construção, torre, estalactite, fim do mundo, suicídio e causas não identificadas." },
+        };
+
+        public static TipoMorte Achar(string chave)
+        {
+            foreach (TipoMorte t in Todos) if (t.Chave == chave) return t;
+            return null;
+        }
     }
 
     /// <summary>
@@ -97,6 +135,7 @@ namespace Deadheim.Ranking
         };
 
         private static readonly Regra RegraChefe = new Regra(true, 1d, 1e7);
+        private static readonly Regra RegraMorte = new Regra(true, 1d, 1e7);
 
         public static bool TryGet(string chave, out Regra regra)
         {
@@ -106,6 +145,12 @@ namespace Deadheim.Ranking
             {
                 if (chave.Length <= Chave.PrefixoChefe.Length || chave.Length > 64) return false;
                 regra = RegraChefe;
+                return true;
+            }
+            if (chave.StartsWith(Chave.PrefixoMorte, StringComparison.Ordinal))
+            {
+                if (TiposDeMorte.Achar(chave) == null) return false;
+                regra = RegraMorte;
                 return true;
             }
             return Regras.TryGetValue(chave, out regra);
@@ -137,6 +182,13 @@ namespace Deadheim.Ranking
         public bool Aesir;
         /// <summary>Escondido pelo admin (contas de teste, admin, trapaca): fica no arquivo, sai do ranking.</summary>
         public bool Oculto;
+        /// <summary>
+        /// Esta na adminlist do servidor (conferido quando o jogador esta conectado e guardado no
+        /// arquivo): admin nao compete, fica fora das listas e das somas de guilda.
+        /// </summary>
+        public bool Admin;
+        /// <summary>Fora do ranking, por ordem do admin (Oculto) ou por ser admin.</summary>
+        public bool Fora => Oculto || Admin;
         public double PrimeiraVez;
         public double UltimaVez;
         /// <summary>Hora (servidor) do ultimo relato aceito: o teto por segundo conta daqui.</summary>
@@ -275,7 +327,7 @@ namespace Deadheim.Ranking
                 j.Valores[par.Key] = aceito;
 
                 // Chave nova no meio da semana: a semana conta a partir daqui, nao o historico.
-                if (!j.BaseSemana.ContainsKey(par.Key)) j.BaseSemana[par.Key] = BaseNova(regra, semHistorico, tinha, antes, aceito);
+                if (!j.BaseSemana.ContainsKey(par.Key)) j.BaseSemana[par.Key] = BaseNova(regra, semHistorico || par.Key.StartsWith(Chave.PrefixoMorte, StringComparison.Ordinal), tinha, antes, aceito);
 
                 if (par.Key.StartsWith(Chave.PrefixoChefe, StringComparison.Ordinal) && (!tinha || antes <= 0d) && aceito > 0d)
                     chefesNovos.Add(new KeyValuePair<string, bool>(par.Key.Substring(Chave.PrefixoChefe.Length), semHistorico));
@@ -315,7 +367,7 @@ namespace Deadheim.Ranking
                 bool tinha = j.Valores.TryGetValue(par.Key, out antes);
                 double aceito = regra.Contador ? Math.Max(tinha ? antes : 0d, novo) : (online && tinha ? antes : novo);
                 j.Valores[par.Key] = aceito;
-                if (!j.BaseSemana.ContainsKey(par.Key)) j.BaseSemana[par.Key] = BaseNova(regra, primeira, tinha, antes, aceito);
+                if (!j.BaseSemana.ContainsKey(par.Key)) j.BaseSemana[par.Key] = BaseNova(regra, primeira || par.Key.StartsWith(Chave.PrefixoMorte, StringComparison.Ordinal), tinha, antes, aceito);
 
                 if (par.Key.StartsWith(Chave.PrefixoChefe, StringComparison.Ordinal) && (!tinha || antes <= 0d) && aceito > 0d)
                     chefesNovos.Add(new KeyValuePair<string, bool>(par.Key.Substring(Chave.PrefixoChefe.Length), primeira));
@@ -382,6 +434,8 @@ namespace Deadheim.Ranking
         public string Icone;
         /// <summary>O que a categoria mede, na barra de cima da janela.</summary>
         public string Descricao;
+        /// <summary>Como o numero e calculado e de onde vem: o texto da dica ao passar o mouse.</summary>
+        public string Calculo;
         public Func<RankingJogador, bool, double> Valor;
         /// <summary>Texto da coluna de detalhe (pode ser null).</summary>
         public Func<RankingJogador, bool, string> Detalhe;
@@ -410,7 +464,7 @@ namespace Deadheim.Ranking
             double total = 0d;
             foreach (KeyValuePair<string, double> peso in PesosLenda)
             {
-                if (peso.Value == 0d) continue;
+                if (peso.Value == 0d || peso.Key == Chave.Domados) continue;
                 total += j.Le(peso.Key, semana) * peso.Value;
             }
             return Math.Max(0d, Math.Floor(total));
@@ -441,12 +495,13 @@ namespace Deadheim.Ranking
         public const string GrupoGeral = "Geral";
         public const string GrupoCombate = "Combate";
         public const string GrupoProgresso = "Progresso";
-        public const string GrupoOficio = "Ofício";
+        public const string GrupoOficio = "Ofícios";
         public const string GrupoExploracao = "Exploração";
         public const string GrupoRiqueza = "Riqueza";
+        public const string GrupoMortes = "Mortes";
 
         public const string PesosPadrao =
-            "skills=2|chefes=150|chefes.k=10|monstros=1|pvp.k=15|guerra=5|arena.v=20|missoes=25|build=0.2|craft=0.5|arvores=0.5|mina=0.1|dist=0.002|mar=0.004|domados=5|online=0.0005";
+            "skills=2|chefes=150|chefes.k=10|monstros=1|pvp.k=15|guerra=5|arena.v=20|missoes=25|build=0.2|craft=0.5|arvores=0.5|mina=0.1|dist=0.002|mar=0.004|online=0.0005";
 
         /// <summary>Todas as categorias, na ordem da lista da janela.</summary>
         public static List<Categoria> Todas(RankingContexto ctx)
@@ -455,8 +510,9 @@ namespace Deadheim.Ranking
             {
                 new Categoria
                 {
-                    Id = Lenda, Titulo = "Lenda", Grupo = GrupoGeral, Icone = "TrophyDragonQueen", Unidade = "pts",
-                    Descricao = "Tudo junto: habilidades, chefes, monstros, PvP, guerra, construção, ofício e viagens.",
+                    Id = Lenda, Titulo = "Pontuação geral", Grupo = GrupoGeral, Icone = "TrophyDragonQueen", Unidade = "pts",
+                    Descricao = "Soma de pontos de tudo o que você faz no mundo (como é calculada: passe o mouse).",
+                    Calculo = TextoLenda(ctx),
                     Valor = ctx.Lenda,
                     Detalhe = (j, s) => DetalheLenda(j, s, ctx),
                 },
@@ -464,6 +520,7 @@ namespace Deadheim.Ranking
                 {
                     Id = "pvp", Titulo = "Abates PvP", Grupo = GrupoCombate, Icone = "SwordIron", Unidade = "abates",
                     Descricao = "Jogadores abatidos fora da arena, conferido pelo servidor.",
+                    Calculo = "Jogadores que você abateu fora da arena. Contado e conferido pelo servidor, não pelo seu jogo. K/D = abates ÷ mortes em PvP; PK = abates de inocentes.",
                     Valor = (j, s) => j.Le(Chave.PvpAbates, s),
                     Detalhe = (j, s) =>
                     {
@@ -474,8 +531,9 @@ namespace Deadheim.Ranking
                 },
                 new Categoria
                 {
-                    Id = "guerra", Titulo = "Guerra", Grupo = GrupoCombate, Icone = "ShieldBronzeBuckler", Unidade = "pts",
-                    Descricao = "Pontos do Ranking de Guerra: abates entre guildas, conquistas e defesas de castelo.",
+                    Id = "guerra", Titulo = "Guerra de guildas", Grupo = GrupoCombate, Icone = "ShieldBronzeBuckler", Unidade = "pts",
+                    Descricao = "Pontos de guerra de guildas (categoria oculta: o RaidSystem foi removido).",
+                    Calculo = "Sem fonte de dados desde a remocao do RaidSystem.",
                     Valor = (j, s) => j.Le(Chave.Guerra, s),
                     Detalhe = (j, s) =>
                     {
@@ -486,8 +544,9 @@ namespace Deadheim.Ranking
                 },
                 new Categoria
                 {
-                    Id = "arena", Titulo = "Arena", Grupo = GrupoCombate, Icone = "SwordBlackmetal", Unidade = "de rating",
+                    Id = "arena", Titulo = "Arena (rating)", Grupo = GrupoCombate, Icone = "SwordBlackmetal", Unidade = "de rating",
                     Descricao = "Maior rating pessoal nos times de arena (na semana: vitórias).",
+                    Calculo = "Na temporada: seu maior rating pessoal nos times de arena (só entra quem já jogou uma partida). Na semana: vitórias ganhas na semana. Contado pelo servidor.",
                     // Rating sem partida e so o valor inicial: fica fora da lista.
                     Valor = (j, s) => j.Valor(Chave.ArenaPartidas) <= 0d ? 0d : s ? j.DaSemana(Chave.ArenaVitorias) : j.Valor(Chave.Arena),
                     Detalhe = (j, s) =>
@@ -499,8 +558,9 @@ namespace Deadheim.Ranking
                 },
                 new Categoria
                 {
-                    Id = "chefes", Titulo = "Chefes", Grupo = GrupoCombate, Icone = "TrophyEikthyr", Unidade = "chefes",
+                    Id = "chefes", Titulo = "Chefes derrotados", Grupo = GrupoCombate, Icone = "TrophyEikthyr", Unidade = "chefes",
                     Descricao = "Chefes diferentes derrotados (na semana: chefes novos).",
+                    Calculo = "Quantos chefes DIFERENTES você já derrotou (cada um conta uma vez, não importa quantas vezes o mate). Lido do perfil do personagem. Na semana: chefes novos.",
                     Valor = (j, s) => j.Le(Chave.Chefes, s),
                     Detalhe = (j, s) =>
                     {
@@ -510,28 +570,32 @@ namespace Deadheim.Ranking
                 },
                 new Categoria
                 {
-                    Id = "monstros", Titulo = "Caçador", Grupo = GrupoCombate, Icone = "TrophyGreydwarfBrute", Unidade = "abates",
+                    Id = "monstros", Titulo = "Monstros abatidos", Grupo = GrupoCombate, Icone = "TrophyGreydwarfBrute", Unidade = "abates",
                     Descricao = "Monstros e criaturas abatidos.",
+                    Calculo = "Monstros e criaturas que você matou (contador EnemyKills do jogo). Chefes NÃO entram aqui, têm categoria própria.",
                     Valor = (j, s) => j.Le(Chave.Monstros, s),
                 },
                 new Categoria
                 {
-                    Id = "habilidades", Titulo = "Habilidades", Grupo = GrupoProgresso, Icone = "SilverNecklace", Unidade = "níveis",
+                    Id = "habilidades", Titulo = "Soma das habilidades", Grupo = GrupoProgresso, Icone = "SilverNecklace", Unidade = "níveis",
                     Descricao = "Soma dos níveis de todas as habilidades (na semana: níveis ganhos).",
+                    Calculo = "Soma dos níveis de todas as habilidades do personagem, lida do arquivo do personagem. Cai se você perder nível ao morrer. Na semana: níveis ganhos.",
                     Valor = (j, s) => Math.Floor(j.Le(Chave.Habilidades, s)),
                     Detalhe = (j, s) => s ? null : "maior: " + Numero.Inteiro(j.Valor(Chave.HabilidadeMaior)),
                 },
                 new Categoria
                 {
-                    Id = "missoes", Titulo = "Missões", Grupo = GrupoProgresso, Icone = "Feathers", Unidade = "missões",
+                    Id = "missoes", Titulo = "Missões dos NPCs", Grupo = GrupoProgresso, Icone = "Feathers", Unidade = "missões",
                     Descricao = "Missões concluídas nos NPCs (as repetíveis contam cada vez).",
+                    Calculo = "Missões concluídas nos NPCs. As repetíveis contam a cada vez. Contado pelo servidor.",
                     Valor = (j, s) => j.Le(Chave.Missoes, s),
                     Disponivel = c => c.TemMissoes,
                 },
                 new Categoria
                 {
-                    Id = "nivel", Titulo = "Nível", Grupo = GrupoProgresso, Icone = "Ruby", Unidade = "níveis",
+                    Id = "nivel", Titulo = "Nível do personagem", Grupo = GrupoProgresso, Icone = "Ruby", Unidade = "níveis",
                     Descricao = "Nível do personagem (EpicMMO).",
+                    Calculo = "Nível do personagem no EpicMMO. Na semana: níveis ganhos.",
                     Valor = (j, s) => j.Le(Chave.Nivel, s),
                     Disponivel = c => c.TemNivel,
                 },
@@ -539,62 +603,154 @@ namespace Deadheim.Ranking
                 {
                     Id = "online", Titulo = "Tempo de jogo", Grupo = GrupoProgresso, Icone = "Torch", Unidade = "",
                     Descricao = "Tempo conectado neste mundo, contado pelo servidor.",
+                    Calculo = "Tempo conectado neste mundo, contado pelo servidor de minuto em minuto.",
                     Valor = (j, s) => j.Le(Chave.Online, s),
                     Formato = Numero.Duracao,
                 },
                 new Categoria
                 {
-                    Id = "construcoes", Titulo = "Construtor", Grupo = GrupoOficio, Icone = "Hammer", Unidade = "peças",
+                    Id = "mortes", Titulo = "Mortes (total)", Grupo = GrupoMortes, Icone = "TrophySkeleton", Unidade = "mortes",
+                    Descricao = "Quantas vezes você morreu, de qualquer causa.",
+                    Calculo = "Todas as mortes do personagem (contador Deaths do jogo), de qualquer causa. Quem morre mais fica em cima. Na semana: mortes da semana.",
+                    Valor = (j, s) => j.Le(Chave.Mortes, s),
+                    Detalhe = (j, s) => CausaPrincipal(j, s),
+                },
+                new Categoria
+                {
+                    Id = "construcoes", Titulo = "Peças construídas", Grupo = GrupoOficio, Icone = "Hammer", Unidade = "peças",
                     Descricao = "Peças construídas com o martelo.",
+                    Calculo = "Cada peça colocada com o martelo conta 1 (contador Builds do jogo). Desmanchar não desconta.",
                     Valor = (j, s) => j.Le(Chave.Construcoes, s),
                 },
                 new Categoria
                 {
-                    Id = "fabricacoes", Titulo = "Artesão", Grupo = GrupoOficio, Icone = "Bronze", Unidade = "itens",
+                    Id = "fabricacoes", Titulo = "Itens fabricados", Grupo = GrupoOficio, Icone = "Bronze", Unidade = "itens",
                     Descricao = "Itens fabricados e melhorados nas bancadas.",
+                    Calculo = "Cada vez que você fabrica ou melhora um item numa bancada (conta a operação, não a quantidade do lote).",
                     Valor = (j, s) => j.Le(Chave.Fabricacoes, s),
                 },
                 new Categoria
                 {
-                    Id = "lenhador", Titulo = "Lenhador", Grupo = GrupoOficio, Icone = "AxeBronze", Unidade = "árvores",
+                    Id = "lenhador", Titulo = "Árvores derrubadas", Grupo = GrupoOficio, Icone = "AxeBronze", Unidade = "árvores",
                     Descricao = "Árvores derrubadas.",
+                    Calculo = "Árvores que você derrubou (contador Tree do jogo: a árvore que cai, não cada machadada).",
                     Valor = (j, s) => j.Le(Chave.Arvores, s),
                 },
                 new Categoria
                 {
-                    Id = "mineracao", Titulo = "Minerador", Grupo = GrupoOficio, Icone = "PickaxeIron", Unidade = "golpes",
+                    Id = "mineracao", Titulo = "Mineração (golpes)", Grupo = GrupoOficio, Icone = "PickaxeIron", Unidade = "golpes",
                     Descricao = "Pedra e minério quebrados com a picareta.",
+                    Calculo = "Golpes de picareta em pedra e minério (contador MineHits: cada golpe conta, não a rocha inteira).",
                     Valor = (j, s) => j.Le(Chave.Mineracao, s),
                 },
                 new Categoria
                 {
-                    Id = "domados", Titulo = "Domador", Grupo = GrupoOficio, Icone = "TrophyBoar", Unidade = "animais",
+                    Id = "domados", Titulo = "Animais domados", Grupo = GrupoOficio, Icone = "TrophyBoar", Unidade = "animais",
                     Descricao = "Criaturas domadas.",
+                    Calculo = "Criaturas que o jogo registrou como domadas no seu personagem (contador CreatureTamed). Atenção: o jogo credita quem é o dono do animal na hora da doma, normalmente o jogador mais próximo, que pode não ser quem o alimentou.",
                     Valor = (j, s) => j.Le(Chave.Domados, s),
+                    // Desligada: o jogo credita a doma ao dono do animal na hora, nao a quem domou.
+                    Disponivel = c => false,
                 },
                 new Categoria
                 {
-                    Id = "distancia", Titulo = "Andarilho", Grupo = GrupoExploracao, Icone = "TrophyDeer", Unidade = "",
+                    Id = "distancia", Titulo = "Distância percorrida", Grupo = GrupoExploracao, Icone = "TrophyDeer", Unidade = "",
                     Descricao = "Distância percorrida a pé, de montaria e de barco.",
+                    Calculo = "Tudo o que você se deslocou: a pé, correndo, de montaria, de barco e voando (contador DistanceTraveled). Inclui a distância navegada.",
                     Valor = (j, s) => j.Le(Chave.Distancia, s),
                     Formato = Numero.Distancia,
                 },
                 new Categoria
                 {
-                    Id = "navegacao", Titulo = "Navegador", Grupo = GrupoExploracao, Icone = "TrophySerpent", Unidade = "",
+                    Id = "navegacao", Titulo = "Distância navegada", Grupo = GrupoExploracao, Icone = "TrophySerpent", Unidade = "",
                     Descricao = "Distância navegada.",
+                    Calculo = "Distância percorrida dentro de um barco (contador DistanceSail), no leme ou como passageiro.",
                     Valor = (j, s) => j.Le(Chave.Navegacao, s),
                     Formato = Numero.Distancia,
                 },
                 new Categoria
                 {
-                    Id = "moedas", Titulo = "Fortuna", Grupo = GrupoRiqueza, Icone = "Coins", Unidade = "moedas",
+                    Id = "moedas", Titulo = "Moedas na bolsa", Grupo = GrupoRiqueza, Icone = "Coins", Unidade = "moedas",
                     Descricao = "Moedas na bolsa (na semana: quanto juntou).",
+                    Calculo = "Moedas que você carrega agora. Sobe e desce: gastar derruba. Na semana: quanto juntou a mais.",
                     Valor = (j, s) => j.Le(Chave.Moedas, s),
                     Disponivel = c => c.MostrarRiqueza,
                 },
             };
+            // As listas por causa de morte, logo depois do total.
+            int depoisDeMortes = lista.FindIndex(c => c.Id == "mortes") + 1;
+            foreach (TipoMorte tipo in TiposDeMorte.Todos)
+            {
+                TipoMorte t = tipo;
+                lista.Insert(depoisDeMortes++, new Categoria
+                {
+                    Id = "mt_" + t.Id, Titulo = t.Titulo, Grupo = GrupoMortes, Icone = t.Icone, Unidade = "mortes",
+                    Descricao = t.Descricao,
+                    Calculo = t.Descricao + " Contado pelo jogo no seu personagem (" + string.Join(", ", t.Contadores.Take(3)) + (t.Contadores.Length > 3 ? "..." : "") + "). Na semana: mortes da semana.",
+                    Valor = (j, s) => j.Le(t.Chave, s),
+                    Detalhe = (j, s) =>
+                    {
+                        double total = j.Le(Chave.Mortes, s);
+                        return total > 0d ? Numero.Inteiro(100d * j.Le(t.Chave, s) / total) + "% das " + Numero.Inteiro(total) + " mortes" : null;
+                    },
+                });
+            }
             return lista.Where(c => c.Disponivel == null || c.Disponivel(ctx)).ToList();
+        }
+
+        /// <summary>A formula da pontuacao geral, lida dos pesos que o servidor esta usando.</summary>
+        private static string TextoLenda(RankingContexto ctx)
+        {
+            var linhas = new List<string>();
+            foreach (KeyValuePair<string, double> peso in ctx.PesosLenda)
+            {
+                if (peso.Value <= 0d || peso.Key == Chave.Domados) continue;
+                if (peso.Key == Chave.Online)
+                    linhas.Add(Numero.Peso(peso.Value * 3600d) + " por hora de jogo");
+                else if (peso.Key == Chave.Distancia)
+                    linhas.Add(Numero.Peso(peso.Value * 1000d) + " por km percorrido");
+                else if (peso.Key == Chave.Navegacao)
+                    linhas.Add(Numero.Peso(peso.Value * 1000d) + " por km navegado");
+                else
+                    linhas.Add(Numero.Peso(peso.Value) + " por " + NomeUnidade(peso.Key));
+            }
+            return "Pontos: " + string.Join("; ", linhas) + ". Na semana vale só o que você fez desde segunda-feira.";
+        }
+
+        /// <summary>A causa que mais matou o jogador, para a coluna de detalhe das mortes.</summary>
+        private static string CausaPrincipal(RankingJogador j, bool semana)
+        {
+            TipoMorte melhor = null;
+            double maior = 0d;
+            foreach (TipoMorte t in TiposDeMorte.Todos)
+            {
+                double v = j.Le(t.Chave, semana);
+                if (v > maior) { maior = v; melhor = t; }
+            }
+            if (melhor == null) return null;
+            return "mais: " + melhor.Titulo.Replace("Mortes por ", "") + " (" + Numero.Inteiro(maior) + ")";
+        }
+
+        public static string NomeUnidade(string chave)
+        {
+            switch (chave)
+            {
+                case Chave.Habilidades: return "nível de habilidade";
+                case Chave.Chefes: return "chefe diferente derrotado";
+                case Chave.ChefesAbates: return "abate de chefe";
+                case Chave.Monstros: return "monstro abatido";
+                case Chave.PvpAbates: return "abate PvP";
+                case Chave.Guerra: return "ponto de guerra";
+                case Chave.Construcoes: return "peça construída";
+                case Chave.Fabricacoes: return "item fabricado";
+                case Chave.Arvores: return "árvore derrubada";
+                case Chave.Mineracao: return "golpe de picareta";
+                case Chave.Domados: return "animal domado";
+                case Chave.Nivel: return "nível de personagem";
+                case Chave.ArenaVitorias: return "vitória na arena";
+                case Chave.Missoes: return "missão";
+                default: return chave;
+            }
         }
 
         private static string DetalheLenda(RankingJogador j, bool semana, RankingContexto ctx)
@@ -603,7 +759,7 @@ namespace Deadheim.Ranking
             var partes = new List<KeyValuePair<string, double>>();
             foreach (KeyValuePair<string, double> peso in ctx.PesosLenda)
             {
-                if (peso.Value <= 0d) continue;
+                if (peso.Value <= 0d || peso.Key == Chave.Domados) continue;
                 double pontos = j.Le(peso.Key, semana) * peso.Value;
                 if (pontos >= 1d) partes.Add(new KeyValuePair<string, double>(peso.Key, pontos));
             }
@@ -661,7 +817,7 @@ namespace Deadheim.Ranking
             var linhas = new List<Linha>();
             foreach (RankingJogador j in jogadores)
             {
-                if (j == null || j.Oculto) continue;
+                if (j == null || j.Fora) continue;
                 double valor = categoria.Valor(j, semana);
                 if (valor <= 0d || double.IsNaN(valor)) continue;
                 linhas.Add(new Linha { Jogador = j, Valor = valor });
@@ -700,7 +856,7 @@ namespace Deadheim.Ranking
             var porGuilda = new Dictionary<string, LinhaGuilda>(StringComparer.OrdinalIgnoreCase);
             foreach (RankingJogador j in jogadores)
             {
-                if (j == null || j.Oculto || string.IsNullOrEmpty(j.Guilda)) continue;
+                if (j == null || j.Fora || string.IsNullOrEmpty(j.Guilda)) continue;
                 LinhaGuilda g;
                 if (!porGuilda.TryGetValue(j.Guilda, out g))
                 {
@@ -753,6 +909,9 @@ namespace Deadheim.Ranking
             if (a >= 1e5) return (v / 1e3).ToString("0", Br) + " mil";
             return Inteiro(v);
         }
+
+        /// <summary>Peso de pontuacao sem zeros a toa: 0,5 / 2 / 0,0005.</summary>
+        public static string Peso(double v) => v.ToString("0.####", Br);
 
         public static string Distancia(double metros)
         {
@@ -866,6 +1025,7 @@ namespace Deadheim.Ranking
                                 Guilda = Texto(campos, "guilda"),
                                 Aesir = Texto(campos, "aesir") == "1",
                                 Oculto = Texto(campos, "oculto") == "1",
+                                Admin = Texto(campos, "admin") == "1",
                                 PrimeiraVez = Dbl(campos, "primeira"),
                                 UltimaVez = Dbl(campos, "ultima"),
                                 UltimoRelato = Dbl(campos, "relato"),

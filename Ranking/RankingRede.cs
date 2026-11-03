@@ -16,8 +16,7 @@ namespace Deadheim.Ranking
     /// Ranking do mundo. O servidor guarda um registro por personagem
     /// (BepInEx/config/Deadheim/ranking-&lt;mundo&gt;.txt) e junta tres fontes:
     ///
-    /// - o que so ele sabe: abates e mortes de PvP (PvpStore), pontos do Ranking de Guerra
-    ///   (RaidSystem, por reflexao) e o tempo conectado, que ele mesmo conta;
+    /// - o que so ele sabe: abates e mortes de PvP (PvpStore), e o tempo conectado, que ele mesmo conta;
     /// - o que o perfil do jogador ja registra (o jogo conta abates, construcoes, distancia,
     ///   arvores, chefes...) e as habilidades, que cada cliente relata a cada minuto. O servidor
     ///   confere cada numero (RankingRegras): contador nao desce nem sobe mais rapido do que da
@@ -299,6 +298,7 @@ namespace Deadheim.Ranking
         private static float _ultimoOnline;
         private static byte[] _fotoPronta;
         private static float _fotoProntaEm = -999f;
+        // Sem o RaidSystem nao ha Ranking de Guerra: a categoria fica sempre oculta (campo mantido no pacote de rede).
         private static bool _temGuerra;
         private static readonly Dictionary<long, float> _ultimoRelatoDe = new Dictionary<long, float>();
         private static readonly Dictionary<long, float> _ultimoPedidoDe = new Dictionary<long, float>();
@@ -476,6 +476,7 @@ namespace Deadheim.Ranking
             {
                 RankingJogador j = dados.Obter(peer.PlayerId, peer.Name, agora);
                 j.UltimaVez = agora;
+                j.Admin = Pvp.PvpServer.IsAdminPeer(peer.PeerId);
                 // Quem entrou no ranking so pelo historico de PvP passa a ter data de chegada agora.
                 if (j.PrimeiraVez <= 0d) j.PrimeiraVez = agora;
                 if (segundos > 0f) RankingRegras.DefinirDoServidor(j, Chave.Online, j.Valor(Chave.Online) + segundos);
@@ -508,52 +509,7 @@ namespace Deadheim.Ranking
                 }
             }
 
-            Dictionary<long, KeyValuePair<double, double>> guerra = PontosDeGuerra();
-            _temGuerra = guerra != null;
-            if (guerra != null)
-            {
-                foreach (KeyValuePair<long, KeyValuePair<double, double>> par in guerra)
-                {
-                    RankingJogador j = dados.Achar(par.Key);
-                    if (j == null) continue;
-                    RankingRegras.DefinirDoServidor(j, Chave.Guerra, par.Value.Key);
-                    RankingRegras.DefinirDoServidor(j, Chave.GuerraConquistas, par.Value.Value);
-                }
-            }
             _sujo = true;
-        }
-
-        private static Type _placarGuerra;
-        private static bool _placarProcurado;
-
-        /// <summary>
-        /// Pontos e conquistas de cada jogador no Ranking de Guerra do RaidSystem, por reflexao
-        /// (o RaidSystem referencia o Deadheim, nunca o contrario). Null sem o RaidSystem.
-        /// </summary>
-        private static Dictionary<long, KeyValuePair<double, double>> PontosDeGuerra()
-        {
-            if (!_placarProcurado)
-            {
-                _placarProcurado = true;
-                Assembly raid = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "RaidSystem");
-                _placarGuerra = raid?.GetType("RaidSystem.ScoreManager");
-            }
-            MethodInfo top = _placarGuerra?.GetMethod("GetTopPlayers", BindingFlags.Public | BindingFlags.Static);
-            if (top == null) return null;
-
-            var saida = new Dictionary<long, KeyValuePair<double, double>>();
-            if (!(top.Invoke(null, new object[] { int.MaxValue }) is IEnumerable lista)) return saida;
-            foreach (object s in lista)
-            {
-                if (s == null) continue;
-                Type t = s.GetType();
-                long id;
-                if (!long.TryParse(t.GetProperty("PlayerId")?.GetValue(s) as string, out id) || id == 0L) continue;
-                double pontos = Convert.ToDouble(t.GetProperty("TotalPoints")?.GetValue(s) ?? 0);
-                double conquistas = Convert.ToDouble(t.GetProperty("Conquests")?.GetValue(s) ?? 0);
-                saida[id] = new KeyValuePair<double, double>(Math.Max(0d, pontos), conquistas);
-            }
-            return saida;
         }
 
         /// <summary>Semana nova (base da semana) e dia novo (foto das posicoes para as setas).</summary>
@@ -628,6 +584,7 @@ namespace Deadheim.Ranking
             j.UltimaVez = hora;
             j.Guilda = Pvp.PvpBridge.KnownGuild(peer.PlayerId) ?? (string.IsNullOrEmpty(guildaRelatada) ? j.Guilda : RankingFormato.Limpar(guildaRelatada));
             j.Aesir = EhAesir(sender);
+            j.Admin = Pvp.PvpServer.IsAdminPeer(sender);
 
             int semana = RankingTempo.Semana(hora, Fuso);
             RankingRegras.VirarSemana(j, semana);
@@ -691,7 +648,7 @@ namespace Deadheim.Ranking
             var online = new HashSet<long>(Pvp.PvpPeer.Online().Select(p => p.PlayerId));
 
             List<RankingJogador> visiveis = dados.Jogadores
-                .Where(j => !j.Oculto && (online.Contains(j.Id) || dias <= 0 || agora - j.UltimaVez <= dias * 86400d))
+                .Where(j => !j.Fora && (online.Contains(j.Id) || dias <= 0 || agora - j.UltimaVez <= dias * 86400d))
                 .ToList();
 
             var foto = new Foto

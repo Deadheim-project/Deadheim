@@ -102,6 +102,11 @@ namespace Deadheim.Ranking
 
         private GameObject _ficha;
 
+        // dica ao passar o mouse (como cada ranking e calculado)
+        private RectTransform _dica;
+        private TextMeshProUGUI _dicaTexto;
+        private string _dicaAtual;
+
         // ------------------------------------------------------------------ estado
         private int _versaoMostrada = -1;
         private bool _sujo = true;
@@ -171,7 +176,7 @@ namespace Deadheim.Ranking
         private static int _resumoVersao = -1;
         private static string _resumo;
 
-        /// <summary>Linha de baixo do botao "Ranking" da Central: a sua posicao na Lenda.</summary>
+        /// <summary>Linha de baixo do botao "Ranking" da Central: a sua posicao na Pontuacao geral.</summary>
         public static string ResumoCentral()
         {
             RankingRede.Pedir(180f);
@@ -193,8 +198,8 @@ namespace Deadheim.Ranking
             List<Linha> linhas = Classificacao.Classificar(foto.Jogadores, lenda, false);
             Linha minha = linhas.FirstOrDefault(l => l.Jogador.Id == player.GetPlayerID());
             return minha == null
-                ? $"{linhas.Count} vikings na Lenda · entre para a lista"
-                : $"Você é #{minha.Posicao} de {linhas.Count} na Lenda · {lenda.Formatar(minha.Valor)} pts";
+                ? $"{linhas.Count} vikings na Pontuação geral · entre para a lista"
+                : $"Você é #{minha.Posicao} de {linhas.Count} na Pontuação geral · {lenda.Formatar(minha.Valor)} pts";
         }
 
         // ================================================================== ciclo
@@ -222,6 +227,8 @@ namespace Deadheim.Ranking
                 else if (Input.GetKeyDown(KeyCode.UpArrow)) PularCategoria(-1);
             }
 
+            AtualizarDica();
+
             RankingRede.Pedir(RenovarSeg);
             if (RankingRede.Versao != _versaoMostrada)
             {
@@ -240,6 +247,74 @@ namespace Deadheim.Ranking
                 _proximoSegundo = Time.unscaledTime + 1f;
                 AtualizarSubtitulo();
             }
+        }
+
+        // ================================================================== dica
+
+        /// <summary>Liga uma dica (texto sob demanda) ao mouse passar sobre o objeto.</summary>
+        private void ComDica(GameObject alvo, Func<string> texto)
+        {
+            var passar = alvo.GetComponent<AoPassarDica>() ?? alvo.AddComponent<AoPassarDica>();
+            passar.Texto = texto;
+            passar.Dono = this;
+        }
+
+        private void MostrarDica(string texto) => _dicaAtual = string.IsNullOrEmpty(texto) ? null : texto;
+
+        private void EsconderDica(AoPassarDica quem)
+        {
+            // So apaga se a dica atual ainda e a de quem saiu (o mouse pode ja estar noutro alvo).
+            if (_dicaAtual != null && quem.Texto != null && quem.Texto() == _dicaAtual) _dicaAtual = null;
+        }
+
+        private void AtualizarDica()
+        {
+            if (_painel == null) return;
+            if (_dica == null)
+            {
+                _dica = ValheimUi.CreateRect("Dica", _painel);
+                _dica.pivot = new Vector2(0f, 1f);
+                _dica.anchorMin = _dica.anchorMax = new Vector2(0.5f, 0.5f);
+                var fundo = _dica.gameObject.AddComponent<Image>();
+                fundo.color = new Color(0.05f, 0.04f, 0.03f, 0.96f);
+                fundo.raycastTarget = false;
+                _dicaTexto = ValheimUi.CreateLabel(_dica, "", 14, ValheimUi.Beige, TextAlignmentOptions.TopLeft);
+                ValheimUi.Stretch((RectTransform)_dicaTexto.transform, 10f, 8f);
+                _dica.gameObject.SetActive(false);
+            }
+
+            if (_dicaAtual == null || _ficha != null)
+            {
+                if (_dica.gameObject.activeSelf) _dica.gameObject.SetActive(false);
+                return;
+            }
+
+            const float larg = 380f;
+            _dicaTexto.text = _dicaAtual;
+            float alt = _dicaTexto.GetPreferredValues(_dicaAtual, larg - 20f, 0f).y + 18f;
+            _dica.sizeDelta = new Vector2(larg, alt);
+            if (!_dica.gameObject.activeSelf) _dica.gameObject.SetActive(true);
+            _dica.SetAsLastSibling();
+
+            Canvas canvas = _canvas.GetComponent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            Vector2 local;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_painel, Input.mousePosition, cam, out local)) return;
+            Rect r = _painel.rect;
+            // Pivot do painel no centro: converte para o espaco do painel (origem no centro, ancora no centro).
+            float x = local.x + 18f, y = local.y - 22f;
+            if (x + larg > r.xMax - 6f) x = local.x - larg - 12f;
+            if (y - alt < r.yMin + 6f) y = local.y + alt + 18f;
+            _dica.anchoredPosition = new Vector2(x, y);
+        }
+
+        private sealed class AoPassarDica : MonoBehaviour, UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler
+        {
+            public Func<string> Texto;
+            public RankingJanela Dono;
+
+            public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData e) { if (Dono != null) Dono.MostrarDica(Texto != null ? Texto() : null); }
+            public void OnPointerExit(UnityEngine.EventSystems.PointerEventData e) { if (Dono != null) Dono.EsconderDica(this); }
         }
 
         // Depois do jogo, que trava o cursor de novo a cada frame.
@@ -270,6 +345,8 @@ namespace Deadheim.Ranking
         {
             _canvas = ValheimUi.CreateCanvas("Deadheim_Ranking", Ordem);
             if (_canvas == null) throw new InvalidOperationException("GUI do jogo nao encontrada");
+
+            _dicaAtual = null;
 
             // Fundo escuro atras da janela: o jogo continua, mas o olho vai para o ranking.
             var veu = ValheimUi.CreateRect("Veu", _canvas.transform);
@@ -363,6 +440,9 @@ namespace Deadheim.Ranking
                 if (_rolagem != null) _rolagem.verticalNormalizedPosition = 1f;
             });
             _botoesCategoria.Add(b);
+            ComDica(botao.gameObject, () => id == IdFeitos
+                ? "O primeiro viking a derrotar cada chefe neste mundo, com a data. Quem já tinha o chefe antes do ranking existir aparece como \"antes do ranking\"."
+                : _cats.FirstOrDefault(x => x.Id == id)?.Calculo);
         }
 
         private void MontarDireita()
@@ -376,9 +456,13 @@ namespace Deadheim.Ranking
 
             _bTemporada = Segmento(barra, "Temporada", () => { _semana = false; Invalidar(); });
             _bSemana = Segmento(barra, "Semana", () => { _semana = true; Invalidar(); });
+            ComDica(_bTemporada.gameObject, () => "Temporada: o total acumulado de cada jogador desde que o ranking existe neste mundo.");
+            ComDica(_bSemana.gameObject, () => "Semana: só o que cada jogador fez desde segunda-feira 00:00 (horário do servidor). Zera toda segunda.");
             Espaco(barra, 10f);
             _bVikings = Segmento(barra, "Vikings", () => { _visao = Visao.Vikings; Invalidar(); });
             _bGuildas = Segmento(barra, "Guildas", () => { _visao = Visao.Guildas; Invalidar(); });
+            ComDica(_bVikings.gameObject, () => "Vikings: cada jogador na sua posição. Admins do servidor não entram no ranking.");
+            ComDica(_bGuildas.gameObject, () => "Guildas: a soma da categoria entre todos os membros da guilda. Aparece também o melhor membro.");
             Espaco(barra, 10f);
             _bFiltro = Segmento(barra, "Todos", () =>
             {
@@ -401,6 +485,9 @@ namespace Deadheim.Ranking
             // ---- cabecalho da categoria
             var cab = ValheimUi.CreateRect("Cabecalho", direita);
             ValheimUi.Anchor(cab, new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -94f), new Vector2(0f, -44f));
+            var fundoCab = cab.gameObject.AddComponent<Image>();
+            fundoCab.color = new Color(0f, 0f, 0f, 0f);
+            ComDica(cab.gameObject, () => _categoria == IdFeitos ? null : _cats.FirstOrDefault(x => x.Id == _categoria)?.Calculo);
             _iconeCabecalho = ValheimUi.CreateItemIcon(cab, null, 46f);
             ValheimUi.Anchor((RectTransform)_iconeCabecalho.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(2f, -23f), new Vector2(48f, 23f));
             _tituloCabecalho = ValheimUi.CreateLabel(cab, "", 26, ValheimUi.Orange, TextAlignmentOptions.BottomLeft, display: true);
@@ -571,7 +658,7 @@ namespace Deadheim.Ranking
             else
             {
                 _iconeCabecalho.sprite = ValheimUi.FindItemIcon(cat.Icone);
-                _tituloCabecalho.text = cat.Titulo + (_visao == Visao.Guildas ? " <size=18><color=#9e9480>· por guilda</color></size>" : "");
+                _tituloCabecalho.text = cat.Titulo + " <size=16><color=#9e9480>(?)</color></size>" + (_visao == Visao.Guildas ? " <size=18><color=#9e9480>· por guilda</color></size>" : "");
                 _descricaoCabecalho.text = _semana && foto != null
                     ? cat.Descricao + "  <color=#ffd75a>Semana desde " + Data(foto.InicioSemana, false) + ".</color>"
                     : cat.Descricao;

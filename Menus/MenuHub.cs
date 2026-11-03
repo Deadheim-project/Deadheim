@@ -73,6 +73,8 @@ namespace Deadheim.Menus
         /// <summary>O menu do botao Aesir na barra de icones: as funcoes Aesir e o convite.</summary>
         private static RectTransform _menuAesir;
         private static Entrada _botaoAesir;
+        /// <summary>O menu do botao Admin na barra de icones: as ferramentas de admin (FerramentasAdmin).</summary>
+        private static RectTransform _menuAdmin;
 
         public static void Bind(ConfigFile config)
         {
@@ -86,7 +88,7 @@ namespace Deadheim.Menus
                 "Icones = barra de icones centralizada embaixo do personagem; Lista = painel ao lado do inventario (usa o Lado).");
             Forma.SettingChanged += (_, __) => Desmontar();
 
-            AesirPreco = Plugin.Synced(config.Bind(secao, "AesirPreco", "R$ 20 por mês, com 100 Deadcoins de bônus todo mês.",
+            AesirPreco = Plugin.Synced(config.Bind(secao, "AesirPreco", "R$ 50 por mês, com 500 Deadcoins de bônus de uma vez só.",
                 "Preco do Aesir, mostrado na janela do Aesir (Central Deadheim)."));
             DoacaoComo = Plugin.Synced(config.Bind(secao, "DoacaoComo",
                 "Faça a doação e mande o comprovante no Discord com o nome do seu personagem. A administração ativa o seu Aesir e credita as Deadcoins.",
@@ -131,6 +133,8 @@ namespace Deadheim.Menus
                 _canvas.SetActive(true);
                 // O inventario abre sempre com o menu Aesir fechado.
                 if (_menuAesir != null) _menuAesir.gameObject.SetActive(false);
+                if (_menuAdmin != null) _menuAdmin.gameObject.SetActive(false);
+                if (_status != null) _status.gameObject.SetActive(true);
                 Atualizar();
             }
             else if (Time.unscaledTime >= _proximaAtualizacao)
@@ -169,27 +173,21 @@ namespace Deadheim.Menus
                 },
                 new Entrada
                 {
+                    Titulo = "Pets", Icone = "Pet_galinha", FechaInventario = true,
+                    Visivel = () => Integracoes.TemMontarias,
+                    Detalhe = () => "Seus pets, bônus e invocar/guardar",
+                    Acao = Integracoes.AbrirPets
+                },
+                new Entrada
+                {
                     Titulo = "Guilda", Icone = "ShieldWood", FechaInventario = true,
                     Detalhe = () =>
                     {
                         string guilda = Guilda();
                         return string.IsNullOrEmpty(guilda) ? "Sem guilda" : "Guilda: " + guilda;
                     },
-                    Indisponivel = () =>
-                    {
-                        if (MenuBridge.AbrirGuilda == null) return "O painel da guilda vem do RaidSystem, que não está instalado.";
-                        return string.IsNullOrEmpty(Guilda())
-                            ? "Você ainda não tem guilda. Crie ou entre numa no NPC Registrador de Guildas."
-                            : null;
-                    },
-                    Acao = () => { MenuBridge.AbrirGuilda?.Invoke(); return null; }
-                },
-                new Entrada
-                {
-                    Titulo = "Ranking de Guerra", Icone = "TrophyEikthyr", FechaInventario = true,
-                    Detalhe = () => "Melhores jogadores e guildas da temporada",
-                    Indisponivel = () => MenuBridge.AbrirRanking == null ? "O Ranking de Guerra vem do RaidSystem, que não está instalado." : null,
-                    Acao = () => { MenuBridge.AbrirRanking?.Invoke(); return null; }
+                    Indisponivel = () => Integracoes.TemGuilds ? null : "O mod Guilds não está instalado.",
+                    Acao = Integracoes.AbrirGuilds
                 },
                 new Entrada
                 {
@@ -239,6 +237,24 @@ namespace Deadheim.Menus
                     Visivel = () => Ligado(Plantas.Enabled),
                     Detalhe = () => "Salve e recoloque suas construções",
                     Acao = () => { PlantasUi.Open(); return null; }
+                },
+
+                // ---- admin (02/11/2026): na barra de icones o modo icones nao mostra mais a dica
+                // "ESC > Deadheim > Admin"; o botao so aparece para quem esta na adminlist.
+                new Entrada
+                {
+                    Titulo = "Admin", Icone = "SledgeIron",
+                    Visivel = () => Vanilla.Admin.LocalPlayerIsAdmin(),
+                    Detalhe = () => "Painel de Admin (bestiário, arenas), territórios e as outras ferramentas",
+                    Acao = () =>
+                    {
+                        if (_menuAdmin != null) { AlternarMenuAdmin(); return null; }
+                        // Na lista: direto o Painel de Admin; o resto continua no ESC > Deadheim > Admin.
+                        InventoryGui.instance?.Hide();
+                        string resposta = Integracoes.AbrirPainelAdmin();
+                        if (resposta != null) Player.m_localPlayer?.Message(MessageHud.MessageType.Center, resposta);
+                        return null;
+                    }
                 },
             };
         }
@@ -293,6 +309,7 @@ namespace Deadheim.Menus
             _sobre = null;
             _menuAesir = null;
             _botaoAesir = null;
+            _menuAdmin = null;
             _entradas.Clear();
         }
 
@@ -412,6 +429,7 @@ namespace Deadheim.Menus
             _entradas.Add(_botaoAesir);
             CriarIcone(_botaoAesir);
             MontarMenuAesir();
+            MontarMenuAdmin();
 
             // A linha de cima: o que o mouse aponta, ou o aviso / a dica de sempre.
             _status = ValheimUi.CreateLabel(_canvas.transform, "", 16, ValheimUi.Beige, TextAlignmentOptions.Bottom);
@@ -476,8 +494,96 @@ namespace Deadheim.Menus
                 _menuAesir.anchoredPosition = new Vector2(_painel.rect.width / 2f, _painel.anchoredPosition.y + _painel.rect.height + 6f);
                 Atualizar();
             }
+            if (abrir && _menuAdmin != null) _menuAdmin.gameObject.SetActive(false);
             _menuAesir.gameObject.SetActive(abrir);
             if (_status != null) _status.gameObject.SetActive(!abrir);
+        }
+
+        /// <summary>
+        /// O menu de admin: um botao por ferramenta de FerramentasAdmin (as mesmas da aba Admin do
+        /// ESC > Deadheim), com a descricao embaixo. A config do servidor e os comandos continuam
+        /// so no ESC.
+        /// </summary>
+        private static void MontarMenuAdmin()
+        {
+            _menuAdmin = ValheimUi.CreatePanel(_canvas.transform, 440f, 0f);
+            _menuAdmin.anchorMin = _menuAdmin.anchorMax = new Vector2(0.5f, 0f);
+            _menuAdmin.pivot = new Vector2(0.5f, 0f);
+            var layout = _menuAdmin.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(16, 16, 14, 16);
+            layout.spacing = 6f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            var ajuste = _menuAdmin.gameObject.AddComponent<ContentSizeFitter>();
+            ajuste.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var titulo = ValheimUi.CreateLabel(_menuAdmin, "Admin", 24, ValheimUi.Orange, TextAlignmentOptions.Center, display: true);
+            ValheimUi.SetHeight(titulo.gameObject, 30f);
+
+            foreach (FerramentasAdmin.Ferramenta ferramenta in FerramentasAdmin.Todas())
+            {
+                bool disponivel = ferramenta.Disponivel == null || ferramenta.Disponivel();
+                Button botao = ValheimUi.CreateButton(_menuAdmin, ferramenta.Titulo, 0f, 52f, 16);
+                var rotulo = botao.GetComponentInChildren<TextMeshProUGUI>();
+                rotulo.alignment = TextAlignmentOptions.BottomLeft;
+                ValheimUi.Anchor((RectTransform)rotulo.transform, new Vector2(0f, 0.5f), Vector2.one, new Vector2(14f, 0f), new Vector2(-14f, -4f));
+                if (!disponivel) rotulo.color = ValheimUi.Muted;
+
+                var sub = ValheimUi.CreateLabel(botao.transform, disponivel ? ferramenta.Descricao : ferramenta.Ausente ?? "Indisponível",
+                    12, ValheimUi.Muted, TextAlignmentOptions.TopLeft);
+                ValheimUi.Anchor((RectTransform)sub.transform, Vector2.zero, new Vector2(1f, 0.5f), new Vector2(14f, 3f), new Vector2(-14f, 0f));
+                sub.textWrappingMode = TextWrappingModes.NoWrap;
+                sub.overflowMode = TextOverflowModes.Ellipsis;
+
+                botao.interactable = disponivel;
+                botao.onClick.AddListener(() => UsarFerramenta(ferramenta));
+            }
+
+            var nota = ValheimUi.CreateLabel(_menuAdmin, "A config do servidor e os comandos ficam no ESC > Deadheim > Admin.",
+                12, ValheimUi.Muted, TextAlignmentOptions.Center);
+            ValheimUi.SetHeight(nota.gameObject, 20f);
+
+            _menuAdmin.gameObject.SetActive(false);
+        }
+
+        private static void AlternarMenuAdmin()
+        {
+            if (_menuAdmin == null) return;
+            bool abrir = !_menuAdmin.gameObject.activeSelf;
+            if (abrir)
+            {
+                // Acima da barra, centrado no botao Admin.
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_painel);
+                Entrada admin = _entradas.Find(e => e.Titulo == "Admin" && !e.Aesir);
+                float x = admin?.Objeto != null ? admin.Objeto.transform.localPosition.x : 0f;
+                _menuAdmin.anchoredPosition = new Vector2(_painel.anchoredPosition.x + x, _painel.anchoredPosition.y + _painel.rect.height + 6f);
+                if (_menuAesir != null) _menuAesir.gameObject.SetActive(false);
+            }
+            _menuAdmin.gameObject.SetActive(abrir);
+            if (_status != null) _status.gameObject.SetActive(!abrir);
+        }
+
+        private static void UsarFerramenta(FerramentasAdmin.Ferramenta ferramenta)
+        {
+            string resposta;
+            try
+            {
+                // As janelas abrem por cima do jogo: fecha o inventario antes, como na aba Admin.
+                if (ferramenta.FechaMenu && InventoryGui.instance != null) InventoryGui.instance.Hide();
+                else AlternarMenuAdmin();
+                resposta = ferramenta.Acao?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Deadheim] Central: ferramenta '{ferramenta.Titulo}' falhou: {ex}");
+                resposta = "Não consegui abrir " + ferramenta.Titulo + ".";
+            }
+
+            if (string.IsNullOrEmpty(resposta)) return;
+            if (ferramenta.FechaMenu) Player.m_localPlayer?.Message(MessageHud.MessageType.Center, resposta);
+            else Avisar(resposta);
         }
 
         private static void CriarIcone(Entrada e)

@@ -57,7 +57,7 @@ namespace Deadheim
             if (!_cllcResolved)
             {
                 _cllcResolved = true;
-                _cllcRange = AccessTools.TypeByName("CreatureLevelControl.CreatureLevelControl")
+                _cllcRange = Menus.Integracoes.TipoPorNome("CreatureLevelControl.CreatureLevelControl")
                     ?.GetMethod("getMultiplayerRangeValue", BindingFlags.Public | BindingFlags.Static);
             }
             if (_cllcRange != null)

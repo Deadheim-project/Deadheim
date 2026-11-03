@@ -105,7 +105,7 @@
       <HintPath>D:\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
     <!-- Harmony por HintPath explicito: csproj legado nao consome
-         os assets de PackageReference (mesmo padrao do Deadheim/RaidSystem). -->
+         os assets de PackageReference (mesmo padrao do Deadheim). -->
     <Reference Include="0Harmony">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>D:\BepInEx\core\0Harmony.dll</HintPath>

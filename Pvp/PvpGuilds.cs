@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Deadheim.Pvp
 {
     /// <summary>
-    /// Guilda de um jogador, lida do mod Guilds (blaxxun), que o RaidSystem e o Velas ja
+    /// Guilda de um jogador, lida do mod Guilds (blaxxun), que o Velas ja
     /// usam como sistema de cla. Por reflexao, como o GuildsClanProvider do Velas: o
     /// Deadheim nao ganha dependencia dura, e sem o Guilds todo mundo fica "sem guilda"
     /// (ninguem e aliado de ninguem), em vez de quebrar.

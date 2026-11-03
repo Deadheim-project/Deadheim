@@ -340,7 +340,7 @@ namespace Deadheim.Pvp
 
         /// <summary>
         /// Defesa de castelo, decidida no servidor: o matador e da guilda dona do castelo onde a
-        /// vitima morreu e a vitima nao e. Guilda pelo resolvedor do RaidSystem (WardBridge), que
+        /// vitima morreu e a vitima nao e. Guilda pelo resolvedor do WardBridge, que
         /// le o Guilds pelo playerId de quem esta conectado.
         /// </summary>
         private static bool DefendsCastle(long killerId, long victimId, Vector3 where)
@@ -679,7 +679,7 @@ namespace Deadheim.Pvp
         }
 
         /// <summary>
-        /// Guilda de quem esta online, pelo resolvedor do RaidSystem (Guilds). Fica no PvpStore: o
+        /// Guilda de quem esta online, pelo resolvedor do WardBridge (Guilds). Fica no PvpStore: o
         /// logout em combate entra no Ranking de Guerra (PvpBridge.KnownGuild) e a bounty sabe quem
         /// foi da guilda do alvo nas ultimas horas.
         /// </summary>

@@ -146,7 +146,6 @@ namespace Deadheim
             if ((piece.m_groundOnly || piece.m_groundPiece) && heightmap == null) return false;
             if (piece.m_onlyInBiome != Heightmap.Biome.None && (Heightmap.FindBiome(p) & piece.m_onlyInBiome) == 0) return false;
             if (Location.IsInsideNoBuildLocation(p) || !PrivateArea.CheckAccess(p, 0f, false, false)) return false;
-            if (Wards.WardBridge.Governed(p)) return false;
 
             if (_spaceMask == 0) _spaceMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid");
             foreach (Collider col in Physics.OverlapSphere(p, plant.m_growRadius, _spaceMask))

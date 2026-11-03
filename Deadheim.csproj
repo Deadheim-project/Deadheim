@@ -7,7 +7,7 @@
     <ProjectGuid>{D361DAA4-9CE5-430E-A275-944805ECB71E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <!-- Ver comentario em RaidSystem.csproj: sem isto o alvo padrao do pacote
+    <!-- Sem isto o alvo padrao do pacote
          ILRepack funde toda dll da pasta de saida junto com a nossa fusao. -->
     <ILRepackTargetsFile>$(ProjectDir)ILPack.targets</ILRepackTargetsFile>
     <RootNamespace>Deadheim</RootNamespace>
@@ -83,6 +83,10 @@
       <HintPath>$(ValheimManaged)\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.ParticleSystemModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
           <Private>false</Private>
@@ -105,6 +109,10 @@
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
       <HintPath>$(ValheimManaged)\UnityEngine.PhysicsModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.ParticleSystemModule.dll</HintPath>
           <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.SharedInternalsModule">
@@ -151,6 +159,9 @@
     <Compile Include="TotemCidade.cs" />
     <Compile Include="FogoInfinito.cs" />
     <Compile Include="AesirFaceis.cs" />
+    <Compile Include="AesirFogo.cs" />
+    <Compile Include="AesirLapide.cs" />
+    <Compile Include="Lixeira.cs" />
     <Compile Include="AesirLog.cs" />
     <Compile Include="AesirDicas.cs" />
     <Compile Include="AesirTeclas.cs" />
@@ -202,15 +213,16 @@
     <Compile Include="ThirdParty\ConfigSync.cs" />
     <Compile Include="Shared\ConfigWatcher.cs" />
     <!-- Numero gravado com ponto e lido com ponto ou virgula (retreat, /pvpadmin). Tambem no Hearthstone. -->
+    <Compile Include="Shared\Avisos.cs" />
     <Compile Include="Shared\Numeros.cs" />
     <Compile Include="Shared\ValheimUi.cs" />
     <Compile Include="Portal.cs" />
-    <!-- Item do servidor para o jogador local sem duplicar nem sumir. Publico: o RaidSystem usa. -->
+    <!-- Item do servidor para o jogador local sem duplicar nem sumir. -->
     <Compile Include="Entrega.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <!-- Remetente de verdade de um RPC roteado (o "sender" do pacote e do cliente). Publico: o RaidSystem usa. -->
+    <!-- Remetente de verdade de um RPC roteado (o "sender" do pacote e do cliente). -->
     <Compile Include="RemetenteRpc.cs" />
-    <!-- Hora UTC do servidor no cliente, sem o relogio do Windows. Publico: o RaidSystem usa. -->
+    <!-- Hora UTC do servidor no cliente, sem o relogio do Windows. -->
     <Compile Include="RelogioServidor.cs" />
     <Compile Include="Retreat.cs" />
     <Compile Include="RPC.cs" />
@@ -251,7 +263,6 @@
     <Compile Include="Ajustes\AjustesJanela.cs" />
     <Compile Include="Ajustes\AjustesMenu.cs" />
     <Compile Include="Ajustes\AjustesRede.cs" />
-    <Compile Include="Menus\MenuBridge.cs" />
     <Compile Include="Menus\Integracoes.cs" />
     <Compile Include="Menus\MenuHub.cs" />
     <Compile Include="Menus\AesirJanela.cs" />
