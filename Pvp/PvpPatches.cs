@@ -612,7 +612,7 @@ namespace Deadheim.Pvp
         /// teria o mesmo efeito do /retreat que o modulo bloqueia, entao vale a mesma regra.
         /// No HarmonyX devolver false nao para os prefixos seguintes: o do Hearthstone (2.1.1+)
         /// le __runOriginal e desiste, sem gastar a pedra.
-        /// A recarga e a mesma do /retreat (RetreatCooldownMinutes): usar um trava o outro.
+        /// A pedra tem recarga propria (HearthstoneCooldownSeconds), independente do /retreat.
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.ConsumeItem))]
         private static class HearthstoneCombatPatch
@@ -622,7 +622,7 @@ namespace Deadheim.Pvp
             {
                 if (!IsLocalHearthstone(__instance, item)) return true;
 
-                string refusal = PvpModule.RetreatRefusal(__instance);
+                string refusal = PvpModule.RetreatRefusal(__instance, PvpModule.Cooldown.Hearthstone);
                 if (refusal == null) return true;
                 Refuse(__instance, refusal);
                 __result = false;
@@ -633,7 +633,7 @@ namespace Deadheim.Pvp
             private static void Postfix(Player __instance, ItemDrop.ItemData item, bool __result)
             {
                 if (__result && IsLocalHearthstone(__instance, item))
-                    PvpModule.MarkRetreatUsed(__instance);
+                    PvpModule.MarkRetreatUsed(__instance, PvpModule.Cooldown.Hearthstone);
             }
 
             private static bool IsLocalHearthstone(Player player, ItemDrop.ItemData item) =>

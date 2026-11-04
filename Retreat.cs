@@ -83,7 +83,8 @@ namespace Deadheim
                 }
 
                 // Cooldown, combate e cacado: o retreat nao pode ser a saida de uma luta.
-                string refusal = Pvp.PvpModule.RetreatRefusal(player);
+                Pvp.PvpModule.Cooldown cooldown = ponto == 2 ? Pvp.PvpModule.Cooldown.Retreat2 : Pvp.PvpModule.Cooldown.Retreat1;
+                string refusal = Pvp.PvpModule.RetreatRefusal(player, cooldown);
                 if (refusal != null)
                 {
                     AesirLog.D(18, "retreat " + ponto + " negado pelo PvP: " + refusal);
@@ -106,7 +107,7 @@ namespace Deadheim
                     return "O teleporte nao saiu agora; tente de novo em instantes.";
                 }
 
-                Pvp.PvpModule.MarkRetreatUsed(player);
+                Pvp.PvpModule.MarkRetreatUsed(player, cooldown);
                 AesirLog.D(18, "retreat " + ponto + ": teleportou.");
                 return null;
             }

@@ -887,7 +887,7 @@ namespace PvpTestDriver
                 PvpModule.MarkRetreatUsed(Me);
                 refusal = PvpModule.RetreatRefusal(Me);
                 Check("retreat/cooldown", refusal != null && refusal.Contains("recarga"), refusal);
-                Check("retreat/recarga-gravada-como-tempo-restante", Me.m_customData.ContainsKey("dh_retreatLeft")
+                Check("retreat/recarga-gravada-como-tempo-restante", Me.m_customData.ContainsKey("dh_cdLeft_retreat1")
                                                                      && !Me.m_customData.ContainsKey("dh_retreatAt"));
                 yield return HearthstoneStone();
             }
@@ -943,8 +943,8 @@ namespace PvpTestDriver
                 $"usou={went} pedras={CountItem(Me, "Hearthstone")}/{stones} distancia={Utils.DistanceXZ(Me.transform.position, home):0.0}");
 
             // Recarga compartilhada: a pedra marcou a do /retreat e agora ela mesma fica recusada.
-            string refusal = PvpModule.RetreatRefusal(Me);
-            Check("pedra/marca-recarga-do-retreat", refusal != null && refusal.Contains("recarga"), refusal);
+            string refusal = PvpModule.RetreatRefusal(Me, PvpModule.Cooldown.Hearthstone);
+            Check("pedra/marca-recarga-da-pedra", refusal != null && refusal.Contains("recarga"), refusal);
             int left = CountItem(Me, "Hearthstone");
             bool again = Me.ConsumeItem(Me.GetInventory(), Me.GetInventory().GetItem(name));
             Check("pedra/bloqueada-pela-recarga", !again && CountItem(Me, "Hearthstone") == left,

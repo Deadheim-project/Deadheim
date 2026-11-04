@@ -94,7 +94,19 @@ namespace Deadheim.Pvp
         private static readonly Buff Pve = new Buff("DH_Pve", "PvE",
             "PvE: nao luta com jogadores em lugar nenhum. O Juiz de Guerra troca de volta.", "Hammer", "SwordBronze");
 
-        private static readonly Buff[] All = { Combat, Immune, Pk, Aggressor, Hunted, Bounty, Safe, Pve };
+        // Recargas de teleporte: um buff por cooldown (PvpModule.Cooldown), com a contagem do que falta.
+        private static readonly Buff CdHearthstone = new Buff("DH_CdHearthstone", "Hearthstone em recarga",
+            "A pedra de retorno esta em recarga. O tempo so corre com o jogo aberto.", "Hearthstone", "SurtlingCore", "SwordBronze");
+        private static readonly Buff CdRetreat1 = new Buff("DH_CdRetreat1", "Retreat 1 em recarga",
+            "O /retreat para o ponto 1 esta em recarga. O tempo so corre com o jogo aberto.", "Ruby", "Hearthstone", "SwordBronze");
+        private static readonly Buff CdRetreat2 = new Buff("DH_CdRetreat2", "Retreat 2 em recarga",
+            "O /retreat 2 (segundo ponto) esta em recarga. O tempo so corre com o jogo aberto.", "Amber", "Hearthstone", "SwordBronze");
+
+        private static readonly Buff[] All = { Combat, Immune, Pk, Aggressor, Hunted, Bounty, Safe, Pve, CdHearthstone, CdRetreat1, CdRetreat2 };
+
+        /// <summary>Hash do buff de cada recarga, para o teste conferir na barra de efeitos.</summary>
+        public static int CooldownHash(PvpModule.Cooldown kind) =>
+            kind == PvpModule.Cooldown.Hearthstone ? CdHearthstone.Hash : kind == PvpModule.Cooldown.Retreat2 ? CdRetreat2.Hash : CdRetreat1.Hash;
 
         /// <summary>Hash dos buffs, para o teste conferir na barra de efeitos.</summary>
         public static int CombatHash => Combat.Hash;
@@ -176,6 +188,14 @@ namespace Deadheim.Pvp
                 $"Bounty {PvpClient.BountyPot}" + (PvpClient.HuntPaused ? " (pausada)" : string.Empty));
             Show(seman, Safe, states && (flags & PvpFlags.Protected) != 0, 0f, PvpState.ZoneLabel ?? "Zona segura");
             Show(seman, Pve, states && (flags & PvpFlags.Pve) != 0, 0f, PvpPve.Title);
+
+            // Recargas de teleporte: reaparecem sozinhas no login enquanto faltar tempo (carregadas do perfil).
+            float hs = (float)PvpModule.Remaining(PvpModule.Cooldown.Hearthstone);
+            Show(seman, CdHearthstone, hs > 0f, hs);
+            float r1 = (float)PvpModule.Remaining(PvpModule.Cooldown.Retreat1);
+            Show(seman, CdRetreat1, r1 > 0f, r1);
+            float r2 = (float)PvpModule.Remaining(PvpModule.Cooldown.Retreat2);
+            Show(seman, CdRetreat2, r2 > 0f, r2);
         }
 
         /// <summary>

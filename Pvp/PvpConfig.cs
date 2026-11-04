@@ -118,7 +118,9 @@ namespace Deadheim.Pvp
         public static ConfigEntry<bool> TombstoneGuildAccess;
 
         // ----------------------------------------------------------------- retreat
-        public static ConfigEntry<float> RetreatCooldownMinutes;
+        public static ConfigEntry<float> HearthstoneCooldownSeconds;
+        public static ConfigEntry<float> Retreat1CooldownSeconds;
+        public static ConfigEntry<float> Retreat2CooldownSeconds;
         public static ConfigEntry<bool> RetreatBlockedByPveCombat;
 
         // ------------------------------------------------------------------- mundo
@@ -363,8 +365,12 @@ namespace Deadheim.Pvp
             TombstoneGuildAccess = Bind(config, tomb, "TombstoneGuildAccess", false,
                 "Membros da guilda do dono tambem abrem a tumba (o dono precisa estar por perto).");
 
-            RetreatCooldownMinutes = Bind(config, "PvP - Retreat", "RetreatCooldownMinutes", 30f,
-                "Minutos (de jogo aberto) entre dois usos do /retreat ou da pedra de retorno (recarga compartilhada: usar um trava o outro). Em combate ou cacado nenhum dos dois funciona.");
+            HearthstoneCooldownSeconds = Bind(config, "PvP - Retreat", "HearthstoneCooldownSeconds", 1800f,
+                "Segundos (de jogo aberto) entre dois usos da pedra de retorno (Hearthstone). Recarga propria, independente do /retreat. 0 = sem recarga.");
+            Retreat1CooldownSeconds = Bind(config, "PvP - Retreat", "Retreat1CooldownSeconds", 1800f,
+                "Segundos (de jogo aberto) entre dois usos do /retreat para o ponto 1. Recarga propria. 0 = sem recarga.");
+            Retreat2CooldownSeconds = Bind(config, "PvP - Retreat", "Retreat2CooldownSeconds", 1800f,
+                "Segundos (de jogo aberto) entre dois usos do /retreat 2 (segundo ponto, Aesir 18). Recarga propria. 0 = sem recarga.");
             RetreatBlockedByPveCombat = Bind(config, "PvP - Retreat", "RetreatBlockedByPveCombat", true,
                 "Luta com monstro (dar ou levar dano) tambem bloqueia o /retreat e a pedra de retorno por CombatTagSeconds. " +
                 "Portal continua seguindo CombatFromPve.");
