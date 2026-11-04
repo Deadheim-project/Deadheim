@@ -28,7 +28,9 @@ namespace Deadheim.Menus
         public static bool TemNpcValheim => Carregado(NpcValheimGuid);
         public static bool TemMontarias => Carregado(MontariasGuid);
         public static bool TemAdaptiveNet => Carregado(AdaptiveNetGuid);
-        public static bool TemGuilds => AccessTools.TypeByName("Guilds.Interface") != null;
+        // A Central pergunta isto a cada meio segundo: TipoPorNome guarda o resultado (TypeByName varria
+        // todos os assemblies a cada chamada e travava a abertura do inventario).
+        public static bool TemGuilds => TipoPorNome("Guilds.Interface") != null;
 
         /// <summary>
         /// Painel do mod Guilds (blaxxun): o mesmo que a tecla dele abre -- sem guilda a tela de criar/procurar,
@@ -166,16 +168,27 @@ namespace Deadheim.Menus
         }
 
         /// <summary>"Montaria: Aprendiz", lido da MontariasApi (publica). Vazio se nao der.</summary>
+        private static MethodInfo _mkKnown, _mkRank, _mkName;
+        private static bool _mkResolvido;
+
         public static string ResumoMontarias()
         {
             if (!TemMontarias) return "";
             try
             {
-                Type api = TipoPorNome("ValheimMontarias.MontariasApi");
-                if (api == null) return "";
-                if (!(AccessTools.Method(api, "LocalKnown")?.Invoke(null, null) is bool sabe) || !sabe) return "";
-                if (!(AccessTools.Method(api, "LocalRank")?.Invoke(null, null) is int rank)) return "";
-                string nome = AccessTools.Method(api, "RankName")?.Invoke(null, new object[] { rank }) as string;
+                // Os metodos sao resolvidos uma vez: a Central chama isto duas vezes por segundo.
+                if (!_mkResolvido)
+                {
+                    Type api = TipoPorNome("ValheimMontarias.MontariasApi");
+                    if (api == null) return "";
+                    _mkKnown = AccessTools.Method(api, "LocalKnown");
+                    _mkRank = AccessTools.Method(api, "LocalRank");
+                    _mkName = AccessTools.Method(api, "RankName");
+                    _mkResolvido = true;
+                }
+                if (!(_mkKnown?.Invoke(null, null) is bool sabe) || !sabe) return "";
+                if (!(_mkRank?.Invoke(null, null) is int rank)) return "";
+                string nome = _mkName?.Invoke(null, new object[] { rank }) as string;
                 return string.IsNullOrEmpty(nome) ? "" : "Habilidade: " + nome;
             }
             catch (Exception)
