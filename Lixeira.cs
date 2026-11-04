@@ -24,6 +24,7 @@ namespace Deadheim
             "Pegue um item (clique nele) e clique aqui para apagá-lo.\n" +
             "<color=#7fd08a>Segurando SHIFT</color>: apaga na hora, sem perguntar.\n" +
             "<color=#c9a64a>Sem Shift</color>: pergunta Sim/Não antes.\n" +
+            "Também dá para <color=#ffd75a>soltar</color> o item aqui, ou passar o mouse num item e apertar <color=#ffd75a>Delete</color> (apaga a pilha na hora).\n" +
             "<color=#ff8a7a>Não dá para apagar</color>: moedas, item equipado ou item de baú.";
 
         private static Button _botao;
@@ -57,6 +58,7 @@ namespace Deadheim
                     return;
                 }
                 if (_botao == null) Criar(__instance);
+                if (Input.GetKeyDown(KeyCode.Delete)) ApagarComDelete(__instance);
             }
             catch (Exception e)
             {
@@ -87,17 +89,17 @@ namespace Deadheim
             Vector3 pMin = pai.InverseTransformPoint(cp[0]), pMax = pai.InverseTransformPoint(cp[2]);
             float altura = Mathf.Clamp(pMax.y - pMin.y, 24f, 34f);
             float centroY = (pMin.y + pMax.y) / 2f;
-            float centroX;
+            // Fica sempre a DIREITA do grupo mais a direita (peso ou armadura), com folga, para nunca
+            // sobrepor o indicador de peso (soltar o item ali o derrubava no chao).
+            float direita = pMax.x;
             if (armadura != null && armadura != peso)
             {
                 armadura.GetWorldCorners(cp);
-                Vector3 aMin = pai.InverseTransformPoint(cp[0]), aMax = pai.InverseTransformPoint(cp[2]);
-                // O meio do espaco entre os dois grupos, qualquer que seja o da esquerda.
-                float vazioDe = aMin.x >= pMax.x ? pMax.x : aMax.x;
-                float vazioAte = aMin.x >= pMax.x ? aMin.x : pMin.x;
-                centroX = (vazioDe + vazioAte) / 2f;
+                direita = Mathf.Max(direita, pai.InverseTransformPoint(cp[2]).x);
             }
-            else centroX = pMax.x + 8f + altura / 2f;
+            float centroX = direita + 12f + altura / 2f;
+            float limite = pai.rect.xMax - altura / 2f - 2f;
+            if (centroX > limite) centroX = limite;
 
             var go = new GameObject("DeadheimLixeira", typeof(RectTransform), typeof(Image), typeof(Button));
             go.layer = pai.gameObject.layer;
@@ -139,6 +141,65 @@ namespace Deadheim
                 dica.m_topic = "Lixeira";
                 dica.m_text = Dica;
             }
+        }
+
+        // ---------------------------------------------------------------- soltar / Delete
+
+        private static bool PonteiroSobre(RectTransform rt)
+        {
+            if (rt == null || !rt.gameObject.activeInHierarchy) return false;
+            Canvas c = rt.GetComponentInParent<Canvas>();
+            Camera cam = c != null && c.renderMode != RenderMode.ScreenSpaceOverlay ? c.worldCamera : null;
+            return RectTransformUtility.RectangleContainsScreenPoint(rt, Input.mousePosition, cam);
+        }
+
+        /// <summary>Soltar o item arrastado sobre a lixeira apaga (em vez de dropar no chao).</summary>
+        [HarmonyPatch(typeof(InventoryGui), "OnDropOutside")]
+        [HarmonyPrefix]
+        private static bool SoltarFora()
+        {
+            try
+            {
+                if (_botao != null && PonteiroSobre((RectTransform)_botao.transform))
+                {
+                    Clicar();
+                    return false;
+                }
+            }
+            catch (Exception e) { Debug.LogError("[Deadheim] Lixeira (soltar): " + e); }
+            return true;
+        }
+
+        private static readonly FieldInfo CampoElementos = AccessTools.Field(typeof(InventoryGrid), "m_elements");
+
+        /// <summary>Item do inventario do jogador sob o mouse (grade do jogador), ou null.</summary>
+        private static ItemDrop.ItemData ItemSobMouse(InventoryGui gui)
+        {
+            InventoryGrid grade = gui.m_playerGrid;
+            if (grade == null || CampoElementos == null) return null;
+            Inventory inv = grade.GetInventory();
+            if (inv == null || !(CampoElementos.GetValue(grade) is System.Collections.IEnumerable lista)) return null;
+            foreach (object el in lista)
+            {
+                if (el == null) continue;
+                var go = AccessTools.Field(el.GetType(), "m_go")?.GetValue(el) as GameObject;
+                if (go == null || !(go.transform is RectTransform rt) || !PonteiroSobre(rt)) continue;
+                object pos = AccessTools.Field(el.GetType(), "m_pos")?.GetValue(el);
+                if (pos is Vector2i p) return inv.GetItemAt(p.x, p.y);
+            }
+            return null;
+        }
+
+        /// <summary>Tecla Delete: apaga na hora o item sob o mouse (pilha inteira). Mesmas recusas da lixeira.</summary>
+        private static void ApagarComDelete(InventoryGui gui)
+        {
+            Player player = Player.m_localPlayer;
+            if (player == null) return;
+            ItemDrop.ItemData item = ItemSobMouse(gui);
+            if (item == null) return;
+            string motivo = Recusa(player, item, player.GetInventory());
+            if (motivo != null) { Aviso(motivo); return; }
+            Apagar(gui, player, item, item.m_stack);
         }
 
         // ---------------------------------------------------------------- acao
@@ -194,10 +255,13 @@ namespace Deadheim
 
             string nome = Localization.instance.Localize(item.m_shared.m_name);
             qtd = Mathf.Clamp(qtd, 1, item.m_stack);
-            CampoDragItem?.SetValue(gui, null);
-            CampoDragInventario?.SetValue(gui, null);
-            CampoDragQuantidade?.SetValue(gui, 0);
-            AccessTools.Method(typeof(InventoryGui), "SetupDragItem")?.Invoke(gui, new object[] { null, null, 1 });
+            if (ReferenceEquals(LerCampo<ItemDrop.ItemData>(CampoDragItem, gui), item))
+            {
+                CampoDragItem?.SetValue(gui, null);
+                CampoDragInventario?.SetValue(gui, null);
+                CampoDragQuantidade?.SetValue(gui, 0);
+                AccessTools.Method(typeof(InventoryGui), "SetupDragItem")?.Invoke(gui, new object[] { null, null, 1 });
+            }
             if (!player.GetInventory().RemoveItem(item, qtd)) { Aviso("Não foi possível apagar."); return; }
             Aviso("Apagado: " + (qtd > 1 ? qtd + "x " : "") + nome);
             Debug.Log($"[Deadheim] Lixeira: {player.GetPlayerName()} apagou {qtd}x {item.m_shared.m_name}.");
