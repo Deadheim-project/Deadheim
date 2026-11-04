@@ -153,6 +153,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdminImortal.cs" />
+    <Compile Include="BedBindMenu.cs" />
     <Compile Include="AdminPainel.cs" />
     <Compile Include="ConstrucaoBarrada.cs" />
     <Compile Include="SemMarcaTrapaca.cs" />

@@ -149,22 +149,9 @@ namespace Deadheim
                             {
                                 // A tecla e a setPointKey do mod Hearthstone. Sem Shift quem grava e a
                                 // pedra (o ponto e o mesmo); o Deadheim so cuida disso sem ela instalada.
-                                bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-                                bool keyDown = Input.GetKeyDown(Retreat.TeclaDoPonto) && (shift || !Retreat.HearthstoneCarregado);
-                                if (keyDown)
-                                {
-                                    // Aesir 18 (14/10/2026): Shift+tecla grava o segundo ponto, so para VIP com a chave ligada.
-                                    bool chave18 = AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value;
-                                    bool vip = VipList.VipListApi.IsLocalPlayerVip();
-                                    bool segundoPonto = shift && chave18 && vip;
-                                    Retreat.SetHearthStonePosition(segundoPonto ? 2 : 1);
-                                    if (shift && !segundoPonto)
-                                        AesirLog.D(18, "Shift+" + Retreat.TeclaDoPonto + " na cama: segundo ponto negado (" + (!chave18 ? "Aesir18DoisPontos=false" : "nao e VIP") + "), gravou o ponto 1.");
-                                    else if (segundoPonto)
-                                        AesirLog.D(18, "gravou o segundo ponto de retreat.");
-                                    Player.m_localPlayer.Message(MessageHud.MessageType.Center,
-                                        segundoPonto ? "Seu novo segundo ponto de Retreat" : "Seu novo ponto de Retreat", 0, null);
-                                }
+                                // Fase 3: a tecla abre o menu da cama (Hearthstone / Retreat 1 / Retreat 2).
+                                if (Input.GetKeyDown(Retreat.TeclaDoPonto) && !BedBindMenu.IsOpen)
+                                    BedBindMenu.Abrir(bed);
                             }
                         }
                     }

@@ -20,11 +20,13 @@ namespace Deadheim
         ///
         /// Aesir 18 (14/10/2026, decisao do usuario): VIP tem um segundo ponto, nas chaves
         /// positionX2/Y2/Z2. <paramref name="ponto"/> 1 ou 2; fora disso cai no 1.
+        /// Fase 3: ponto 0 = Hearthstone (positionXh/Yh/Zh; sem ele, cai no ponto 1 de antes).
         /// </summary>
         public static Vector3 GetHearthStonePosition(int ponto = 1)
         {
             Player player = Player.m_localPlayer;
-            string sufixo = ponto == 2 ? "2" : "";
+            if (ponto == 0 && player != null && !player.m_customData.ContainsKey("positionXh")) ponto = 1;
+            string sufixo = ponto == 2 ? "2" : ponto == 0 ? "h" : "";
             if (player == null
                 || !player.m_customData.TryGetValue("positionX" + sufixo, out string rawX)
                 || !player.m_customData.TryGetValue("positionY" + sufixo, out string rawY)
@@ -146,15 +148,13 @@ namespace Deadheim
             {
                 if (__instance.IsMine() && (___m_nview.GetZDO().GetLong("owner", 0L) != 0) || Traverse.Create(__instance).Method("IsCurrent").GetValue<bool>())
                 {
-                    KeyCode tecla = TeclaDoPonto;
-                    // Com a pedra instalada a linha dela ja anuncia a tecla (o ponto e o mesmo).
-                    if (!HearthstoneCarregado)
-                        __result += Localization.instance.Localize($"\n[<color=yellow><b>{tecla}</b></color>] Definir ponto de retreat");
-                    // Aesir 18: segundo ponto, com Shift+tecla.
+                    // Fase 3: uma linha so, com a tecla do menu e o estado de cada ponto.
                     bool vip = VipList.VipListApi.IsLocalPlayerVip();
                     bool dois = AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value;
-                    if (dois && vip)
-                        __result += Localization.instance.Localize($"\n[<color=yellow><b>Shift+{tecla}</b></color>] Definir o segundo ponto de retreat");
+                    string r1 = vip ? Estado(1) : "so Aesir";
+                    string r2 = vip && dois ? Estado(2) : (vip ? "desligado" : "so Aesir");
+                    __result += Localization.instance.Localize(
+                        $"\n[<color=yellow><b>{TeclaDoPonto}</b></color>] definir: Hearthstone ({Estado(0)}) · Retreat 1 ({r1}) · Retreat 2 ({r2})");
                     // A volta ao ponto sai por tecla de qualquer lugar (AesirTeclas): a cama lembra quais.
                     if (vip)
                     {
@@ -164,6 +164,9 @@ namespace Deadheim
                 }
             }
         }
+
+        /// <summary>"definido" ou "nao" para o ponto (0 Hearthstone, 1 Retreat 1, 2 Retreat 2).</summary>
+        internal static string Estado(int ponto) => GetHearthStonePosition(ponto) != Vector3.zero ? "definido" : "não";
 
 
         private const string HearthstoneGuid = "Detalhes.Hearthstone";
@@ -192,7 +195,7 @@ namespace Deadheim
         {
             if (Player.m_localPlayer == null) return;
 
-            string sufixo = ponto == 2 ? "2" : "";
+            string sufixo = ponto == 2 ? "2" : ponto == 0 ? "h" : "";
             Vector3 position = Player.m_localPlayer.transform.position;
             Player.m_localPlayer.m_customData["positionX" + sufixo] = Numeros.Escrever(position.x);
             Player.m_localPlayer.m_customData["positionY" + sufixo] = Numeros.Escrever(position.y);
