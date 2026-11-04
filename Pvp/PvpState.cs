@@ -385,10 +385,11 @@ namespace Deadheim.Pvp
 
             bool pvp;
             string label;
-            bool pve = PvpPve.IsLocal;
+            // Em partida de arena o PvE fica suspenso (toma e da dano); fora dela vale ate na zona.
+            bool pve = PvpPve.IsEffectiveLocal(player);
             if (pve)
             {
-                // O PvE vale em todo lugar, arena e castelo inclusive.
+                // O PvE vale em todo lugar, arena e castelo inclusive (menos em partida de arena).
                 pvp = false;
                 label = PvpPve.Title;
             }

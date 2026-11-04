@@ -26,6 +26,27 @@ namespace Deadheim.Pvp
         /// <summary>O jogador local e PvE (o servidor disse).</summary>
         public static bool IsLocal => _local;
 
+        private static readonly int ZdoArenaMatch = "npcv_arenaMatch".GetStableHashCode();
+        private static readonly int ZdoArenaPhase = "npcv_arenaPhase".GetStableHashCode();
+
+        /// <summary>
+        /// O jogador esta numa partida de arena do NpcValheim (preparo ou luta)? Le as chaves que o
+        /// ArenaClient grava no ZDO do proprio jogador; ArenaClient.ClearMatch zera tudo (fim,
+        /// saida, cancelamento, relog), entao a suspensao do PvE acaba sozinha ali. A fase de saida
+        /// (3) ja nao conta: ninguem mais luta. Nada e gravado: o PvE do servidor nao muda.
+        /// </summary>
+        public static bool InArenaMatch(Player player)
+        {
+            ZNetView nview = player != null ? player.m_nview : null;
+            ZDO zdo = nview != null && nview.IsValid() ? nview.GetZDO() : null;
+            if (zdo == null || zdo.GetLong(ZdoArenaMatch, 0L) == 0L) return false;
+            int phase = zdo.GetInt(ZdoArenaPhase, 0);
+            return phase == 1 || phase == 2;
+        }
+
+        /// <summary>PvE valendo de fato agora: o escolhido, menos durante a partida de arena.</summary>
+        public static bool IsEffectiveLocal(Player player) => _local && !InArenaMatch(player);
+
         public static string Title
         {
             get
