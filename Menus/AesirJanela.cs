@@ -202,9 +202,9 @@ namespace Deadheim.Menus
             const string conforto = "Conforto";
             const string visual = "Visual";
 
-            float recarga = Pvp.PvpConfig.RetreatCooldownMinutes?.Value ?? 30f;
+            float recarga = (Pvp.PvpConfig.Retreat1CooldownSeconds?.Value ?? 1800f) / 60f;
             yield return new Beneficio(viagem, recarga > 0f
-                ? $"Retreat: volta ao ponto da sua cama, com recarga de {recarga:0} min"
+                ? $"Retreat: volta ao ponto da sua cama, com recarga de {recarga:0.#} min"
                 : "Retreat: volta ao ponto da sua cama");
             if (Ligado(AesirConfig.Aesir18DoisPontos))
                 yield return new Beneficio(viagem, "Segundo ponto de retorno (Shift+P na cama)");

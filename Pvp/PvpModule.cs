@@ -15,11 +15,8 @@ namespace Deadheim.Pvp
     {
         // Formato antigo (7.3.0 e antes): horario de parede do ultimo retreat. So lido, para converter.
         private const string KeyRetreatAtLegacy = "dh_retreatAt";
-        // Segundos de recarga do /retreat que faltam, gravados no personagem.
+        // Formato 7.9 (recarga unica do /retreat e da pedra): so lido, para converter.
         private const string KeyRetreatLeft = "dh_retreatLeft";
-        // Fim da recarga no relogio monotonico (PvpState.Mono): adiantar a hora do Windows nao a zera.
-        private static double _retreatReadyAt;
-
         private static float _nextTick;
 
         public static void Init(ConfigFile config)
@@ -70,61 +67,92 @@ namespace Deadheim.Pvp
             return null;
         }
 
-        public static string RetreatRefusal(Player player)
+        public static string RetreatRefusal(Player player, Cooldown kind = Cooldown.Retreat1)
         {
             string refusal = TeleportRefusal(PvpConfig.RetreatBlockedByPveCombat.Value);
             if (refusal != null || !PvpConfig.Active || player == null) return refusal;
 
-            double cooldown = PvpConfig.RetreatCooldownMinutes.Value * 60d;
-            if (cooldown <= 0d) return null;
-            double left = Math.Min(RetreatRemaining, cooldown);
-            return left > 0d ? "Retreat em recarga: faltam " + PvpClient.FormatDuration(left) + "." : null;
+            double left = Remaining(kind);
+            return left > 0d ? Label(kind) + " em recarga: faltam " + PvpClient.FormatDuration(left) + "." : null;
         }
 
-        public static double RetreatRemaining => Math.Max(0d, _retreatReadyAt - PvpState.Mono);
+        /// <summary>Os tres cooldowns independentes de teleporte: pedra, /retreat 1 e /retreat 2.</summary>
+        public enum Cooldown { Hearthstone = 0, Retreat1 = 1, Retreat2 = 2 }
 
-        public static void MarkRetreatUsed(Player player)
+        private static readonly string[] CooldownKeys = { "dh_cdLeft_hearthstone", "dh_cdLeft_retreat1", "dh_cdLeft_retreat2" };
+        // Fim de cada recarga no relogio monotonico (PvpState.Mono): adiantar a hora do Windows nao a zera.
+        private static readonly double[] _readyAt = new double[3];
+
+        public static string Label(Cooldown kind) =>
+            kind == Cooldown.Hearthstone ? "Hearthstone" : kind == Cooldown.Retreat2 ? "Retreat 2" : "Retreat 1";
+
+        public static double TotalSeconds(Cooldown kind)
+        {
+            ConfigEntry<float> entry = kind == Cooldown.Hearthstone ? PvpConfig.HearthstoneCooldownSeconds
+                : kind == Cooldown.Retreat2 ? PvpConfig.Retreat2CooldownSeconds : PvpConfig.Retreat1CooldownSeconds;
+            return Math.Max(0d, entry?.Value ?? 1800f);
+        }
+
+        /// <summary>Segundos que faltam da recarga (0 se livre), limitados ao total configurado.</summary>
+        public static double Remaining(Cooldown kind) =>
+            Math.Min(Math.Max(0d, _readyAt[(int)kind] - PvpState.Mono), TotalSeconds(kind));
+
+        public static void MarkRetreatUsed(Player player, Cooldown kind = Cooldown.Retreat1)
         {
             if (player == null) return;
-            _retreatReadyAt = PvpState.Mono + Math.Max(0d, PvpConfig.RetreatCooldownMinutes.Value * 60d);
-            SaveRetreat(player);
+            _readyAt[(int)kind] = PvpState.Mono + TotalSeconds(kind);
+            SaveCooldowns(player);
         }
 
-        /// <summary>Zera a recarga do /retreat e da pedra (usado pelo PvpTestDriver).</summary>
+        /// <summary>Zera as tres recargas (usado pelo PvpTestDriver).</summary>
         public static void ClearRetreatCooldown(Player player)
         {
-            _retreatReadyAt = 0d;
-            SaveRetreat(player);
+            for (int i = 0; i < _readyAt.Length; i++) _readyAt[i] = 0d;
+            SaveCooldowns(player);
         }
 
         /// <summary>
-        /// Recarga do /retreat gravada como segundos que faltam e descontada so com o jogo aberto.
-        /// O horario de parede do 7.3.0 zerava ao adiantar o relogio do Windows.
+        /// Recargas gravadas como segundos que faltam e descontadas so com o jogo aberto.
+        /// Migra os formatos antigos: dh_retreatLeft (7.9, recarga unica) vira a do Retreat 1 e
+        /// dh_retreatAt (7.3.0, horario de parede) tambem.
         /// </summary>
-        private static void LoadRetreat(Player player)
+        private static void LoadCooldowns(Player player)
         {
-            _retreatReadyAt = 0d;
+            for (int i = 0; i < _readyAt.Length; i++) _readyAt[i] = 0d;
             if (player == null) return;
-            double cooldown = Math.Max(0d, PvpConfig.RetreatCooldownMinutes.Value * 60d);
-            double left = 0d;
-            if (player.m_customData.TryGetValue(KeyRetreatLeft, out string raw)
-                && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double stored))
-                left = stored;
-            else if (player.m_customData.TryGetValue(KeyRetreatAtLegacy, out string legacy)
-                     && double.TryParse(legacy, NumberStyles.Float, CultureInfo.InvariantCulture, out double last))
-                left = last + cooldown - PvpState.Now;
+            for (int i = 0; i < _readyAt.Length; i++)
+            {
+                double total = TotalSeconds((Cooldown)i);
+                double left = 0d;
+                if (player.m_customData.TryGetValue(CooldownKeys[i], out string raw)
+                    && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double stored))
+                    left = stored;
+                else if (i == (int)Cooldown.Retreat1)
+                {
+                    if (player.m_customData.TryGetValue(KeyRetreatLeft, out string old)
+                        && double.TryParse(old, NumberStyles.Float, CultureInfo.InvariantCulture, out double oldLeft))
+                        left = oldLeft;
+                    else if (player.m_customData.TryGetValue(KeyRetreatAtLegacy, out string legacy)
+                             && double.TryParse(legacy, NumberStyles.Float, CultureInfo.InvariantCulture, out double last))
+                        left = last + total - PvpState.Now;
+                }
+                left = Math.Min(left, total);
+                _readyAt[i] = left > 0d ? PvpState.Mono + left : 0d;
+            }
             player.m_customData.Remove(KeyRetreatAtLegacy);
-            left = Math.Min(left, cooldown);
-            _retreatReadyAt = left > 0d ? PvpState.Mono + left : 0d;
-            SaveRetreat(player);
+            player.m_customData.Remove(KeyRetreatLeft);
+            SaveCooldowns(player);
         }
 
-        private static void SaveRetreat(Player player)
+        private static void SaveCooldowns(Player player)
         {
             if (player == null) return;
-            double left = RetreatRemaining;
-            if (left > 0d) player.m_customData[KeyRetreatLeft] = left.ToString("R", CultureInfo.InvariantCulture);
-            else player.m_customData.Remove(KeyRetreatLeft);
+            for (int i = 0; i < _readyAt.Length; i++)
+            {
+                double left = Remaining((Cooldown)i);
+                if (left > 0d) player.m_customData[CooldownKeys[i]] = left.ToString("R", CultureInfo.InvariantCulture);
+                else player.m_customData.Remove(CooldownKeys[i]);
+            }
         }
 
         // ----------------------------------------------------------------- ciclo de vida
@@ -136,7 +164,7 @@ namespace Deadheim.Pvp
             {
                 if (__instance != Player.m_localPlayer) return;
                 PvpState.LoadFromPlayer(__instance);
-                LoadRetreat(__instance);
+                LoadCooldowns(__instance);
                 PvpClient.SendHello();
                 _nextTick = 0f;
             }
@@ -153,7 +181,7 @@ namespace Deadheim.Pvp
             {
                 if (__instance == null || __instance != Player.m_localPlayer) return;
                 PvpState.SaveTimers(__instance);
-                SaveRetreat(__instance);
+                SaveCooldowns(__instance);
             }
         }
 
@@ -166,9 +194,9 @@ namespace Deadheim.Pvp
                 if (player != null)
                 {
                     PvpState.SaveTimers(player);
-                    SaveRetreat(player);
+                    SaveCooldowns(player);
                 }
-                _retreatReadyAt = 0d;
+                for (int i = 0; i < _readyAt.Length; i++) _readyAt[i] = 0d;
                 RelogioServidor.Esquecer();
                 PvpState.ResetSession();
                 PvpClient.ResetSession();

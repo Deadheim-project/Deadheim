@@ -272,7 +272,7 @@ namespace Deadheim.Menus
                 {
                     if (Retreat.GetHearthStonePosition(ponto) == Vector3.zero)
                         return ponto == 2 ? "Marque olhando a cama (Shift+P)" : "Marque o ponto olhando a sua cama (P)";
-                    double falta = Pvp.PvpModule.RetreatRemaining;
+                    double falta = Pvp.PvpModule.Remaining(ponto == 2 ? Pvp.PvpModule.Cooldown.Retreat2 : Pvp.PvpModule.Cooldown.Retreat1);
                     return falta > 0d ? "Recarga: " + Pvp.PvpClient.FormatDuration(falta) : "Volta ao ponto da sua cama";
                 },
                 Indisponivel = () =>
