@@ -63,8 +63,8 @@ namespace Hearthstone
                 static void Postfix(Bed __instance, ref string __result, ZNetView ___m_nview)
                 {
                     // 1. CORREÇÃO DO ERRO: Ignora se a cama for um holograma de construção ou sem rede
-                    if (___m_nview == null || !___m_nview.IsValid())
-                        return;
+                    if (___m_nview == null || !___m_nview.IsValid() || Hearthstone.DeadheimCarregado)
+                        return; // com o Deadheim o hover da cama e dele (Retreat.Bed_GetHoverText_Patch)
 
                     if (Player.m_localPlayer == null)
                         return;

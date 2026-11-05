@@ -102,7 +102,8 @@ namespace Hearthstone
 				{
 					// Shift+tecla fica com o Deadheim (segundo ponto do Aesir): aqui gravaria o primeiro junto.
 					bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-					if (Input.GetKeyDown(setPointKey.Value) && !shift)
+					// Com o Deadheim instalado o menu da cama (BedBindMenu) grava os pontos.
+					if (Input.GetKeyDown(setPointKey.Value) && !shift && !DeadheimCarregado)
 					{
 						SetHearthStonePosition();
 						localPlayer.Message(MessageHud.MessageType.Center, "Here is your new Hearthstone spawn", 0, null);
@@ -111,8 +112,18 @@ namespace Hearthstone
 			}
 		}
 
+		public static bool DeadheimCarregado => BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("Detalhes.Deadheim");
+
 		public static Vector3 GetHearthStonePosition()
 		{
+			// Ponto proprio da pedra (sufixo h, gravado pelo menu da cama do Deadheim); sem ele, o ponto 1 de sempre.
+			Player p = Player.m_localPlayer;
+			if (p != null && p.m_customData.TryGetValue("positionXh", out string hx)
+				&& p.m_customData.TryGetValue("positionYh", out string hy)
+				&& p.m_customData.TryGetValue("positionZh", out string hz)
+				&& Numeros.TryLer(hx, out float px) && Numeros.TryLer(hy, out float py) && Numeros.TryLer(hz, out float pz))
+				return new Vector3(px, py, pz);
+
 			// Verifica se o dicionário customData tem a chave antes de tentar ler
 			Player player = Player.m_localPlayer;
 			if (player == null
