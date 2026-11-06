@@ -149,6 +149,30 @@ namespace Deadheim.Menus
         }
 
         /// <summary>Menu de pets (lista, bonus e invocar/guardar), que mora no mod Montarias.</summary>
+        public const string InventarioGuid = "Deadheim.InventoryUI";
+        public static bool TemInventario => Carregado(InventarioGuid);
+
+        /// <summary>Icone Ficha: abre/fecha o painel do mod Deadheim Inventory UI (sem fechar o inventario).</summary>
+        public static string AlternarFicha()
+        {
+            if (!TemInventario) return "A ficha vem do mod Deadheim Inventory UI, que nao esta instalado.";
+            return Tentar("a ficha do personagem", () => Invocar("Deadheim.InventoryUI.InventoryUiApi", "Alternar"));
+        }
+
+        private static PropertyInfo _fichaSempre;
+
+        /// <summary>Estado da marca "abrir sempre" da ficha (lido por reflexao, guardado o PropertyInfo).</summary>
+        public static bool FichaSempre()
+        {
+            try
+            {
+                if (_fichaSempre == null)
+                    _fichaSempre = TipoPorNome("Deadheim.InventoryUI.InventoryUiApi")?.GetProperty("Sempre");
+                return _fichaSempre != null && (bool)_fichaSempre.GetValue(null, null);
+            }
+            catch (Exception) { return false; }
+        }
+
         public static string AbrirPets()
         {
             if (!TemMontarias) return "O menu de pets vem do mod Montarias, que nao esta instalado.";

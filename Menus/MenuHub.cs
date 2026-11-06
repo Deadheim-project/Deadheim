@@ -159,6 +159,14 @@ namespace Deadheim.Menus
                 // ---- menus de todos
                 new Entrada
                 {
+                    Titulo = "Ficha", Icone = "ArmorIronChest",
+                    Visivel = () => Integracoes.TemInventario,
+                    Estado = Integracoes.FichaSempre,
+                    Detalhe = () => "Abrir sempre com o inventário: " + (Integracoes.FichaSempre() ? "ligado" : "desligado") + " (clique para alternar)",
+                    Acao = Integracoes.AlternarFicha
+                },
+                new Entrada
+                {
                     Titulo = "Ranking", Icone = "TrophyDragonQueen", FechaInventario = true,
                     Visivel = () => Ranking.RankingRede.Ligado,
                     Detalhe = Ranking.RankingJanela.ResumoCentral,
@@ -608,9 +616,9 @@ namespace Deadheim.Menus
                 moldura.effectColor = Dourado;
                 moldura.effectDistance = new Vector2(2f, -2f);
             }
-            if (e.Aesir)
+            if (e.Aesir || e.Estado != null)
             {
-                e.Marca = ValheimUi.CreateLabel(botao.transform, "A", 12, Dourado, TextAlignmentOptions.TopRight, display: true);
+                e.Marca = ValheimUi.CreateLabel(botao.transform, e.Aesir ? "A" : "", 12, Dourado, TextAlignmentOptions.TopRight, display: true);
                 ValheimUi.Anchor((RectTransform)e.Marca.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-18f, -18f), new Vector2(-5f, -3f));
             }
 
@@ -726,6 +734,8 @@ namespace Deadheim.Menus
                         // As linhas do menu Aesir (montadas como na lista).
                         if (e.Sub != null) e.Sub.text = travado ? "Exclusivo Aesir: clique para conhecer" : motivo ?? e.Detalhe?.Invoke() ?? "";
                         if (e.Marca != null && !e.Destaque && e.Sub != null) e.Marca.text = travado ? "AESIR" : "";
+                        // Botao de marcar/desmarcar: "ON" no canto quando marcado, como o "A" do Aesir.
+                        if (e.Marca != null && e.Estado != null) e.Marca.text = e.Estado() ? "ON" : "";
                     }
                     catch (Exception ex)
                     {
@@ -754,7 +764,7 @@ namespace Deadheim.Menus
 
                     e.Sub.text = travado ? "Exclusivo Aesir: clique para conhecer" : e.Detalhe?.Invoke() ?? "";
                     e.Rotulo.color = travado || motivo != null ? ValheimUi.Muted : ValheimUi.Orange;
-                    e.Marca.text = travado ? "AESIR" : "";
+                    e.Marca.text = travado ? "AESIR" : e.Estado != null && e.Estado() ? "ON" : "";
                     e.IconeImg.color = travado ? Travado : motivo != null ? Apagado : Color.white;
                 }
                 catch (Exception ex)
@@ -836,6 +846,8 @@ namespace Deadheim.Menus
             public Func<string> Indisponivel;
             /// <summary>Faz a acao. Devolve uma mensagem para o jogador, ou null.</summary>
             public Func<string> Acao;
+            /// <summary>Botao de marcar/desmarcar: true = marcado (mostra "ON"). null = botao comum.</summary>
+            public Func<bool> Estado;
 
             public GameObject Objeto;
             public Image IconeImg;
