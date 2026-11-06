@@ -223,8 +223,17 @@ namespace Deadheim
                 }
             }
             catch (Exception e) { Debug.LogError("[Deadheim] Lixeira (hover): " + e); }
+            // GetGamepadSelectedItem devolve a casa m_selected (geralmente a 0,0) mesmo com mouse: so vale com gamepad.
+            if (!ZInput.IsGamepadActive()) return null;
             return grade.GetGamepadSelectedItem();
         }
+
+        private static ItemDrop.ItemData _pendente;
+        private static float _pendenteAte;
+
+        /// <summary>Item que nao e pilha de material (equipamento, cajado, qualidade acima de 1) pede um segundo Delete.</summary>
+        private static bool PedeConfirmacao(ItemDrop.ItemData item) =>
+            item.m_shared.m_maxStackSize <= 1 || item.m_quality > 1;
 
         /// <summary>Tecla Delete: apaga a pilha do item pego (arrastado) ou sob o mouse.</summary>
         private static void ApagarComDelete(InventoryGui gui)
@@ -235,6 +244,18 @@ namespace Deadheim
             if (item == null) { Aviso("Selecione um item e aperte Delete."); return; }
             string motivo = Recusa(player, item, player.GetInventory());
             if (motivo != null) { Aviso(motivo); return; }
+            if (PedeConfirmacao(item))
+            {
+                if (!ReferenceEquals(_pendente, item) || Time.unscaledTime > _pendenteAte)
+                {
+                    _pendente = item;
+                    _pendenteAte = Time.unscaledTime + 4f;
+                    string n = Localization.instance.Localize(item.m_shared.m_name);
+                    Aviso("Apagar " + n + (item.m_quality > 1 ? " (nível " + item.m_quality + ")" : "") + "? Aperte Delete de novo em 4 s.");
+                    return;
+                }
+                _pendente = null;
+            }
             Apagar(gui, player, item, item.m_stack);
         }
 
