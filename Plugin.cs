@@ -11,7 +11,7 @@ namespace Deadheim
     [BepInDependency(VipList.VipListPlugin.PluginGuid)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "7.10.0";
+        public const string Version = "7.11.0";
         public const string PluginGUID = "Detalhes.Deadheim";
 
         // No lugar do NetworkCompatibility(EveryoneMustHaveMod, Minor) e da config
@@ -40,7 +40,7 @@ namespace Deadheim
         {
             DisplayName = PluginGUID,
             CurrentVersion = Version,
-            MinimumRequiredVersion = "7.10.0",
+            MinimumRequiredVersion = "7.11.0",
             ModRequired = true,
             IsLocked = true
         };

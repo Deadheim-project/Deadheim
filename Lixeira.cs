@@ -17,12 +17,13 @@ namespace Deadheim
     internal static class Lixeira
     {
         private const string Dica =
-            "<color=#ffd75a>LIXEIRA</color>\n" +
             "Selecione um item do inventário (passe o mouse ou pegue-o com o clique) e aperte <color=#ffd75a>Delete</color> para apagá-lo.\n" +
             "Apaga a pilha inteira, sem perguntar.\n" +
             "<color=#ff8a7a>Não dá para apagar</color>: moedas, item equipado ou item de baú.";
 
         private static GameObject _botao;
+        private static RectTransform _peso;
+        private static float _dyPeso;
         private static Sprite _icone;
 
         [HarmonyPatch(typeof(InventoryGui), "Update")]
@@ -33,6 +34,7 @@ namespace Deadheim
             {
                 if (!InventoryGui.IsVisible()) return;
                 if (_botao == null) Criar(__instance);
+                if (_botao != null) Alinhar();
                 if (Input.GetKeyDown(KeyCode.Delete)) ApagarComDelete(__instance);
             }
             catch (Exception e)
@@ -51,47 +53,131 @@ namespace Deadheim
             return t as RectTransform;
         }
 
+        /// <summary>Limites (mundo) do bloco inteiro, contando filhos que saem do retangulo (o icone).</summary>
+        private static void Limites(RectTransform bloco, out Vector3 min, out Vector3 max)
+        {
+            min = new Vector3(float.MaxValue, float.MaxValue);
+            max = new Vector3(float.MinValue, float.MinValue);
+            Vector3[] c = new Vector3[4];
+            foreach (RectTransform r in bloco.GetComponentsInChildren<RectTransform>(true))
+            {
+                r.GetWorldCorners(c);
+                min = Vector3.Min(min, c[0]);
+                max = Vector3.Max(max, c[2]);
+            }
+        }
+
+        /// <summary>
+        /// Mantem a lixeira com o mesmo tamanho/forma do bloco do peso (o jogo ajusta o bloco depois de
+        /// criado) e na mesma coluna, so deslocada para baixo.
+        /// </summary>
+        private static void Alinhar()
+        {
+            if (_peso == null) return;
+            var rt = (RectTransform)_botao.transform;
+            CopiarForma(_peso, rt);
+            Vector3 p = _peso.position;
+            rt.position = new Vector3(p.x, p.y + _dyPeso, p.z);
+        }
+
+        private static void CopiarForma(RectTransform de, RectTransform para)
+        {
+            para.anchorMin = de.anchorMin;
+            para.anchorMax = de.anchorMax;
+            para.pivot = de.pivot;
+            para.sizeDelta = de.sizeDelta;
+            para.localScale = de.localScale;
+            CopiarFilhos(de, para);
+        }
+
+        private static void CopiarFilhos(RectTransform a, RectTransform b)
+        {
+            int n = Mathf.Min(a.childCount, b.childCount);
+            for (int i = 0; i < n; i++)
+            {
+                if (!(a.GetChild(i) is RectTransform x) || !(b.GetChild(i) is RectTransform y)) continue;
+                y.anchorMin = x.anchorMin;
+                y.anchorMax = x.anchorMax;
+                y.pivot = x.pivot;
+                y.sizeDelta = x.sizeDelta;
+                y.anchoredPosition = x.anchoredPosition;
+                y.localScale = x.localScale;
+                CopiarFilhos(x, y);
+            }
+        }
+
+        private static void MoverY(RectTransform bloco, float y) =>
+            bloco.position = new Vector3(bloco.position.x, bloco.position.y + y, bloco.position.z);
+
         private static void Criar(InventoryGui gui)
         {
             if (gui.m_player == null || gui.m_weight == null) return;
             RectTransform pai = gui.m_player;
             RectTransform peso = GrupoDe(gui.m_weight.transform, pai);
             if (peso == null) return;
+            RectTransform armadura = gui.m_armor != null ? GrupoDe(gui.m_armor.transform, pai) : null;
+            if (armadura == peso) armadura = null;
 
-            Vector3[] cp = new Vector3[4];
-            peso.GetWorldCorners(cp);
-            Vector3 pMin = pai.InverseTransformPoint(cp[0]), pMax = pai.InverseTransformPoint(cp[2]);
-            float altura = Mathf.Clamp(pMax.y - pMin.y, 24f, 34f);
-            // Centralizada ACIMA do indicador de peso.
-            float centroX = (pMin.x + pMax.x) / 2f;
-            float centroY = pMax.y + 4f + altura / 2f;
-
-            var go = new GameObject("DeadheimLixeira", typeof(RectTransform), typeof(Image));
-            go.layer = pai.gameObject.layer;
-            go.transform.SetParent(pai, false);
+            // Mesmo visual dos indicadores de armadura e peso: clona o bloco do peso (fundo de madeira,
+            // icone e texto) e troca o icone pela lixeira.
+            GameObject go = UnityEngine.Object.Instantiate(peso.gameObject, pai, false);
+            go.name = "DeadheimLixeira";
+            // Mesma camada do peso: logo depois dele, por baixo da moldura do inventario (como armadura e peso).
+            go.transform.SetSiblingIndex(peso.GetSiblingIndex() + 1);
             var rt = (RectTransform)go.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(altura, altura);
-            rt.anchoredPosition = new Vector2(centroX, centroY) - pai.rect.center;
+
+            // Coluna ao lado da grade: armadura (fica onde esta), peso e lixeira, igualmente espacados e
+            // dentro da altura do painel (margem de baixo = margem de cima da armadura). Tudo em mundo.
+            Vector3[] cp = new Vector3[4];
+            pai.GetWorldCorners(cp);
+            Limites(peso, out Vector3 pMin, out Vector3 pMax);
+            float h = pMax.y - pMin.y;
+            float topo = pMax.y + h, margem = 0f;
+            if (armadura != null)
+            {
+                Limites(armadura, out Vector3 aMin, out Vector3 aMax);
+                topo = aMax.y;
+                margem = Mathf.Max(0f, cp[2].y - aMax.y);
+            }
+            float fundoY = cp[0].y + margem;
+            float vao = Mathf.Max(4f * pai.lossyScale.y, (topo - fundoY - 3f * h) / 2f);
+            float topoPeso = armadura != null ? topo - h - vao : pMax.y;
+            MoverY(peso, topoPeso - pMax.y);
+            MoverY(rt, topoPeso - h - vao - pMax.y);
             _botao = go;
+            _peso = peso;
+            _dyPeso = rt.position.y - peso.position.y;
 
-            var fundo = go.GetComponent<Image>();
-            fundo.color = new Color(0f, 0f, 0f, 0.35f);
+            foreach (UITooltip t in go.GetComponentsInChildren<UITooltip>(true)) UnityEngine.Object.Destroy(t);
+            foreach (TMP_Text t in go.GetComponentsInChildren<TMP_Text>(true))
+            {
+                t.text = "Del";
+                t.color = new Color(1f, 0.84f, 0.35f, 1f);
+            }
 
-            var icone = new GameObject("Icone", typeof(RectTransform), typeof(Image));
-            icone.layer = go.layer;
-            icone.transform.SetParent(go.transform, false);
-            var rtI = (RectTransform)icone.transform;
-            rtI.anchorMin = Vector2.zero;
-            rtI.anchorMax = Vector2.one;
-            rtI.offsetMin = new Vector2(altura * 0.12f, altura * 0.12f);
-            rtI.offsetMax = new Vector2(-altura * 0.12f, -altura * 0.12f);
-            var img = icone.GetComponent<Image>();
-            img.sprite = Icone();
-            img.color = new Color(1f, 0.89f, 0.66f, 1f);
-            img.raycastTarget = false;
-            img.preserveAspect = true;
+            // Icone = menor Image filha (o fundo de madeira e a maior).
+            Image icone = null;
+            float menor = float.MaxValue;
+            foreach (Image im in go.GetComponentsInChildren<Image>(true))
+            {
+                if (im.gameObject == go) continue;
+                float area = im.rectTransform.rect.width * im.rectTransform.rect.height;
+                if (area < menor) { menor = area; icone = im; }
+            }
+            if (icone != null)
+            {
+                icone.sprite = Icone();
+                icone.overrideSprite = null;
+                icone.color = new Color(0.82f, 0.80f, 0.76f, 1f);
+                icone.preserveAspect = true;
+                icone.type = Image.Type.Simple;
+            }
+            // Fundo precisa receber o mouse para a dica.
+            Image fundo = go.GetComponent<Image>();
+            if (fundo != null) fundo.raycastTarget = true;
+            else go.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+            // Moldura inteira (madeira, icone, texto) recebe o mouse; o evento sobe ate a dica na raiz.
+            foreach (Graphic g in go.GetComponentsInChildren<Graphic>(true)) g.raycastTarget = true;
 
             // Dica do jogo: reaproveita o prefab de tooltip de algum UITooltip da propria janela.
             UITooltip modelo = null;

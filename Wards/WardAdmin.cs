@@ -15,6 +15,10 @@ namespace Deadheim.Wards
     [HarmonyPatch]
     internal static class WardAdmin
     {
+        private static readonly System.Reflection.MethodInfo MetodoAdd = AccessTools.Method(typeof(PrivateArea), "AddPermitted");
+        private static readonly System.Reflection.MethodInfo MetodoRemove = AccessTools.Method(typeof(PrivateArea), "RemovePermitted");
+        private static readonly System.Reflection.MethodInfo MetodoCriador = AccessTools.Method(typeof(PrivateArea), "GetCreatorName");
+
         [HarmonyPatch(typeof(Terminal), nameof(Terminal.InitTerminal))]
         private static class ComandosPatch
         {
@@ -67,10 +71,12 @@ namespace Deadheim.Wards
             if (nv == null || !nv.IsValid()) { say("Ward invalida."); return; }
             if (!nv.IsOwner()) nv.ClaimOwnership();
 
-            if (modo == "add") ward.AddPermitted(id, alvo.Value.m_name);
-            else ward.RemovePermitted(id);
+            // Metodos privados do PrivateArea: por reflexao (acesso direto pode dar MethodAccessException no jogo).
+            if (modo == "add") MetodoAdd?.Invoke(ward, new object[] { id, alvo.Value.m_name });
+            else MetodoRemove?.Invoke(ward, new object[] { id });
+            string dono = MetodoCriador?.Invoke(ward, null) as string ?? "?";
 
-            say($"{(modo == "add" ? "Adicionado" : "Removido")}: {alvo.Value.m_name} na ward de {ward.GetCreatorName()}.");
+            say($"{(modo == "add" ? "Adicionado" : "Removido")}: {alvo.Value.m_name} na ward de {dono}.");
         }
     }
 }
