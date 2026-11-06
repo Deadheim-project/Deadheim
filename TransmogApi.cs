@@ -23,6 +23,39 @@ namespace Deadheim
 
         public static bool IsLocalVip() => VipList.VipListApi.IsLocalPlayerVip();
 
+        /// <summary>Restriction shown by the inventory appearance screen. Server validation still
+        /// runs independently when the request arrives.</summary>
+        public static string InventoryUiChangeRestriction()
+        {
+            if (Transmog.Enabled == null || !Transmog.Enabled.Value) return "Transmog desativado no servidor.";
+            if (Transmog.RequireNpc != null && Transmog.RequireNpc.Value) return Transmog.NpcOnly;
+            if (RequiresVip() && !IsLocalVip()) return "Exclusivo Aesir (VIP).";
+            return null;
+        }
+
+        /// <summary>Requests a direct vanity change for the inventory UI. Respects the same
+        /// RequireNpc/VIP rules as /transmog, and the server validates the request again.</summary>
+        public static string InventoryUiApply(string real, string appearance)
+        {
+            string restriction = InventoryUiChangeRestriction();
+            if (restriction != null) return restriction;
+            if (string.IsNullOrEmpty(real) || string.IsNullOrEmpty(appearance)) return "Escolha uma peça e uma aparência.";
+            if (!Transmog.LocalUnlocked.Contains(real) || !Transmog.LocalUnlocked.Contains(appearance))
+                return "Essa peça ainda não foi desbloqueada ao equipá-la.";
+            if (!Transmog.Compatible(real, appearance, out string why)) return why;
+            Transmog.SendSet(real, appearance);
+            return null;
+        }
+
+        /// <summary>Reverts only the appearance mapping; it never moves or changes an item.</summary>
+        public static string InventoryUiRevert(string real)
+        {
+            if (Transmog.Enabled == null || !Transmog.Enabled.Value) return "Transmog desativado no servidor.";
+            if (string.IsNullOrEmpty(real)) return "Peça inválida.";
+            Transmog.SendOff(real);
+            return null;
+        }
+
         public static int MaxChoices() => Transmog.MaxChoices != null ? Transmog.MaxChoices.Value : 0;
 
         /// <summary>Pecas desbloqueadas do jogador local, separadas por virgula.</summary>
