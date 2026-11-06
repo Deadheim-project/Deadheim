@@ -235,6 +235,7 @@
     <Compile Include="Wards\WardProfile.cs" />
     <Compile Include="Wards\WardCore.cs" />
     <Compile Include="Wards\WardPatches.cs" />
+    <Compile Include="Wards\WardAdmin.cs" />
     <Compile Include="World.cs" />
     <!-- Modulo de PvP: regras de dano, zonas, cla, desafio, ranking. Tudo no Deadheim.dll. -->
     <Compile Include="Pvp\PvpApi.cs" />
