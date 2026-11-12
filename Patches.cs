@@ -330,6 +330,7 @@ namespace Deadheim
                     factor *= Mathf.Max(0f, Pvp.PvpPve.IsLocal ? Pvp.PvpConfig.PveSkillMultiplier.Value : Pvp.PvpConfig.PvpSkillMultiplier.Value);
                 // Estudo do Treinador: multiplica o ganho que ja passou pelos dois de cima (0.5 x 1.5 = 0.75).
                 factor *= Treinador.StudyMultiplier(__instance, skill.m_level);
+                factor *= CatchUpVip.Multiplicador(__instance, skillType);
                 return true;
             }
         }

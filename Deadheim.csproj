@@ -202,6 +202,7 @@
     <Compile Include="AesirPull.cs" />
     <Compile Include="AesirCraft.cs" />
     <Compile Include="VipSlots.cs" />
+    <Compile Include="CatchUpVip.cs" />
     <Compile Include="AllyScaling.cs" />
     <Compile Include="Boats.cs" />
     <Compile Include="Boss.cs" />

@@ -237,6 +237,8 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             SkillMultiplier = Synced(Config.Bind("Server config", "SkillMultiplier", 0.75f,
             new ConfigDescription("Multiplicador do ganho de skill. 1 = vanilla.")));
 
+            CatchUpVip.Bind(Config);
+
             ResetWorldDay = Synced(Config.Bind("Server config", "ResetWorldDay", false,
             new ConfigDescription("ResetWorldDay")));
 
