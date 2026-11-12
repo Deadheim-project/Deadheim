@@ -129,9 +129,9 @@ namespace Deadheim
 
             if (plantadas > 0) player.RaiseSkill(Skills.SkillType.Farming, plantadas);
             string nome = Localization.instance != null ? Localization.instance.Localize(piece.m_name) : piece.m_name;
-            string texto = $"Plantio em área: +{plantadas} {nome}" +
-                           (semEspaco > 0 ? $", {semEspaco} sem espaço ou terra arada" : "") +
-                           (barradas > 0 ? $", {barradas} barrada(s)" : "") +
+            string texto = L.T("plantio.resultado", plantadas, nome) +
+                           (semEspaco > 0 ? L.T("plantio.sem_espaco", semEspaco) : "") +
+                           (barradas > 0 ? L.T("plantio.barradas", barradas) : "") +
                            (parou != null ? $" ({parou})" : "");
             player.Message(MessageHud.MessageType.TopLeft, texto);
             AesirLog.D(Item, texto + $" [grade {lado}x{lado}, passo {passo:0.00} m]");

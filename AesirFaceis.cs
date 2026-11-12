@@ -382,7 +382,7 @@ namespace Deadheim
                 double faltam = __instance.m_respawnTimeMinutes - passados;
                 if (faltam > 0d)
                 {
-                    __result += $"\n<color=#9be564>Volta em {faltam:0} min</color>";
+                    __result += L.T("aesirmsg.volta_em", faltam.ToString("0"));
                     if (AesirLog.Pode(ref _ultimoLog, 30f))
                         AesirLog.D(9, "mostrou o tempo restante de " + Utils.GetPrefabName(__instance.gameObject) + ": " + faltam.ToString("0") + " min.");
                 }
@@ -423,7 +423,7 @@ namespace Deadheim
                     if (alvo.Repair()) reparadas++;
                 }
                 if (reparadas > 0)
-                    __instance.Message(MessageHud.MessageType.TopLeft, $"Aesir: {reparadas} construção(ões) reparada(s) por perto.");
+                    __instance.Message(MessageHud.MessageType.TopLeft, L.T("aesirmsg.reparadas", reparadas));
                 AesirLog.D(12, "reparo em area (raio " + AesirConfig.Aesir12RepararAreaRaio.Value + " m): " + reparadas + " reparada(s)"
                     + (semAcesso > 0 ? ", " + semAcesso + " colisor(es) em ward alheio" : "") + ".");
             }
@@ -481,8 +481,8 @@ namespace Deadheim
         internal static bool PodeUsar(Action<string> dizer, ConfigEntry<bool> chave, int item)
         {
             if (Player.m_localPlayer == null) return false;
-            if (!VipList.VipListApi.IsLocalPlayerVip()) { dizer?.Invoke("So Aesir."); AesirLog.D(item, "negado: nao e VIP."); return false; }
-            if (!chave.Value) { dizer?.Invoke("Desligado neste servidor."); AesirLog.D(item, "negado: " + chave.Definition.Key + "=false."); return false; }
+            if (!VipList.VipListApi.IsLocalPlayerVip()) { dizer?.Invoke(L.T("misc.so_aesir")); AesirLog.D(item, "negado: nao e VIP."); return false; }
+            if (!chave.Value) { dizer?.Invoke(L.T("misc.deslig_srv")); AesirLog.D(item, "negado: " + chave.Definition.Key + "=false."); return false; }
             return true;
         }
 
@@ -538,9 +538,9 @@ namespace Deadheim
                 pedidos++;
             }
 
-            if (pedidos > 0) dizer?.Invoke($"Depositando em {pedidos} bau(s) por perto...");
-            else dizer?.Invoke("Nada para depositar: nenhum bau por perto tem itens que voce carrega.");
-            if (ocupados > 0) dizer?.Invoke($"{ocupados} bau(s) aberto(s) por outro jogador ficaram de fora.");
+            if (pedidos > 0) dizer?.Invoke(L.T("aesirmsg.depositando", pedidos));
+            else dizer?.Invoke(L.T("aesirmsg.nada_dep"));
+            if (ocupados > 0) dizer?.Invoke(L.T("aesirmsg.ocupados", ocupados));
             AesirLog.D(14, "depositar: " + baus.Count + " bau(s) no raio de " + AesirConfig.Aesir14DepositarRaio.Value + " m, pediu a "
                 + pedidos + " (" + semItem + " sem item em comum, " + semAcesso + " sem acesso, " + ocupados + " em uso).");
             if (pedidos > 0)
@@ -582,7 +582,7 @@ namespace Deadheim
         internal static void Ordenar(Action<string> dizer, Container container)
         {
             if (!PodeUsar(dizer, AesirConfig.Aesir15OrdenarAtivo, 15)) return;
-            if (container == null) { dizer?.Invoke("Abra o bau para ordenar."); AesirLog.D(15, "ordenar sem bau aberto."); return; }
+            if (container == null) { dizer?.Invoke(L.T("misc.abra_bau")); AesirLog.D(15, "ordenar sem bau aberto."); return; }
 
             Inventory inv = container.GetInventory();
             int antesItens = Total(inv);
@@ -594,7 +594,7 @@ namespace Deadheim
             int largura = Mathf.Max(1, inv.GetWidth());
             for (int i = 0; i < itens.Count; i++)
                 if (!inv.AddItem(itens[i], new Vector2i(i % largura, i / largura))) inv.AddItem(itens[i]);
-            dizer?.Invoke("Bau ordenado.");
+            dizer?.Invoke(L.T("misc.bau_ordenado"));
             AesirLog.D(15, "ordenar: " + Utils.GetPrefabName(container.gameObject) + " com " + antes + " pilha(s), depois " + inv.GetAllItems().Count
                 + (Total(inv) != antesItens ? "; ATENCAO: itens " + antesItens + " -> " + Total(inv) : "") + ".");
         }
@@ -605,7 +605,7 @@ namespace Deadheim
         internal static void PedirEtiqueta(Action<string> dizer, Container container)
         {
             if (!PodeUsar(dizer, AesirConfig.Aesir16EtiquetaAtivo, 16)) return;
-            if (container == null) { dizer?.Invoke("Olhe para um bau."); return; }
+            if (container == null) { dizer?.Invoke(L.T("aesirmsg.olhe_bau")); return; }
             if (TextInput.instance == null) return;
             if (InventoryGui.IsVisible()) InventoryGui.instance.Hide();
             TextInput.instance.RequestText(new Receptor(container), "Nome do bau (vazio volta ao nome original)", 32);
@@ -634,23 +634,23 @@ namespace Deadheim
         internal static void Etiquetar(Action<string> dizer, Container container, string texto)
         {
             if (!PodeUsar(dizer, AesirConfig.Aesir16EtiquetaAtivo, 16)) return;
-            if (container == null) { dizer?.Invoke("Olhe para um bau."); AesirLog.D(16, "etiqueta sem bau na mira."); return; }
-            if (!PrivateArea.CheckAccess(container.transform.position)) { dizer?.Invoke("Sem acesso a esse bau."); AesirLog.D(16, "etiqueta negada: bau em ward alheio."); return; }
+            if (container == null) { dizer?.Invoke(L.T("aesirmsg.olhe_bau")); AesirLog.D(16, "etiqueta sem bau na mira."); return; }
+            if (!PrivateArea.CheckAccess(container.transform.position)) { dizer?.Invoke(L.T("misc.sem_acesso_bau")); AesirLog.D(16, "etiqueta negada: bau em ward alheio."); return; }
 
             string nome = (texto ?? "").Trim();
-            if (nome.Length > 32) { dizer?.Invoke("Nome de ate 32 caracteres."); AesirLog.D(16, "etiqueta negada: nome com " + nome.Length + " caracteres."); return; }
+            if (nome.Length > 32) { dizer?.Invoke(L.T("misc.nome_32")); AesirLog.D(16, "etiqueta negada: nome com " + nome.Length + " caracteres."); return; }
 
             ZNetView nview = container.GetComponent<ZNetView>();
             if (nview == null || !nview.IsValid()) { AesirLog.D(16, "etiqueta: bau sem ZNetView valida."); return; }
             // Como a placa do jogo: grava como dono. Com outro jogador dentro do bau, nao toma a posse dele.
             if (!nview.IsOwner())
             {
-                if (container.IsInUse()) { dizer?.Invoke("Bau em uso por outro jogador."); AesirLog.D(16, "etiqueta negada: bau em uso por outro jogador."); return; }
+                if (container.IsInUse()) { dizer?.Invoke(L.T("misc.bau_uso")); AesirLog.D(16, "etiqueta negada: bau em uso por outro jogador."); return; }
                 nview.ClaimOwnership();
             }
             nview.GetZDO().Set("dh_etiqueta", nome);
             AtualizarNome(container, nview);
-            dizer?.Invoke(nome.Length > 0 ? $"Bau etiquetado: '{nome}'." : "Etiqueta removida.");
+            dizer?.Invoke(nome.Length > 0 ? L.T("misc.bau_etiq", nome) : L.T("misc.etiq_removida"));
             AesirLog.D(16, "etiqueta: " + Utils.GetPrefabName(container.gameObject) + (nome.Length > 0 ? " agora se chama '" + nome + "'." : " voltou ao nome original."));
         }
 

@@ -109,7 +109,7 @@ namespace Deadheim.Pvp
 
         public static string TierName(int tier)
         {
-            if (tier <= 0) return "nenhum chefe";
+            if (tier <= 0) return L.T("pvpmisc.nenhum_chefe");
             List<string> order = Order;
             string token = tier <= order.Count ? order[tier - 1] : "?";
             return Localization.instance != null ? Localization.instance.Localize(token) : token;
@@ -118,11 +118,11 @@ namespace Deadheim.Pvp
         /// <summary>Com quem o jogador de nivel <paramref name="tier"/> luta, para o /pvp.</summary>
         public static string RangeText(int tier)
         {
-            if (!Active) return "Faixa por chefes desligada: luta com todo mundo.";
+            if (!Active) return L.T("pvpmisc.faixa_off");
             int gap = PvpConfig.BossGapMax.Value;
             int low = Math.Max(0, tier - gap);
             int high = Math.Min(Order.Count, tier + gap);
-            return $"Chefes: {tier} ({TierName(tier)}). Voce so luta com quem tem de {low} a {high} chefes (fora da arena).";
+            return L.T("pvpmisc.chefes", tier, TierName(tier), low, high);
         }
     }
 }

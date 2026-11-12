@@ -237,7 +237,7 @@ namespace Deadheim.Craft
             if (campo.placeholder is TMP_Text dica)
             {
                 if (fonte) dica.font = fonte.font;
-                dica.text = "Buscar item...";
+                dica.text = L.T("misc.buscar");
                 dica.fontStyle = FontStyles.Italic;
                 dica.enableAutoSizing = false;
                 dica.fontSize = 16f;

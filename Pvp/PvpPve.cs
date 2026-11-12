@@ -102,18 +102,20 @@ namespace Deadheim.Pvp
         /// O que o servidor recusaria, conferido antes de pedir com o que o cliente sabe. Null =
         /// pode pedir; a palavra final e do servidor (SwitchRefusal).
         /// </summary>
-        public static string LocalSwitchRefusal(bool toPve)
+        public static string LocalSwitchRefusal(bool toPve) => L.Resolve(LocalSwitchRefusalRaw(toPve));
+
+        private static string LocalSwitchRefusalRaw(bool toPve)
         {
-            if (!PvpConfig.Active) return "O modulo de PvP esta desligado neste servidor.";
-            if (Player.m_localPlayer == null) return "Entre no mundo primeiro.";
-            if (_local == toPve) return toPve ? $"Voce ja e {Title} (PvE)." : "Voce ja esta no PvP.";
-            if (toPve && !PvpConfig.PveEnabled.Value) return "A troca para o PvE esta desligada neste servidor.";
+            if (!PvpConfig.Active) return L.Net("pvppve.modulo_off");
+            if (Player.m_localPlayer == null) return L.Net("pvppve.entre");
+            if (_local == toPve) return toPve ? L.Net("pvppve.ja_pve", Title) : L.Net("pvppve.ja_pvp");
+            if (toPve && !PvpConfig.PveEnabled.Value) return L.Net("pvppve.troca_off");
             double wait = PvpClient.PveSwitchReadyIn;
-            if (wait > 0d) return "Voce trocou ha pouco. Proxima troca em " + PvpClient.FormatDuration(wait) + ".";
+            if (wait > 0d) return L.Net("pvppve.trocou", PvpClient.FormatDuration(wait));
             if (!toPve) return null;
-            if (PvpState.IsPk) return "PK nao pode virar PvE: espere a marca sair.";
-            if (PvpState.IsHunted || PvpState.IsHuntPending || PvpClient.BountyPot > 0) return "Com bounty na cabeca nao da para virar PvE.";
-            if (PvpState.InCombat) return "Em combate nao da para virar PvE.";
+            if (PvpState.IsPk) return L.Net("pvppve.pk_nao");
+            if (PvpState.IsHunted || PvpState.IsHuntPending || PvpClient.BountyPot > 0) return L.Net("pvppve.bounty_nao");
+            if (PvpState.InCombat) return L.Net("pvppve.combate_nao");
             return null;
         }
 
@@ -129,7 +131,7 @@ namespace Deadheim.Pvp
                     break;
                 case "join": Switch(peer, true); break;
                 case "admin-off":
-                    if (!PvpServer.IsAdminPeer(peer.PeerId)) { PvpNet.Message(peer.PeerId, "So admin."); return; }
+                    if (!PvpServer.IsAdminPeer(peer.PeerId)) { PvpNet.Message(peer.PeerId, L.Net("pvppve.so_admin")); return; }
                     AdminOff(peer, target);
                     break;
             }
@@ -145,14 +147,14 @@ namespace Deadheim.Pvp
 
         private static string SwitchRefusal(PvpPeer peer, PvpPlayerRecord record, bool toPve)
         {
-            if (record.pvePermanent == toPve) return toPve ? $"Voce ja e {Title} (PvE)." : "Voce ja esta no PvP.";
-            if (toPve && !PvpConfig.PveEnabled.Value) return "A troca para o PvE esta desligada neste servidor.";
+            if (record.pvePermanent == toPve) return toPve ? L.Net("pvppve.ja_pve", Title) : L.Net("pvppve.ja_pvp");
+            if (toPve && !PvpConfig.PveEnabled.Value) return L.Net("pvppve.troca_off");
             double wait = SwitchReadyIn(record);
-            if (wait > 0d) return "Voce trocou ha pouco. Proxima troca em " + PvpClient.FormatDuration(wait) + ".";
+            if (wait > 0d) return L.Net("pvppve.trocou", PvpClient.FormatDuration(wait));
             if (!toPve) return null;
-            if (record.IsPk) return "PK nao pode virar PvE: espere a marca sair.";
-            if (PvpBounty.HasBounty(peer.PlayerId)) return "Com bounty na cabeca nao da para virar PvE.";
-            if ((PvpBounty.FlagsOf(peer) & PvpFlags.Combat) != 0) return "Em combate nao da para virar PvE.";
+            if (record.IsPk) return L.Net("pvppve.pk_nao");
+            if (PvpBounty.HasBounty(peer.PlayerId)) return L.Net("pvppve.bounty_nao");
+            if ((PvpBounty.FlagsOf(peer) & PvpFlags.Combat) != 0) return L.Net("pvppve.combate_nao");
             return null;
         }
 
@@ -173,16 +175,16 @@ namespace Deadheim.Pvp
             PvpServer.SendState(peer);
 
             double hours = Math.Max(0f, PvpConfig.PveSwitchCooldownHours.Value);
-            string next = hours > 0d ? $" Proxima troca em {PvpClient.FormatDuration(hours * 3600d)}." : string.Empty;
+            string next = hours > 0d ? L.Net("pvppve.proxima", PvpClient.FormatDuration(hours * 3600d)) : string.Empty;
             if (toPve)
             {
-                PvpNet.Broadcast($"<color=#9acd32>{peer.Name} virou {Title}</color> (PvE): nao luta com jogadores.");
-                Answer(peer, true, $"Voce agora e {Title} (PvE): nao luta com jogadores.{next}");
+                PvpNet.Broadcast(L.Net("pvppve.virou", peer.Name, Title));
+                Answer(peer, true, L.Net("pvppve.agora", Title, next));
             }
             else
             {
-                PvpNet.Broadcast($"<color=#ff8c00>{peer.Name} voltou ao PvP.</color>");
-                Answer(peer, true, $"Voce voltou ao PvP.{next}");
+                PvpNet.Broadcast(L.Net("pvppve.voltou_todos", peer.Name));
+                Answer(peer, true, L.Net("pvppve.voce_voltou", next));
             }
             Debug.Log($"[Deadheim PvP] {peer.Name} ({peer.PlayerId}) {(toPve ? "virou PvE" : "voltou ao PvP")}.");
         }
@@ -199,15 +201,15 @@ namespace Deadheim.Pvp
         {
             if (!PvpBounty.TryFindTarget(targetName, out long targetId, out string name))
             {
-                PvpNet.Message(admin.PeerId, $"Nao conheco nenhum jogador chamado '{targetName}'.");
+                PvpNet.Message(admin.PeerId, L.Net("pvppve.nao_conheco", targetName));
                 return;
             }
             PvpPlayerRecord record = PvpStore.Player(targetId, name);
-            if (!record.pvePermanent) { PvpNet.Message(admin.PeerId, $"{name} nao e PvE."); return; }
+            if (!record.pvePermanent) { PvpNet.Message(admin.PeerId, L.Net("pvppve.nao_e_pve", name)); return; }
             record.pvePermanent = false;
             PvpStore.MarkDirty();
             PvpServer.SendState(targetId);
-            PvpNet.Message(admin.PeerId, $"{name} voltou ao PvP.");
+            PvpNet.Message(admin.PeerId, L.Net("pvppve.adm_voltou", name));
             Debug.Log($"[Deadheim PvP] Admin {admin.Name} tirou {name} ({targetId}) do PvE.");
         }
     }

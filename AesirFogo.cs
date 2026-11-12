@@ -143,8 +143,8 @@ namespace Deadheim
         {
             if (Ativo == null || !Ativo.Value) return;
             if (_menu != null && _menu.activeSelf) { FecharMenu(); return; }
-            if (!VipList.VipListApi.IsLocalPlayerVip()) { p.Message(MessageHud.MessageType.Center, "Fogo de outra cor é exclusivo Aesir."); return; }
-            if (!TochaEquipada(p)) { p.Message(MessageHud.MessageType.Center, "Equipe uma tocha para escolher a cor do fogo."); return; }
+            if (!VipList.VipListApi.IsLocalPlayerVip()) { p.Message(MessageHud.MessageType.Center, L.T("aesirmsg.f_exclusivo")); return; }
+            if (!TochaEquipada(p)) { p.Message(MessageHud.MessageType.Center, L.T("aesirmsg.f_tocha")); return; }
             if (Menu.IsVisible() || InventoryGui.IsVisible() || !ValheimUi.EnsureAssets()) return;
             if (_menu == null) CriarMenu();
             if (_menu == null) return;
@@ -170,7 +170,7 @@ namespace Deadheim
         private static void AtualizarEstado()
         {
             if (_estado == null) return;
-            _estado.text = $"Cor agora: <color=#ffd75a>{NomeDe(_sessao ?? Cor?.Value)}</color>\nPadrão salvo: {NomeDe(Cor?.Value)}";
+            _estado.text = L.T("aesirmsg.f_estado", NomeDe(_sessao ?? Cor?.Value), NomeDe(Cor?.Value));
         }
 
         private static void CriarMenu()
@@ -189,13 +189,13 @@ namespace Deadheim
             ValheimUi.Anchor(barra, new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -60f), Vector2.zero);
             barra.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
             barra.gameObject.AddComponent<DragWindow>().Target = painel;
-            var titulo = ValheimUi.CreateLabel(barra, "FOGO DO AESIR", 36, Menus.MenuHub.Dourado, TextAlignmentOptions.Center, display: true);
+            var titulo = ValheimUi.CreateLabel(barra, L.T("misc.titulo"), 36, Menus.MenuHub.Dourado, TextAlignmentOptions.Center, display: true);
             ValheimUi.Stretch((RectTransform)titulo.transform, 60f, 8f);
             var x = ValheimUi.CreateButton(painel, "X", 36f, 36f, 18);
             ValheimUi.Anchor((RectTransform)x.transform, Vector2.one, Vector2.one, new Vector2(-52f, -52f), new Vector2(-16f, -16f));
             x.onClick.AddListener(FecharMenu);
 
-            var lema = ValheimUi.CreateLabel(painel, "Escolha a cor da chama da sua tocha. Só visual: luz e dano não mudam.",
+            var lema = ValheimUi.CreateLabel(painel, L.T("aesirmsg.f_lema"),
                 15, ValheimUi.Beige, TextAlignmentOptions.Center);
             ValheimUi.Anchor((RectTransform)lema.transform, new Vector2(0f, 1f), Vector2.one, new Vector2(30f, -92f), new Vector2(-30f, -62f));
 
@@ -216,15 +216,15 @@ namespace Deadheim
                     b.GetComponentInChildren<TMP_Text>().color = c;
             }
 
-            Button padrao = ValheimUi.CreateButton(painel, "Definir como padrão", 230f, 40f, 16);
+            Button padrao = ValheimUi.CreateButton(painel, L.T("aesirmsg.f_padrao"), 230f, 40f, 16);
             ValheimUi.Anchor((RectTransform)padrao.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-250f, 40f), new Vector2(-20f, 80f));
             padrao.onClick.AddListener(() =>
             {
                 if (_sessao != null) Cor.Value = _sessao;
                 AtualizarEstado();
-                Player.m_localPlayer?.Message(MessageHud.MessageType.Center, "Cor padrão salva: " + NomeDe(Cor.Value));
+                Player.m_localPlayer?.Message(MessageHud.MessageType.Center, L.T("aesirmsg.f_salva", NomeDe(Cor.Value)));
             });
-            Button fechar = ValheimUi.CreateButton(painel, "Fechar", 170f, 40f, 16);
+            Button fechar = ValheimUi.CreateButton(painel, L.T("misc.fechar"), 170f, 40f, 16);
             ValheimUi.Anchor((RectTransform)fechar.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(20f, 40f), new Vector2(190f, 80f));
             fechar.onClick.AddListener(FecharMenu);
         }

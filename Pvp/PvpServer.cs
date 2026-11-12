@@ -82,7 +82,7 @@ namespace Deadheim.Pvp
 
             if (record.pendingCoins > 0)
             {
-                SendReward(peer.PeerId, "Coins", record.pendingCoins, "Moedas guardadas enquanto voce estava fora");
+                SendReward(peer.PeerId, "Coins", record.pendingCoins, L.Net("pvpserver.guardadas"));
                 Debug.Log($"[Deadheim PvP] {peer.Name} recebeu {record.pendingCoins} moedas pendentes.");
                 record.pendingCoins = 0;
                 PvpStore.SaveNow();
@@ -275,6 +275,11 @@ namespace Deadheim.Pvp
 
             PvpBounty.OnDeath(victim, killerId, killerName, arena, death.Cause);
 
+            if (killerId == 0L)
+                DiscordLog.Death($"**{victim.Name}** morreu ({death.Cause}) em X:{position.x:F0} Z:{position.z:F0}.");
+            else if (!PvpConfig.KillFeed.Value)
+                DiscordLog.Pvp($"**{killerName}** matou **{victim.Name}**{(arena ? L.Net("pvpserver.na_arena") : castle != null ? " no castelo " + castle : string.Empty)} em X:{position.x:F0} Z:{position.z:F0}.");
+
             // A marca sai morto por jogador. Morte PvE so tira o PK comum com PkClearsOnPveDeath: senao
             // o PK morreria de proposito em casa para ficar limpo. O permanente so sai morto por jogador.
             bool clearsPk = killerId != 0L
@@ -286,7 +291,7 @@ namespace Deadheim.Pvp
                 victimRecord.ClearPk();
                 PvpStore.MarkDirty();
                 if (wasPermanent)
-                    PvpNet.Broadcast($"<color=#ff3030>O PK permanente {victim.Name}</color> foi morto por <color=#ffb347>{killerName}</color>.", true);
+                    PvpNet.Broadcast(L.Net("pvpserver.pk_perm_morto", victim.Name, killerName), true);
             }
 
             if (killerId != 0L)
@@ -325,13 +330,13 @@ namespace Deadheim.Pvp
 
                 if (PvpConfig.KillFeed.Value)
                 {
-                    string where = arena ? " na arena"
-                        : killerDefendingCastle ? $" defendendo o castelo {castle}"
-                        : castle != null ? $" no castelo {castle}"
+                    string where = arena ? L.Net("pvpserver.na_arena")
+                        : killerDefendingCastle ? L.Net("pvpserver.defendendo", castle)
+                        : castle != null ? L.Net("pvpserver.no_castelo", castle)
                         : string.Empty;
                     string tag = pk ? $" <color=#ff5050>[PK #{killerRecord.pkKills}]</color>" : string.Empty;
                     string loot = LootText(coinsDropped, cargoDropped);
-                    PvpNet.Broadcast($"<color=#ffb347>{killerName}</color>{tag} matou <color=#ffb347>{victim.Name}</color>{where}{loot}.");
+                    PvpNet.Broadcast(L.Net("pvpserver.matou", killerName, tag, victim.Name, where, loot));
                 }
             }
 
@@ -356,9 +361,9 @@ namespace Deadheim.Pvp
         private static string LootText(int coins, int cargo)
         {
             if (coins <= 0 && cargo <= 0) return string.Empty;
-            string what = coins > 0 && cargo > 0 ? $"{coins} moedas e {cargo} itens"
-                : coins > 0 ? $"{coins} moedas" : $"{cargo} itens";
-            return " e deixou " + what + " no chao";
+            string what = coins > 0 && cargo > 0 ? L.Net("pvpserver.loot_both", coins, cargo)
+                : coins > 0 ? L.Net("pvpserver.loot_coins", coins) : L.Net("pvpserver.loot_items", cargo);
+            return L.Net("pvpserver.deixou", what);
         }
 
         /// <summary>
@@ -377,29 +382,28 @@ namespace Deadheim.Pvp
             record.pkPenalty = (int)tier.Penalty;
             PvpStore.MarkDirty();
 
-            string length = record.pkPermanent ? "PERMANENTE (ate ser morto por um jogador)" : PkLengthText(record.pkLeft);
+            string length = record.pkPermanent ? L.Net("pvpserver.permanente") : PkLengthText(record.pkLeft);
             Debug.Log($"[Deadheim PvP] {killerName} ({killerId}) agora e PK {length}, sequencia {record.pkStreak}, " +
                       $"perda={tier.Penalty} (contador de PK: {record.pkKills}).");
             if (PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer))
             {
                 SendState(killerPeer);
                 PvpNet.Message(killerPeer.PeerId,
-                    $"<color=#ff5050>Voce e PK {length}.</color> Se morrer, perde {PvpConfig.PkSkillLossMultiplier.Value:0.#}x skill" +
-                    PenaltyText(tier.Penalty) + ".");
+                    L.Net("pvpserver.voce_pk", length, PvpConfig.PkSkillLossMultiplier.Value.ToString("0.#"), PenaltyText(tier.Penalty)));
             }
             if (record.pkPermanent && tier.Permanent && record.pkStreak == tier.Kills)
-                PvpNet.Broadcast($"<color=#ff3030>{killerName} virou PK PERMANENTE</color> e aparece no mapa ate ser morto.", true);
+                PvpNet.Broadcast(L.Net("pvpserver.virou_perm", killerName), true);
         }
 
         private static string PkLengthText(double seconds)
-            => PvpClient.FormatDuration(seconds) + (PvpConfig.PkTimeOnlineOnly.Value ? " (tempo online)" : string.Empty);
+            => PvpClient.FormatDuration(seconds) + (PvpConfig.PkTimeOnlineOnly.Value ? L.Net("pvpserver.tempo_online") : string.Empty);
 
         public static string PenaltyText(PvpConfig.PkPenalty penalty)
         {
             switch (penalty)
             {
-                case PvpConfig.PkPenalty.Unequipped: return " e tudo que nao estiver equipado cai no chao";
-                case PvpConfig.PkPenalty.All: return " e o inventario inteiro cai no chao";
+                case PvpConfig.PkPenalty.Unequipped: return L.Net("pvpserver.pen_unequipped");
+                case PvpConfig.PkPenalty.All: return L.Net("pvpserver.pen_all");
                 default: return string.Empty;
             }
         }
@@ -434,7 +438,7 @@ namespace Deadheim.Pvp
             bool online = PvpPeer.TryFindByPlayerId(killerId, out PvpPeer killerPeer);
             if (last != null)
             {
-                if (online) PvpNet.Message(killerPeer.PeerId, $"{victim.Name} ja rendeu recompensa de defesa ha pouco tempo.", false);
+                if (online) PvpNet.Message(killerPeer.PeerId, L.Net("pvpserver.defesa_recente", victim.Name), false);
                 return;
             }
 
@@ -445,12 +449,12 @@ namespace Deadheim.Pvp
             PvpStore.SaveNow();
             if (granted <= 0)
             {
-                if (online) PvpNet.Message(killerPeer.PeerId, $"Teto de recompensa de defesa de hoje atingido ({cap} {item}).", false);
+                if (online) PvpNet.Message(killerPeer.PeerId, L.Net("pvpserver.defesa_teto", cap, item), false);
                 Debug.Log($"[Deadheim PvP] Recompensa de defesa de {killerName} por {victim.Name} barrada pelo teto diario ({cap}).");
                 return;
             }
 
-            if (online) SendReward(killerPeer.PeerId, item, granted, $"Defesa do castelo {castle} ({biome})");
+            if (online) SendReward(killerPeer.PeerId, item, granted, L.Net("pvpserver.defesa_castelo", castle, biome));
             Debug.Log($"[Deadheim PvP] Recompensa de defesa: {killerName} +{granted} {item} ({biome}, castelo {castle}); " +
                       $"hoje {defender.castleRewardToday}" + (cap > 0 ? "/" + cap : string.Empty) + ".");
         }
@@ -489,7 +493,7 @@ namespace Deadheim.Pvp
             int own = ranked.FindIndex(p => p.id == peer.PlayerId);
             string mine = own >= 0
                 ? FormatRank(own + 1, ranked[own], true)
-                : "Voce ainda nao tem abates nem mortes em PvP.";
+                : L.Net("pvpserver.sem_rank");
 
             ZPackage pkg = PvpNet.Package(PvpNet.OpRankResult);
             pkg.Write(lines.Count);
@@ -562,7 +566,7 @@ namespace Deadheim.Pvp
             if (PvpPeer.TryFindByPlayerId(record.id, out PvpPeer peer))
             {
                 SendState(peer);
-                PvpNet.Message(peer.PeerId, "<color=#7CFC00>Sua marca de PK acabou.</color>");
+                PvpNet.Message(peer.PeerId, L.Net("pvpserver.marca_acabou"));
             }
         }
 
@@ -574,7 +578,7 @@ namespace Deadheim.Pvp
         /// </summary>
         private static void OnAdmin(PvpPeer admin, string action, string target, double value)
         {
-            if (!IsAdminPeer(admin.PeerId)) { PvpNet.Message(admin.PeerId, "So admin."); return; }
+            if (!IsAdminPeer(admin.PeerId)) { PvpNet.Message(admin.PeerId, L.Net("pvpserver.so_admin")); return; }
             switch ((action ?? string.Empty).Trim().ToLowerInvariant())
             {
                 case "pk":
@@ -583,7 +587,7 @@ namespace Deadheim.Pvp
                     string name = admin.Name;
                     if (!string.IsNullOrWhiteSpace(target) && !PvpBounty.TryFindTarget(target, out id, out name))
                     {
-                        PvpNet.Message(admin.PeerId, $"Nao conheco nenhum jogador chamado '{target}'.");
+                        PvpNet.Message(admin.PeerId, L.Net("pvpserver.nao_conheco", target));
                         return;
                     }
                     PvpPlayerRecord record = PvpStore.Player(id, name);
@@ -601,13 +605,13 @@ namespace Deadheim.Pvp
                     if (record.IsPk && record.pkStreak <= 0) record.pkStreak = 1;
                     PvpStore.MarkDirty();
                     SendState(id);
-                    string state = !record.IsPk ? "sem PK" : record.pkPermanent ? "PK PERMANENTE" : "PK por " + PkLengthText(record.pkLeft);
+                    string state = !record.IsPk ? L.Net("pvpserver.sem_pk") : record.pkPermanent ? L.Net("pvpserver.pk_perm") : L.Net("pvpserver.pk_por", PkLengthText(record.pkLeft));
                     PvpNet.Message(admin.PeerId, $"{name}: {state}.");
                     Debug.Log($"[Deadheim PvP] Admin {admin.Name} deixou {name} ({id}) {state}.");
                     break;
                 }
                 default:
-                    PvpNet.Message(admin.PeerId, $"Comando de admin desconhecido: {action}.");
+                    PvpNet.Message(admin.PeerId, L.Net("pvpserver.admin_desc", action));
                     break;
             }
         }
@@ -752,8 +756,7 @@ namespace Deadheim.Pvp
             PvpStore.MarkDirty();
 
             Debug.Log($"[Deadheim PvP] {seen.Name} ({seen.PlayerId}) deslogou em combate. Abate para {killerName ?? "ninguem"}, modo={mode}.");
-            PvpNet.Broadcast($"<color=#ffb347>{seen.Name}</color> deslogou em combate" +
-                             (killerName != null ? $" e conta como morto por <color=#ffb347>{killerName}</color>." : "."));
+            PvpNet.Broadcast(L.Net("pvpserver.deslogou", seen.Name, killerName != null ? L.Net("pvpserver.conta_morto", killerName) : "."));
         }
 
         private static bool _startZoneReported;

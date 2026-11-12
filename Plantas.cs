@@ -696,7 +696,7 @@ namespace Deadheim
             }
             if (!Priv.NoPlacementCost(lp) && !lp.HaveRequirements(piece, Player.RequirementMode.CanBuild))
             {
-                r.Waiting = "Falta material para " + Localization.instance.Localize(piece.m_name) + ". Pegue mais ou cancele.";
+                r.Waiting = L.T("plantas.falta_material", Localization.instance.Localize(piece.m_name));
                 r.NextAt = Time.time + 1f;
                 return;
             }

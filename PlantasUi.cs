@@ -78,25 +78,25 @@ namespace Deadheim
             bool vip = VipList.VipListApi.IsLocalPlayerVip();
 
             if (!vip)
-                GUILayout.Label("Plantas salvas sao exclusivas dos Aesir (VIP). Voce ainda pode ver e apagar as suas.");
+                GUILayout.Label(L.T("misc.so_aesir"));
 
-            GUILayout.Label("Plantas guardadas (" + Plantas.Saved.Count + "/" + Plantas.MaxSaved.Value + "):");
+            GUILayout.Label(L.T("misc.guardadas", Plantas.Saved.Count, Plantas.MaxSaved.Value));
             _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Height(170f));
-            if (!Plantas.ListLoaded) GUILayout.Label("Carregando...");
-            else if (Plantas.Saved.Count == 0) GUILayout.Label("Nenhuma planta salva.");
+            if (!Plantas.ListLoaded) GUILayout.Label(L.T("misc.carregando"));
+            else if (Plantas.Saved.Count == 0) GUILayout.Label(L.T("misc.nenhuma"));
             foreach (Plantas.Entry en in Plantas.Saved.ToArray())
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label(en.Name + " (" + en.Count + " pecas)", GUILayout.Width(190f));
+                GUILayout.Label(L.T("misc.pecas", en.Name, en.Count), GUILayout.Width(190f));
                 GUI.enabled = vip && !busy;
-                if (GUILayout.Button("Colocar"))
+                if (GUILayout.Button(L.T("misc.colocar")))
                 {
                     _open = false;
                     Plantas.StartPlace(en.Name);
                 }
                 GUI.enabled = true;
                 bool confirming = _confirmDelete == en.Name;
-                if (GUILayout.Button(confirming ? "Confirmar?" : "Apagar"))
+                if (GUILayout.Button(confirming ? L.T("misc.confirmar") : L.T("misc.apagar")))
                 {
                     if (confirming) { Plantas.RequestDelete(en.Name); _confirmDelete = null; }
                     else _confirmDelete = en.Name;
@@ -106,32 +106,31 @@ namespace Deadheim
             GUILayout.EndScrollView();
 
             GUILayout.Space(8f);
-            GUILayout.Label("Salvar as pecas que voce construiu perto de voce:");
+            GUILayout.Label(L.T("plantas.salvar_titulo"));
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Nome", GUILayout.Width(50f));
+            GUILayout.Label(L.T("plantas.nome"), GUILayout.Width(50f));
             _nameField = GUILayout.TextField(_nameField ?? "", 24);
             GUILayout.EndHorizontal();
 
             float max = Mathf.Min(Plantas.HardMaxRadius, Mathf.Max(3f, Plantas.CaptureRadius.Value * 2f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Raio: " + Mathf.Round(_radius) + " m", GUILayout.Width(90f));
+            GUILayout.Label(L.T("plantas.raio", Mathf.Round(_radius)), GUILayout.Width(90f));
             _radius = GUILayout.HorizontalSlider(_radius, 3f, max);
             GUILayout.EndHorizontal();
 
             GUI.enabled = vip && !busy;
-            if (GUILayout.Button("Salvar planta aqui"))
+            if (GUILayout.Button(L.T("plantas.salvar")))
                 Plantas.Capture(_nameField, Mathf.Round(_radius));
             GUI.enabled = true;
 
-            GUILayout.Label("Colocar: olhe para o chao onde a planta deve ficar. Cada peca gasta material e entra "
-                + "numa fila de 2 por segundo; ande ate a obra se ela for grande. Nao vale em combate, zona de raid nem ward alheio.",
+            GUILayout.Label(L.T("plantas.ajuda"),
                 GUILayout.Height(80f));
 
             if (!string.IsNullOrEmpty(Plantas.Status)) GUILayout.Label(Plantas.Status);
 
             GUILayout.BeginHorizontal();
-            if (busy && GUILayout.Button("Cancelar colocacao")) Plantas.CancelPlace();
-            if (GUILayout.Button("Fechar")) _open = false;
+            if (busy && GUILayout.Button(L.T("plantas.cancelar"))) Plantas.CancelPlace();
+            if (GUILayout.Button(L.T("plantas.fechar"))) _open = false;
             GUILayout.EndHorizontal();
 
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 22f));

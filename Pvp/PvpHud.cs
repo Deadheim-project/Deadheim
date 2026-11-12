@@ -32,8 +32,8 @@ namespace Deadheim.Pvp
 
             string why = PvpState.ZoneLabel;
             player.Message(MessageHud.MessageType.Center, enabled
-                ? Avisos.Pvp("PvP ATIVO", string.IsNullOrEmpty(why) ? "Cuidado: outros jogadores podem atacar voce." : why)
-                : Avisos.Ok("PvP desligado", string.IsNullOrEmpty(why) ? "Ninguem pode atacar voce agora." : why));
+                ? Avisos.Pvp(L.T("pvphud.pvp_ativo_t"), string.IsNullOrEmpty(why) ? L.T("pvphud.cuidado") : why)
+                : Avisos.Ok(L.T("pvphud.pvp_off_t"), string.IsNullOrEmpty(why) ? L.T("pvphud.ninguem_ataca") : why));
         }
 
         public static void ResetSession()
@@ -61,46 +61,48 @@ namespace Deadheim.Pvp
         {
             public readonly string Id;
             public readonly int Hash;
-            public readonly string Name;
-            public readonly string Tooltip;
+            private readonly string _nameKey;
+            public string Name => L.T(_nameKey);
+            private readonly string _tipKey;
+            public string Tooltip => L.T(_tipKey);
             public readonly string[] Icons;
 
             public Buff(string id, string name, string tooltip, params string[] icons)
             {
                 Id = id;
                 Hash = id.GetStableHashCode();
-                Name = name;
-                Tooltip = tooltip;
+                _nameKey = name;
+                _tipKey = tooltip;
                 Icons = icons;
             }
         }
 
         // Icones: "se:Nome" e um efeito do jogo, o resto e prefab de item. O primeiro que existir vale.
-        private static readonly Buff Combat = new Buff("DH_Combat", "Em combate",
-            "Sem retreat nem pedra de retorno ate a luta esfriar; luta com jogador tambem trava portal e tira a zona segura.", "SwordBronze");
-        private static readonly Buff Immune = new Buff("DH_PvpImmune", "Imune a PvP",
-            "Morreu para um jogador: nao da nem leva dano de jogador. Monstro continua ferindo.", "ShieldWood", "SwordBronze");
-        private static readonly Buff Pk = new Buff("DH_Pk", "PK",
-            "Matou quem nao estava lutando. Sem zona segura; se morrer perde mais. O tempo so corre online e a marca so sai morto por jogador.",
+        private static readonly Buff Combat = new Buff("DH_Combat", "pvphud.b_combat",
+            "pvphud.t_combat", "SwordBronze");
+        private static readonly Buff Immune = new Buff("DH_PvpImmune", "pvphud.b_immune",
+            "pvphud.t_immune", "ShieldWood", "SwordBronze");
+        private static readonly Buff Pk = new Buff("DH_Pk", "pvphud.b_pk",
+            "pvphud.t_pk",
             "TrophySkeleton", "SwordBronze");
-        private static readonly Buff Aggressor = new Buff("DH_Aggressor", "Agressor",
-            "Bateu primeiro: quem te matar nao vira PK. O tempo para enquanto voce luta.", "AxeStone", "SwordBronze");
-        private static readonly Buff Hunted = new Buff("DH_Hunted", "Cacado",
-            "Ha uma bounty na sua cabeca: aparece no mapa, sem zona segura, imunidade nem teleporte.", "Bow", "SwordBronze");
-        private static readonly Buff Bounty = new Buff("DH_Bounty", "Bounty",
-            "Colocaram moedas na sua cabeca. Quando o tempo acabar voce vira CACADO. O Cacador de Recompensas encerra se voce pagar.", "Coins", "SwordBronze");
-        private static readonly Buff Safe = new Buff("DH_SafeZone", "Zona segura",
-            "Ninguem te fere aqui, e voce nao fere ninguem, enquanto nao estiver em combate.", "se:Shelter", "ShieldWood", "SwordBronze");
-        private static readonly Buff Pve = new Buff("DH_Pve", "PvE",
-            "PvE: nao luta com jogadores em lugar nenhum. O Juiz de Guerra troca de volta.", "Hammer", "SwordBronze");
+        private static readonly Buff Aggressor = new Buff("DH_Aggressor", "pvphud.b_aggressor",
+            "pvphud.t_aggressor", "AxeStone", "SwordBronze");
+        private static readonly Buff Hunted = new Buff("DH_Hunted", "pvphud.b_hunted",
+            "pvphud.t_hunted", "Bow", "SwordBronze");
+        private static readonly Buff Bounty = new Buff("DH_Bounty", "pvphud.b_bounty",
+            "pvphud.t_bounty", "Coins", "SwordBronze");
+        private static readonly Buff Safe = new Buff("DH_SafeZone", "pvphud.b_safe",
+            "pvphud.t_safe", "se:Shelter", "ShieldWood", "SwordBronze");
+        private static readonly Buff Pve = new Buff("DH_Pve", "pvphud.b_pve",
+            "pvphud.t_pve", "Hammer", "SwordBronze");
 
         // Recargas de teleporte: um buff por cooldown (PvpModule.Cooldown), com a contagem do que falta.
-        private static readonly Buff CdHearthstone = new Buff("DH_CdHearthstone", "Hearthstone em recarga",
-            "A pedra de retorno esta em recarga. O tempo so corre com o jogo aberto.", "Hearthstone", "SurtlingCore", "SwordBronze");
-        private static readonly Buff CdRetreat1 = new Buff("DH_CdRetreat1", "Retreat 1 em recarga",
-            "O /retreat para o ponto 1 esta em recarga. O tempo so corre com o jogo aberto.", "Ruby", "Hearthstone", "SwordBronze");
-        private static readonly Buff CdRetreat2 = new Buff("DH_CdRetreat2", "Retreat 2 em recarga",
-            "O /retreat 2 (segundo ponto) esta em recarga. O tempo so corre com o jogo aberto.", "Amber", "Hearthstone", "SwordBronze");
+        private static readonly Buff CdHearthstone = new Buff("DH_CdHearthstone", "pvphud.b_cdhs",
+            "pvphud.t_cdhs", "Hearthstone", "SurtlingCore", "SwordBronze");
+        private static readonly Buff CdRetreat1 = new Buff("DH_CdRetreat1", "pvphud.b_cdr1",
+            "pvphud.t_cdr1", "Ruby", "Hearthstone", "SwordBronze");
+        private static readonly Buff CdRetreat2 = new Buff("DH_CdRetreat2", "pvphud.b_cdr2",
+            "pvphud.t_cdr2", "Amber", "Hearthstone", "SwordBronze");
 
         private static readonly Buff[] All = { Combat, Immune, Pk, Aggressor, Hunted, Bounty, Safe, Pve, CdHearthstone, CdRetreat1, CdRetreat2 };
 
@@ -174,19 +176,19 @@ namespace Deadheim.Pvp
             bool states = PvpConfig.StateBuffs == null || PvpConfig.StateBuffs.Value;
 
             float combat = PvpConfig.CombatStatusIcon.Value ? PvpState.ShownCombatRemaining : 0f;
-            Show(seman, Combat, combat > 0f, combat, PvpState.InCombat ? "Em combate" : "Luta com monstro");
+            Show(seman, Combat, combat > 0f, combat, PvpState.InCombat ? L.T("pvphud.em_combate") : L.T("pvphud.luta_monstro"));
 
             Show(seman, Immune, states && (flags & PvpFlags.Immune) != 0, (float)PvpState.ImmuneRemaining);
             bool permanent = (flags & PvpFlags.PkPermanent) != 0;
             int pkCount = PvpState.PkCount;
             Show(seman, Pk, states && (flags & PvpFlags.Pk) != 0, permanent ? 0f : (float)PvpState.PkRemaining,
-                (permanent ? "PK permanente" : "PK") + (pkCount > 1 ? $" x{pkCount}" : string.Empty));
+                (permanent ? L.T("pvphud.pk_perm") : "PK") + (pkCount > 1 ? $" x{pkCount}" : string.Empty));
             Show(seman, Aggressor, states && (flags & PvpFlags.Aggressor) != 0, PvpState.AggressorRemaining);
             Show(seman, Hunted, states && (flags & PvpFlags.Hunted) != 0, PvpState.IsHuntedForever ? 0f : (float)PvpState.HuntedRemaining,
-                (PvpState.IsHuntedForever ? "Cacado ate morrer" : "Cacado") + (PvpClient.HuntPaused ? " (pausado)" : string.Empty));
+                (PvpState.IsHuntedForever ? L.T("pvphud.cacado_morrer") : L.T("pvphud.cacado")) + (PvpClient.HuntPaused ? L.T("pvphud.pausado") : string.Empty));
             Show(seman, Bounty, states && (flags & PvpFlags.HuntPending) != 0, (float)PvpState.HuntPendingRemaining,
-                $"Bounty {PvpClient.BountyPot}" + (PvpClient.HuntPaused ? " (pausada)" : string.Empty));
-            Show(seman, Safe, states && (flags & PvpFlags.Protected) != 0, 0f, PvpState.ZoneLabel ?? "Zona segura");
+                L.T("pvphud.bounty_n", PvpClient.BountyPot) + (PvpClient.HuntPaused ? L.T("pvphud.pausada") : string.Empty));
+            Show(seman, Safe, states && (flags & PvpFlags.Protected) != 0, 0f, PvpState.ZoneLabel ?? L.T("pvphud.zona_segura"));
             Show(seman, Pve, states && (flags & PvpFlags.Pve) != 0, 0f, PvpPve.Title);
 
             // Recargas de teleporte: reaparecem sozinhas no login enquanto faltar tempo (carregadas do perfil).
@@ -238,36 +240,32 @@ namespace Deadheim.Pvp
             List<string> parts = new List<string>();
 
             if ((flags & PvpFlags.Pve) != 0)
-                parts.Add("<color=#9acd32>PvE: " + PvpPve.Title + "</color>");
+                parts.Add(L.T("pvphud.h_pve", PvpPve.Title));
             else if ((flags & (PvpFlags.Arena | PvpFlags.Castle)) != 0)
                 parts.Add("<color=#ff8c00>" + PvpState.ZoneLabel + "</color>");
             else if ((flags & PvpFlags.Hunted) != 0)
-                parts.Add("<color=#ff5050>CACADO " + (PvpState.IsHuntedForever ? "ate morrer" : PvpClient.FormatDuration(PvpState.HuntedRemaining))
-                          + $" ({PvpClient.BountyPot} moedas)"
-                          + (PvpClient.HuntPaused ? " (pausado)" : string.Empty) + "</color>");
+                parts.Add(L.T("pvphud.h_cacado", PvpState.IsHuntedForever ? L.T("pvphud.ate_morrer") : PvpClient.FormatDuration(PvpState.HuntedRemaining), PvpClient.BountyPot, PvpClient.HuntPaused ? L.T("pvphud.pausado") : string.Empty));
             else if ((flags & PvpFlags.Immune) != 0)
-                parts.Add("<color=#7fd4ff>IMUNE A PvP " + PvpClient.FormatDuration(PvpState.ImmuneRemaining) + "</color>");
+                parts.Add(L.T("pvphud.h_imune", PvpClient.FormatDuration(PvpState.ImmuneRemaining)));
             else if ((flags & PvpFlags.Protected) != 0)
-                parts.Add("<color=#7CFC00>ZONA SEGURA: " + PvpState.ZoneLabel + "</color>");
+                parts.Add(L.T("pvphud.h_zona", PvpState.ZoneLabel));
             else if (player != null && player.IsPVPEnabled())
-                parts.Add("<color=#ff5050>PvP ATIVO</color>");
+                parts.Add(L.T("pvphud.h_ativo"));
             else
-                parts.Add("<color=#c0c0c0>PvP desligado</color>");
+                parts.Add(L.T("pvphud.h_desl"));
 
             if ((flags & PvpFlags.PkPermanent) != 0)
-                parts.Add("<color=#ff3030>PK PERMANENTE" + (PvpState.PkCount > 1 ? $" (x{PvpState.PkCount})" : string.Empty) + "</color>");
+                parts.Add(L.T("pvphud.h_pkperm", PvpState.PkCount > 1 ? $" (x{PvpState.PkCount})" : string.Empty));
             else if ((flags & PvpFlags.Pk) != 0)
-                parts.Add("<color=#ff3030>PK " + PvpClient.FormatDuration(PvpState.PkRemaining)
-                          + (PvpState.PkCount > 1 ? $" (x{PvpState.PkCount})" : string.Empty) + "</color>");
+                parts.Add(L.T("pvphud.h_pk", PvpClient.FormatDuration(PvpState.PkRemaining), PvpState.PkCount > 1 ? $" (x{PvpState.PkCount})" : string.Empty));
             if ((flags & PvpFlags.Aggressor) != 0)
-                parts.Add("<color=#ff7a3d>AGRESSOR</color>");
+                parts.Add(L.T("pvphud.h_agressor"));
             if ((flags & PvpFlags.HuntPending) != 0)
-                parts.Add($"<color=#ff8c00>Bounty de {PvpClient.BountyPot}: cacado em " + PvpClient.FormatDuration(PvpState.HuntPendingRemaining)
-                          + (PvpClient.HuntPaused ? " (pausado)" : string.Empty) + "</color>");
+                parts.Add(L.T("pvphud.h_pend", PvpClient.BountyPot, PvpClient.FormatDuration(PvpState.HuntPendingRemaining), PvpClient.HuntPaused ? L.T("pvphud.pausado") : string.Empty));
             if ((flags & PvpFlags.Combat) != 0)
-                parts.Add("<color=#ffb347>Em combate " + Mathf.CeilToInt(PvpState.CombatRemaining) + "s</color>");
+                parts.Add(L.T("pvphud.h_comb", Mathf.CeilToInt(PvpState.CombatRemaining)));
             else if (PvpState.PveCombatBlocks)
-                parts.Add("<color=#ffb347>Luta com monstro " + Mathf.CeilToInt(PvpState.PveCombatRemaining) + "s</color>");
+                parts.Add(L.T("pvphud.h_monstro", Mathf.CeilToInt(PvpState.PveCombatRemaining)));
 
             StringBuilder text = new StringBuilder();
             for (int i = 0; i < parts.Count; i++)
@@ -289,9 +287,9 @@ namespace Deadheim.Pvp
         {
             if (Chat.instance != null)
             {
-                Chat.instance.AddString("<color=#ffd700>--- Ranking PvP (K/D) ---</color>");
+                Chat.instance.AddString("<color=#ffd700>" + L.T("pvphud.rank_titulo") + "</color>");
                 foreach (string line in lines) Chat.instance.AddString(line);
-                Chat.instance.AddString("Voce: " + mine);
+                Chat.instance.AddString(L.T("pvphud.voce", mine));
             }
 
             if (_panel != null) Object.Destroy(_panel);
@@ -300,15 +298,15 @@ namespace Deadheim.Pvp
                 Vector2.zero, 560f, 120f + 26f * (lines.Count + 2), false);
             _panel.name = "DeadheimPvpRank";
 
-            Ui.CreateText("Ranking PvP (K/D)", _panel.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            Ui.CreateText(L.T("pvphud.rank_painel"), _panel.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -30f), Ui.AveriaSerifBold, 26, Ui.ValheimOrange, true, Color.black, 520f, 36f, false)
                 .GetComponent<Text>().alignment = TextAnchor.MiddleCenter;
 
             StringBuilder body = new StringBuilder();
-            if (lines.Count == 0) body.AppendLine("Ninguem pontuou ainda.");
+            if (lines.Count == 0) body.AppendLine(L.T("pvphud.ninguem_pont"));
             foreach (string line in lines) body.AppendLine(line);
             body.AppendLine();
-            body.Append("Voce: ").Append(mine);
+            body.Append(L.T("pvphud.voce", mine));
 
             GameObject text = Ui.CreateText(body.ToString(), _panel.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -60f - 13f * (lines.Count + 2)), Ui.AveriaSerifBold, 18, Color.white, true, Color.black,
@@ -317,7 +315,7 @@ namespace Deadheim.Pvp
             label.alignment = TextAnchor.UpperLeft;
             label.supportRichText = true;
 
-            GameObject close = Ui.CreateButton("Fechar", _panel.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+            GameObject close = Ui.CreateButton(L.T("pvphud.fechar"), _panel.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 30f), 140f, 36f);
             close.GetComponent<Button>().onClick.AddListener(Close);
 

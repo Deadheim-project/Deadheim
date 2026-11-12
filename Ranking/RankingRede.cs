@@ -105,7 +105,7 @@ namespace Deadheim.Ranking
             {
                 new Terminal.ConsoleCommand("ranking", "abre o Ranking do mundo", args =>
                 {
-                    if (Player.m_localPlayer == null) { args.Context?.AddString("Entre no mundo primeiro."); return; }
+                    if (Player.m_localPlayer == null) { args.Context?.AddString(L.T("rankingnet.entre")); return; }
                     RankingJanela.Abrir(RankingJanela.Origem.Comando);
                 });
                 new Terminal.ConsoleCommand("rankingadmin", "(admin) ocultar <nome> | mostrar <nome> | apagar <nome>: tira do ranking, devolve ou apaga os dados", args =>
@@ -118,7 +118,7 @@ namespace Deadheim.Ranking
                     ZPackage pkg = Pacote(OpAdmin);
                     pkg.Write(args[1].ToLowerInvariant());
                     pkg.Write(string.Join(" ", args.Args.Skip(2)));
-                    if (!Enviar(pkg)) args.Context?.AddString("Sem conexao com o servidor.");
+                    if (!Enviar(pkg)) args.Context?.AddString(L.T("rankingnet.sem_conexao"));
                 });
             }
         }
@@ -273,7 +273,7 @@ namespace Deadheim.Ranking
                 }
                 else if (op == OpMensagem || op == OpFeito)
                 {
-                    string texto = pkg.ReadString();
+                    string texto = L.Resolve(pkg.ReadString());
                     // O nome do chefe vem como token ($enemy_eikthyr): cada um le na propria lingua.
                     if (Localization.instance != null) texto = Localization.instance.Localize(texto);
                     Chat.instance?.AddString("[Ranking] " + texto);
@@ -615,7 +615,7 @@ namespace Deadheim.Ranking
         {
             ZPackage pkg = Pacote(OpFeito);
             string guilda = string.IsNullOrEmpty(j.Guilda) ? "" : " [" + j.Guilda + "]";
-            pkg.Write($"{j.Nome}{guilda} é o primeiro do mundo a derrotar {chefe}! Veja em Ranking > Feitos do mundo.");
+            pkg.Write(L.Net("rankingnet.feito", j.Nome, guilda, chefe));
             ZRoutedRpc.instance?.InvokeRoutedRPC(ZRoutedRpc.Everybody, ParaCliente, pkg);
         }
 
@@ -673,7 +673,7 @@ namespace Deadheim.Ranking
         {
             if (!Pvp.PvpServer.IsAdminPeer(sender))
             {
-                Responder(sender, "So admins do servidor podem mexer no ranking.");
+                Responder(sender, L.Net("rankingnet.so_admin"));
                 return;
             }
             RankingBase dados = Dados;
@@ -681,7 +681,7 @@ namespace Deadheim.Ranking
                 .Where(j => string.Equals(j.Nome, (nome ?? "").Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
             if (achados.Count == 0)
             {
-                Responder(sender, $"Ninguem chamado '{nome}' no ranking.");
+                Responder(sender, L.Net("rankingnet.ninguem", nome));
                 return;
             }
 
@@ -689,18 +689,18 @@ namespace Deadheim.Ranking
             {
                 case "ocultar":
                     foreach (RankingJogador j in achados) j.Oculto = true;
-                    Responder(sender, $"{achados.Count} personagem(ns) '{nome}' fora do ranking (os dados ficam guardados).");
+                    Responder(sender, L.Net("rankingnet.ocultou", achados.Count, nome));
                     break;
                 case "mostrar":
                     foreach (RankingJogador j in achados) j.Oculto = false;
-                    Responder(sender, $"{achados.Count} personagem(ns) '{nome}' de volta ao ranking.");
+                    Responder(sender, L.Net("rankingnet.mostrou", achados.Count, nome));
                     break;
                 case "apagar":
                     foreach (RankingJogador j in achados) dados.Jogadores.Remove(j);
-                    Responder(sender, $"Dados de {achados.Count} personagem(ns) '{nome}' apagados; o que o perfil dele registra volta no proximo relato.");
+                    Responder(sender, L.Net("rankingnet.apagou", achados.Count, nome));
                     break;
                 default:
-                    Responder(sender, "Use ocultar, mostrar ou apagar.");
+                    Responder(sender, L.Net("rankingnet.use"));
                     return;
             }
             Debug.Log($"[Deadheim] Ranking: admin {sender} -> {acao} '{nome}'.");

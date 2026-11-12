@@ -16,10 +16,7 @@ namespace Deadheim
     [HarmonyPatch]
     internal static class Lixeira
     {
-        private const string Dica =
-            "Selecione um item do inventário (passe o mouse ou pegue-o com o clique) e aperte <color=#ffd75a>Delete</color> para apagá-lo.\n" +
-            "Apaga a pilha inteira, sem perguntar.\n" +
-            "<color=#ff8a7a>Não dá para apagar</color>: moedas, item equipado ou item de baú.";
+        private static string Dica => L.T("lixeira.dica");
 
         private static GameObject _botao;
         private static RectTransform _peso;
@@ -251,7 +248,7 @@ namespace Deadheim
                     _pendente = item;
                     _pendenteAte = Time.unscaledTime + 4f;
                     string n = Localization.instance.Localize(item.m_shared.m_name);
-                    Aviso("Apagar " + n + (item.m_quality > 1 ? " (nível " + item.m_quality + ")" : "") + "? Aperte Delete de novo em 4 s.");
+                    Aviso(L.T("lixeira.confirmar", n, item.m_quality > 1 ? L.T("lixeira.nivel", item.m_quality) : ""));
                     return;
                 }
                 _pendente = null;
@@ -265,10 +262,10 @@ namespace Deadheim
         /// <summary>Texto do motivo se o item NAO pode ser apagado; null se pode.</summary>
         private static string Recusa(Player player, ItemDrop.ItemData item, Inventory origem)
         {
-            if (origem != player.GetInventory()) return "A lixeira só apaga itens do seu inventário.";
-            if (!origem.ContainsItem(item)) return "Esse item não está mais no inventário.";
-            if (Moedas.EhMoeda(item)) return "As moedas não podem ser apagadas.";
-            if (item.m_equipped) return "Desequipe o item antes de apagá-lo.";
+            if (origem != player.GetInventory()) return L.T("lixeira.so_inventario");
+            if (!origem.ContainsItem(item)) return L.T("lixeira.nao_esta");
+            if (Moedas.EhMoeda(item)) return L.T("lixeira.moeda");
+            if (item.m_equipped) return L.T("lixeira.equipado");
             return null;
         }
 
@@ -283,8 +280,8 @@ namespace Deadheim
                 CampoDragQuantidade?.SetValue(gui, 0);
                 AccessTools.Method(typeof(InventoryGui), "SetupDragItem")?.Invoke(gui, new object[] { null, null, 1 });
             }
-            if (!player.GetInventory().RemoveItem(item, qtd)) { Aviso("Não foi possível apagar."); return; }
-            Aviso("Apagado: " + (qtd > 1 ? qtd + "x " : "") + nome);
+            if (!player.GetInventory().RemoveItem(item, qtd)) { Aviso(L.T("lixeira.falhou")); return; }
+            Aviso(L.T("lixeira.apagado", qtd > 1 ? qtd + "x " : "", nome));
             Debug.Log($"[Deadheim] Lixeira: {player.GetPlayerName()} apagou {qtd}x {item.m_shared.m_name}.");
         }
 

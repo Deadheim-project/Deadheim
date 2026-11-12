@@ -104,7 +104,7 @@ namespace Deadheim.Pvp
                 case "board": Board(peer); break;
                 case "admin":
                     // Bounty paga pela casa: ferramenta de admin (e do teste solo). Pode ser em si mesmo.
-                    if (!PvpServer.IsAdminPeer(peer.PeerId)) { Answer(peer, request, 0, "So admin."); return; }
+                    if (!PvpServer.IsAdminPeer(peer.PeerId)) { Answer(peer, request, 0, L.Net("pvpbounty.so_admin")); return; }
                     Place(peer, target, paid, true, request);
                     break;
                 default: List(peer); break;
@@ -133,21 +133,21 @@ namespace Deadheim.Pvp
             if (byHouse) paid = Math.Max(0, paid);
             void Refuse(string why) => Answer(peer, request, 0, why);
 
-            if (!PvpConfig.BountyEnabled.Value) { Refuse("A bounty esta desligada neste servidor."); return; }
+            if (!PvpConfig.BountyEnabled.Value) { Refuse(L.Net("pvpbounty.desligada")); return; }
             if (paid < PvpConfig.BountyMinimum.Value && !byHouse)
             {
-                Refuse($"A bounty minima e {PvpConfig.BountyMinimum.Value} moedas.");
+                Refuse(L.Net("pvpbounty.minima", PvpConfig.BountyMinimum.Value));
                 return;
             }
 
             if (!TryFindTarget(targetName, out long targetId, out string name))
             {
-                Refuse($"Nao conheco nenhum jogador chamado '{targetName}'.");
+                Refuse(L.Net("pvpbounty.nao_conheco", targetName));
                 return;
             }
-            if (targetId == peer.PlayerId && !byHouse) { Refuse("Voce nao pode colocar bounty em si mesmo."); return; }
-            if (PvpStore.Player(targetId, name).pvePermanent) { Refuse($"{name} e PvE: nao pode ser cacado."); return; }
-            if (paid <= 0) { Refuse("Valor invalido."); return; }
+            if (targetId == peer.PlayerId && !byHouse) { Refuse(L.Net("pvpbounty.si_mesmo")); return; }
+            if (PvpStore.Player(targetId, name).pvePermanent) { Refuse(L.Net("pvpbounty.e_pve", name)); return; }
+            if (paid <= 0) { Refuse(L.Net("pvpbounty.invalido")); return; }
 
             PvpBountyRecord bounty = Find(targetId);
             if (bounty == null && !byHouse)
@@ -155,7 +155,7 @@ namespace Deadheim.Pvp
                 PvpPlayerRecord record = PvpStore.Player(targetId, name);
                 if (record.bountyReadyAt > Now)
                 {
-                    Refuse($"{name} acabou de sair de uma bounty. Outra so em {PvpClient.FormatDuration(record.bountyReadyAt - Now)}.");
+                    Refuse(L.Net("pvpbounty.acabou_sair", name, PvpClient.FormatDuration(record.bountyReadyAt - Now)));
                     return;
                 }
             }
@@ -166,7 +166,7 @@ namespace Deadheim.Pvp
             if (payer != null && !payer.TryAddBountyPaid(Today, paid, cap, out int leftToday))
             {
                 PvpStore.MarkDirty();
-                Refuse($"Teto de bounty por dia: {cap} moedas por jogador. Hoje voce ainda pode colocar {leftToday}.");
+                Refuse(L.Net("pvpbounty.teto", cap, leftToday));
                 Debug.LogWarning($"[Deadheim PvP] Bounty recusada pelo teto diario: {peer.Name} ({peer.PlayerId}) quis +{paid} " +
                                  $"em {name} ({targetId}); ja colocou {payer.bountyPaidToday} hoje, teto {cap}.");
                 return;
@@ -192,19 +192,16 @@ namespace Deadheim.Pvp
             PvpStore.MarkDirty();
 
             string length = UntilDeath(bounty.pot)
-                ? "ate morrer para um jogador"
-                : $"por {PvpClient.FormatDuration(TotalSeconds(bounty.pot) - bounty.elapsed)} online";
-            string when = bounty.delayLeft > 0d ? $" Vira CACADO em {PvpClient.FormatDuration(bounty.delayLeft)}." : string.Empty;
-            PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> vale " +
-                             $"<color=#ffd700>{Payout(bounty.pot)}</color> moedas para quem matar ({length}).{when}", true);
-            Answer(peer, request, byHouse ? 0 : paid, $"Voce colocou {paid} moedas na cabeca de {bounty.targetName}.");
+                ? L.Net("pvpbounty.ate_morrer")
+                : L.Net("pvpbounty.por_online", PvpClient.FormatDuration(TotalSeconds(bounty.pot) - bounty.elapsed));
+            string when = bounty.delayLeft > 0d ? L.Net("pvpbounty.vira_cacado", PvpClient.FormatDuration(bounty.delayLeft)) : string.Empty;
+            PvpNet.Broadcast(L.Net("pvpbounty.vale", bounty.targetName, Payout(bounty.pot), length, when), true);
+            Answer(peer, request, byHouse ? 0 : paid, L.Net("pvpbounty.colocou", paid, bounty.targetName));
             if (PvpPeer.TryFindByPlayerId(targetId, out PvpPeer targetPeer))
             {
                 PvpNet.Message(targetPeer.PeerId, bounty.delayLeft > 0d
-                    ? $"<color=#ff5050>Colocaram {bounty.pot} moedas na sua cabeca.</color> Em {PvpClient.FormatDuration(bounty.delayLeft)} voce vira CACADO: " +
-                      "aparece no mapa e perde a zona segura. Ainda da tempo de teleportar." +
-                      (BuyoutCost(bounty.pot) > 0 ? $" Ou pague {BuyoutCost(bounty.pot)} no Cacador de Recompensas." : string.Empty)
-                    : $"<color=#ff5050>Sua bounty subiu para {bounty.pot} moedas.</color>");
+                    ? L.Net("pvpbounty.colocaram_delay", bounty.pot, PvpClient.FormatDuration(bounty.delayLeft), BuyoutCost(bounty.pot) > 0 ? L.Net("pvpbounty.ou_pague", BuyoutCost(bounty.pot)) : string.Empty)
+                    : L.Net("pvpbounty.subiu", bounty.pot));
                 PvpServer.SendState(targetPeer);
             }
             Debug.Log($"[Deadheim PvP] Bounty: {(byHouse ? "casa (admin " + peer.Name + ")" : peer.Name)} ({peer.PlayerId}) +{paid} " +
@@ -234,27 +231,27 @@ namespace Deadheim.Pvp
         private static void Buyout(PvpPeer peer, int paid, int request)
         {
             PvpBountyRecord bounty = Find(peer.PlayerId);
-            if (bounty == null) { Answer(peer, request, 0, "Nao ha bounty na sua cabeca."); return; }
+            if (bounty == null) { Answer(peer, request, 0, L.Net("pvpbounty.sem_bounty")); return; }
             int cost = BuyoutCost(bounty.pot);
-            if (cost <= 0) { Answer(peer, request, 0, "Pagar a propria bounty esta desligado neste servidor."); return; }
-            if (paid < cost) { Answer(peer, request, 0, $"Para encerrar a sua bounty sao {cost} moedas."); return; }
+            if (cost <= 0) { Answer(peer, request, 0, L.Net("pvpbounty.pagar_off")); return; }
+            if (paid < cost) { Answer(peer, request, 0, L.Net("pvpbounty.custo", cost)); return; }
 
             // Pagou a mais (o pote mudou entre o pedido e a resposta): o servidor fica so com o custo
             // e o cliente devolve o troco a si mesmo.
             Finish(bounty);
             Answer(peer, request, cost, paid > cost
-                ? $"Bounty encerrada por {cost} moedas; o troco ({paid - cost}) voltou para voce."
-                : $"Bounty encerrada por {cost} moedas.");
-            PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> pagou {cost} moedas e comprou a propria cabeca.");
+                ? L.Net("pvpbounty.encerrada_troco", cost, paid - cost)
+                : L.Net("pvpbounty.encerrada", cost));
+            PvpNet.Broadcast(L.Net("pvpbounty.comprou", bounty.targetName, cost));
             Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} ({peer.PlayerId}) comprada por {cost}, pagos por {peer.Name} " +
                       $"(pote {bounty.pot}, casa).");
         }
 
         private static string StateText(PvpBountyRecord bounty)
         {
-            if (bounty.delayLeft > 0d) return "cacado em " + PvpClient.FormatDuration(bounty.delayLeft);
-            if (UntilDeath(bounty.pot)) return "CACADO ate morrer";
-            return "CACADO por mais " + PvpClient.FormatDuration(TotalSeconds(bounty.pot) - bounty.elapsed);
+            if (bounty.delayLeft > 0d) return L.Net("pvpbounty.st_delay", PvpClient.FormatDuration(bounty.delayLeft));
+            if (UntilDeath(bounty.pot)) return L.Net("pvpbounty.st_morrer");
+            return L.Net("pvpbounty.st_mais", PvpClient.FormatDuration(TotalSeconds(bounty.pot) - bounty.elapsed));
         }
 
         private static void List(PvpPeer peer)
@@ -263,9 +260,9 @@ namespace Deadheim.Pvp
             foreach (PvpBountyRecord bounty in All)
             {
                 bool online = PvpPeer.TryFindByPlayerId(bounty.targetId, out _);
-                lines.Add($"{bounty.targetName}: {Payout(bounty.pot)} moedas para quem matar, {StateText(bounty)}" + (online ? string.Empty : " (offline, tempo parado)"));
+                lines.Add(L.Net("pvpbounty.linha", bounty.targetName, Payout(bounty.pot), StateText(bounty), online ? string.Empty : L.Net("pvpbounty.offline")));
             }
-            PvpNet.Message(peer.PeerId, lines.Count == 0 ? "Nenhuma bounty ativa." : string.Join("\n", lines), false);
+            PvpNet.Message(peer.PeerId, lines.Count == 0 ? L.Net("pvpbounty.nenhuma") : string.Join("\n", lines), false);
         }
 
         /// <summary>
@@ -321,20 +318,18 @@ namespace Deadheim.Pvp
             Finish(bounty);
             if (refusal != null)
             {
-                PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> morreu, mas a bounty " +
-                                 $"nao paga: {refusal}. O pote fica com a casa.", true);
+                PvpNet.Broadcast(L.Net("pvpbounty2.nao_paga", bounty.targetName, refusal), true);
                 Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} sem pagamento a {killerName} ({killerId}): {refusal}; casa={bounty.pot}.");
                 return;
             }
-            PvpServer.PayCoins(killerId, killerName, payout, "Bounty de " + bounty.targetName);
-            PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{killerName}</color> cacou <color=#ffb347>{bounty.targetName}</color> " +
-                             $"e levou <color=#ffd700>{payout}</color> moedas!", true);
+            PvpServer.PayCoins(killerId, killerName, payout, L.Net("pvpbounty2.de", bounty.targetName));
+            PvpNet.Broadcast(L.Net("pvpbounty2.cacou", killerName, bounty.targetName, payout), true);
             Debug.Log($"[Deadheim PvP] Bounty paga: {killerName} ({killerId}) +{payout} por {bounty.targetName}; casa={bounty.pot - payout}.");
         }
 
         private static string PayoutRefusal(PvpPeer victim, long killerId, string killerName, PvpRules.DeathCause cause)
         {
-            if (cause != PvpRules.DeathCause.PlayerDirect) return "o golpe final nao foi de jogador";
+            if (cause != PvpRules.DeathCause.PlayerDirect) return L.Net("pvpbounty2.golpe");
             // Guilda dos dois na hora da morte (o servidor ja a guarda a cada 10 s; aqui, a de agora).
             PvpPlayerRecord target = PvpServer.RefreshGuild(victim.PlayerId, victim.Name);
             PvpPlayerRecord killer = PvpPeer.TryFindByPlayerId(killerId, out _)
@@ -342,7 +337,7 @@ namespace Deadheim.Pvp
                 : PvpStore.Player(killerId, killerName);
             double window = Math.Max(0d, PvpConfig.BountyAllyHours.Value) * 3600d;
             return PvpPlayerRecord.SharedGuildWithin(killer, target, Now, window)
-                ? $"{killerName} e ou foi da guilda do alvo nas ultimas {PvpConfig.BountyAllyHours.Value:0.#} h"
+                ? L.Net("pvpbounty2.guilda", killerName, PvpConfig.BountyAllyHours.Value.ToString("0.#"))
                 : null;
         }
 
@@ -377,8 +372,7 @@ namespace Deadheim.Pvp
                     {
                         bounty.delayLeft = 0d;
                         PvpServer.SendState(peer);
-                        PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> agora esta " +
-                                         $"<color=#ff5050>CACADO</color> e aparece no mapa. {Payout(bounty.pot)} moedas para quem matar.", true);
+                        PvpNet.Broadcast(L.Net("pvpbounty2.agora_cacado", bounty.targetName, Payout(bounty.pot)), true);
                     }
                 }
                 else
@@ -402,8 +396,8 @@ namespace Deadheim.Pvp
             float refund = Mathf.Clamp(PvpConfig.BountyExpiredRefundPercent.Value, 0f, 100f) / 100f;
             if (refund > 0f)
                 foreach (PvpBountyContribution c in bounty.contributions)
-                    PvpServer.PayCoins(c.id, c.name, Mathf.FloorToInt(c.amount * refund), "Bounty de " + bounty.targetName + " expirou");
-            PvpNet.Broadcast($"<color=#ff8c00>BOUNTY:</color> <color=#ffb347>{bounty.targetName}</color> sobreviveu a bounty.", true);
+                    PvpServer.PayCoins(c.id, c.name, Mathf.FloorToInt(c.amount * refund), L.Net("pvpbounty2.expirou_de", bounty.targetName));
+            PvpNet.Broadcast(L.Net("pvpbounty2.sobreviveu", bounty.targetName), true);
             Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} expirou; devolvido {refund:P0} do pote {bounty.pot}.");
         }
 
@@ -415,16 +409,16 @@ namespace Deadheim.Pvp
         {
             string reason = null;
             if (PvpConfig.BountyPausesInOwnWard.Value && bounty.delayLeft <= 0d && (FlagsOf(peer) & PvpFlags.InOwnWard) != 0)
-                reason = "dentro do proprio ward";
+                reason = L.Net("pvpbounty2.r_ward");
             else if (OnlinePlayers < PvpConfig.BountyMinPlayers.Value)
-                reason = $"menos de {PvpConfig.BountyMinPlayers.Value} jogadores online";
+                reason = L.Net("pvpbounty2.r_poucos", PvpConfig.BountyMinPlayers.Value);
 
             bool paused = reason != null;
             if (paused == rt.Paused) return;
             rt.Paused = paused;
             PvpNet.Message(peer.PeerId, paused
-                ? $"<color=#ff8c00>Bounty pausada:</color> {reason}. O tempo so conta fora dele."
-                : "<color=#ff8c00>Bounty retomada.</color>");
+                ? L.Net("pvpbounty2.pausada", reason)
+                : L.Net("pvpbounty2.retomada"));
             PvpServer.SendState(peer);
             Debug.Log($"[Deadheim PvP] Bounty de {bounty.targetName} {(paused ? "pausada (" + reason + ")" : "retomada")}.");
         }

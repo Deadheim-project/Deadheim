@@ -412,7 +412,7 @@ namespace Deadheim
                 Territorio t = Em(piece.transform.position);
                 if (t == null || PodeConstruir(__instance, t)) return;
                 __result = false;
-                __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Nao da para desmontar", "Territorio " + t.Nome + ": as pecas daqui estao protegidas."));
+                __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("ward.nao_desmontar"), L.T("ward.terr_prot", t.Nome)));
             }
         }
 
@@ -422,9 +422,12 @@ namespace Deadheim
         {
             Player player = usuario as Player;
             if (alvo == null || player == null || player != Player.m_localPlayer) return false;
+            // Tumba: quem morreu dentro do territorio precisa pegar o proprio loot. O acesso a tumba
+            // ja e regulado pelo TombstoneLockPatch (so o dono/guilda), entao aqui nao bloqueia.
+            if (alvo.GetComponentInParent<TombStone>() != null) return false;
             Territorio t = Em(alvo.transform.position);
             if (t == null || !t.Interacao || Admin.LocalPlayerIsAdmin() || t.Permite(player.GetPlayerName())) return false;
-            player.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Voce nao pode mexer nisso", "Territorio " + t.Nome + ": interacao restrita."));
+            player.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("ward.nao_mexer"), L.T("ward.terr_restrita", t.Nome)));
             return true;
         }
 
@@ -543,7 +546,7 @@ namespace Deadheim
             if (t.Construir) regras.Add("construcao restrita");
             if (t.Estruturas) regras.Add("estruturas protegidas");
             if (t.Interacao) regras.Add("interacao restrita");
-            return regras.Count == 0 ? "Sem restricoes" : string.Join(" • ", regras);
+            return regras.Count == 0 ? L.T("ward.sem_restr") : string.Join(" • ", regras);
         }
 
         // -------------------------------------------------------------------- comando /territorio
@@ -583,7 +586,7 @@ namespace Deadheim
             if (sub == "aqui")
             {
                 Territorio t = Em(eu.transform.position);
-                ctx.AddString(t == null ? "Voce nao esta em nenhum territorio." : $"Territorio {t.Nome}, {t.Flags()}.");
+                ctx.AddString(t == null ? L.T("ward.em_nenhum") : L.T("ward.terr_flags", t.Nome, t.Flags()));
                 return;
             }
             if (nome.Length == 0) { ctx.AddString(Ajuda); return; }

@@ -21,7 +21,7 @@ namespace Deadheim
     {
         private const string ToServer = "DH_Lugares_ToServer";
         private const string ToClient = "DH_Lugares_ToClient";
-        private const string FichaBatizarNome = "Ficha de Batizar Lugar";
+        private static readonly string FichaBatizarNome = L.Tok("item.fichabatizar_n");
 
         public static ConfigEntry<bool> Ativo;
         public static ConfigEntry<int> NomeTamanhoMaximo;
@@ -153,14 +153,14 @@ namespace Deadheim
                 int max = Mathf.Max(1, NomeTamanhoMaximo.Value);
                 if (nome.Length == 0 || nome.Length > max)
                 {
-                    Pvp.PvpNet.Message(real, $"Nome invalido (1 a {max} caracteres).");
+                    Pvp.PvpNet.Message(real, L.Net("misc.nome_inv", max));
                     return;
                 }
 
                 EnsureLoaded();
                 if (_lugares.Any(l => string.Equals(l.Nome, nome, StringComparison.OrdinalIgnoreCase)))
                 {
-                    Pvp.PvpNet.Message(real, $"Ja existe um lugar chamado '{nome}'.");
+                    Pvp.PvpNet.Message(real, L.Net("misc.ja_existe", nome));
                     return;
                 }
 
@@ -175,12 +175,12 @@ namespace Deadheim
 
             if (op == "remover")
             {
-                if (!Pvp.PvpServer.IsAdminPeer(real)) { Pvp.PvpNet.Message(real, "So admin."); return; }
+                if (!Pvp.PvpServer.IsAdminPeer(real)) { Pvp.PvpNet.Message(real, L.Net("misc.so_admin")); return; }
                 string nome = pkg.ReadString() ?? "";
                 EnsureLoaded();
                 int removidos = _lugares.RemoveAll(l => string.Equals(l.Nome, nome, StringComparison.OrdinalIgnoreCase));
                 if (removidos > 0) { Save(); BroadcastRemove(nome); }
-                Pvp.PvpNet.Message(real, removidos > 0 ? $"'{nome}' removido." : $"Nao achei '{nome}'.");
+                Pvp.PvpNet.Message(real, removidos > 0 ? L.Net("misc.removido", nome) : L.Net("misc.nao_achei", nome));
             }
         }
 
@@ -315,7 +315,7 @@ namespace Deadheim
 
                         if (string.Equals(args[1], "remover", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (!Vanilla.Admin.LocalPlayerIsAdmin()) { args.Context.AddString("So admin."); return; }
+                            if (!Vanilla.Admin.LocalPlayerIsAdmin()) { args.Context.AddString(L.T("misc.so_admin")); return; }
                             if (args.Length < 3) { args.Context.AddString("batizar remover <nome>"); return; }
                             string alvo = string.Join(" ", args.Args, 2, args.Length - 2);
                             ZPackage rem = new ZPackage();
@@ -325,20 +325,20 @@ namespace Deadheim
                             return;
                         }
 
-                        if (!Ativo.Value) { args.Context.AddString("Batizar lugares esta desligado neste servidor."); return; }
+                        if (!Ativo.Value) { args.Context.AddString(L.T("misc.batizar_off")); return; }
 
                         string nome = string.Join(" ", args.Args, 1, args.Length - 1).Trim();
                         int max = Mathf.Max(1, NomeTamanhoMaximo.Value);
                         if (nome.Length == 0 || nome.Length > max)
                         {
-                            args.Context.AddString($"Nome invalido (1 a {max} caracteres).");
+                            args.Context.AddString(L.T("misc.nome_inv", max));
                             return;
                         }
 
                         Inventory inv = player.GetInventory();
                         if (inv.CountItems(FichaBatizarNome, -1, false) <= 0)
                         {
-                            args.Context.AddString("Voce precisa de uma Ficha de Batizar Lugar.");
+                            args.Context.AddString(L.T("misc.precisa_ficha"));
                             return;
                         }
 
@@ -349,7 +349,7 @@ namespace Deadheim
                         pkg.Write(nome);
                         pkg.Write(pos.x); pkg.Write(pos.y); pkg.Write(pos.z);
                         ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), ToServer, pkg);
-                        args.Context.AddString($"Batizando '{nome}'...");
+                        args.Context.AddString(L.T("misc.batizando", nome));
                     });
             }
         }
@@ -362,7 +362,7 @@ namespace Deadheim
             {
                 if (__instance != Player.m_localPlayer || item?.m_dropPrefab == null) return true;
                 if (item.m_dropPrefab.name != "FichaBatizar") return true;
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Use o comando /batizar <nome> onde você quer batizar.");
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, L.T("misc.use_batizar"));
                 return false;
             }
         }

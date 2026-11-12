@@ -56,12 +56,12 @@ namespace Deadheim.Wards
             if (modo != "add" && modo != "rem") { say("Use add ou rem."); return; }
 
             PrivateArea ward = AlvoWard();
-            if (ward == null) { say("Mire numa ward ou entre na area de uma."); return; }
+            if (ward == null) { say(L.T("ward.mire")); return; }
 
             ZNet.PlayerInfo? alvo = null;
             foreach (ZNet.PlayerInfo info in ZNet.instance.GetPlayerList())
                 if (info.m_name.IndexOf(nome, StringComparison.OrdinalIgnoreCase) >= 0) { alvo = info; break; }
-            if (alvo == null) { say("Jogador online nao encontrado: " + nome); return; }
+            if (alvo == null) { say(L.T("ward.nao_online", nome)); return; }
 
             ZDO zdo = ZDOMan.instance.GetZDO(alvo.Value.m_characterID);
             long id = zdo != null ? zdo.GetLong(ZDOVars.s_playerID, 0L) : 0L;

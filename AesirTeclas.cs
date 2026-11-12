@@ -149,7 +149,7 @@ namespace Deadheim
                     if (Apertou(Ordenar))
                     {
                         if (aberto != null) AesirBaus.Ordenar(Tela, aberto);
-                        else Tela("Abra o bau para ordenar.");
+                        else Tela(L.T("teclas.abra_bau"));
                         return;
                     }
                     if (Apertou(Etiqueta)) { AesirBaus.PedirEtiqueta(Tela, bau); return; }

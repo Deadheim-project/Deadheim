@@ -172,7 +172,7 @@ namespace Deadheim
                     string ficha = pkg.ReadString();
                     if (!FichaParaChave.TryGetValue(ficha, out string chave)) return;
                     bool concedeu = ServerGrant(peer.PlayerId, chave);
-                    Pvp.PvpNet.Message(real, concedeu ? "Resgatado!" : "Voce ja tinha isso.");
+                    Pvp.PvpNet.Message(real, concedeu ? L.Net("misc.resgatado") : L.Net("misc.ja_tinha"));
                     Debug.Log($"[Deadheim] Cosmeticos: {peer.Name} trocou {ficha} por '{chave}' ({(concedeu ? "concedido" : "ja tinha")}).");
                 }
             }
@@ -232,7 +232,7 @@ namespace Deadheim
                 // FichaPet: tratamento especial (abre lista de pets)
                 if (item.m_dropPrefab.name == "FichaPet")
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Esta ficha foi descontinuada. Os pets agora são itens individuais na Loja Deadcoins.");
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, L.T("cosmeticos.ficha_antiga"));
                     return false;
                 }
 
@@ -240,7 +240,7 @@ namespace Deadheim
 
                 if (LocalHas(chave))
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Voce ja tem isso.");
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, L.T("misc.ja_tem"));
                     return false;
                 }
 
@@ -252,7 +252,7 @@ namespace Deadheim
                 pkg.Write("resgatar");
                 pkg.Write(item.m_dropPrefab.name);
                 ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), ToServer, pkg);
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Pedido enviado ao servidor...");
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, L.T("misc.pedido_env"));
                 return false;
             }
         }

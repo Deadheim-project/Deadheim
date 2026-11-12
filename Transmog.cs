@@ -91,10 +91,10 @@ namespace Deadheim
         internal static bool Compatible(string real, string app, out string why)
         {
             why = null;
-            if (!Eligible(real) || !Eligible(app)) { why = "Item nao permitido para transmog."; return false; }
+            if (!Eligible(real) || !Eligible(app)) { why = L.Net("transmog.nao_perm"); return false; }
             ItemDrop.ItemData.SharedData a = SharedOf(real), b = SharedOf(app);
-            if (a.m_itemType != b.m_itemType) { why = "A aparencia precisa ser do mesmo slot."; return false; }
-            if (SameWeightClass.Value && Heavy(a) != Heavy(b)) { why = "A aparencia precisa ser da mesma classe de peso."; return false; }
+            if (a.m_itemType != b.m_itemType) { why = L.Net("transmog.mesmo_slot"); return false; }
+            if (SameWeightClass.Value && Heavy(a) != Heavy(b)) { why = L.Net("transmog.mesma_classe"); return false; }
             return true;
         }
 
@@ -302,7 +302,7 @@ namespace Deadheim
             }
         }
 
-        internal const string NpcOnly = "Fale com o Alfaiate para trocar a aparencia (/transmog off volta ao visual real).";
+        internal static string NpcOnly => L.Net("transmog.npc_only");
 
         internal static List<KeyValuePair<string, string>> ParsePairs(string raw)
         {
@@ -318,7 +318,7 @@ namespace Deadheim
         /// <summary>Confere o lote inteiro sem mudar nada. Null = pode aplicar.</summary>
         internal static string CheckPairs(Pvp.PvpPeer peer, List<KeyValuePair<string, string>> pairs)
         {
-            if (Enabled == null || !Enabled.Value) return "Transmog desativado.";
+            if (Enabled == null || !Enabled.Value) return L.T("transmog.desativado");
             if (pairs.Count == 0) return "Nenhuma troca escolhida.";
             Data d = DataOf(peer.PlayerId);
             int count = d.Chosen.Count;
@@ -327,13 +327,13 @@ namespace Deadheim
             {
                 if (!seen.Add(kv.Key)) return "A mesma peca apareceu duas vezes.";
                 if (kv.Key == kv.Value) { if (d.Chosen.ContainsKey(kv.Key)) count--; continue; }
-                if (!IsVipPeer(peer.PeerId)) return "Transmog e exclusivo Aesir (VIP).";
+                if (!IsVipPeer(peer.PeerId)) return L.Net("transmog.so_aesir");
                 if (!d.Unlocked.Contains(kv.Key) || !d.Unlocked.Contains(kv.Value))
-                    return "Voce ainda nao vestiu essa peca (desbloqueia ao equipar).";
+                    return L.Net("transmog.nao_vestiu");
                 if (!Compatible(kv.Key, kv.Value, out string why)) return why;
                 if (!d.Chosen.ContainsKey(kv.Key)) count++;
             }
-            return count > MaxChoices.Value ? "Limite de trocas ativas atingido." : null;
+            return count > MaxChoices.Value ? L.Net("transmog.limite") : null;
         }
 
         /// <summary>Quantas pecas do lote mudam de aparencia (voltar ao real nao conta).</summary>
@@ -587,25 +587,25 @@ namespace Deadheim
             }
         }
 
-        private static void Say(string msg) => Player.m_localPlayer?.Message(MessageHud.MessageType.Center, msg);
+        private static void Say(string msg) => Player.m_localPlayer?.Message(MessageHud.MessageType.Center, L.Resolve(msg));
 
         /// <summary>/transmog, o botao da Central Deadheim (hub do inventario) com { "/transmog" } e a tecla
         /// do AesirTeclas, com so o nome (abre a janela).</summary>
         internal static void HandleCommand(string[] parts)
         {
             if (Player.m_localPlayer == null) return;
-            if (Enabled != null && !Enabled.Value) { Say("Transmog desativado."); return; }
+            if (Enabled != null && !Enabled.Value) { Say(L.T("transmog.desativado")); return; }
             if (parts.Length > 1 && parts[1].Equals("off", StringComparison.OrdinalIgnoreCase)) { SendOff(parts.Length > 2 ? parts[2] : "*"); return; }
             if (RequireNpc != null && RequireNpc.Value) { Say(NpcOnly); return; }
             if (RequireVip.Value && !VipList.VipListApi.IsLocalPlayerVip())
             {
-                Say("Transmog e exclusivo Aesir (VIP).");
+                Say(L.Net("transmog.so_aesir"));
                 AesirLog.D(35, "/transmog negado: nao e VIP (RequireVip=true).");
                 return;
             }
             if (parts.Length <= 1) { TransmogUi.Toggle(); return; }
             if (parts.Length >= 3) SendSet(parts[1], parts[2]);
-            else Say("Uso: /transmog <real> <aparencia> | /transmog off <real|*>");
+            else Say(L.T("transmog.uso"));
         }
     }
 
@@ -650,11 +650,11 @@ namespace Deadheim
 
         private void Draw(int id)
         {
-            GUILayout.Label("Esquerda: a peca que voce usa. Direita: a aparencia que os outros veem. Desbloqueia ao equipar a peca.");
+            GUILayout.Label(L.T("transmog.ui_ajuda"));
             GUILayout.BeginHorizontal();
 
             GUILayout.BeginVertical(GUILayout.Width(265));
-            GUILayout.Label("Peca real");
+            GUILayout.Label(L.T("transmog.peca_real"));
             _scrollA = GUILayout.BeginScrollView(_scrollA, GUILayout.Height(330));
             foreach (string p in Transmog.LocalUnlocked.OrderBy(x => x))
             {
@@ -665,7 +665,7 @@ namespace Deadheim
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical(GUILayout.Width(265));
-            GUILayout.Label(_real == null ? "Aparencia (escolha uma peca)" : "Aparencia para " + Label(_real));
+            GUILayout.Label(_real == null ? L.T("transmog.aparencia_esc") : L.T("transmog.aparencia_para", Label(_real)));
             _scrollB = GUILayout.BeginScrollView(_scrollB, GUILayout.Height(330));
             if (_real != null)
                 foreach (string p in Transmog.LocalUnlocked.OrderBy(x => x))

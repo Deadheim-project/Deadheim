@@ -69,20 +69,20 @@ namespace Deadheim.Ranking
     {
         public static readonly TipoMorte[] Todos =
         {
-            new TipoMorte { Id = "monstro", Titulo = "Mortes por monstros", Icone = "TrophyGreydwarfBrute", Contadores = new[] { "DeathByEnemyHit" },
-                Descricao = "Vezes que um monstro ou criatura matou você." },
-            new TipoMorte { Id = "jogador", Titulo = "Mortes por jogadores", Icone = "SwordIron", Contadores = new[] { "DeathByPlayerHit" },
-                Descricao = "Vezes que outro jogador matou você (PvP, inclusive na arena se o jogo registrar)." },
-            new TipoMorte { Id = "queda", Titulo = "Mortes por queda", Icone = "TrophyDeer", Contadores = new[] { "DeathByFall", "DeathByImpact" },
-                Descricao = "Quedas e impactos fatais." },
-            new TipoMorte { Id = "afogado", Titulo = "Mortes por afogamento", Icone = "TrophySerpent", Contadores = new[] { "DeathByDrowning", "DeathByWater", "DeathByAshlandsOcean" },
-                Descricao = "Afogado ou na água/oceano de cinzas." },
-            new TipoMorte { Id = "fogo", Titulo = "Mortes por fogo e lava", Icone = "Torch", Contadores = new[] { "DeathByBurning", "DeathByCinderFire", "DeathByIncinerator", "DeathByAshlandsLava", "DeathBySmoke" },
-                Descricao = "Queimado, fogo de cinzas, incinerador, lava ou fumaça." },
-            new TipoMorte { Id = "clima", Titulo = "Mortes por frio e veneno", Icone = "Ruby", Contadores = new[] { "DeathByFreezing", "DeathByPoisoned" },
-                Descricao = "Congelado ou envenenado." },
-            new TipoMorte { Id = "outras", Titulo = "Mortes por acidente", Icone = "Hammer", Contadores = new[] { "DeathByTree", "DeathByTreeTier0", "DeathByTreeTier1", "DeathByTreeTier2", "DeathByTreeTier3", "DeathByTreeTier4", "DeathByTreeTier5", "DeathByCart", "DeathByBoat", "DeathByStructural", "DeathByTurret", "DeathByStalagtite", "DeathByCatapult", "DeathByDrawBridge", "DeathByEdgeOfWorld", "DeathBySelf", "DeathByUndefined" },
-                Descricao = "Árvore caindo, carroça, barco, construção, torre, estalactite, fim do mundo, suicídio e causas não identificadas." },
+            new TipoMorte { Id = "monstro", Titulo = L.T("rankingcat.c_monstro_titulo"), Icone = "TrophyGreydwarfBrute", Contadores = new[] { "DeathByEnemyHit" },
+                Descricao = L.T("rankingcat.c_monstro_descricao") },
+            new TipoMorte { Id = "jogador", Titulo = L.T("rankingcat.c_jogador_titulo"), Icone = "SwordIron", Contadores = new[] { "DeathByPlayerHit" },
+                Descricao = L.T("rankingcat.c_jogador_descricao") },
+            new TipoMorte { Id = "queda", Titulo = L.T("rankingcat.c_queda_titulo"), Icone = "TrophyDeer", Contadores = new[] { "DeathByFall", "DeathByImpact" },
+                Descricao = L.T("rankingcat.c_queda_descricao") },
+            new TipoMorte { Id = "afogado", Titulo = L.T("rankingcat.c_afogado_titulo"), Icone = "TrophySerpent", Contadores = new[] { "DeathByDrowning", "DeathByWater", "DeathByAshlandsOcean" },
+                Descricao = L.T("rankingcat.c_afogado_descricao") },
+            new TipoMorte { Id = "fogo", Titulo = L.T("rankingcat.c_fogo_titulo"), Icone = "Torch", Contadores = new[] { "DeathByBurning", "DeathByCinderFire", "DeathByIncinerator", "DeathByAshlandsLava", "DeathBySmoke" },
+                Descricao = L.T("rankingcat.c_fogo_descricao") },
+            new TipoMorte { Id = "clima", Titulo = L.T("rankingcat.c_clima_titulo"), Icone = "Ruby", Contadores = new[] { "DeathByFreezing", "DeathByPoisoned" },
+                Descricao = L.T("rankingcat.c_clima_descricao") },
+            new TipoMorte { Id = "outras", Titulo = L.T("rankingcat.c_outras_titulo"), Icone = "Hammer", Contadores = new[] { "DeathByTree", "DeathByTreeTier0", "DeathByTreeTier1", "DeathByTreeTier2", "DeathByTreeTier3", "DeathByTreeTier4", "DeathByTreeTier5", "DeathByCart", "DeathByBoat", "DeathByStructural", "DeathByTurret", "DeathByStalagtite", "DeathByCatapult", "DeathByDrawBridge", "DeathByEdgeOfWorld", "DeathBySelf", "DeathByUndefined" },
+                Descricao = L.T("rankingcat.c_outras_descricao") },
         };
 
         public static TipoMorte Achar(string chave)
@@ -492,13 +492,13 @@ namespace Deadheim.Ranking
     {
         public const string Lenda = "lenda";
 
-        public const string GrupoGeral = "Geral";
-        public const string GrupoCombate = "Combate";
-        public const string GrupoProgresso = "Progresso";
-        public const string GrupoOficio = "Ofícios";
-        public const string GrupoExploracao = "Exploração";
-        public const string GrupoRiqueza = "Riqueza";
-        public const string GrupoMortes = "Mortes";
+        public static string GrupoGeral => L.T("ranking.g_geral");
+        public static string GrupoCombate => L.T("ranking.g_combate");
+        public static string GrupoProgresso => L.T("ranking.g_progresso");
+        public static string GrupoOficio => L.T("ranking.g_oficio");
+        public static string GrupoExploracao => L.T("ranking.g_exploracao");
+        public static string GrupoRiqueza => L.T("ranking.g_riqueza");
+        public static string GrupoMortes => L.T("ranking.g_mortes");
 
         public const string PesosPadrao =
             "skills=2|chefes=150|chefes.k=10|monstros=1|pvp.k=15|guerra=5|arena.v=20|missoes=25|build=0.2|craft=0.5|arvores=0.5|mina=0.1|dist=0.002|mar=0.004|online=0.0005";
@@ -510,169 +510,169 @@ namespace Deadheim.Ranking
             {
                 new Categoria
                 {
-                    Id = Lenda, Titulo = "Pontuação geral", Grupo = GrupoGeral, Icone = "TrophyDragonQueen", Unidade = "pts",
-                    Descricao = "Soma de pontos de tudo o que você faz no mundo (como é calculada: passe o mouse).",
+                    Id = Lenda, Titulo = L.T("rankingcat.c_lenda_titulo"), Grupo = GrupoGeral, Icone = "TrophyDragonQueen", Unidade = L.T("rankingcat.c_lenda_unidade"),
+                    Descricao = L.T("rankingcat.c_lenda_descricao"),
                     Calculo = TextoLenda(ctx),
                     Valor = ctx.Lenda,
                     Detalhe = (j, s) => DetalheLenda(j, s, ctx),
                 },
                 new Categoria
                 {
-                    Id = "pvp", Titulo = "Abates PvP", Grupo = GrupoCombate, Icone = "SwordIron", Unidade = "abates",
-                    Descricao = "Jogadores abatidos fora da arena, conferido pelo servidor.",
-                    Calculo = "Jogadores que você abateu fora da arena. Contado e conferido pelo servidor, não pelo seu jogo. K/D = abates ÷ mortes em PvP; PK = abates de inocentes.",
+                    Id = "pvp", Titulo = L.T("rankingcat.c_pvp_titulo"), Grupo = GrupoCombate, Icone = "SwordIron", Unidade = L.T("rankingcat.c_pvp_unidade"),
+                    Descricao = L.T("rankingcat.c_pvp_descricao"),
+                    Calculo = L.T("rankingcat.c_pvp_calculo"),
                     Valor = (j, s) => j.Le(Chave.PvpAbates, s),
                     Detalhe = (j, s) =>
                     {
                         double k = j.Le(Chave.PvpAbates, s), d = j.Le(Chave.PvpMortes, s), pk = j.Le(Chave.PvpPk, s);
-                        string texto = "K/D " + Numero.Decimal(d <= 0d ? k : k / d, 2) + " · " + Numero.Inteiro(d) + (d == 1d ? " morte" : " mortes");
+                        string texto = "K/D " + Numero.Decimal(d <= 0d ? k : k / d, 2) + " · " + Numero.Inteiro(d) + (d == 1d ? L.T("ranking.morte_1") : L.T("ranking.morte_n"));
                         return pk > 0d ? texto + " · PK " + Numero.Inteiro(pk) : texto;
                     },
                 },
                 new Categoria
                 {
-                    Id = "guerra", Titulo = "Guerra de guildas", Grupo = GrupoCombate, Icone = "ShieldBronzeBuckler", Unidade = "pts",
-                    Descricao = "Pontos de guerra de guildas (categoria oculta: o RaidSystem foi removido).",
-                    Calculo = "Sem fonte de dados desde a remocao do RaidSystem.",
+                    Id = "guerra", Titulo = L.T("rankingcat.c_guerra_titulo"), Grupo = GrupoCombate, Icone = "ShieldBronzeBuckler", Unidade = L.T("rankingcat.c_guerra_unidade"),
+                    Descricao = L.T("rankingcat.c_guerra_descricao"),
+                    Calculo = L.T("rankingcat.c_guerra_calculo"),
                     Valor = (j, s) => j.Le(Chave.Guerra, s),
                     Detalhe = (j, s) =>
                     {
                         double c = j.Le(Chave.GuerraConquistas, s);
-                        return c > 0d ? Numero.Inteiro(c) + (c == 1d ? " conquista" : " conquistas") : null;
+                        return c > 0d ? Numero.Inteiro(c) + (c == 1d ? L.T("ranking.conquista_1") : L.T("ranking.conquista_n")) : null;
                     },
                     Disponivel = c => c.TemGuerra,
                 },
                 new Categoria
                 {
-                    Id = "arena", Titulo = "Arena (rating)", Grupo = GrupoCombate, Icone = "SwordBlackmetal", Unidade = "de rating",
-                    Descricao = "Maior rating pessoal nos times de arena (na semana: vitórias).",
-                    Calculo = "Na temporada: seu maior rating pessoal nos times de arena (só entra quem já jogou uma partida). Na semana: vitórias ganhas na semana. Contado pelo servidor.",
+                    Id = "arena", Titulo = L.T("rankingcat.c_arena_titulo"), Grupo = GrupoCombate, Icone = "SwordBlackmetal", Unidade = L.T("rankingcat.c_arena_unidade"),
+                    Descricao = L.T("rankingcat.c_arena_descricao"),
+                    Calculo = L.T("rankingcat.c_arena_calculo"),
                     // Rating sem partida e so o valor inicial: fica fora da lista.
                     Valor = (j, s) => j.Valor(Chave.ArenaPartidas) <= 0d ? 0d : s ? j.DaSemana(Chave.ArenaVitorias) : j.Valor(Chave.Arena),
                     Detalhe = (j, s) =>
                     {
                         double v = j.Valor(Chave.ArenaVitorias), n = j.Valor(Chave.ArenaPartidas);
-                        return Numero.Inteiro(v) + (v == 1d ? " vitória" : " vitórias") + " em " + Numero.Inteiro(n) + (n == 1d ? " partida" : " partidas");
+                        return Numero.Inteiro(v) + (v == 1d ? L.T("ranking.vitoria_1") : L.T("ranking.vitoria_n")) + L.T("ranking.em") + Numero.Inteiro(n) + (n == 1d ? L.T("ranking.partida_1") : L.T("ranking.partida_n"));
                     },
                     Disponivel = c => c.TemArena,
                 },
                 new Categoria
                 {
-                    Id = "chefes", Titulo = "Chefes derrotados", Grupo = GrupoCombate, Icone = "TrophyEikthyr", Unidade = "chefes",
-                    Descricao = "Chefes diferentes derrotados (na semana: chefes novos).",
-                    Calculo = "Quantos chefes DIFERENTES você já derrotou (cada um conta uma vez, não importa quantas vezes o mate). Lido do perfil do personagem. Na semana: chefes novos.",
+                    Id = "chefes", Titulo = L.T("rankingcat.c_chefes_titulo"), Grupo = GrupoCombate, Icone = "TrophyEikthyr", Unidade = L.T("rankingcat.c_chefes_unidade"),
+                    Descricao = L.T("rankingcat.c_chefes_descricao"),
+                    Calculo = L.T("rankingcat.c_chefes_calculo"),
                     Valor = (j, s) => j.Le(Chave.Chefes, s),
                     Detalhe = (j, s) =>
                     {
                         double abates = j.Le(Chave.ChefesAbates, s);
-                        return abates > 0d ? Numero.Inteiro(abates) + (abates == 1d ? " abate de chefe" : " abates de chefe") : null;
+                        return abates > 0d ? Numero.Inteiro(abates) + (abates == 1d ? L.T("ranking.abate_chefe_1") : L.T("ranking.abate_chefe_n")) : null;
                     },
                 },
                 new Categoria
                 {
-                    Id = "monstros", Titulo = "Monstros abatidos", Grupo = GrupoCombate, Icone = "TrophyGreydwarfBrute", Unidade = "abates",
-                    Descricao = "Monstros e criaturas abatidos.",
-                    Calculo = "Monstros e criaturas que você matou (contador EnemyKills do jogo). Chefes NÃO entram aqui, têm categoria própria.",
+                    Id = "monstros", Titulo = L.T("rankingcat.c_monstros_titulo"), Grupo = GrupoCombate, Icone = "TrophyGreydwarfBrute", Unidade = L.T("rankingcat.c_monstros_unidade"),
+                    Descricao = L.T("rankingcat.c_monstros_descricao"),
+                    Calculo = L.T("rankingcat.c_monstros_calculo"),
                     Valor = (j, s) => j.Le(Chave.Monstros, s),
                 },
                 new Categoria
                 {
-                    Id = "habilidades", Titulo = "Soma das habilidades", Grupo = GrupoProgresso, Icone = "SilverNecklace", Unidade = "níveis",
-                    Descricao = "Soma dos níveis de todas as habilidades (na semana: níveis ganhos).",
-                    Calculo = "Soma dos níveis de todas as habilidades do personagem, lida do arquivo do personagem. Cai se você perder nível ao morrer. Na semana: níveis ganhos.",
+                    Id = "habilidades", Titulo = L.T("rankingcat.c_habilidades_titulo"), Grupo = GrupoProgresso, Icone = "SilverNecklace", Unidade = L.T("rankingcat.c_habilidades_unidade"),
+                    Descricao = L.T("rankingcat.c_habilidades_descricao"),
+                    Calculo = L.T("rankingcat.c_habilidades_calculo"),
                     Valor = (j, s) => Math.Floor(j.Le(Chave.Habilidades, s)),
-                    Detalhe = (j, s) => s ? null : "maior: " + Numero.Inteiro(j.Valor(Chave.HabilidadeMaior)),
+                    Detalhe = (j, s) => s ? null : L.T("ranking.maior", Numero.Inteiro(j.Valor(Chave.HabilidadeMaior))),
                 },
                 new Categoria
                 {
-                    Id = "missoes", Titulo = "Missões dos NPCs", Grupo = GrupoProgresso, Icone = "Feathers", Unidade = "missões",
-                    Descricao = "Missões concluídas nos NPCs (as repetíveis contam cada vez).",
-                    Calculo = "Missões concluídas nos NPCs. As repetíveis contam a cada vez. Contado pelo servidor.",
+                    Id = "missoes", Titulo = L.T("rankingcat.c_missoes_titulo"), Grupo = GrupoProgresso, Icone = "Feathers", Unidade = L.T("rankingcat.c_missoes_unidade"),
+                    Descricao = L.T("rankingcat.c_missoes_descricao"),
+                    Calculo = L.T("rankingcat.c_missoes_calculo"),
                     Valor = (j, s) => j.Le(Chave.Missoes, s),
                     Disponivel = c => c.TemMissoes,
                 },
                 new Categoria
                 {
-                    Id = "nivel", Titulo = "Nível do personagem", Grupo = GrupoProgresso, Icone = "Ruby", Unidade = "níveis",
-                    Descricao = "Nível do personagem (EpicMMO).",
-                    Calculo = "Nível do personagem no EpicMMO. Na semana: níveis ganhos.",
+                    Id = "nivel", Titulo = L.T("rankingcat.c_nivel_titulo"), Grupo = GrupoProgresso, Icone = "Ruby", Unidade = L.T("rankingcat.c_nivel_unidade"),
+                    Descricao = L.T("rankingcat.c_nivel_descricao"),
+                    Calculo = L.T("rankingcat.c_nivel_calculo"),
                     Valor = (j, s) => j.Le(Chave.Nivel, s),
                     Disponivel = c => c.TemNivel,
                 },
                 new Categoria
                 {
-                    Id = "online", Titulo = "Tempo de jogo", Grupo = GrupoProgresso, Icone = "Torch", Unidade = "",
-                    Descricao = "Tempo conectado neste mundo, contado pelo servidor.",
-                    Calculo = "Tempo conectado neste mundo, contado pelo servidor de minuto em minuto.",
+                    Id = "online", Titulo = L.T("rankingcat.c_online_titulo"), Grupo = GrupoProgresso, Icone = "Torch", Unidade = "",
+                    Descricao = L.T("rankingcat.c_online_descricao"),
+                    Calculo = L.T("rankingcat.c_online_calculo"),
                     Valor = (j, s) => j.Le(Chave.Online, s),
                     Formato = Numero.Duracao,
                 },
                 new Categoria
                 {
-                    Id = "mortes", Titulo = "Mortes (total)", Grupo = GrupoMortes, Icone = "TrophySkeleton", Unidade = "mortes",
-                    Descricao = "Quantas vezes você morreu, de qualquer causa.",
-                    Calculo = "Todas as mortes do personagem (contador Deaths do jogo), de qualquer causa. Quem morre mais fica em cima. Na semana: mortes da semana.",
+                    Id = "mortes", Titulo = L.T("rankingcat.c_mortes_titulo"), Grupo = GrupoMortes, Icone = "TrophySkeleton", Unidade = L.T("rankingcat.c_mortes_unidade"),
+                    Descricao = L.T("rankingcat.c_mortes_descricao"),
+                    Calculo = L.T("rankingcat.c_mortes_calculo"),
                     Valor = (j, s) => j.Le(Chave.Mortes, s),
                     Detalhe = (j, s) => CausaPrincipal(j, s),
                 },
                 new Categoria
                 {
-                    Id = "construcoes", Titulo = "Peças construídas", Grupo = GrupoOficio, Icone = "Hammer", Unidade = "peças",
-                    Descricao = "Peças construídas com o martelo.",
-                    Calculo = "Cada peça colocada com o martelo conta 1 (contador Builds do jogo). Desmanchar não desconta.",
+                    Id = "construcoes", Titulo = L.T("rankingcat.c_construcoes_titulo"), Grupo = GrupoOficio, Icone = "Hammer", Unidade = L.T("rankingcat.c_construcoes_unidade"),
+                    Descricao = L.T("rankingcat.c_construcoes_descricao"),
+                    Calculo = L.T("rankingcat.c_construcoes_calculo"),
                     Valor = (j, s) => j.Le(Chave.Construcoes, s),
                 },
                 new Categoria
                 {
-                    Id = "fabricacoes", Titulo = "Itens fabricados", Grupo = GrupoOficio, Icone = "Bronze", Unidade = "itens",
-                    Descricao = "Itens fabricados e melhorados nas bancadas.",
-                    Calculo = "Cada vez que você fabrica ou melhora um item numa bancada (conta a operação, não a quantidade do lote).",
+                    Id = "fabricacoes", Titulo = L.T("rankingcat.c_fabricacoes_titulo"), Grupo = GrupoOficio, Icone = "Bronze", Unidade = L.T("rankingcat.c_fabricacoes_unidade"),
+                    Descricao = L.T("rankingcat.c_fabricacoes_descricao"),
+                    Calculo = L.T("rankingcat.c_fabricacoes_calculo"),
                     Valor = (j, s) => j.Le(Chave.Fabricacoes, s),
                 },
                 new Categoria
                 {
-                    Id = "lenhador", Titulo = "Árvores derrubadas", Grupo = GrupoOficio, Icone = "AxeBronze", Unidade = "árvores",
-                    Descricao = "Árvores derrubadas.",
-                    Calculo = "Árvores que você derrubou (contador Tree do jogo: a árvore que cai, não cada machadada).",
+                    Id = "lenhador", Titulo = L.T("rankingcat.c_lenhador_titulo"), Grupo = GrupoOficio, Icone = "AxeBronze", Unidade = L.T("rankingcat.c_lenhador_unidade"),
+                    Descricao = L.T("rankingcat.c_lenhador_descricao"),
+                    Calculo = L.T("rankingcat.c_lenhador_calculo"),
                     Valor = (j, s) => j.Le(Chave.Arvores, s),
                 },
                 new Categoria
                 {
-                    Id = "mineracao", Titulo = "Mineração (golpes)", Grupo = GrupoOficio, Icone = "PickaxeIron", Unidade = "golpes",
-                    Descricao = "Pedra e minério quebrados com a picareta.",
-                    Calculo = "Golpes de picareta em pedra e minério (contador MineHits: cada golpe conta, não a rocha inteira).",
+                    Id = "mineracao", Titulo = L.T("rankingcat.c_mineracao_titulo"), Grupo = GrupoOficio, Icone = "PickaxeIron", Unidade = L.T("rankingcat.c_mineracao_unidade"),
+                    Descricao = L.T("rankingcat.c_mineracao_descricao"),
+                    Calculo = L.T("rankingcat.c_mineracao_calculo"),
                     Valor = (j, s) => j.Le(Chave.Mineracao, s),
                 },
                 new Categoria
                 {
-                    Id = "domados", Titulo = "Animais domados", Grupo = GrupoOficio, Icone = "TrophyBoar", Unidade = "animais",
-                    Descricao = "Criaturas domadas.",
-                    Calculo = "Criaturas que o jogo registrou como domadas no seu personagem (contador CreatureTamed). Atenção: o jogo credita quem é o dono do animal na hora da doma, normalmente o jogador mais próximo, que pode não ser quem o alimentou.",
+                    Id = "domados", Titulo = L.T("rankingcat.c_domados_titulo"), Grupo = GrupoOficio, Icone = "TrophyBoar", Unidade = L.T("rankingcat.c_domados_unidade"),
+                    Descricao = L.T("rankingcat.c_domados_descricao"),
+                    Calculo = L.T("rankingcat.c_domados_calculo"),
                     Valor = (j, s) => j.Le(Chave.Domados, s),
                     // Desligada: o jogo credita a doma ao dono do animal na hora, nao a quem domou.
                     Disponivel = c => false,
                 },
                 new Categoria
                 {
-                    Id = "distancia", Titulo = "Distância percorrida", Grupo = GrupoExploracao, Icone = "TrophyDeer", Unidade = "",
-                    Descricao = "Distância percorrida a pé, de montaria e de barco.",
-                    Calculo = "Tudo o que você se deslocou: a pé, correndo, de montaria, de barco e voando (contador DistanceTraveled). Inclui a distância navegada.",
+                    Id = "distancia", Titulo = L.T("rankingcat.c_distancia_titulo"), Grupo = GrupoExploracao, Icone = "TrophyDeer", Unidade = "",
+                    Descricao = L.T("rankingcat.c_distancia_descricao"),
+                    Calculo = L.T("rankingcat.c_distancia_calculo"),
                     Valor = (j, s) => j.Le(Chave.Distancia, s),
                     Formato = Numero.Distancia,
                 },
                 new Categoria
                 {
-                    Id = "navegacao", Titulo = "Distância navegada", Grupo = GrupoExploracao, Icone = "TrophySerpent", Unidade = "",
-                    Descricao = "Distância navegada.",
-                    Calculo = "Distância percorrida dentro de um barco (contador DistanceSail), no leme ou como passageiro.",
+                    Id = "navegacao", Titulo = L.T("rankingcat.c_navegacao_titulo"), Grupo = GrupoExploracao, Icone = "TrophySerpent", Unidade = "",
+                    Descricao = L.T("rankingcat.c_navegacao_descricao"),
+                    Calculo = L.T("rankingcat.c_navegacao_calculo"),
                     Valor = (j, s) => j.Le(Chave.Navegacao, s),
                     Formato = Numero.Distancia,
                 },
                 new Categoria
                 {
-                    Id = "moedas", Titulo = "Moedas na bolsa", Grupo = GrupoRiqueza, Icone = "Coins", Unidade = "moedas",
-                    Descricao = "Moedas na bolsa (na semana: quanto juntou).",
-                    Calculo = "Moedas que você carrega agora. Sobe e desce: gastar derruba. Na semana: quanto juntou a mais.",
+                    Id = "moedas", Titulo = L.T("rankingcat.c_moedas_titulo"), Grupo = GrupoRiqueza, Icone = "Coins", Unidade = L.T("rankingcat.c_moedas_unidade"),
+                    Descricao = L.T("rankingcat.c_moedas_descricao"),
+                    Calculo = L.T("rankingcat.c_moedas_calculo"),
                     Valor = (j, s) => j.Le(Chave.Moedas, s),
                     Disponivel = c => c.MostrarRiqueza,
                 },
@@ -684,14 +684,14 @@ namespace Deadheim.Ranking
                 TipoMorte t = tipo;
                 lista.Insert(depoisDeMortes++, new Categoria
                 {
-                    Id = "mt_" + t.Id, Titulo = t.Titulo, Grupo = GrupoMortes, Icone = t.Icone, Unidade = "mortes",
+                    Id = "mt_" + t.Id, Titulo = t.Titulo, Grupo = GrupoMortes, Icone = t.Icone, Unidade = L.T("rankingcat.c_mt__unidade"),
                     Descricao = t.Descricao,
                     Calculo = t.Descricao + " Contado pelo jogo no seu personagem (" + string.Join(", ", t.Contadores.Take(3)) + (t.Contadores.Length > 3 ? "..." : "") + "). Na semana: mortes da semana.",
                     Valor = (j, s) => j.Le(t.Chave, s),
                     Detalhe = (j, s) =>
                     {
                         double total = j.Le(Chave.Mortes, s);
-                        return total > 0d ? Numero.Inteiro(100d * j.Le(t.Chave, s) / total) + "% das " + Numero.Inteiro(total) + " mortes" : null;
+                        return total > 0d ? Numero.Inteiro(100d * j.Le(t.Chave, s) / total) + L.T("ranking.das_mortes_suf", Numero.Inteiro(total)) : null;
                     },
                 });
             }
@@ -706,15 +706,15 @@ namespace Deadheim.Ranking
             {
                 if (peso.Value <= 0d || peso.Key == Chave.Domados) continue;
                 if (peso.Key == Chave.Online)
-                    linhas.Add(Numero.Peso(peso.Value * 3600d) + " por hora de jogo");
+                    linhas.Add(L.T("ranking.por_hora", Numero.Peso(peso.Value * 3600d)));
                 else if (peso.Key == Chave.Distancia)
-                    linhas.Add(Numero.Peso(peso.Value * 1000d) + " por km percorrido");
+                    linhas.Add(L.T("ranking.por_km", Numero.Peso(peso.Value * 1000d)));
                 else if (peso.Key == Chave.Navegacao)
-                    linhas.Add(Numero.Peso(peso.Value * 1000d) + " por km navegado");
+                    linhas.Add(L.T("ranking.por_kmnav", Numero.Peso(peso.Value * 1000d)));
                 else
-                    linhas.Add(Numero.Peso(peso.Value) + " por " + NomeUnidade(peso.Key));
+                    linhas.Add(L.T("ranking.por_un", Numero.Peso(peso.Value), NomeUnidade(peso.Key)));
             }
-            return "Pontos: " + string.Join("; ", linhas) + ". Na semana vale só o que você fez desde segunda-feira.";
+            return L.T("ranking.pontos", string.Join("; ", linhas));
         }
 
         /// <summary>A causa que mais matou o jogador, para a coluna de detalhe das mortes.</summary>
@@ -728,27 +728,27 @@ namespace Deadheim.Ranking
                 if (v > maior) { maior = v; melhor = t; }
             }
             if (melhor == null) return null;
-            return "mais: " + melhor.Titulo.Replace("Mortes por ", "") + " (" + Numero.Inteiro(maior) + ")";
+            return L.T("ranking.mais", melhor.Titulo, Numero.Inteiro(maior));
         }
 
         public static string NomeUnidade(string chave)
         {
             switch (chave)
             {
-                case Chave.Habilidades: return "nível de habilidade";
-                case Chave.Chefes: return "chefe diferente derrotado";
-                case Chave.ChefesAbates: return "abate de chefe";
-                case Chave.Monstros: return "monstro abatido";
-                case Chave.PvpAbates: return "abate PvP";
-                case Chave.Guerra: return "ponto de guerra";
-                case Chave.Construcoes: return "peça construída";
-                case Chave.Fabricacoes: return "item fabricado";
-                case Chave.Arvores: return "árvore derrubada";
-                case Chave.Mineracao: return "golpe de picareta";
-                case Chave.Domados: return "animal domado";
-                case Chave.Nivel: return "nível de personagem";
-                case Chave.ArenaVitorias: return "vitória na arena";
-                case Chave.Missoes: return "missão";
+                case Chave.Habilidades: return L.T("ranking.u_Habilidades");
+                case Chave.Chefes: return L.T("ranking.u_Chefes");
+                case Chave.ChefesAbates: return L.T("ranking.u_ChefesAbates");
+                case Chave.Monstros: return L.T("ranking.u_Monstros");
+                case Chave.PvpAbates: return L.T("ranking.u_PvpAbates");
+                case Chave.Guerra: return L.T("ranking.u_Guerra");
+                case Chave.Construcoes: return L.T("ranking.u_Construcoes");
+                case Chave.Fabricacoes: return L.T("ranking.u_Fabricacoes");
+                case Chave.Arvores: return L.T("ranking.u_Arvores");
+                case Chave.Mineracao: return L.T("ranking.u_Mineracao");
+                case Chave.Domados: return L.T("ranking.u_Domados");
+                case Chave.Nivel: return L.T("ranking.u_Nivel");
+                case Chave.ArenaVitorias: return L.T("ranking.u_ArenaVitorias");
+                case Chave.Missoes: return L.T("ranking.u_Missoes");
                 default: return chave;
             }
         }
@@ -774,23 +774,23 @@ namespace Deadheim.Ranking
         {
             switch (chave)
             {
-                case Chave.Habilidades: return "habilidades";
-                case Chave.Chefes: return "chefes";
-                case Chave.ChefesAbates: return "chefes";
-                case Chave.Monstros: return "caça";
-                case Chave.PvpAbates: return "PvP";
-                case Chave.Guerra: return "guerra";
-                case Chave.Construcoes: return "construção";
-                case Chave.Fabricacoes: return "artesanato";
-                case Chave.Arvores: return "lenha";
-                case Chave.Mineracao: return "mineração";
-                case Chave.Distancia: return "viagens";
-                case Chave.Navegacao: return "mar";
-                case Chave.Domados: return "domar";
-                case Chave.Online: return "tempo";
-                case Chave.Nivel: return "nível";
-                case Chave.ArenaVitorias: return "arena";
-                case Chave.Missoes: return "missões";
+                case Chave.Habilidades: return L.T("rankingnc.n_Habilidades");
+                case Chave.Chefes: return L.T("rankingnc.n_Chefes");
+                case Chave.ChefesAbates: return L.T("rankingnc.n_ChefesAbates");
+                case Chave.Monstros: return L.T("rankingnc.n_Monstros");
+                case Chave.PvpAbates: return L.T("rankingnc.n_PvpAbates");
+                case Chave.Guerra: return L.T("rankingnc.n_Guerra");
+                case Chave.Construcoes: return L.T("rankingnc.n_Construcoes");
+                case Chave.Fabricacoes: return L.T("rankingnc.n_Fabricacoes");
+                case Chave.Arvores: return L.T("rankingnc.n_Arvores");
+                case Chave.Mineracao: return L.T("rankingnc.n_Mineracao");
+                case Chave.Distancia: return L.T("rankingnc.n_Distancia");
+                case Chave.Navegacao: return L.T("rankingnc.n_Navegacao");
+                case Chave.Domados: return L.T("rankingnc.n_Domados");
+                case Chave.Online: return L.T("rankingnc.n_Online");
+                case Chave.Nivel: return L.T("rankingnc.n_Nivel");
+                case Chave.ArenaVitorias: return L.T("rankingnc.n_ArenaVitorias");
+                case Chave.Missoes: return L.T("rankingnc.n_Missoes");
                 default: return chave;
             }
         }
@@ -906,7 +906,7 @@ namespace Deadheim.Ranking
             double a = Math.Abs(v);
             if (a >= 1e9) return (v / 1e9).ToString("0.##", Br) + " bi";
             if (a >= 1e6) return (v / 1e6).ToString("0.##", Br) + " mi";
-            if (a >= 1e5) return (v / 1e3).ToString("0", Br) + " mil";
+            if (a >= 1e5) return (v / 1e3).ToString("0", Br) + " " + L.T("ranking.mil");
             return Inteiro(v);
         }
 

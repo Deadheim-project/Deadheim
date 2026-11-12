@@ -55,7 +55,7 @@ namespace Deadheim.Menus
         /// <summary>A Loja Deadcoins de qualquer lugar (era o F7). O servidor confere o VIP de novo a cada pedido.</summary>
         public static string AbrirLojaDeadcoins()
         {
-            if (!TemNpcValheim) return "A Loja Deadcoins vem do mod NpcValheim, que nao esta instalado.";
+            if (!TemNpcValheim) return L.T("integ.sem_npc_loja");
             return Tentar("Loja Deadcoins", () =>
             {
                 Type viewBase = Tipo("NpcValheim.UI.NpcViewBase");
@@ -71,7 +71,7 @@ namespace Deadheim.Menus
         /// <summary>Diario de missoes (era o J).</summary>
         public static string AbrirDiario()
         {
-            if (!TemNpcValheim) return "O diario de missoes vem do mod NpcValheim, que nao esta instalado.";
+            if (!TemNpcValheim) return L.T("integ.sem_npc_diario");
             return Tentar("Diario de missoes", () =>
             {
                 Type tipo = Tipo("NpcValheim.UI.QuestJournal");
@@ -87,7 +87,7 @@ namespace Deadheim.Menus
         /// <summary>Painel da arena: status, times e ranking.</summary>
         public static string AbrirArena()
         {
-            if (!TemNpcValheim) return "A arena vem do mod NpcValheim, que nao esta instalado.";
+            if (!TemNpcValheim) return L.T("integ.sem_npc_arena");
             return Tentar("Arena", () => Invocar("NpcValheim.UI.ArenaHud", "TogglePanel"));
         }
 
@@ -97,7 +97,7 @@ namespace Deadheim.Menus
         /// </summary>
         public static string AbrirPainelAdmin()
         {
-            if (!TemNpcValheim) return "O Painel de Admin vem do mod NpcValheim, que nao esta instalado.";
+            if (!TemNpcValheim) return L.T("integ.sem_npc_admin");
             return Tentar("Painel de Admin", () =>
             {
                 InvocarOpcional("NpcValheim.UI.AdminPanelNet", "ClearStatus");
@@ -144,7 +144,7 @@ namespace Deadheim.Menus
         /// <summary>Menu de montarias (era o U).</summary>
         public static string AbrirMontarias()
         {
-            if (!TemMontarias) return "O menu de montarias vem do mod Montarias, que nao esta instalado.";
+            if (!TemMontarias) return L.T("integ.sem_mont_menu");
             return Tentar("Montarias", () => Invocar("ValheimMontarias.MountMenu", "Open"));
         }
 
@@ -155,7 +155,7 @@ namespace Deadheim.Menus
         /// <summary>Icone Ficha: abre/fecha o painel do mod Deadheim Inventory UI (sem fechar o inventario).</summary>
         public static string AlternarFicha()
         {
-            if (!TemInventario) return "A ficha vem do mod Deadheim Inventory UI, que nao esta instalado.";
+            if (!TemInventario) return L.T("integ.sem_ficha");
             return Tentar("a ficha do personagem", () => Invocar("Deadheim.InventoryUI.InventoryUiApi", "Alternar"));
         }
 
@@ -175,14 +175,14 @@ namespace Deadheim.Menus
 
         public static string AbrirPets()
         {
-            if (!TemMontarias) return "O menu de pets vem do mod Montarias, que nao esta instalado.";
+            if (!TemMontarias) return L.T("integ.sem_mont_pets");
             return Tentar("Pets", () => Invocar("ValheimMontarias.Pets.PetMenu", "Open"));
         }
 
         /// <summary>Aba de admin das montarias (era o F8 fixo no codigo do Montarias).</summary>
         public static string AbrirMontariasAdmin()
         {
-            if (!TemMontarias) return "O mod Montarias nao esta instalado.";
+            if (!TemMontarias) return L.T("integ.sem_mont");
             return Tentar("Montarias (admin)", () =>
             {
                 MethodInfo abrir = AccessTools.Method(Tipo("ValheimMontarias.MountMenu"), "OpenAdmin");
@@ -213,7 +213,7 @@ namespace Deadheim.Menus
                 if (!(_mkKnown?.Invoke(null, null) is bool sabe) || !sabe) return "";
                 if (!(_mkRank?.Invoke(null, null) is int rank)) return "";
                 string nome = _mkName?.Invoke(null, new object[] { rank }) as string;
-                return string.IsNullOrEmpty(nome) ? "" : "Habilidade: " + nome;
+                return string.IsNullOrEmpty(nome) ? "" : L.T("integ.habilidade", nome);
             }
             catch (Exception)
             {
@@ -236,7 +236,7 @@ namespace Deadheim.Menus
         /// <summary>Liga/desliga o painel de diagnostico de rede (era o F8 do AdaptiveNet).</summary>
         public static string AlternarPainelRede()
         {
-            if (!TemAdaptiveNet) return "O mod AdaptiveNet nao esta instalado.";
+            if (!TemAdaptiveNet) return L.T("integ.sem_adaptive");
             return Tentar("Painel de rede", () =>
             {
                 FieldInfo campo = AccessTools.Field(Tipo("AdaptiveNet.DiagnosticsOverlay"), "_visible");
@@ -248,7 +248,7 @@ namespace Deadheim.Menus
         /// <summary>Pede ao servidor para guardar o historico de rede de agora (era o F9 do AdaptiveNet).</summary>
         public static string MarcarIncidenteRede()
         {
-            if (!TemAdaptiveNet) return "O mod AdaptiveNet nao esta instalado.";
+            if (!TemAdaptiveNet) return L.T("integ.sem_adaptive");
             return Tentar("Marcar incidente", () =>
             {
                 MethodInfo marcar = AccessTools.Method(Tipo("AdaptiveNet.NetworkRuntime"), "RequestManualIncidentMarker");
@@ -261,7 +261,7 @@ namespace Deadheim.Menus
 
         private static string Tentar(string oQue, Action acao)
         {
-            if (Player.m_localPlayer == null) return "Entre no mundo primeiro.";
+            if (Player.m_localPlayer == null) return L.T("integ.entre_mundo");
             try
             {
                 acao();
@@ -271,7 +271,7 @@ namespace Deadheim.Menus
             {
                 Exception real = ex is TargetInvocationException tie && tie.InnerException != null ? tie.InnerException : ex;
                 Debug.LogWarning($"[Deadheim] Menus: nao consegui abrir '{oQue}': {real}");
-                return $"Nao consegui abrir {oQue}. Atualize os mods pelo launcher.";
+                return L.T("integ.nao_abriu", oQue);
             }
         }
 

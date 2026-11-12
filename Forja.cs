@@ -181,7 +181,7 @@ namespace Deadheim
                 int alvo = item.m_quality + 1;
                 if (AcimaDoTeto(alvo))
                 {
-                    player.Message(MessageHud.MessageType.Center, $"A Forja de Potencial não passa do nível {NivelMaximo.Value}.");
+                    player.Message(MessageHud.MessageType.Center, L.T("forja.teto", NivelMaximo.Value));
                     return false;
                 }
 
@@ -189,7 +189,7 @@ namespace Deadheim
                 {
                     case Uso.Faltam:
                         player.Message(MessageHud.MessageType.Center,
-                            $"Faltam garantias: o nível {alvo} pede {custo}, você tem {tem}. Para arriscar sem, desligue UsarGarantia em ESC > Deadheim.");
+                            L.T("forja.faltam_msg", alvo, custo, tem));
                         return false;
                     case Uso.Usa:
                         ItemDrop.ItemData.SharedData idolo = IdoloDa(__instance.m_craftRecipe);
@@ -216,7 +216,7 @@ namespace Deadheim
                 inventory.RemoveItem(GarantiaNome, __state.Custo, -1, false);
                 int restam = inventory.CountItems(GarantiaNome, -1, false);
                 player.Message(MessageHud.MessageType.TopLeft,
-                    $"{GarantiaNome}: {__state.Custo} usada{(__state.Custo > 1 ? "s" : "")} no nível {__state.NivelAlvo}. Restam {restam}.");
+                    L.T("forja.usada", GarantiaNome, __state.Custo, __state.NivelAlvo, restam));
                 Debug.Log($"[Deadheim] Forja: {player.GetPlayerName()} usou {__state.Custo} garantia(s) em {__state.Item.m_shared.m_name} " +
                     $"para o nivel {__state.NivelAlvo} (chance {__state.ChanceDoJogo:0.##} -> {ChanceComGarantia.Value:0.##}); restam {restam}.");
             }
@@ -236,7 +236,7 @@ namespace Deadheim
                 string botao = null;
                 if (AcimaDoTeto(alvo))
                 {
-                    __instance.m_itemCraftType.text = $"Nível máximo da Forja de Potencial: {NivelMaximo.Value}";
+                    __instance.m_itemCraftType.text = L.T("forja.nivel_max", NivelMaximo.Value);
                     __instance.m_craftButton.interactable = false;
                     return;
                 }
@@ -245,18 +245,18 @@ namespace Deadheim
                 switch (Avaliar(player, alvo, out int custo, out int tem))
                 {
                     case Uso.Usa:
-                        __instance.m_itemCraftType.text = $"<color=#9be564>{GarantiaNome}: {Porcento(ChanceComGarantia.Value)} de sucesso</color> (usa {custo}, tem {tem})";
-                        botao = "Refinar com garantia";
+                        __instance.m_itemCraftType.text = L.T("forja.chance", GarantiaNome, Porcento(ChanceComGarantia.Value), custo, tem);
+                        botao = L.T("forja.refinar_gar");
                         break;
                     case Uso.Faltam:
-                        __instance.m_itemCraftType.text = $"<color=#f0a040>Faltam garantias: o nível {alvo} pede {custo}, você tem {tem}</color>";
+                        __instance.m_itemCraftType.text = L.T("forja.faltam_ui", alvo, custo, tem);
                         __instance.m_craftButton.interactable = false;
                         break;
                     case Uso.DesligadaPeloJogador:
-                        __instance.m_itemCraftType.text = $"Garantia desligada nos seus ajustes: {ChancesSemGarantia(idolo)}";
+                        __instance.m_itemCraftType.text = L.T("misc.gar_off", ChancesSemGarantia(idolo));
                         break;
                     default:
-                        __instance.m_itemCraftType.text = $"Sem garantia: {ChancesSemGarantia(idolo)}";
+                        __instance.m_itemCraftType.text = L.T("misc.sem_gar", ChancesSemGarantia(idolo));
                         break;
                 }
 

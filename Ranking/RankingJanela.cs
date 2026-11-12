@@ -23,7 +23,7 @@ namespace Deadheim.Ranking
     ///    meia-noite, e embaixo, sempre visivel, a sua linha: posicao, valor e quanto falta para
     ///    passar quem esta na sua frente.
     ///  - Clicar num nome abre a ficha do jogador: a posicao dele em todas as categorias.
-    ///  - "Feitos do mundo": o primeiro a derrotar cada chefe.
+    ///  - L.T("rankingui.feitos"): o primeiro a derrotar cada chefe.
     ///
     /// A foto vem do servidor (RankingRede) e e renovada sozinha com a janela aberta; tudo o mais
     /// (ordenar, filtrar, buscar) e feito aqui, sem esperar a rede. Os widgets sao montados uma vez
@@ -122,7 +122,7 @@ namespace Deadheim.Ranking
             if (Player.m_localPlayer == null) return;
             if (!RankingRede.Ligado)
             {
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, "O ranking está desligado neste servidor.");
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, L.T("rankingui.desligado"));
                 return;
             }
             if (!ValheimUi.EnsureAssets()) return;
@@ -182,7 +182,7 @@ namespace Deadheim.Ranking
             RankingRede.Pedir(180f);
             RankingRede.Foto foto = RankingRede.Atual;
             Player player = Player.m_localPlayer;
-            if (foto == null || player == null) return "Os melhores do mundo, em cada categoria";
+            if (foto == null || player == null) return L.T("rankingui.melhores");
             // A Central pergunta duas vezes por segundo; a resposta so muda com foto nova.
             if (_resumoVersao == RankingRede.Versao && _resumo != null) return _resumo;
             _resumoVersao = RankingRede.Versao;
@@ -194,12 +194,12 @@ namespace Deadheim.Ranking
         {
             RankingContexto ctx = RankingRede.Contexto(foto.TemGuerra, foto.TemNivel, foto.TemArena, foto.TemMissoes);
             Categoria lenda = Categorias.Todas(ctx).FirstOrDefault(c => c.Id == Categorias.Lenda);
-            if (lenda == null) return "Os melhores do mundo, em cada categoria";
+            if (lenda == null) return L.T("rankingui.melhores");
             List<Linha> linhas = Classificacao.Classificar(foto.Jogadores, lenda, false);
             Linha minha = linhas.FirstOrDefault(l => l.Jogador.Id == player.GetPlayerID());
             return minha == null
-                ? $"{linhas.Count} vikings na Pontuação geral · entre para a lista"
-                : $"Você é #{minha.Posicao} de {linhas.Count} na Pontuação geral · {lenda.Formatar(minha.Valor)} pts";
+                ? L.T("rankingui.na_lista", linhas.Count)
+                : L.T("rankingui.voce_e", minha.Posicao, linhas.Count, lenda.Formatar(minha.Valor));
         }
 
         // ================================================================== ciclo
@@ -362,7 +362,7 @@ namespace Deadheim.Ranking
             barra.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f); // so para o arrasto
             barra.gameObject.AddComponent<DragWindow>().Target = _painel;
 
-            var titulo = ValheimUi.CreateLabel(barra, "Ranking", 34, ValheimUi.Orange, TextAlignmentOptions.Center, display: true);
+            var titulo = ValheimUi.CreateLabel(barra, L.T("rankingui.titulo"), 34, ValheimUi.Orange, TextAlignmentOptions.Center, display: true);
             ValheimUi.Stretch((RectTransform)titulo.transform, 80f, 6f);
 
             var x = ValheimUi.CreateButton(_painel, "X", 36f, 36f, 18);
@@ -405,8 +405,8 @@ namespace Deadheim.Ranking
                 }
                 CriarBotaoCategoria(c.Id, c.Titulo, c.Icone);
             }
-            Cabecalho(_listaCategorias, "MUNDO");
-            CriarBotaoCategoria(IdFeitos, "Feitos do mundo", "TrophyFader");
+            Cabecalho(_listaCategorias, L.T("rankingui.mundo"));
+            CriarBotaoCategoria(IdFeitos, L.T("rankingui.feitos"), "TrophyFader");
         }
 
         private static void Cabecalho(RectTransform lista, string texto)
@@ -441,7 +441,7 @@ namespace Deadheim.Ranking
             });
             _botoesCategoria.Add(b);
             ComDica(botao.gameObject, () => id == IdFeitos
-                ? "O primeiro viking a derrotar cada chefe neste mundo, com a data. Quem já tinha o chefe antes do ranking existir aparece como \"antes do ranking\"."
+                ? L.T("rankingui.feitos_desc")
                 : _cats.FirstOrDefault(x => x.Id == id)?.Calculo);
         }
 
@@ -454,17 +454,17 @@ namespace Deadheim.Ranking
             var barra = ValheimUi.Strip(direita, TextAnchor.MiddleLeft, 6f);
             ValheimUi.Anchor(barra, new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -36f), Vector2.zero);
 
-            _bTemporada = Segmento(barra, "Temporada", () => { _semana = false; Invalidar(); });
-            _bSemana = Segmento(barra, "Semana", () => { _semana = true; Invalidar(); });
-            ComDica(_bTemporada.gameObject, () => "Temporada: o total acumulado de cada jogador desde que o ranking existe neste mundo.");
-            ComDica(_bSemana.gameObject, () => "Semana: só o que cada jogador fez desde segunda-feira 00:00 (horário do servidor). Zera toda segunda.");
+            _bTemporada = Segmento(barra, L.T("rankingui.temporada"), () => { _semana = false; Invalidar(); });
+            _bSemana = Segmento(barra, L.T("rankingui.semana"), () => { _semana = true; Invalidar(); });
+            ComDica(_bTemporada.gameObject, () => L.T("rankingui.dica_temp"));
+            ComDica(_bSemana.gameObject, () => L.T("rankingui.dica_sem"));
             Espaco(barra, 10f);
-            _bVikings = Segmento(barra, "Vikings", () => { _visao = Visao.Vikings; Invalidar(); });
-            _bGuildas = Segmento(barra, "Guildas", () => { _visao = Visao.Guildas; Invalidar(); });
-            ComDica(_bVikings.gameObject, () => "Vikings: cada jogador na sua posição. Admins do servidor não entram no ranking.");
-            ComDica(_bGuildas.gameObject, () => "Guildas: a soma da categoria entre todos os membros da guilda. Aparece também o melhor membro.");
+            _bVikings = Segmento(barra, L.T("rankingui.vikings"), () => { _visao = Visao.Vikings; Invalidar(); });
+            _bGuildas = Segmento(barra, L.T("rankingui.guildas"), () => { _visao = Visao.Guildas; Invalidar(); });
+            ComDica(_bVikings.gameObject, () => L.T("rankingui.dica_vik"));
+            ComDica(_bGuildas.gameObject, () => L.T("rankingui.dica_gui"));
             Espaco(barra, 10f);
-            _bFiltro = Segmento(barra, "Todos", () =>
+            _bFiltro = Segmento(barra, L.T("rankingui.todos"), () =>
             {
                 _filtro = (Filtro)(((int)_filtro + 1) % 3);
                 Invalidar();
@@ -473,7 +473,7 @@ namespace Deadheim.Ranking
             _campoBusca = ValheimUi.CreateInputField(direita, _busca, 210f, 34f, 15);
             var rectBusca = (RectTransform)_campoBusca.transform;
             ValheimUi.Anchor(rectBusca, Vector2.one, Vector2.one, new Vector2(-210f, -35f), new Vector2(0f, -1f));
-            var dica = ValheimUi.CreateLabel(_campoBusca.textViewport, "Buscar viking...", 15, new Color(1f, 1f, 1f, 0.35f), TextAlignmentOptions.Left);
+            var dica = ValheimUi.CreateLabel(_campoBusca.textViewport, L.T("rankingui.buscar"), 15, new Color(1f, 1f, 1f, 0.35f), TextAlignmentOptions.Left);
             ValheimUi.Stretch((RectTransform)dica.transform, 0f, 0f);
             _campoBusca.placeholder = dica;
             _campoBusca.onValueChanged.AddListener(texto =>
@@ -506,9 +506,9 @@ namespace Deadheim.Ranking
 
             // ---- tabela
             _cabecalhoTabela = ValheimUi.CreateRect("Colunas", direita);
-            _colNome = ColunaTitulo("Viking", TextAlignmentOptions.BottomLeft);
-            _colValor = ColunaTitulo("Valor", TextAlignmentOptions.BottomRight);
-            _colDetalhe = ColunaTitulo("Detalhe", TextAlignmentOptions.BottomLeft);
+            _colNome = ColunaTitulo(L.T("rankingui.col_viking"), TextAlignmentOptions.BottomLeft);
+            _colValor = ColunaTitulo(L.T("rankingui.col_valor"), TextAlignmentOptions.BottomRight);
+            _colDetalhe = ColunaTitulo(L.T("rankingui.col_detalhe"), TextAlignmentOptions.BottomLeft);
             var colPos = ColunaTitulo("#", TextAlignmentOptions.Bottom);
             ValheimUi.Anchor((RectTransform)colPos.transform, Vector2.zero, new Vector2(0f, 1f), new Vector2(6f, 0f), new Vector2(58f, 0f));
             ValheimUi.Anchor((RectTransform)_colNome.transform, Vector2.zero, new Vector2(0.48f, 1f), new Vector2(108f, 0f), Vector2.zero);
@@ -539,7 +539,7 @@ namespace Deadheim.Ranking
             ValheimUi.Anchor((RectTransform)_rodapeTexto.transform, Vector2.zero, Vector2.one, new Vector2(108f, 4f), new Vector2(-150f, -4f));
             _rodapeTexto.overflowMode = TextOverflowModes.Ellipsis;
 
-            _irParaMim = ValheimUi.CreateButton(_rodape, "Ir para mim", 128f, 36f, 14);
+            _irParaMim = ValheimUi.CreateButton(_rodape, L.T("rankingui.ir_mim"), 128f, 36f, 14);
             ValheimUi.Anchor((RectTransform)_irParaMim.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-138f, -18f), new Vector2(-10f, 18f));
             _irParaMim.onClick.AddListener(IrParaMim);
 
@@ -647,20 +647,20 @@ namespace Deadheim.Ranking
             Marcar(_bGuildas, _visao == Visao.Guildas, !feitos);
             Marcar(_bFiltro, _filtro != Filtro.Todos, !feitos && _visao == Visao.Vikings);
             var tFiltro = _bFiltro.GetComponentInChildren<TextMeshProUGUI>();
-            if (tFiltro != null) tFiltro.text = _filtro == Filtro.Online ? "Só online" : _filtro == Filtro.MinhaGuilda ? "Minha guilda" : "Todos";
+            if (tFiltro != null) tFiltro.text = _filtro == Filtro.Online ? L.T("rankingui.so_online") : _filtro == Filtro.MinhaGuilda ? L.T("rankingui.minha_guilda") : L.T("rankingui.todos");
 
             if (feitos)
             {
                 _iconeCabecalho.sprite = ValheimUi.FindItemIcon("TrophyFader");
-                _tituloCabecalho.text = "Feitos do mundo";
-                _descricaoCabecalho.text = "O primeiro viking a derrotar cada chefe neste mundo.";
+                _tituloCabecalho.text = L.T("rankingui.feitos");
+                _descricaoCabecalho.text = L.T("rankingui.feitos_curto");
             }
             else
             {
                 _iconeCabecalho.sprite = ValheimUi.FindItemIcon(cat.Icone);
-                _tituloCabecalho.text = cat.Titulo + " <size=16><color=#9e9480>(?)</color></size>" + (_visao == Visao.Guildas ? " <size=18><color=#9e9480>· por guilda</color></size>" : "");
+                _tituloCabecalho.text = cat.Titulo + " <size=16><color=#9e9480>(?)</color></size>" + (_visao == Visao.Guildas ? L.T("rankingui.por_guilda") : "");
                 _descricaoCabecalho.text = _semana && foto != null
-                    ? cat.Descricao + "  <color=#ffd75a>Semana desde " + Data(foto.InicioSemana, false) + ".</color>"
+                    ? cat.Descricao + L.T("rankingui.semana_desde", Data(foto.InicioSemana, false))
                     : cat.Descricao;
             }
             _iconeCabecalho.enabled = _iconeCabecalho.sprite != null;
@@ -669,7 +669,7 @@ namespace Deadheim.Ranking
             {
                 PosicionarTabela(false);
                 MostrarLinhas(0);
-                _vazio.text = "Carregando o ranking do servidor...";
+                _vazio.text = L.T("rankingui.carregando");
                 Rodape(null, "", false);
                 return;
             }
@@ -718,9 +718,9 @@ namespace Deadheim.Ranking
 
         private void DesenharVikings(RankingRede.Foto foto, Categoria cat)
         {
-            _colNome.text = "Viking";
+            _colNome.text = L.T("rankingui.col_viking");
             _colValor.text = cat.Titulo;
-            _colDetalhe.text = "Detalhe";
+            _colDetalhe.text = L.T("rankingui.col_detalhe");
 
             Player player = Player.m_localPlayer;
             long eu = player.GetPlayerID();
@@ -766,21 +766,21 @@ namespace Deadheim.Ranking
             }
 
             if (todas.Count == 0)
-                _vazio.text = _semana ? "Ninguém pontuou aqui nesta semana ainda.\nSeja o primeiro!" : "Ninguém pontuou aqui ainda.\nSeja o primeiro!";
+                _vazio.text = _semana ? L.T("rankingui.ninguem_sem") : L.T("rankingui.ninguem_aqui");
             else if (mostrar.Count == 0)
-                _vazio.text = busca.Length > 0 ? $"Ninguém com \"{busca}\" no nome ou na guilda."
-                    : _filtro == Filtro.Online ? "Ninguém desta lista está online agora."
-                    : string.IsNullOrEmpty(minhaGuilda) ? "Você não tem guilda." : "Ninguém da sua guilda nesta lista.";
-            else if (tabela.Count == 0) _vazio.text = "Só estes vikings pontuaram: estão todos no pódio.";
+                _vazio.text = busca.Length > 0 ? L.T("rankingui.ninguem_busca", busca)
+                    : _filtro == Filtro.Online ? L.T("rankingui.ninguem_online")
+                    : string.IsNullOrEmpty(minhaGuilda) ? L.T("rankingui.sem_guilda") : L.T("rankingui.ninguem_guilda");
+            else if (tabela.Count == 0) _vazio.text = L.T("rankingui.so_podio");
             else _vazio.text = "";
             if (mostrar.Count - pular > MaxLinhas)
-                _colDetalhe.text = $"Detalhe <color=#7a7262>· os {MaxLinhas} primeiros de {mostrar.Count - pular}; busque um nome</color>";
+                _colDetalhe.text = L.T("rankingui.os_primeiros", MaxLinhas, mostrar.Count - pular);
 
             // ---- a minha linha
             int indice = todas.FindIndex(l => l.Jogador.Id == eu);
             if (indice < 0)
             {
-                Rodape("—", $"<b>{Esc(player.GetPlayerName())}</b>  <color=#9e9480>ainda fora desta lista.</color>  {DicaEntrar(cat)}", false);
+                Rodape("—", $"<b>{Esc(player.GetPlayerName())}</b>  <color=#9e9480>{L.T("rankingui.fora_lista_t")}</color>  {DicaEntrar(cat)}", false);
                 return;
             }
             Linha eu1 = todas[indice];
@@ -792,18 +792,18 @@ namespace Deadheim.Ranking
                 // Quem esta logo a frente (com valor maior; empate divide a posicao).
                 Linha frente = todas.Take(indice).LastOrDefault(l => l.Valor > eu1.Valor);
                 if (frente != null)
-                    texto += $"  <color=#9e9480>· faltam</color> {Falta(cat, frente.Valor - eu1.Valor)} <color=#9e9480>para passar</color> {Esc(frente.Jogador.Nome)} <color=#9e9480>(#{frente.Posicao})</color>";
+                    texto += $"  <color=#9e9480>{L.T("rankingui.faltam")}</color> {Falta(cat, frente.Valor - eu1.Valor)} <color=#9e9480>{L.T("rankingui.para_passar")}</color> {Esc(frente.Jogador.Nome)} <color=#9e9480>(#{frente.Posicao})</color>";
             }
-            else texto += "  <color=#ffd75a>· você lidera!</color>";
-            texto += $"  <color=#9e9480>· de {todas.Count}</color>";
+            else texto += "  <color=#ffd75a>" + L.T("rankingui.voce_lidera") + "</color>";
+            texto += $"  <color=#9e9480>{L.T("rankingui.de_n", todas.Count)}</color>";
             Rodape("#" + eu1.Posicao, texto, eu1.Posicao > 3 || !comPodio);
         }
 
         private void DesenharGuildas(RankingRede.Foto foto, Categoria cat)
         {
-            _colNome.text = "Guilda";
+            _colNome.text = L.T("rankingui.col_guilda");
             _colValor.text = cat.Titulo;
-            _colDetalhe.text = "Destaque";
+            _colDetalhe.text = L.T("rankingui.col_destaque");
 
             List<Classificacao.LinhaGuilda> todas = Classificacao.Guildas(foto.Jogadores, cat, _semana);
             string busca = (_busca ?? "").Trim();
@@ -839,19 +839,19 @@ namespace Deadheim.Ranking
                     cat.Formatar(g.Valor), destaque, null);
             }
 
-            _vazio.text = todas.Count == 0 ? "Nenhuma guilda pontuou aqui ainda."
-                : mostrar.Count == 0 ? $"Nenhuma guilda com \"{busca}\" no nome."
-                : tabela.Count == 0 && pular > 0 ? "Só estas guildas pontuaram." : "";
+            _vazio.text = todas.Count == 0 ? L.T("rankingui.nenhuma_guilda")
+                : mostrar.Count == 0 ? L.T("rankingui.nenhuma_busca", busca)
+                : tabela.Count == 0 && pular > 0 ? L.T("rankingui.so_guildas") : "";
 
             if (string.IsNullOrEmpty(minha))
             {
-                Rodape("—", "<color=#9e9480>Você não tem guilda. Crie ou entre numa no NPC Registrador de Guildas.</color>", false);
+                Rodape("—", "<color=#9e9480>" + L.T("rankingui.sem_guilda_npc") + "</color>", false);
                 return;
             }
             int indice = todas.FindIndex(g => string.Equals(g.Guilda, minha, StringComparison.OrdinalIgnoreCase));
             if (indice < 0)
             {
-                Rodape("—", $"<b>{Esc(minha)}</b>  <color=#9e9480>ainda não pontuou nesta categoria.</color>", false);
+                Rodape("—", $"<b>{Esc(minha)}</b>  <color=#9e9480>{L.T("rankingui.guilda_nao")}</color>", false);
                 return;
             }
             Classificacao.LinhaGuilda a = todas[indice];
@@ -860,17 +860,17 @@ namespace Deadheim.Ranking
             {
                 Classificacao.LinhaGuilda frente = todas.Take(indice).LastOrDefault(g => g.Valor > a.Valor);
                 if (frente != null)
-                    texto += $"  <color=#9e9480>· faltam</color> {Falta(cat, frente.Valor - a.Valor)} <color=#9e9480>para passar</color> {Esc(frente.Guilda)}";
+                    texto += $"  <color=#9e9480>{L.T("rankingui.faltam")}</color> {Falta(cat, frente.Valor - a.Valor)} <color=#9e9480>{L.T("rankingui.para_passar")}</color> {Esc(frente.Guilda)}";
             }
-            else texto += "  <color=#ffd75a>· sua guilda lidera!</color>";
+            else texto += "  <color=#ffd75a>" + L.T("rankingui.guilda_lidera") + "</color>";
             Rodape("#" + a.Posicao, texto, a.Posicao > 3);
         }
 
         private void DesenharFeitos(RankingRede.Foto foto)
         {
-            _colNome.text = "Chefe";
-            _colValor.text = "Primeiro";
-            _colDetalhe.text = "Quando";
+            _colNome.text = L.T("rankingui.col_chefe");
+            _colValor.text = L.T("rankingui.col_primeiro");
+            _colDetalhe.text = L.T("rankingui.col_quando");
             PosicionarTabela(false);
 
             IList<string> chefes = _ctx.OrdemChefes;
@@ -887,25 +887,25 @@ namespace Deadheim.Ranking
                 if (meu) meus++;
 
                 string nomeChefe = Esc(Localizar(chefe)) + "  <size=13><color=#9e9480>" +
-                                   (derrotaram == 0 ? "ninguém derrotou ainda" : derrotaram == 1 ? "1 viking derrotou" : derrotaram + " vikings derrotaram") +
+                                   (derrotaram == 0 ? L.T("rankingui.ninguem_derrotou") : derrotaram == 1 ? L.T("rankingui.um_derrotou") : L.T("rankingui.n_derrotaram", derrotaram)) +
                                    "</color></size>";
                 bool mundoDerrotou = foto.ChefesDoMundo.Contains(chefe);
                 string quem = f != null
                     ? Esc(f.Nome) + (string.IsNullOrEmpty(f.Guilda) ? "" : " <color=#9e9480>[" + Esc(f.Guilda) + "]</color>")
-                    : mundoDerrotou ? "<color=#9e9480>derrotado, sem registro</color>" : "<color=#9e9480>seja o primeiro!</color>";
-                string quando = f == null ? (mundoDerrotou ? "antes do ranking" : "")
-                    : f.Antigo ? "antes do ranking · " + Data(f.Em, false) : Data(f.Em, true);
+                    : mundoDerrotou ? "<color=#9e9480>" + L.T("rankingui.sem_registro") + "</color>" : "<color=#9e9480>" + L.T("rankingui.seja_primeiro") + "</color>";
+                string quando = f == null ? (mundoDerrotou ? L.T("rankingui.antes") : "")
+                    : f.Antigo ? L.T("rankingui.antes_data", Data(f.Em, false)) : Data(f.Em, true);
                 PreencherLinha(_linhas[i], i, meu, i + 1, "", Trofeu(chefe), nomeChefe, quem, quando,
                     f != null ? foto.Achar(f.Id) : null);
             }
-            _vazio.text = chefes.Count == 0 ? "Nenhum chefe configurado (PvP > BossOrder)." : "";
-            _descricaoCabecalho.text = "O primeiro viking a derrotar cada chefe neste mundo." +
-                (foto.DiaDoMundo > 0 ? $"  <color=#ffd75a>Dia {foto.DiaDoMundo} · o mundo já derrotou {foto.ChefesDoMundo.Count} de {chefes.Count} chefes.</color>" : "");
+            _vazio.text = chefes.Count == 0 ? L.T("rankingui.sem_chefe") : "";
+            _descricaoCabecalho.text = L.T("rankingui.feitos_curto") +
+                (foto.DiaDoMundo > 0 ? L.T("rankingui.dia_mundo", foto.DiaDoMundo, foto.ChefesDoMundo.Count, chefes.Count) : "");
 
             Rodape(meus > 0 ? meus.ToString() : "—",
                 meus > 0
-                    ? $"<color=#ffd75a>Você tem {meus} {(meus == 1 ? "feito" : "feitos")} do mundo.</color> <color=#9e9480>Ninguém tira: é seu para sempre.</color>"
-                    : "<color=#9e9480>Derrote um chefe antes de todo mundo e o seu nome fica aqui para sempre.</color>",
+                    ? L.T("rankingui.voce_tem", meus, meus == 1 ? L.T("rankingui.feito_1") : L.T("rankingui.feito_n"))
+                    : L.T("rankingui.seu_nome"),
                 false);
         }
 
@@ -999,7 +999,7 @@ namespace Deadheim.Ranking
             c.Medalha.text = lugar + "º";
             c.Medalha.color = CorLugar(lugar);
             c.Nome.text = vazio ? "<color=#9e9480>—</color>" : Esc(nome) + (jogador != null && jogador.Conectado ? " <color=#7fd08a>•</color>" : "");
-            c.Guilda.text = vazio ? "<color=#9e9480>lugar livre</color>" : guilda;
+            c.Guilda.text = vazio ? "<color=#9e9480>" + L.T("rankingui.lugar_livre") + "</color>" : guilda;
             c.Valor.text = valor;
             bool eu = jogador != null && Player.m_localPlayer != null && jogador.Id == Player.m_localPlayer.GetPlayerID();
             c.Nome.color = eu ? ValheimUi.Yellow : ValheimUi.Beige;
@@ -1041,16 +1041,16 @@ namespace Deadheim.Ranking
             if (foto == null)
             {
                 bool demorou = Time.unscaledTime - _abertaEm > 10f;
-                _subtitulo.text = demorou ? "O servidor não respondeu." : "Conectando ao servidor...";
+                _subtitulo.text = demorou ? L.T("rankingui.srv_nao_resp") : L.T("rankingui.conectando");
                 if (demorou && _vazio != null)
-                    _vazio.text = "O servidor não mandou o ranking.\nEle precisa estar com a mesma versão do Deadheim que você.";
+                    _vazio.text = L.T("rankingui.srv_nao_mandou");
                 return;
             }
             int idade = Mathf.Max(0, Mathf.RoundToInt(Time.unscaledTime - RankingRede.RecebidaEm));
-            string quando = idade < 5 ? "atualizado agora" : idade < 60 ? $"atualizado há {idade} s" : $"atualizado há {idade / 60} min";
+            string quando = idade < 5 ? L.T("rankingui.att_agora") : idade < 60 ? L.T("rankingui.att_s", idade) : L.T("rankingui.att_min", idade / 60);
             string mundo = (string.IsNullOrEmpty(foto.Mundo) ? "" : Esc(foto.Mundo) + "  ·  ")
-                           + (foto.DiaDoMundo > 0 ? "dia " + foto.DiaDoMundo + "  ·  " : "");
-            _subtitulo.text = $"{mundo}{foto.Jogadores.Count} vikings  ·  <color=#7fd08a>{foto.Online.Count} online</color>  ·  {quando}  ·  <color=#7a7262>setas do teclado trocam a categoria · clique num nome para ver a ficha</color>";
+                           + (foto.DiaDoMundo > 0 ? L.T("rankingui.dia", foto.DiaDoMundo) + "  ·  " : "");
+            _subtitulo.text = L.T("rankingui.subtitulo", mundo, foto.Jogadores.Count, foto.Online.Count, quando);
         }
 
         // ================================================================== ficha
@@ -1105,8 +1105,8 @@ namespace Deadheim.Ranking
             var partes = new List<string>();
             if (!string.IsNullOrEmpty(j.Guilda)) partes.Add("<color=#ffa13c>[" + Esc(j.Guilda) + "]</color>");
             if (j.Aesir) partes.Add("<color=#ffd75a>AESIR</color>");
-            partes.Add(j.Conectado ? "<color=#7fd08a>• online</color>" : "visto " + Relativo(foto.Agora - j.UltimaVez));
-            if (j.PrimeiraVez > 0d) partes.Add("no mundo desde " + Data(j.PrimeiraVez, false));
+            partes.Add(j.Conectado ? "<color=#7fd08a>• " + L.T("rankingui.online_pt") + "</color>" : L.T("rankingui.visto", Relativo(foto.Agora - j.UltimaVez)));
+            if (j.PrimeiraVez > 0d) partes.Add(L.T("rankingui.desde", Data(j.PrimeiraVez, false)));
             var sub = ValheimUi.CreateLabel(painel, string.Join("  ·  ", partes), 14, ValheimUi.Muted, TextAlignmentOptions.Center);
             ValheimUi.Anchor((RectTransform)sub.transform, new Vector2(0f, 1f), Vector2.one, new Vector2(24f, -92f), new Vector2(-24f, -64f));
 
@@ -1142,18 +1142,18 @@ namespace Deadheim.Ranking
             int feitos = foto.Feitos.Count(f => f.Id == j.Id);
             if (feitos > 0)
             {
-                var f = ValheimUi.CreateLabel(lista, $"<color=#ffd75a>{feitos} {(feitos == 1 ? "feito" : "feitos")} do mundo:</color> " +
+                var f = ValheimUi.CreateLabel(lista, $"<color=#ffd75a>{feitos} {(feitos == 1 ? L.T("rankingui.feito_1") : L.T("rankingui.feito_n"))} do mundo:</color> " +
                     string.Join(", ", foto.Feitos.Where(ft => ft.Id == j.Id).Select(ft => Esc(Localizar(ft.Chefe)))), 14, ValheimUi.Beige, TextAlignmentOptions.Left);
                 ValheimUi.SetHeight(f.gameObject, 30f);
             }
 
             double pvpK = j.Valor(Chave.PvpAbates), pvpD = j.Valor(Chave.PvpMortes), mortes = j.Valor(Chave.Mortes);
             var rodape = ValheimUi.CreateLabel(painel,
-                $"Mortes: {Numero.Inteiro(mortes)}  ·  PvP: {Numero.Inteiro(pvpK)} abates / {Numero.Inteiro(pvpD)} mortes  ·  maior habilidade {Numero.Inteiro(j.Valor(Chave.HabilidadeMaior))}",
+                L.T("rankingui.resumo", Numero.Inteiro(mortes), Numero.Inteiro(pvpK), Numero.Inteiro(pvpD), Numero.Inteiro(j.Valor(Chave.HabilidadeMaior))),
                 13, ValheimUi.Muted, TextAlignmentOptions.Center);
             ValheimUi.Anchor((RectTransform)rodape.transform, Vector2.zero, new Vector2(1f, 0f), new Vector2(20f, 34f), new Vector2(-20f, 66f));
 
-            var fechar = ValheimUi.CreateButton(painel, "Fechar", 150f, 32f, 15);
+            var fechar = ValheimUi.CreateButton(painel, L.T("rankingui.fecha"), 150f, 32f, 15);
             ValheimUi.Anchor((RectTransform)fechar.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-75f, 8f), new Vector2(75f, 38f));
             fechar.onClick.AddListener(FecharFicha);
         }
@@ -1163,7 +1163,7 @@ namespace Deadheim.Ranking
         private static string Movimento(int? mov, bool semana)
         {
             if (semana) return "";
-            if (!mov.HasValue) return "<color=#ffd75a>novo</color>";
+            if (!mov.HasValue) return "<color=#ffd75a>" + L.T("rankingui.novo") + "</color>";
             if (mov.Value > 0) return "<color=#7fd08a>+" + mov.Value + "</color>";
             if (mov.Value < 0) return "<color=#e06a5c>" + mov.Value + "</color>";
             return "<color=#5e584c>=</color>";
@@ -1180,12 +1180,12 @@ namespace Deadheim.Ranking
 
         private static string GuildaTexto(RankingJogador j)
         {
-            string texto = string.IsNullOrEmpty(j.Guilda) ? "sem guilda" : "[" + Esc(j.Guilda) + "]";
+            string texto = string.IsNullOrEmpty(j.Guilda) ? L.T("rankingui.sem_guilda_t") : "[" + Esc(j.Guilda) + "]";
             if (j.Aesir) texto += "  <color=#ffd75a>AESIR</color>";
             return texto;
         }
 
-        private static string Membros(int n) => n == 1 ? "1 membro" : n + " membros";
+        private static string Membros(int n) => n == 1 ? L.T("rankingui.membro_1") : L.T("rankingui.membros_n", n);
 
         private static string Falta(Categoria c, double diferenca)
         {
@@ -1198,10 +1198,10 @@ namespace Deadheim.Ranking
         {
             switch (c.Id)
             {
-                case "pvp": return "<color=#9e9480>Abata um jogador fora da arena para entrar.</color>";
-                case "guerra": return "<color=#9e9480>Entre numa guilda e lute na guerra de castelos.</color>";
-                case "chefes": return "<color=#9e9480>Derrote o primeiro chefe para entrar.</color>";
-                default: return _semana ? "<color=#9e9480>Jogue nesta semana para aparecer aqui.</color>" : "<color=#9e9480>Seus números chegam em até um minuto.</color>";
+                case "pvp": return "<color=#9e9480>" + L.T("rankingui.cta_pvp") + "</color>";
+                case "guerra": return "<color=#9e9480>" + L.T("rankingui.cta_guerra") + "</color>";
+                case "chefes": return "<color=#9e9480>" + L.T("rankingui.cta_chefes") + "</color>";
+                default: return _semana ? "<color=#9e9480>" + L.T("rankingui.cta_sem") + "</color>" : "<color=#9e9480>" + L.T("rankingui.cta_num") + "</color>";
             }
         }
 
@@ -1247,11 +1247,11 @@ namespace Deadheim.Ranking
 
         private static string Relativo(double segundos)
         {
-            if (segundos < 120d) return "agora há pouco";
-            if (segundos < 3600d) return "há " + Mathf.FloorToInt((float)(segundos / 60d)) + " min";
-            if (segundos < 86400d) return "há " + Mathf.FloorToInt((float)(segundos / 3600d)) + " h";
+            if (segundos < 120d) return L.T("rankingui.rel_agora");
+            if (segundos < 3600d) return L.T("rankingui.rel_min", Mathf.FloorToInt((float)(segundos / 60d)));
+            if (segundos < 86400d) return L.T("rankingui.rel_h", Mathf.FloorToInt((float)(segundos / 3600d)));
             int dias = Mathf.FloorToInt((float)(segundos / 86400d));
-            return dias == 1 ? "ontem" : "há " + dias + " dias";
+            return dias == 1 ? L.T("rankingui.ontem") : L.T("rankingui.rel_dias", dias);
         }
 
         // ================================================================== tipos

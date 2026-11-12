@@ -92,11 +92,11 @@ namespace Deadheim.Pvp
                 case PvpNet.OpMessage:
                 {
                     bool center = pkg.ReadBool();
-                    ShowMessage(pkg.ReadString(), center);
+                    ShowMessage(L.Resolve(pkg.ReadString()), center);
                     break;
                 }
                 case PvpNet.OpReward:
-                    GiveReward(pkg.ReadString(), pkg.ReadInt(), pkg.ReadString());
+                    GiveReward(pkg.ReadString(), pkg.ReadInt(), L.Resolve(pkg.ReadString()));
                     break;
                 case PvpNet.OpBountyResult:
                     OnBountyResult(pkg.ReadInt(), pkg.ReadInt(), pkg.ReadString());
@@ -110,7 +110,7 @@ namespace Deadheim.Pvp
                         {
                             Target = pkg.ReadString(),
                             Payout = pkg.ReadInt(),
-                            State = pkg.ReadString(),
+                            State = L.Resolve(pkg.ReadString()),
                             Online = pkg.ReadBool(),
                             Hunted = pkg.ReadBool(),
                         });
@@ -121,7 +121,7 @@ namespace Deadheim.Pvp
                 case PvpNet.OpPveResult:
                 {
                     LastPveOk = pkg.ReadBool();
-                    LastPveMessage = pkg.ReadString();
+                    LastPveMessage = L.Resolve(pkg.ReadString());
                     PveMessageRevision++;
                     ShowMessage(LastPveMessage, true);
                     break;
@@ -130,8 +130,8 @@ namespace Deadheim.Pvp
                 {
                     int count = pkg.ReadInt();
                     List<string> lines = new List<string>();
-                    for (int i = 0; i < count; i++) lines.Add(pkg.ReadString());
-                    string mine = pkg.ReadString();
+                    for (int i = 0; i < count; i++) lines.Add(L.Resolve(pkg.ReadString()));
+                    string mine = L.Resolve(pkg.ReadString());
                     PvpRankPanel.Show(lines, mine);
                     break;
                 }
@@ -191,7 +191,7 @@ namespace Deadheim.Pvp
                 || !player.m_nview.IsValid() || !player.m_nview.IsOwner()) return;
             _punishPending = false;
 
-            ShowMessage(Avisos.Pvp("Deslogou em combate", "Voce morreu onde saiu."), true);
+            ShowMessage(Avisos.Pvp(L.T("misc.desl_combate"), L.T("misc.morreu_onde")), true);
             HitData hit = new HitData { m_hitType = HitData.HitType.Undefined, m_point = player.GetCenterPoint() };
             hit.m_damage.m_damage = 1e7f;
             player.m_nview.InvokeRPC("RPC_Damage", hit);
@@ -222,6 +222,7 @@ namespace Deadheim.Pvp
                 int back = PvpCoinMath.BountyRefund(taken, kept);
                 if (back > 0) GiveReward("Coins", back, "Devolvido");
             }
+            text = L.Resolve(text);
             LastBountyMessage = text ?? string.Empty;
             BountyMessageRevision++;
             ShowMessage(text, true);

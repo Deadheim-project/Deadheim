@@ -43,12 +43,12 @@ namespace Deadheim.Pvp
         {
             if (!PvpConfig.Active)
             {
-                context?.AddString("O modulo de PvP esta desligado neste servidor.");
+                context?.AddString(L.T("pvpcmd.modulo_off"));
                 return;
             }
             if (ZNet.instance == null || Player.m_localPlayer == null)
             {
-                context?.AddString("Entre no mundo primeiro.");
+                context?.AddString(L.T("pvpcmd.entre"));
                 return;
             }
             action();
@@ -59,44 +59,42 @@ namespace Deadheim.Pvp
             Player player = Player.m_localPlayer;
             if (player == null)
             {
-                context?.AddString("Entre no mundo primeiro.");
+                context?.AddString(L.T("pvpcmd.entre"));
                 return;
             }
 
             StringBuilder text = new StringBuilder();
-            text.AppendLine("Estado: " + PvpHud.Compose(player));
-            text.AppendLine($"Dano PvP x{PvpConfig.DamageMultiplier.Value:0.##}; no seu territorio x{PvpConfig.DamageMultiplier.Value * PvpConfig.WardDefenseMultiplier.Value:0.##}.");
+            text.AppendLine(L.T("pvpcmd.estado", PvpHud.Compose(player)));
+            text.AppendLine(L.T("pvpcmd.dano", PvpConfig.DamageMultiplier.Value.ToString("0.##"), (PvpConfig.DamageMultiplier.Value * PvpConfig.WardDefenseMultiplier.Value).ToString("0.##")));
             text.AppendLine(PvpBosses.RangeText(PvpBosses.LocalTier));
             if (PvpClient.BountyPot > 0)
-                text.AppendLine($"Bounty na sua cabeca: {PvpClient.BountyPot} moedas" +
-                                (PvpBounty.BuyoutCost(PvpClient.BountyPot) > 0 ? $" (pagar: {PvpBounty.BuyoutCost(PvpClient.BountyPot)} no Cacador de Recompensas)." : "."));
+                text.AppendLine(L.T("pvpcmd.bounty_cab", PvpClient.BountyPot, PvpBounty.BuyoutCost(PvpClient.BountyPot) > 0 ? L.T("pvpcmd.pagar", PvpBounty.BuyoutCost(PvpClient.BountyPot)) : "."));
             else if (PvpClient.BountyCooldownRemaining > 0d)
-                text.AppendLine("Ninguem pode colocar bounty em voce por " + PvpClient.FormatDuration(PvpClient.BountyCooldownRemaining) + ".");
+                text.AppendLine(L.T("pvpcmd.ninguem_bounty", PvpClient.FormatDuration(PvpClient.BountyCooldownRemaining)));
             string guild = PvpGuilds.GuildOf(player);
             text.AppendLine(guild != null
-                ? $"Guilda: {guild} (sem fogo amigo entre membros)"
-                : "Sem guilda: entre numa pelo mod Guilds para ter aliados sem fogo amigo.");
+                ? L.T("pvpcmd.guilda", guild)
+                : L.T("pvpcmd.sem_guilda"));
             if (PvpGroups.IsAvailable)
-                text.AppendLine("Grupo (Groups): quem esta no seu grupo tambem e aliado, sem fogo amigo.");
+                text.AppendLine(L.T("pvpcmd.grupo"));
             text.AppendLine(PvpState.PkCount > 0
-                ? $"Contador de PK: {PvpState.PkCount} abate(s) que deram PK."
-                : "Contador de PK: 0.");
+                ? L.T("pvpcmd.contador", PvpState.PkCount)
+                : L.T("pvpcmd.contador0"));
             if (PvpState.IsPk)
-                text.AppendLine((PvpState.IsPkPermanent ? "Voce e PK PERMANENTE (so sai morto por jogador)" : "Voce e PK")
-                                + $": se morrer, perde {PvpConfig.PkSkillLossMultiplier.Value:0.#}x skill{PvpServer.PenaltyText(PvpState.PkPenalty)}.");
+                text.AppendLine((PvpState.IsPkPermanent ? L.T("pvpcmd.voce_pk_perm") : L.T("pvpcmd.voce_pk"))
+                                + L.T("pvpcmd.se_morrer", PvpConfig.PkSkillLossMultiplier.Value.ToString("0.#"), L.Resolve(PvpServer.PenaltyText(PvpState.PkPenalty))));
             if (PvpPve.IsLocal)
-                text.AppendLine($"Voce e PvE ({PvpPve.Title}): nao luta com jogadores; skill x{PvpConfig.PveSkillMultiplier.Value:0.##}. " +
-                                "Para voltar ao PvP, fale com o Juiz de Guerra.");
+                text.AppendLine(L.T("pvpcmd.voce_pve", PvpPve.Title, PvpConfig.PveSkillMultiplier.Value.ToString("0.##")));
             else if (PvpConfig.PveEnabled.Value)
-                text.AppendLine("Para sair do PvP (virar PvE), fale com o Juiz de Guerra.");
+                text.AppendLine(L.T("pvpcmd.sair_pvp"));
             if (PvpState.IsAggressor)
-                text.AppendLine("Voce e AGRESSOR: bateu primeiro. Quem te matar agora nao vira PK (voce nao perde nada a mais).");
+                text.AppendLine(L.T("pvpcmd.agressor"));
             string castle = PvpBridge.Castle(player.transform.position);
             if (castle != null)
-                text.AppendLine($"Castelo {castle}, dono: {PvpBridge.Owner(player.transform.position) ?? "ninguem"}.");
+                text.AppendLine(L.T("pvpcmd.castelo", castle, PvpBridge.Owner(player.transform.position) ?? L.T("pvpcmd.ninguem")));
             if (PvpConfig.BountyEnabled.Value)
-                text.AppendLine("Bounty (cabeca a premio): fale com o Cacador de Recompensas.");
-            text.Append("/rank - ranking K/D");
+                text.AppendLine(L.T("pvpcmd.bounty_info"));
+            text.Append(L.T("pvpcmd.rank_cmd"));
             foreach (string line in text.ToString().Split('\n')) context?.AddString(line.TrimEnd('\r'));
         }
 
@@ -105,7 +103,7 @@ namespace Deadheim.Pvp
             Terminal context = args.Context;
             if (!Vanilla.Admin.LocalPlayerIsAdmin())
             {
-                context.AddString("So admin.");
+                context.AddString(L.T("pvpcmd.so_admin"));
                 return;
             }
 

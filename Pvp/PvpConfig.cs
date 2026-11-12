@@ -116,6 +116,7 @@ namespace Deadheim.Pvp
         // ------------------------------------------------------------------- tumba
         public static ConfigEntry<bool> TombstoneOwnerOnly;
         public static ConfigEntry<bool> TombstoneGuildAccess;
+        public static ConfigEntry<float> TombstoneOpenToAllDays;
 
         // ----------------------------------------------------------------- retreat
         public static ConfigEntry<float> HearthstoneCooldownSeconds;
@@ -364,6 +365,9 @@ namespace Deadheim.Pvp
                 "So o dono abre a propria tumba (admins tambem).");
             TombstoneGuildAccess = Bind(config, tomb, "TombstoneGuildAccess", false,
                 "Membros da guilda do dono tambem abrem a tumba (o dono precisa estar por perto).");
+
+            TombstoneOpenToAllDays = Bind(config, tomb, "TombstoneOpenToAllDays", 2f,
+                "Dias (reais, de servidor ligado) depois da morte em que a tumba fica aberta para todos. 0 = nunca abre para todos.");
 
             HearthstoneCooldownSeconds = Bind(config, "PvP - Retreat", "HearthstoneCooldownSeconds", 1800f,
                 "Segundos (de jogo aberto) entre dois usos da pedra de retorno (Hearthstone). Recarga propria, independente do /retreat. 0 = sem recarga.");

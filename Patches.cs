@@ -352,7 +352,7 @@ namespace Deadheim
                 if (!IsVipPortal(portalTag)) return true;
 
                 // 3. Jogador não é VIP tentando acessar portal VIP: Bloqueia!
-                player.Message(MessageHud.MessageType.Center, "Only Aesir can access this portal.");
+                player.Message(MessageHud.MessageType.Center, L.T("misc.portal_aesir"));
                 return false;
             }
 
@@ -382,7 +382,7 @@ namespace Deadheim
 
                 if (piece.gameObject.name == "AesirChest")
                 {
-                    __instance.Message(MessageHud.MessageType.Center, "Esse báu é apenas para Aesir's");
+                    __instance.Message(MessageHud.MessageType.Center, L.T("misc.bau_aesir"));
                     return false;
                 }
 

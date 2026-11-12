@@ -173,7 +173,7 @@ namespace Deadheim.Wards
 
             if (GetFuel(area) >= MaxFuel)
             {
-                user.Message(MessageHud.MessageType.Center, Avisos.Info("Ward ja esta cheio"));
+                user.Message(MessageHud.MessageType.Center, Avisos.Info(L.T("ward.cheio")));
                 return true;
             }
 

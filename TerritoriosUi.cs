@@ -82,7 +82,7 @@ namespace Deadheim
             GUILayout.EndScrollView();
 
             GUILayout.Space(6f);
-            GUILayout.Label("Novo territorio (onde voce esta):");
+            GUILayout.Label(L.T("ward.novo_terr"));
             GUILayout.BeginHorizontal();
             _novoNome = GUILayout.TextField(_novoNome, 32, GUILayout.Width(120f)).Replace(" ", "_");
             _novoRaio = GUILayout.TextField(_novoRaio, 5, GUILayout.Width(45f));
@@ -104,7 +104,7 @@ namespace Deadheim
             Territorios.Territorio atual = Atual;
             if (atual == null)
             {
-                GUILayout.Label("Escolha um territorio na lista ou crie um novo.");
+                GUILayout.Label(L.T("ward.escolha_terr"));
             }
             else
             {

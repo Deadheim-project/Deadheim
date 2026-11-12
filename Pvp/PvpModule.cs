@@ -22,6 +22,7 @@ namespace Deadheim.Pvp
         public static void Init(ConfigFile config)
         {
             PvpConfig.Bind(config);
+            DiscordLog.Bind(config);
             // Acesso de guilda aos wards pelo mod Guilds.
             if (Wards.WardBridge.GuildOfPlayer == null)
                 Wards.WardBridge.GuildOfPlayer = PvpGuilds.GuildOf;

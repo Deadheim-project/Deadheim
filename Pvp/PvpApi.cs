@@ -88,25 +88,25 @@ namespace Deadheim.Pvp
         /// </summary>
         public static string PlaceBounty(string target, int amount)
         {
-            if (!Active()) return "Entre no mundo primeiro.";
-            if (!PvpConfig.BountyEnabled.Value) return "A bounty esta desligada neste servidor.";
+            if (!Active()) return L.T("pvpapi.entre");
+            if (!PvpConfig.BountyEnabled.Value) return L.T("pvpapi.bounty_off");
             target = (target ?? string.Empty).Trim();
-            if (target.Length == 0) return "Escreva o nome do alvo.";
-            if (amount <= 0) return "Valor invalido.";
-            if (amount < PvpConfig.BountyMinimum.Value) return $"A bounty minima e {PvpConfig.BountyMinimum.Value} moedas.";
+            if (target.Length == 0) return L.T("pvpapi.nome_alvo");
+            if (amount <= 0) return L.T("pvpapi.invalido");
+            if (amount < PvpConfig.BountyMinimum.Value) return L.T("pvpapi.minima", PvpConfig.BountyMinimum.Value);
             Player local = Player.m_localPlayer;
             if (local != null && string.Equals(local.GetPlayerName(), target, StringComparison.OrdinalIgnoreCase))
-                return "Voce nao pode colocar bounty em si mesmo.";
+                return L.T("pvpapi.si_mesmo");
             return PvpClient.SendBounty("place", target, amount, out string refusal) ? null : refusal;
         }
 
         /// <summary>Paga para encerrar a propria bounty. Devolve o motivo de nao ter pedido, ou null.</summary>
         public static string PayOwnBounty()
         {
-            if (!Active()) return "Entre no mundo primeiro.";
-            if (PvpClient.BountyPot <= 0) return "Nao ha bounty na sua cabeca.";
+            if (!Active()) return L.T("pvpapi.entre");
+            if (PvpClient.BountyPot <= 0) return L.T("pvpapi.sem_bounty");
             int cost = PvpBounty.BuyoutCost(PvpClient.BountyPot);
-            if (cost <= 0) return "Pagar a propria bounty esta desligado neste servidor.";
+            if (cost <= 0) return L.T("pvpapi.pagar_off");
             return PvpClient.SendBounty("pay", null, cost, out string refusal) ? null : refusal;
         }
 
@@ -149,7 +149,7 @@ namespace Deadheim.Pvp
         {
             string refusal = PvpPve.LocalSwitchRefusal(toPve);
             if (refusal != null) return refusal;
-            if (!PvpNet.Ready) return "Entre no mundo primeiro.";
+            if (!PvpNet.Ready) return L.T("pvpapi.entre");
             PvpClient.SendPve("set", toPve ? "pve" : "pvp");
             return null;
         }
@@ -168,13 +168,13 @@ namespace Deadheim.Pvp
         /// <summary>Os atributos do PvE e do PvP que o admin ajusta no menu do Juiz de Guerra, nesta ordem.</summary>
         private static IEnumerable<(ConfigEntryBase Entry, string Label)> PveSettingEntries()
         {
-            yield return (PvpConfig.PveEnabled, "Troca para o PvE liberada");
-            yield return (PvpConfig.PveSwitchCooldownHours, "Espera entre trocas (horas)");
-            yield return (PvpConfig.PveTitle, "Título de quem é PvE");
-            yield return (PvpConfig.PveSkillMultiplier, "Ganho de skill no PvE (x)");
-            yield return (PvpConfig.PvpSkillMultiplier, "Ganho de skill no PvP (x)");
-            yield return (PvpConfig.PveResourceRate, "Coleta no PvE (x, 0 = a do mundo)");
-            yield return (PvpConfig.PvpResourceRate, "Coleta no PvP (x, 0 = a do mundo)");
+            yield return (PvpConfig.PveEnabled, L.T("pvpapi.s_pve_on"));
+            yield return (PvpConfig.PveSwitchCooldownHours, L.T("pvpapi.s_espera"));
+            yield return (PvpConfig.PveTitle, L.T("pvpapi.s_titulo"));
+            yield return (PvpConfig.PveSkillMultiplier, L.T("pvpapi.s_skill_pve"));
+            yield return (PvpConfig.PvpSkillMultiplier, L.T("pvpapi.s_skill_pvp"));
+            yield return (PvpConfig.PveResourceRate, L.T("pvpapi.s_coleta_pve"));
+            yield return (PvpConfig.PvpResourceRate, L.T("pvpapi.s_coleta_pvp"));
         }
 
         /// <summary>
@@ -209,8 +209,8 @@ namespace Deadheim.Pvp
         /// </summary>
         public static string SetPveSetting(string key, string value)
         {
-            if (!PvpNet.Ready) return "Entre no mundo primeiro.";
-            if (!LocalIsAdmin()) return "So admin.";
+            if (!PvpNet.Ready) return L.T("pvpapi.entre");
+            if (!LocalIsAdmin()) return L.T("pvpapi.so_admin");
             foreach ((ConfigEntryBase entry, string _) in PveSettingEntries())
             {
                 if (entry == null || !string.Equals(entry.Definition.Key, key, StringComparison.Ordinal)) continue;
@@ -220,13 +220,13 @@ namespace Deadheim.Pvp
                 }
                 catch (Exception)
                 {
-                    return "Valor invalido para " + key + ".";
+                    return L.T("pvpapi.valor_inv", key);
                 }
                 return Ajustes.AjustesRede.Definir(Plugin.PluginGUID, entry.Definition.Section, key, (value ?? string.Empty).Trim())
                     ? null
-                    : "Entre no mundo primeiro.";
+                    : L.T("pvpapi.entre");
             }
-            return "Atributo desconhecido: " + key + ".";
+            return L.T("pvpapi.desconhecido", key);
         }
 
         public static string LastSettingMessage() => _lastSettingMessage;
@@ -243,7 +243,7 @@ namespace Deadheim.Pvp
         internal static void OnSettingResult(bool ok, string key, string value, string message)
         {
             _lastSettingOk = ok;
-            _lastSettingMessage = ok ? $"{key} = {value} (ja valendo para todos)." : "O servidor recusou: " + message;
+            _lastSettingMessage = ok ? L.T("pvpapi.valendo", key, value) : L.T("pvpapi.recusou", L.Resolve(message));
             _settingRevision++;
         }
     }

@@ -96,6 +96,7 @@ namespace Deadheim.Pvp
 
         public static void Broadcast(string text, bool center = false)
         {
+            DiscordLog.Pvp(L.Resolve(text, true));
             ZPackage pkg = Package(OpMessage);
             pkg.Write(center);
             pkg.Write(text);

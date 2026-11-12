@@ -333,7 +333,7 @@ namespace Deadheim.Pvp
                     dropped += amount;
                 }
                 if (dropped > 0)
-                    player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp("Carga perdida", $"{dropped} item(ns) cairam no chao."));
+                    player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp(L.T("pvppatch.carga_t"), L.T("pvppatch.itens_chao", dropped)));
                 return dropped;
             }
 
@@ -355,7 +355,7 @@ namespace Deadheim.Pvp
                 Vector3 at = pos + Vector3.up * 0.7f + UnityEngine.Random.insideUnitSphere * 0.6f;
                 if (!TryDrop(coins, amount, at)) return 0;
                 inventory.RemoveItem(coins, amount);
-                player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp("Moedas perdidas", $"{amount} moedas cairam no chao."));
+                player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp(L.T("pvppatch.moedas_t"), L.T("pvppatch.moedas_chao", amount)));
                 return amount;
             }
 
@@ -383,7 +383,7 @@ namespace Deadheim.Pvp
                     dropped++;
                 }
                 if (dropped > 0)
-                    player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp("PK: itens perdidos", $"{dropped} item(ns) cairam no chao."));
+                    player.Message(MessageHud.MessageType.TopLeft, Avisos.Pvp(L.T("pvppatch.pk_itens"), L.T("pvppatch.itens_chao", dropped)));
                 return dropped;
             }
 
@@ -435,7 +435,7 @@ namespace Deadheim.Pvp
 
                 if (multiplier <= 0f)
                 {
-                    __instance.m_player?.Message(MessageHud.MessageType.TopLeft, Avisos.Ok("Sem perda de skill", "Nesta morte suas skills ficam intactas."));
+                    __instance.m_player?.Message(MessageHud.MessageType.TopLeft, Avisos.Ok(L.T("pvppatch.sem_perda"), L.T("pvppatch.skills_intactas")));
                     return false;
                 }
 
@@ -449,13 +449,13 @@ namespace Deadheim.Pvp
                     Treinador.ConsumeProtection(local);
                     __instance.LowerAllSkills(factor);
                     local?.Message(MessageHud.MessageType.TopLeft,
-                        Avisos.Info("Protecao do Treinador", $"Perda de skill reduzida em {cut * 100f:0}%."));
+                        Avisos.Info(L.T("pvppatch.prot_treinador"), L.T("pvppatch.perda_red", (cut * 100f).ToString("0"))));
                     return false;
                 }
 
                 __instance.LowerAllSkills(factor);
                 __instance.m_player?.Message(MessageHud.MessageType.TopLeft,
-                    Avisos.Pvp("PK: perda de skill maior", $"Voce perdeu skill x{multiplier:0.#} nesta morte."));
+                    Avisos.Pvp(L.T("pvppatch.pk_maior"), L.T("pvppatch.perdeu_skill", multiplier.ToString("0.#"))));
                 return false;
             }
         }
@@ -498,16 +498,16 @@ namespace Deadheim.Pvp
                     return;
                 }
                 string suffix = string.Empty;
-                if ((flags & PvpFlags.Hunted) != 0) suffix += " <color=#ff8c00>[CACADO]</color>";
+                if ((flags & PvpFlags.Hunted) != 0) suffix += L.T("pvppatch.s_cacado");
                 int pkCount = PvpState.PkCountOf(__instance);
-                if ((flags & PvpFlags.PkPermanent) != 0) suffix += $" <color=#ff3030>[PK PERMANENTE x{pkCount}]</color>";
+                if ((flags & PvpFlags.PkPermanent) != 0) suffix += L.T("pvppatch.s_pkperm", pkCount);
                 else if ((flags & PvpFlags.Pk) != 0) suffix += pkCount > 1 ? $" <color=#ff3030>[PK x{pkCount}]</color>" : " <color=#ff3030>[PK]</color>";
-                if ((flags & PvpFlags.Aggressor) != 0) suffix += " <color=#ff7a3d>[AGRESSOR]</color>";
-                if ((flags & PvpFlags.Immune) != 0) suffix += " <color=#7fd4ff>[IMUNE]</color>";
-                else if ((flags & PvpFlags.Protected) != 0) suffix += " <color=#7CFC00>[SEGURO]</color>";
+                if ((flags & PvpFlags.Aggressor) != 0) suffix += L.T("pvppatch.s_agressor");
+                if ((flags & PvpFlags.Immune) != 0) suffix += L.T("pvppatch.s_imune");
+                else if ((flags & PvpFlags.Protected) != 0) suffix += L.T("pvppatch.s_seguro");
                 Player local = Player.m_localPlayer;
                 if (local != null && PvpBosses.OutOfRange(local, __instance, __instance.transform.position))
-                    suffix += " <color=#a0a0a0>[outra faixa]</color>";
+                    suffix += L.T("pvppatch.s_faixa");
                 __result += suffix;
             }
         }
@@ -528,8 +528,9 @@ namespace Deadheim.Pvp
                 long me = player.GetPlayerID();
                 if (owner == 0L || owner == me) return true;
                 if (PvpConfig.TombstoneGuildAccess.Value && PvpGuilds.SameGuild(Player.GetPlayer(owner), player)) return true;
+                if (TombstoneSecondsToOpen(__instance) <= 0d) return true;
 
-                player.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Tumba de " + __instance.GetOwnerName(), "So o dono abre esta tumba."));
+                player.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("pvppatch.tumba_de", __instance.GetOwnerName()), L.T("pvppatch.so_dono")));
                 __result = false;
                 return false;
             }
@@ -544,8 +545,34 @@ namespace Deadheim.Pvp
                 Player player = Player.m_localPlayer;
                 if (player == null || __instance.GetOwner() == player.GetPlayerID()) return;
                 if (PvpConfig.TombstoneGuildAccess.Value && PvpGuilds.SameGuild(Player.GetPlayer(__instance.GetOwner()), player)) return;
-                __result += "\n<color=#ff5050>Trancada: so o dono abre</color>";
+                double left = TombstoneSecondsToOpen(__instance);
+                if (left <= 0d)
+                {
+                    __result += "\n<color=#7CFC00>" + L.T("pvppatch.aberta") + "</color>";
+                    return;
+                }
+                string txt = "\n<color=#ff5050>" + L.T("pvppatch.trancada") + "</color>";
+                if (left < double.MaxValue)
+                {
+                    TimeSpan t = TimeSpan.FromSeconds(left);
+                    string when = t.TotalHours >= 24 ? $"{(int)t.TotalDays}d {t.Hours}h" : t.TotalMinutes >= 60 ? $"{(int)t.TotalHours}h {t.Minutes}min" : $"{Math.Max(1, (int)Math.Ceiling(t.TotalMinutes))}min";
+                    txt += L.T("pvppatch.abre_todos", when);
+                }
+                __result += txt;
             }
+        }
+
+        /// <summary>Segundos ate a tumba abrir para todos: &lt;=0 ja aberta; double.MaxValue = nunca (config 0 ou sem hora da morte).</summary>
+        private static double TombstoneSecondsToOpen(TombStone tomb)
+        {
+            float days = PvpConfig.TombstoneOpenToAllDays.Value;
+            if (days <= 0f || tomb == null || ZNet.instance == null) return double.MaxValue;
+            ZNetView nview = tomb.GetComponent<ZNetView>();
+            if (nview == null || !nview.IsValid()) return double.MaxValue;
+            long ticks = nview.GetZDO().GetLong(ZDOVars.s_timeOfDeath, 0L);
+            if (ticks <= 0L) return double.MaxValue;
+            double elapsed = (ZNet.instance.GetTime() - new DateTime(ticks)).TotalSeconds;
+            return days * 86400d - elapsed;
         }
 
         // ------------------------------------------------------------------ teleporte
@@ -569,9 +596,9 @@ namespace Deadheim.Pvp
 
                 string refusal = null;
                 if (PvpState.IsHunted && !PvpConfig.HuntedCanUsePortals.Value)
-                    refusal = "Cacado: nao da para teleportar.";
+                    refusal = L.T("pvppatch.tp_cacado");
                 else if (PvpState.InEscapeCombat && PvpConfig.CombatBlocksTeleport.Value)
-                    refusal = $"Em combate: teleporte liberado em {Mathf.CeilToInt(PvpState.EscapeCombatRemaining)}s.";
+                    refusal = L.T("pvppatch.tp_combate", Mathf.CeilToInt(PvpState.EscapeCombatRemaining));
                 if (refusal == null) return true;
 
                 Refuse(__instance, refusal);

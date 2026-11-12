@@ -376,7 +376,7 @@ namespace Deadheim.Pvp
             bool immune = IsImmune;
             bool combat = InCombat;
             string safeArea = PvpZones.SafeAreaName(pos)
-                              ?? (fallenCastle != null ? $"Castelo {fallenCastle} (conquistado)" : null);
+                              ?? (fallenCastle != null ? L.T("pvpmisc.castelo_conq", fallenCastle) : null);
             bool transport = PvpZones.IsOnTransport(player);
             // Cacado e PK (PkNoSafeZone) nao tem zona segura nem transporte que os proteja.
             bool outlaw = hunted || (IsPk && PvpConfig.PkNoSafeZone.Value);
@@ -396,27 +396,27 @@ namespace Deadheim.Pvp
             else if (arena)
             {
                 pvp = true;
-                label = "Arena: " + PvpZones.ArenaName(pos);
+                label = L.T("pvpmisc.arena", PvpZones.ArenaName(pos));
             }
             else if (warZone)
             {
                 pvp = true;
-                label = "Castelo: " + castle;
+                label = L.T("pvpmisc.castelo", castle);
             }
             else if (hunted)
             {
                 pvp = true;
-                label = "CACADO";
+                label = L.T("pvpmisc.cacado");
             }
             else if (immune)
             {
                 pvp = false;
-                label = "Imune";
+                label = L.T("pvpmisc.imune");
             }
             else if (protectedZone)
             {
                 pvp = false;
-                label = safeArea ?? "Transporte";
+                label = safeArea ?? L.T("pvpmisc.transporte");
             }
             else
             {

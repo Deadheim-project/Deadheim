@@ -106,7 +106,7 @@ namespace Deadheim
                 if (!player.TeleportTo(teleportPosition, player.transform.rotation, true))
                 {
                     AesirLog.D(18, "retreat " + ponto + ": TeleportTo recusou (ja teleportando ou recarga).");
-                    return "O teleporte nao saiu agora; tente de novo em instantes.";
+                    return L.T("retreat.nao_saiu");
                 }
 
                 Pvp.PvpModule.MarkRetreatUsed(player, cooldown);
@@ -151,22 +151,22 @@ namespace Deadheim
                     // Fase 3: uma linha so, com a tecla do menu e o estado de cada ponto.
                     bool vip = VipList.VipListApi.IsLocalPlayerVip();
                     bool dois = AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value;
-                    string r1 = vip ? Estado(1) : "so Aesir";
-                    string r2 = vip && dois ? Estado(2) : (vip ? "desligado" : "so Aesir");
+                    string r1 = vip ? Estado(1) : L.T("retreat.so_aesir");
+                    string r2 = vip && dois ? Estado(2) : (vip ? L.T("retreat.desligado") : L.T("retreat.so_aesir"));
                     __result += Localization.instance.Localize(
-                        $"\n[<color=yellow><b>{TeclaDoPonto}</b></color>] definir: Hearthstone ({Estado(0)}) · Retreat 1 ({r1}) · Retreat 2 ({r2})");
+                        L.T("retreat.definir", TeclaDoPonto, Estado(0), r1, r2));
                     // A volta ao ponto sai por tecla de qualquer lugar (AesirTeclas): a cama lembra quais.
                     if (vip)
                     {
-                        __result += AesirTeclas.Dica(AesirTeclas.Retreat, "Voltar ao ponto de retreat (de qualquer lugar)");
-                        if (dois) __result += AesirTeclas.Dica(AesirTeclas.Retreat2, "Voltar ao segundo ponto");
+                        __result += AesirTeclas.Dica(AesirTeclas.Retreat, L.T("retreat.voltar"));
+                        if (dois) __result += AesirTeclas.Dica(AesirTeclas.Retreat2, L.T("retreat.voltar2"));
                     }
                 }
             }
         }
 
         /// <summary>"definido" ou "nao" para o ponto (0 Hearthstone, 1 Retreat 1, 2 Retreat 2).</summary>
-        internal static string Estado(int ponto) => GetHearthStonePosition(ponto) != Vector3.zero ? "definido" : "não";
+        internal static string Estado(int ponto) => GetHearthStonePosition(ponto) != Vector3.zero ? L.T("retreat.definido") : L.T("retreat.nao");
 
 
         private const string HearthstoneGuid = "Detalhes.Hearthstone";

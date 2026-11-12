@@ -113,8 +113,7 @@ namespace Deadheim
             if (piece != null)
             {
                 piece.m_name = Nome;
-                piece.m_description = "Leva voce, so de ida, a cidade. Fica dentro de um ward seu e so quem tem acesso ao ward usa. " +
-                                      "Para voltar, use a pedra de retorno ou o /retreat.";
+                piece.m_description = L.Tok("totem.desc_peca");
             }
 
             Debug.Log("[Deadheim] " + PrefabName + " criado a partir do " + VanillaPrefab + ".");
@@ -247,7 +246,7 @@ namespace Deadheim
         /// </summary>
         public static string RecusaDeAcesso(Vector3 pos, Player player)
         {
-            if (player == null) return Nome + " indisponivel.";
+            if (player == null) return L.T("totem.indisp");
             if (Admin.LocalPlayerIsAdmin()) return null;
 
             bool coberto = false, temAcesso = false;
@@ -260,24 +259,24 @@ namespace Deadheim
                 if (area.IsEnabled()) return null;
             }
 
-            if (!coberto) return "Totem fora de ward: so funciona dentro de um ward.";
-            return temAcesso ? "Ward desligado: abasteca o ward desta base."
-                             : "Sem acesso: so quem tem acesso ao ward desta base usa o totem.";
+            if (!coberto) return L.T("totem.fora_ward");
+            return temAcesso ? L.T("totem.ward_off")
+                             : L.T("totem.sem_acesso");
         }
 
         internal static void Viajar(Vector3 posTotem, Player player)
         {
             if (player == null) return;
 
-            string recusa = Ligado.Value ? RecusaDeAcesso(posTotem, player) : Nome + " desligado no servidor.";
+            string recusa = Ligado.Value ? RecusaDeAcesso(posTotem, player) : L.T("totem.desl_srv");
             Vector3 destino = Vector3.zero;
             if (recusa == null && !TryDestino(out destino))
-                recusa = "Cidade indisponivel: o admin ainda nao definiu a chegada.";
+                recusa = L.T("totem.cidade_indisp");
             // As mesmas travas da pedra e do /retreat: o totem nao pode ser a saida de uma luta.
             if (recusa == null)
                 recusa = Pvp.PvpModule.TeleportRefusal(Pvp.PvpConfig.RetreatBlockedByPveCombat.Value);
             if (recusa == null && !player.IsTeleportable(false))
-                recusa = "Carga pesada: carregando minerio ou metal voce nao viaja pelo totem.";
+                recusa = L.T("totem.carga");
 
             if (recusa != null)
             {
@@ -289,11 +288,11 @@ namespace Deadheim
             Vector2 lado = UnityEngine.Random.insideUnitCircle * 2f;
             if (!player.TeleportTo(destino + new Vector3(lado.x, 0f, lado.y), player.transform.rotation, true))
             {
-                player.Message(MessageHud.MessageType.Center, Avisos.Info("O teleporte nao saiu", "Tente de novo em instantes."));
+                player.Message(MessageHud.MessageType.Center, Avisos.Info(L.T("totem.nao_saiu_t"), L.T("totem.tente")));
                 return;
             }
 
-            player.Message(MessageHud.MessageType.Center, Avisos.Ok("Indo para a cidade..."));
+            player.Message(MessageHud.MessageType.Center, Avisos.Ok(L.T("totem.indo")));
         }
 
         // ------------------------------------------------------------- colocar e remover
@@ -318,7 +317,7 @@ namespace Deadheim
 
                 if (!DentroDoProprioWard(pos, __instance.GetPlayerID()))
                 {
-                    __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Coloque dentro de um ward", "O totem fica em ward seu ou de alguem da sua guilda."));
+                    __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("totem.coloque_t"), L.T("totem.coloque_d")));
                     return false;
                 }
 
@@ -329,14 +328,14 @@ namespace Deadheim
                 if (Contagem >= 999)
                 {
                     WardCore.RequestWardCount();
-                    __instance.Message(MessageHud.MessageType.Center, Avisos.Info("Conferindo seus totens", "Tente de novo em instantes."));
+                    __instance.Message(MessageHud.MessageType.Center, Avisos.Info(L.T("totem.conferindo"), L.T("totem.tente")));
                     return false;
                 }
                 if (Contagem >= limite)
                 {
                     __instance.Message(MessageHud.MessageType.Center,
-                        limite == 1 ? Avisos.Bloqueio("Voce ja tem um " + Nome, "Remova o antigo primeiro.")
-                                    : Avisos.Bloqueio("Limite de totens atingido (" + limite + ")", "Remova um para colocar outro."));
+                        limite == 1 ? Avisos.Bloqueio(L.T("totem.ja_tem"), L.T("totem.remova_antigo"))
+                                    : Avisos.Bloqueio(L.T("totem.limite", limite), L.T("totem.remova_um")));
                     return false;
                 }
 
@@ -409,7 +408,7 @@ namespace Deadheim
         {
             if (!_esperandoDestino) return;
             _esperandoDestino = false;
-            Player.m_localPlayer?.Message(MessageHud.MessageType.Center, Avisos.Ok("Chegada do totem gravada", Destino.Value));
+            Player.m_localPlayer?.Message(MessageHud.MessageType.Center, Avisos.Ok(L.T("totem.chegada_gravada"), Destino.Value));
         }
     }
 
@@ -466,18 +465,18 @@ namespace Deadheim
 
         public bool UseItem(Humanoid user, ItemDrop.ItemData item) => false;
 
-        public string GetHoverName() => "Totem da Cidade";
+        public string GetHoverName() => L.T("totem.nome");
 
         public string GetHoverText()
         {
-            string texto = "Totem da Cidade";
-            if (!TotemCidade.Ligado.Value) return texto + "\n<color=grey>Desligado no servidor</color>";
+            string texto = L.T("totem.nome");
+            if (!TotemCidade.Ligado.Value) return texto + "\n<color=grey>" + L.T("totem.desligado_srv") + "</color>";
 
             Player player = Player.m_localPlayer;
             string recusa = TotemCidade.RecusaDeAcesso(transform.position, player);
             if (recusa != null) return texto + "\n<color=grey>" + recusa + "</color>";
 
-            texto += "\n[<color=yellow><b>$KEY_Use</b></color>] Viajar para a cidade (so ida)";
+            texto += L.T("totem.viajar");
             return Localization.instance.Localize(texto);
         }
     }

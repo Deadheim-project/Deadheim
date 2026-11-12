@@ -58,7 +58,7 @@ namespace Deadheim.Pvp
         public static string SafeAreaName(Vector3 point)
         {
             if (IsArena(point)) return null;
-            if (IsOnStartIsland(point)) return "Ilha Inicial";
+            if (IsOnStartIsland(point)) return L.T("pvpmisc.ilha");
             return FindZone(Safe, point)?.Name ?? Territorios.NomeSeguro(point);
         }
 

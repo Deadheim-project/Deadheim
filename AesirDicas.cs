@@ -40,7 +40,7 @@ namespace Deadheim
                 try
                 {
                     if (__instance == null || string.IsNullOrEmpty(__result) || !__instance.CanBePicked()) return;
-                    if (Pode5(out bool soVip)) __result += Tecla("Colher todos iguais por perto" + (soVip ? Aesir : ""));
+                    if (Pode5(out bool soVip)) __result += Tecla(L.T("aesirmsg.d_colher") + (soVip ? Aesir : ""));
                 }
                 catch (Exception e) { AesirLog.Erro(5, e); }
             }
@@ -54,7 +54,7 @@ namespace Deadheim
                 try
                 {
                     if (string.IsNullOrEmpty(__result)) return;
-                    if (Pode5(out bool soVip)) __result += Tecla("Extrair de todas por perto" + (soVip ? Aesir : ""));
+                    if (Pode5(out bool soVip)) __result += Tecla(L.T("aesirmsg.d_extrair") + (soVip ? Aesir : ""));
                 }
                 catch (Exception e) { AesirLog.Erro(5, e); }
             }
@@ -66,7 +66,7 @@ namespace Deadheim
         {
             if (string.IsNullOrEmpty(texto) || AesirConfig.Aesir7AbastecerAreaAtivo == null || !AesirConfig.Aesir7AbastecerAreaAtivo.Value) return;
             if (!VipList.VipListApi.IsLocalPlayerVip()) return;
-            texto += Tecla("Abastecer as iguais num raio de " + AesirConfig.Aesir7AbastecerAreaRaio.Value.ToString("0") + " m" + Aesir);
+            texto += Tecla(L.T("aesirmsg.d_abastecer", AesirConfig.Aesir7AbastecerAreaRaio.Value.ToString("0")) + Aesir);
         }
 
         [HarmonyPatch(typeof(Smelter), "OnHoverAddFuel")]
@@ -101,11 +101,11 @@ namespace Deadheim
                 {
                     if (string.IsNullOrEmpty(__result) || !VipList.VipListApi.IsLocalPlayerVip()) return;
                     if (AesirConfig.Aesir14DepositarAtivo?.Value == true)
-                        __result += AesirTeclas.Dica(AesirTeclas.Depositar, "Guardar nos baus por perto" + Aesir);
+                        __result += AesirTeclas.Dica(AesirTeclas.Depositar, L.T("aesirmsg.d_guardar") + Aesir);
                     if (AesirConfig.Aesir15OrdenarAtivo?.Value == true)
-                        __result += AesirTeclas.Dica(AesirTeclas.Ordenar, "Ordenar (com o bau aberto)" + Aesir);
+                        __result += AesirTeclas.Dica(AesirTeclas.Ordenar, L.T("aesirmsg.d_ordenar") + Aesir);
                     if (AesirConfig.Aesir16EtiquetaAtivo?.Value == true)
-                        __result += AesirTeclas.Dica(AesirTeclas.Etiqueta, "Dar nome ao bau" + Aesir);
+                        __result += AesirTeclas.Dica(AesirTeclas.Etiqueta, L.T("aesirmsg.d_nome") + Aesir);
                 }
                 catch (Exception e) { AesirLog.Erro(14, e); }
             }

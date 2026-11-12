@@ -159,72 +159,72 @@ namespace Deadheim.Menus
                 // ---- menus de todos
                 new Entrada
                 {
-                    Titulo = "Ficha", Icone = "ArmorIronChest",
+                    Titulo = L.T("menu.ficha"), Icone = "ArmorIronChest",
                     Visivel = () => Integracoes.TemInventario,
                     Estado = Integracoes.FichaSempre,
-                    Detalhe = () => "Abrir sempre com o inventário: " + (Integracoes.FichaSempre() ? "ligado" : "desligado") + " (clique para alternar)",
+                    Detalhe = () => L.T("menu.ficha_sempre", Integracoes.FichaSempre() ? L.T("menu.ligado") : L.T("menu.desligado")),
                     Acao = Integracoes.AlternarFicha
                 },
                 new Entrada
                 {
-                    Titulo = "Ranking", Icone = "TrophyDragonQueen", FechaInventario = true,
+                    Titulo = L.T("menu.ranking"), Icone = "TrophyDragonQueen", FechaInventario = true,
                     Visivel = () => Ranking.RankingRede.Ligado,
                     Detalhe = Ranking.RankingJanela.ResumoCentral,
                     Acao = () => { Ranking.RankingJanela.Abrir(Ranking.RankingJanela.Origem.Central); return null; }
                 },
                 new Entrada
                 {
-                    Titulo = "Montarias", Icone = "SaddleLox", FechaInventario = true,
+                    Titulo = L.T("menu.montarias"), Icone = "SaddleLox", FechaInventario = true,
                     Visivel = () => Integracoes.TemMontarias,
-                    Detalhe = () => Vazio(Integracoes.ResumoMontarias(), "Suas montarias e a habilidade de montar"),
+                    Detalhe = () => Vazio(Integracoes.ResumoMontarias(), L.T("menu.montarias_d")),
                     Acao = Integracoes.AbrirMontarias
                 },
                 new Entrada
                 {
                     Titulo = "Pets", Icone = "Pet_galinha", FechaInventario = true,
                     Visivel = () => Integracoes.TemMontarias,
-                    Detalhe = () => "Seus pets, bônus e invocar/guardar",
+                    Detalhe = () => L.T("menu.pets_d"),
                     Acao = Integracoes.AbrirPets
                 },
                 new Entrada
                 {
-                    Titulo = "Guilda", Icone = "ShieldWood", FechaInventario = true,
+                    Titulo = L.T("menu.guilda"), Icone = "ShieldWood", FechaInventario = true,
                     Detalhe = () =>
                     {
                         string guilda = Guilda();
-                        return string.IsNullOrEmpty(guilda) ? "Sem guilda" : "Guilda: " + guilda;
+                        return string.IsNullOrEmpty(guilda) ? L.T("menu.sem_guilda") : L.T("menu.guilda_nome", guilda);
                     },
-                    Indisponivel = () => Integracoes.TemGuilds ? null : "O mod Guilds não está instalado.",
+                    Indisponivel = () => Integracoes.TemGuilds ? null : L.T("menu.sem_guilds_mod"),
                     Acao = Integracoes.AbrirGuilds
                 },
                 new Entrada
                 {
-                    Titulo = "Diário de missões", Icone = "Feathers", FechaInventario = true,
+                    Titulo = L.T("menu.diario"), Icone = "Feathers", FechaInventario = true,
                     Visivel = () => Integracoes.TemNpcValheim,
-                    Detalhe = () => "Suas missões em andamento",
+                    Detalhe = () => L.T("menu.diario_d"),
                     Acao = Integracoes.AbrirDiario
                 },
                 new Entrada
                 {
-                    Titulo = "Arena", Icone = "SwordIron", FechaInventario = true,
+                    Titulo = L.T("menu.arena"), Icone = "SwordIron", FechaInventario = true,
                     Visivel = () => Integracoes.TemNpcValheim,
-                    Detalhe = () => "Status, times e ranking da arena",
+                    Detalhe = () => L.T("menu.arena_d"),
                     Acao = Integracoes.AbrirArena
                 },
                 new Entrada
                 {
-                    Titulo = "Troca de moedas", Icone = "Coins", FechaInventario = true,
+                    Titulo = L.T("menu.troca"), Icone = "Coins", FechaInventario = true,
                     Visivel = () => Troca.TrocaRede.Ativo == null || Troca.TrocaRede.Ativo.Value,
-                    Detalhe = () => "Troque moedas com quem está perto",
+                    Detalhe = () => L.T("menu.troca_d"),
                     Acao = () => { Troca.TrocaUi.AbrirEscolha(); return null; }
                 },
 
                 // ---- Aesir
                 new Entrada
                 {
-                    Titulo = "Loja Deadcoins", Icone = "Ruby", Aesir = true, FechaInventario = true,
+                    Titulo = L.T("menu.loja"), Icone = "Ruby", Aesir = true, FechaInventario = true,
                     Visivel = () => Integracoes.TemNpcValheim,
-                    Detalhe = () => "Compre de qualquer lugar do mapa",
+                    Detalhe = () => L.T("menu.loja_d"),
                     Acao = Integracoes.AbrirLojaDeadcoins
                 },
                 RetreatEntrada(1),
@@ -236,14 +236,14 @@ namespace Deadheim.Menus
                     // Com RequireNpc o transmog e feito no Alfaiate: nada a abrir daqui.
                     Visivel = () => Ligado(Transmog.Enabled) && !Ligado(Transmog.RequireNpc),
                     ExigeAesir = () => Ligado(Transmog.RequireVip),
-                    Detalhe = () => "Mude a aparência do equipamento",
+                    Detalhe = () => L.T("menu.transmog_d"),
                     Acao = () => { Transmog.HandleCommand(new[] { "/transmog" }); return null; }
                 },
                 new Entrada
                 {
-                    Titulo = "Plantas salvas", Icone = "Hammer", Aesir = true, FechaInventario = true,
+                    Titulo = L.T("menu.plantas"), Icone = "Hammer", Aesir = true, FechaInventario = true,
                     Visivel = () => Ligado(Plantas.Enabled),
-                    Detalhe = () => "Salve e recoloque suas construções",
+                    Detalhe = () => L.T("menu.plantas_d"),
                     Acao = () => { PlantasUi.Open(); return null; }
                 },
 
@@ -253,7 +253,7 @@ namespace Deadheim.Menus
                 {
                     Titulo = "Admin", Icone = "SledgeIron",
                     Visivel = () => Vanilla.Admin.LocalPlayerIsAdmin(),
-                    Detalhe = () => "Painel de Admin (bestiário, arenas), territórios e as outras ferramentas",
+                    Detalhe = () => L.T("menu.admin_d"),
                     Acao = () =>
                     {
                         if (_menuAdmin != null) { AlternarMenuAdmin(); return null; }
@@ -271,7 +271,7 @@ namespace Deadheim.Menus
         {
             return new Entrada
             {
-                Titulo = ponto == 2 ? "Retreat (2º ponto)" : "Retreat",
+                Titulo = ponto == 2 ? L.T("menu.retreat2") : "Retreat",
                 Icone = "Wishbone",
                 Aesir = true,
                 FechaInventario = true,
@@ -279,16 +279,16 @@ namespace Deadheim.Menus
                 Detalhe = () =>
                 {
                     if (Retreat.GetHearthStonePosition(ponto) == Vector3.zero)
-                        return ponto == 2 ? "Marque olhando a cama (Shift+P)" : "Marque o ponto olhando a sua cama (P)";
+                        return ponto == 2 ? L.T("menu.marque2") : L.T("menu.marque1");
                     double falta = Pvp.PvpModule.Remaining(ponto == 2 ? Pvp.PvpModule.Cooldown.Retreat2 : Pvp.PvpModule.Cooldown.Retreat1);
-                    return falta > 0d ? "Recarga: " + Pvp.PvpClient.FormatDuration(falta) : "Volta ao ponto da sua cama";
+                    return falta > 0d ? L.T("menu.recarga", Pvp.PvpClient.FormatDuration(falta)) : L.T("menu.volta_cama");
                 },
                 Indisponivel = () =>
                 {
                     if (Retreat.GetHearthStonePosition(ponto) == Vector3.zero)
                         return ponto == 2
-                            ? "Marque o segundo ponto olhando a sua cama com Shift+P."
-                            : "Marque o ponto de retreat olhando a sua cama e apertando P.";
+                            ? L.T("menu.marque2_long")
+                            : L.T("menu.marque1_long");
                     return Pvp.PvpModule.RetreatRefusal(Player.m_localPlayer);
                 },
                 Acao = () => Retreat.TentarRetreat(ponto)
@@ -341,7 +341,7 @@ namespace Deadheim.Menus
             _painel = ValheimUi.CreatePanel(_canvas.transform, Largura, Altura);
             Posicionar();
 
-            var titulo = ValheimUi.CreateLabel(_painel, "Central Deadheim", 26, ValheimUi.Orange, TextAlignmentOptions.Center, display: true);
+            var titulo = ValheimUi.CreateLabel(_painel, L.T("menu.central"), 26, ValheimUi.Orange, TextAlignmentOptions.Center, display: true);
             ValheimUi.Anchor((RectTransform)titulo.transform, new Vector2(0f, 1f), Vector2.one, new Vector2(16f, -54f), new Vector2(-16f, -14f));
 
             _nome = ValheimUi.CreateLabel(_painel, "", 16, ValheimUi.Beige, TextAlignmentOptions.Left);
@@ -377,7 +377,7 @@ namespace Deadheim.Menus
 
             _extras = ValheimUi.CreateLabel(lista, "", 12, ValheimUi.Muted, TextAlignmentOptions.TopLeft);
 
-            Button aesir = ValheimUi.CreateButton(_painel, "Seja Aesir", 0f, 46f, 18);
+            Button aesir = ValheimUi.CreateButton(_painel, L.T("menu.seja_aesir"), 0f, 46f, 18);
             ValheimUi.Anchor((RectTransform)aesir.transform, Vector2.zero, new Vector2(1f, 0f), new Vector2(20f, 78f), new Vector2(-20f, 124f));
             _rotuloAesir = aesir.GetComponentInChildren<TextMeshProUGUI>();
             _rotuloAesir.color = Dourado;
@@ -430,8 +430,8 @@ namespace Deadheim.Menus
             {
                 Titulo = "Aesir", Icone = "Thunderstone", Destaque = true,
                 Detalhe = () => VipList.VipListApi.IsLocalPlayerVip()
-                    ? "Suas funções Aesir e os benefícios"
-                    : "O que o Aesir dá e como apoiar",
+                    ? L.T("menu.aesir_d_on")
+                    : L.T("menu.aesir_d_off"),
                 Acao = () => { AlternarMenuAesir(); return null; }
             };
             _entradas.Add(_botaoAesir);
@@ -539,7 +539,7 @@ namespace Deadheim.Menus
                 ValheimUi.Anchor((RectTransform)rotulo.transform, new Vector2(0f, 0.5f), Vector2.one, new Vector2(14f, 0f), new Vector2(-14f, -4f));
                 if (!disponivel) rotulo.color = ValheimUi.Muted;
 
-                var sub = ValheimUi.CreateLabel(botao.transform, disponivel ? ferramenta.Descricao : ferramenta.Ausente ?? "Indisponível",
+                var sub = ValheimUi.CreateLabel(botao.transform, disponivel ? ferramenta.Descricao : ferramenta.Ausente ?? L.T("menu.indisponivel"),
                     12, ValheimUi.Muted, TextAlignmentOptions.TopLeft);
                 ValheimUi.Anchor((RectTransform)sub.transform, Vector2.zero, new Vector2(1f, 0.5f), new Vector2(14f, 3f), new Vector2(-14f, 0f));
                 sub.textWrappingMode = TextWrappingModes.NoWrap;
@@ -549,7 +549,7 @@ namespace Deadheim.Menus
                 botao.onClick.AddListener(() => UsarFerramenta(ferramenta));
             }
 
-            var nota = ValheimUi.CreateLabel(_menuAdmin, "A config do servidor e os comandos ficam no ESC > Deadheim > Admin.",
+            var nota = ValheimUi.CreateLabel(_menuAdmin, L.T("menu.nota_admin"),
                 12, ValheimUi.Muted, TextAlignmentOptions.Center);
             ValheimUi.SetHeight(nota.gameObject, 20f);
 
@@ -586,7 +586,7 @@ namespace Deadheim.Menus
             catch (Exception ex)
             {
                 Debug.LogWarning($"[Deadheim] Central: ferramenta '{ferramenta.Titulo}' falhou: {ex}");
-                resposta = "Não consegui abrir " + ferramenta.Titulo + ".";
+                resposta = L.T("menu.nao_abriu", ferramenta.Titulo);
             }
 
             if (string.IsNullOrEmpty(resposta)) return;
@@ -611,7 +611,7 @@ namespace Deadheim.Menus
 
             if (e.Destaque)
             {
-                // O convite do Aesir: moldura dourada, como o botao "Seja Aesir" da lista.
+                // O convite do Aesir: moldura dourada, como o botao L.T("menu.seja_aesir") da lista.
                 var moldura = botao.gameObject.AddComponent<Outline>();
                 moldura.effectColor = Dourado;
                 moldura.effectDistance = new Vector2(2f, -2f);
@@ -643,7 +643,7 @@ namespace Deadheim.Menus
                 string detalhe;
                 try
                 {
-                    detalhe = _sobre.Travado(aesir) ? "Exclusivo Aesir: clique para conhecer"
+                    detalhe = _sobre.Travado(aesir) ? L.T("menu.exclusivo")
                         : _sobre.Indisponivel?.Invoke() ?? _sobre.Detalhe?.Invoke() ?? "";
                 }
                 catch (Exception) { detalhe = ""; }
@@ -658,8 +658,8 @@ namespace Deadheim.Menus
 
         /// <summary>O que o Aesir da, para quem nao e ("Tambem no Aesir") e para quem e ("Tambem ativo").</summary>
         private static string Propaganda(bool aesir) => aesir
-            ? "<color=#7fd08a>Aesir ativo:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais."
-            : "<color=#ffd75a>Seja Aesir:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir] e mais. <color=#ffd75a>Clique em Seja Aesir.</color>";
+            ? L.T("menu.prop_on")
+            : L.T("menu.prop_off");
 
         private static void Posicionar()
         {
@@ -716,9 +716,9 @@ namespace Deadheim.Menus
             if (_icones)
             {
                 if (_cabAesir != null)
-                    _cabAesir.text = aesir ? "<color=#7fd08a>ativo</color>" : "exclusivo de quem apoia o servidor";
+                    _cabAesir.text = aesir ? L.T("menu.cab_ativo") : L.T("menu.cab_excl");
                 if (_extras != null) _extras.text = Propaganda(aesir);
-                if (_rotuloAesir != null) _rotuloAesir.text = aesir ? "Ver todos os benefícios" : "Seja Aesir: como apoiar";
+                if (_rotuloAesir != null) _rotuloAesir.text = aesir ? L.T("menu.ver_beneficios") : L.T("menu.como_apoiar");
                 foreach (Entrada e in _entradas)
                 {
                     try
@@ -730,9 +730,9 @@ namespace Deadheim.Menus
                         string motivo = travado ? null : e.Indisponivel?.Invoke();
                         e.Rotulo.color = e.Destaque ? Dourado : travado || motivo != null ? ValheimUi.Muted : ValheimUi.Orange;
                         e.IconeImg.color = travado ? Travado : motivo != null ? Apagado : Color.white;
-                        if (e.Destaque) e.Rotulo.text = aesir ? "Aesir" : "Seja Aesir";
+                        if (e.Destaque) e.Rotulo.text = aesir ? "Aesir" : L.T("menu.seja_aesir");
                         // As linhas do menu Aesir (montadas como na lista).
-                        if (e.Sub != null) e.Sub.text = travado ? "Exclusivo Aesir: clique para conhecer" : motivo ?? e.Detalhe?.Invoke() ?? "";
+                        if (e.Sub != null) e.Sub.text = travado ? L.T("menu.exclusivo") : motivo ?? e.Detalhe?.Invoke() ?? "";
                         if (e.Marca != null && !e.Destaque && e.Sub != null) e.Marca.text = travado ? "AESIR" : "";
                         // Botao de marcar/desmarcar: "ON" no canto quando marcado, como o "A" do Aesir.
                         if (e.Marca != null && e.Estado != null) e.Marca.text = e.Estado() ? "ON" : "";
@@ -746,10 +746,10 @@ namespace Deadheim.Menus
                 return;
             }
             _nome.text = player.GetPlayerName();
-            _selo.text = aesir ? "AESIR" : "<color=#9e9480>VIAJANTE</color>";
+            _selo.text = aesir ? "AESIR" : L.T("menu.viajante");
             _cabAesir.text = aesir
-                ? "AESIR  <size=12><color=#7fd08a>ativo</color></size>"
-                : "AESIR  <size=12><color=#9e9480>exclusivo de quem apoia</color></size>";
+                ? L.T("menu.aesir_titulo_on")
+                : L.T("menu.aesir_titulo_off");
 
             foreach (Entrada e in _entradas)
             {
@@ -762,7 +762,7 @@ namespace Deadheim.Menus
                     bool travado = e.Travado(aesir);
                     string motivo = travado ? null : e.Indisponivel?.Invoke();
 
-                    e.Sub.text = travado ? "Exclusivo Aesir: clique para conhecer" : e.Detalhe?.Invoke() ?? "";
+                    e.Sub.text = travado ? L.T("menu.exclusivo") : e.Detalhe?.Invoke() ?? "";
                     e.Rotulo.color = travado || motivo != null ? ValheimUi.Muted : ValheimUi.Orange;
                     e.Marca.text = travado ? "AESIR" : e.Estado != null && e.Estado() ? "ON" : "";
                     e.IconeImg.color = travado ? Travado : motivo != null ? Apagado : Color.white;
@@ -776,18 +776,18 @@ namespace Deadheim.Menus
             }
 
             _extras.text = aesir
-                ? "<color=#7fd08a>Também ativo:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais."
-                : "<color=#ffd75a>Também no Aesir:</color> colheita em área (Shift+E), plantio em área (Shift ao plantar), fabricação em lote, Baú Aesir 6×6, portais VIP, tag [Aesir], descanso mais longo e mais.";
+                ? L.T("menu.extra_on")
+                : L.T("menu.extra_off");
 
-            _rotuloAesir.text = aesir ? "Você é Aesir · benefícios" : "Seja Aesir";
+            _rotuloAesir.text = aesir ? L.T("menu.voce_aesir") : L.T("menu.seja_aesir");
 
             if (_aviso != null && Time.unscaledTime < _avisoAte) _status.text = _aviso;
             else
             {
                 _aviso = null;
                 _status.text = Vanilla.Admin.LocalPlayerIsAdmin()
-                    ? "Admin: as ferramentas ficam no ESC > Deadheim > Admin."
-                    : "Seus ajustes ficam no ESC > Deadheim.";
+                    ? L.T("menu.rodape_admin")
+                    : L.T("menu.rodape_ajustes");
             }
         }
 
@@ -819,7 +819,7 @@ namespace Deadheim.Menus
             catch (Exception ex)
             {
                 Debug.LogWarning($"[Deadheim] Central: '{e.Titulo}' falhou: {ex}");
-                Avisar("Não consegui abrir " + e.Titulo + ".");
+                Avisar(L.T("menu.nao_abriu", e.Titulo));
             }
             finally
             {

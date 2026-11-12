@@ -162,6 +162,37 @@ namespace Deadheim
         private void Awake()
         {
             Config.SaveOnConfigSet = true;
+            L.Init(Config);
+            TextosLixeira.Registrar();
+            TextosMisc.Registrar();
+            TextosWard.Registrar();
+            TextosAesirMsg.Registrar();
+            TextosTrocaMsg.Registrar();
+            TextosTrocaErr.Registrar();
+            TextosForja.Registrar();
+            TextosTransmog.Registrar();
+            TextosTotem.Registrar();
+            TextosItem.Registrar();
+            TextosPets.Registrar();
+            TextosRankingNet.Registrar();
+            TextosRankingUi.Registrar();
+            TextosRankingNc.Registrar();
+            TextosRanking.Registrar();
+            TextosRankingCat.Registrar();
+            TextosPvpApi.Registrar();
+            TextosPvpMisc.Registrar();
+            TextosPvpCmd.Registrar();
+            TextosPvpPatch.Registrar();
+            TextosPvpPve.Registrar();
+            TextosPvpServer.Registrar();
+            TextosPvpBounty2.Registrar();
+            TextosPvpBounty.Registrar();
+            TextosPvpHud.Registrar();
+            TextosTroca.Registrar();
+            TextosInteg.Registrar();
+            TextosAesirUi.Registrar();
+            TextosMenu.Registrar();
+            TextosAesir.Registrar();
 
             Wards.WardProfiles.BindConfigs(Config);
             Wards.WardProfiles.LoadAssets();
@@ -254,8 +285,11 @@ new ConfigDescription("boatWindSpeedmultiplier")));
             Pets.Init();
             PetDrops.BindConfigs(Config);
             PetDrops.Init();
+            MountDrops.BindConfigs(Config);
+            MountDrops.Init();
 
             _harmony.PatchAll();
+            Pvp.DiscordLog.PatchRaidSystem(_harmony);
             Ajustes.AjustesMenu.Init(_harmony);
             DirectJoinFlow.Initialize(Logger);
             ClonedItems.LoadAssets();

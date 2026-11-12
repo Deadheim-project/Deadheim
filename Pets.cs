@@ -119,7 +119,8 @@ namespace Deadheim
                 "leitao=Boar_piggy;1.3;item;forward_speed;sleeping," +
                 "wolf_cub=Wolf_cub;1;item;forward_speed;sleeping," +
                 "lox_cub=Lox_Calf;0.8;item;forward_speed;," +
-                "corvo=Crow;1;item;forward_speed;",
+                "corvo=Crow;1;item;forward_speed;," +
+                "gaivota=Seagull;1;item;forward_speed;",
                 new ConfigDescription("Catálogo de pets. Formato: id=prefab;escala;origem;speedParam;sitParam (separados por vírgula). speedParam=forward_speed, sitParam=sleeping ou vazio.")));
             PetCatalog.SettingChanged += (s, e) => LoadCatalog();
 
@@ -261,7 +262,7 @@ namespace Deadheim
                 string petId = prefab.Substring("Pet_".Length);
                 if (_catalog == null || !_catalog.TryGetValue(petId, out PetDef def))
                 {
-                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Este item de pet não corresponde ao catálogo atual.");
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, L.T("pets.item_invalido"));
                     return false;
                 }
                 if (!HasPetItem(Player.m_localPlayer, def)) return false;
@@ -269,14 +270,14 @@ namespace Deadheim
                 {
                     // Já está na lista: o item não é gasto. Quem quer trocar o pet usa o menu de pets.
                     Player.m_localPlayer.Message(MessageHud.MessageType.Center,
-                        "Você já desbloqueou este pet. Invoque-o pelo menu de pets (o item não foi gasto).");
+                        L.T("pets.ja_desbloq"));
                     return false;
                 }
                 // Consumível: gasta o item, desbloqueia o pet para sempre neste personagem e já o invoca.
                 inventory.RemoveOneItem(item);
                 Unlock(Player.m_localPlayer, def.Id);
                 Player.m_localPlayer.Message(MessageHud.MessageType.Center,
-                    "Pet desbloqueado! Ele fica na sua lista de pets.");
+                    L.T("pets.desbloqueado"));
                 SendActivate(def.Id);
                 return false;
             }
@@ -330,7 +331,7 @@ namespace Deadheim
             if (!_catalog.TryGetValue(id ?? "", out PetDef def)) return false;
             if (!LocalOwns(def))
             {
-                lp.Message(MessageHud.MessageType.Center, "Você ainda não tem este pet.");
+                lp.Message(MessageHud.MessageType.Center, L.T("pets.nao_tem"));
                 return false;
             }
             SendActivate(def.Id);
@@ -358,7 +359,7 @@ namespace Deadheim
                     if (LocalOwns(def)) { pick = def.Id; break; }
             if (pick == null)
             {
-                lp.Message(MessageHud.MessageType.Center, "Você ainda não tem nenhum pet.");
+                lp.Message(MessageHud.MessageType.Center, L.T("pets.nenhum"));
                 return;
             }
             SendActivate(pick);
@@ -496,7 +497,7 @@ namespace Deadheim
                 string op = pkg.ReadString();
                 if (!PetEnabled.Value)
                 {
-                    SendResponse(real, op, false, "Pets desabilitados no servidor.", "", "");
+                    SendResponse(real, op, false, L.Net("pets.srv_off"), "", "");
                     return;
                 }
 
@@ -525,7 +526,7 @@ namespace Deadheim
                 string petId = (pkg.ReadString() ?? "").Trim();
                 if (!_catalog.TryGetValue(petId, out PetDef def))
                 {
-                    SendResponse(real, op, false, "Pet desconhecido.", "", "");
+                    SendResponse(real, op, false, L.Net("pets.desconhecido"), "", "");
                     return;
                 }
 
@@ -534,7 +535,7 @@ namespace Deadheim
                     string name = SanitizeName(pkg.ReadString());
                     if (!ServerOwns(real, peer.PlayerId, def))
                     {
-                        SendResponse(real, op, false, "Você não tem este pet.", "", "");
+                        SendResponse(real, op, false, L.Net("pets.nao_tem_srv"), "", "");
                         return;
                     }
                     // D3: gravar na tabela e sincronizar com todos
@@ -595,7 +596,7 @@ namespace Deadheim
                 {
                     // Falha numa restauração automática: sem mensagem (para no limite de tentativas).
                     if (op == "set" && _restoring) _restoring = false;
-                    else lp.Message(MessageHud.MessageType.TopLeft, message);
+                    else lp.Message(MessageHud.MessageType.TopLeft, L.Resolve(message));
                     return;
                 }
 
@@ -603,17 +604,17 @@ namespace Deadheim
                 {
                     WriteLocal(petId, name, true, !string.IsNullOrEmpty(name));
                     if (_restoring) _restoring = false; // restauração automática: sem mensagem
-                    else lp.Message(MessageHud.MessageType.Center, "Pet ativado!");
+                    else lp.Message(MessageHud.MessageType.Center, L.T("pets.ativado"));
                 }
                 else if (op == "off")
                 {
                     WriteLocal("", "", true, false);
-                    lp.Message(MessageHud.MessageType.Center, "Pet desativado.");
+                    lp.Message(MessageHud.MessageType.Center, L.T("pets.desativado"));
                 }
                 else if (op == "nome")
                 {
                     WriteLocal("", name, false, true);
-                    lp.Message(MessageHud.MessageType.Center, string.IsNullOrEmpty(name) ? "Nome removido." : "Nome do pet alterado.");
+                    lp.Message(MessageHud.MessageType.Center, string.IsNullOrEmpty(name) ? L.T("pets.nome_removido") : L.T("pets.nome_alterado"));
                 }
             }
             catch (Exception ex)
@@ -666,8 +667,7 @@ namespace Deadheim
                 ItemDrop drop = prefab != null ? prefab.GetComponent<ItemDrop>() : null;
                 if (drop == null) continue;
                 drop.m_itemData.m_shared.m_description =
-                    "Consumível: use para desbloquear este pet de forma permanente no seu personagem. " +
-                    "Depois ele fica no menu de pets, onde você o invoca e vê os bônus. Pode ser negociado antes de usar.";
+                    L.Tok("pets.desc_item");
             }
         }
 
@@ -1056,8 +1056,8 @@ namespace Deadheim
             {
                 string[] owned = GetLocalPets();
                 lp.Message(MessageHud.MessageType.Center, owned.Length == 0
-                    ? "Você não tem nenhum pet."
-                    : "Seus pets: " + string.Join(", ", owned) + ". Use o item do pet para invocá-lo ou /pet off para guardá-lo.");
+                    ? L.T("pets.sem_pets")
+                    : L.T("pets.seus_pets", string.Join(", ", owned)));
                 return;
             }
 
@@ -1080,12 +1080,12 @@ namespace Deadheim
             {
                 if (!Vanilla.Admin.LocalPlayerIsAdmin())
                 {
-                    lp.Message(MessageHud.MessageType.Center, "Só admin.");
+                    lp.Message(MessageHud.MessageType.Center, L.T("pets.so_admin"));
                     return;
                 }
                 if (_catalog == null || ZNetScene.instance == null)
                 {
-                    lp.Message(MessageHud.MessageType.Center, "Catálogo ou cena não disponível.");
+                    lp.Message(MessageHud.MessageType.Center, L.T("pets.sem_catalogo"));
                     return;
                 }
                 foreach (PetDef def in _catalog.Values)
@@ -1105,7 +1105,7 @@ namespace Deadheim
                     string paramList = string.Join(", ", anim.parameters.Select(p => $"{p.name}({p.type})"));
                     Debug.Log($"[Deadheim Pets] /pet debug [{def.Id}] {def.PrefabName}: {paramList}");
                 }
-                lp.Message(MessageHud.MessageType.Center, "Parâmetros do Animator no log do jogo.");
+                lp.Message(MessageHud.MessageType.Center, L.T("pets.anim_log"));
                 return;
             }
 
@@ -1230,7 +1230,11 @@ namespace Deadheim
             {
                 bool away = _target.InNumShipVolumes > 0 || _target.IsAttachedToShip() || _target.IsRiding();
                 UpdateMovement(away);
-                SetRendering(!away && !LimitHidden);
+                // Ave voando perto da câmera do dono (passando na frente da mira): some até se afastar.
+                bool nearCam = false;
+                if (Def.Flying && _target == Player.m_localPlayer && GameCamera.instance != null)
+                    nearCam = (transform.position - GameCamera.instance.transform.position).sqrMagnitude < 3.5f * 3.5f;
+                SetRendering(!away && !LimitHidden && !nearCam);
                 UpdateAnimation();
             }
             catch (Exception ex)
@@ -1333,6 +1337,20 @@ namespace Deadheim
             {
                 _orbit += dt * 0.9f;
                 anchor = ownerPos + new Vector3(Mathf.Cos(_orbit), 0f, Mathf.Sin(_orbit)) * 2.4f;
+            }
+            // Câmera em terceira pessoa: a ave nunca fica entre a câmera e o dono (nem em volta dele do lado
+            // da câmera), senão cruza a mira/flecha do jogador. Empurra o ponto para pelo menos 1 m além do dono,
+            // contado no eixo da câmera (contínuo, sem tremer).
+            if (_target == Player.m_localPlayer && GameCamera.instance != null)
+            {
+                Vector3 toCam = GameCamera.instance.transform.position - ownerPos; toCam.y = 0f;
+                if (toCam.sqrMagnitude > 0.01f)
+                {
+                    toCam.Normalize();
+                    Vector3 off = anchor - ownerPos; off.y = 0f;
+                    float along = Vector3.Dot(off, toCam);
+                    if (along > -1f) anchor -= toCam * (along + 1f);
+                }
             }
             anchor = ClipToOwner(ownerPos, anchor);
 

@@ -52,7 +52,7 @@ namespace Deadheim.Troca
             ["voce_ocupado"] = "Voce ja esta numa troca.",
             ["alvo_ocupado"] = "Esse jogador ja esta numa troca.",
             ["sem_pedido"] = "Nao ha pedido de troca para voce.",
-            ["sem_sessao"] = "Nao ha troca aberta.",
+            ["sem_sessao"] = L.T("trocamsg.nao_ha"),
             ["item_invalido"] = "Item invalido para troca.",
             ["nao_permitido"] = "A troca e so de moedas.",
             ["cheio"] = "A oferta esta cheia.",
@@ -240,7 +240,7 @@ namespace Deadheim.Troca
             }
 
             Drenar();
-            if (erro != null && Erros.TryGetValue(erro, out string texto)) Pvp.PvpNet.Message(real, texto);
+            if (erro != null && Erros.TryGetValue(erro, out string texto)) Pvp.PvpNet.Message(real, erro == "bolsa" ? L.Net("trocaerr.e_bolsa", MaxPilhas) : L.Net("trocaerr.e_" + erro));
             // Oferta recusada: o cliente solta a quantidade que tinha reservado para ela.
             if (erro != null && op == "oferecer" && !string.IsNullOrEmpty(_ofertaLida) && ZRoutedRpc.instance != null)
                 ZRoutedRpc.instance.InvokeRoutedRPC(real, ToClient, Pacote("recusada", p => p.Write(_ofertaLida)));
@@ -528,7 +528,7 @@ namespace Deadheim.Troca
         }
 
         internal static string Rotulo(TrocaItem item)
-            => item.Qtd + "x " + NomeVisivel(item.Nome) + (item.Qualidade > 1 ? "  (nv " + item.Qualidade + ")" : "");
+            => item.Qtd + "x " + NomeVisivel(item.Nome) + (item.Qualidade > 1 ? L.T("trocamsg.nv", item.Qualidade) : "");
 
         private static void Enviar(ZPackage p)
         {
@@ -557,15 +557,15 @@ namespace Deadheim.Troca
         /// </summary>
         internal static string Oferecer(string nome, int qualidade, int qtd)
         {
-            if (Atual == null) return "Nao ha troca aberta.";
-            if (Atual.Minha.Count + _aOferecer.Count >= TrocaMotor.MaxItens) return "A oferta esta cheia.";
-            if (nome != Moedas.Prefab) return "A troca e so de moedas.";
+            if (Atual == null) return L.T("trocamsg.nao_ha");
+            if (Atual.Minha.Count + _aOferecer.Count >= TrocaMotor.MaxItens) return L.T("trocamsg.cheia");
+            if (nome != Moedas.Prefab) return L.T("trocamsg.so_moedas");
             ItemDrop.ItemData.SharedData sh = Prefab(nome);
-            if (sh == null) return "Esse item nao pode ser trocado.";
-            if (qtd <= 0) return "Quantidade invalida.";
-            if (qtd > MaxQtd(sh)) return "No maximo " + MaxQtd(sh) + " por vez.";
+            if (sh == null) return L.T("trocamsg.nao_troca");
+            if (qtd <= 0) return L.T("trocamsg.qtd_inv");
+            if (qtd > MaxQtd(sh)) return L.T("trocamsg.no_max", MaxQtd(sh));
             int tem = Disponivel(nome, qualidade);
-            if (qtd > tem) return "Voce so tem " + tem + "x " + NomeVisivel(nome) + " para oferecer.";
+            if (qtd > tem) return L.T("trocamsg.so_tem", tem, NomeVisivel(nome));
 
             string id = Guid.NewGuid().ToString("N");
             _aOferecer[id] = new TrocaItem { Id = id, Nome = nome, Qualidade = qualidade, Qtd = qtd };
@@ -677,8 +677,8 @@ namespace Deadheim.Troca
                     // ainda esta no inventario, devolver de novo duplicaria.
                     if (devolucao && !saiu.Contains(itemId)) continue;
                     int noChao = Entrega.ParaJogador(player, item.Nome, item.Qtd, item.Qualidade);
-                    player.Message(MessageHud.MessageType.TopLeft, (devolucao ? "Troca, devolvido: " : "Troca, recebido: ") + Rotulo(item));
-                    if (noChao > 0) player.Message(MessageHud.MessageType.Center, $"Inventario cheio: {noChao}x {NomeVisivel(item.Nome)} caiu no chao.");
+                    player.Message(MessageHud.MessageType.TopLeft, (devolucao ? L.T("trocamsg.devolvido") : L.T("trocamsg.recebido")) + Rotulo(item));
+                    if (noChao > 0) player.Message(MessageHud.MessageType.Center, L.T("trocamsg.inv_cheio", noChao, NomeVisivel(item.Nome)));
                 }
                 _entregasFeitas.Add(id);
                 Anotar(player, ChaveFeitas, id.ToString());
@@ -745,8 +745,8 @@ namespace Deadheim.Troca
                     {
                         Player eu = Player.m_localPlayer;
                         if (eu == null || ZRoutedRpc.instance == null) return;
-                        if (!Ativo.Value) { args.Context.AddString("A troca esta desligada neste servidor."); return; }
-                        if (Atual != null) { args.Context.AddString("Voce ja esta numa troca."); return; }
+                        if (!Ativo.Value) { args.Context.AddString(L.T("trocamsg.desligada")); return; }
+                        if (Atual != null) { args.Context.AddString(L.T("trocamsg.ja_troca")); return; }
 
                         string nome = args.Length >= 2 ? string.Join(" ", args.Args, 1, args.Length - 1).Trim() : null;
                         if (string.IsNullOrEmpty(nome))

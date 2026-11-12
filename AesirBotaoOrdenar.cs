@@ -85,7 +85,7 @@ namespace Deadheim
             // Sem o texto do botao copiado: so o icone.
             foreach (var texto in go.GetComponentsInChildren<TMPro.TMP_Text>(true)) UnityEngine.Object.Destroy(texto.gameObject);
             foreach (var texto in go.GetComponentsInChildren<Text>(true)) UnityEngine.Object.Destroy(texto.gameObject);
-            DicaDoJogo(go, "Ordenar o baú por nome (Alt+O)");
+            DicaDoJogo(go, L.T("aesirmsg.b_ordenar"));
 
             var rtBotao = (RectTransform)go.transform;
             rtBotao.anchorMin = rtBotao.anchorMax = new Vector2(0.5f, 0.5f);

@@ -193,10 +193,10 @@ namespace Deadheim.Wards
                 float fuel = WardCore.GetFuel(__instance);
                 StringBuilder text = new StringBuilder(__result ?? string.Empty);
                 if (WardProfiles.IsTerritoryWard(__instance.gameObject)) text.Append(TerritoryStatus(__instance));
-                text.Append("\nCombustivel: " + Math.Round(fuel, 2) + "/" + Mathf.FloorToInt(WardCore.MaxFuel));
+                text.Append(L.T("ward.combustivel", Math.Round(fuel, 2), Mathf.FloorToInt(WardCore.MaxFuel)));
                 text.Append(fuel <= 0f
-                    ? " <color=#ff6b5a>(desligado)</color>"
-                    : "\n[Use " + WardProfiles.FuelItem.Value + " para abastecer]");
+                    ? " <color=#ff6b5a>" + L.T("ward.desligado") + "</color>"
+                    : L.T("ward.abastecer", WardProfiles.FuelItem.Value));
                 __result = text.ToString();
             }
 
@@ -207,9 +207,9 @@ namespace Deadheim.Wards
 
                 double left = WardCore.TerritoryActivationLeft(area);
                 string state = left > 0d
-                    ? "<color=yellow>ativa em " + Mathf.CeilToInt((float)(left / 60d)) + " min</color> (ate la, ward comum)"
-                    : "<color=#7CFC00>indestrutivel</color>";
-                return "\nTerritorio: " + state + "\nSo o dono remove";
+                    ? L.T("ward.ativa_em", Mathf.CeilToInt((float)(left / 60d)))
+                    : L.T("ward.indestrutivel");
+                return L.T("ward.territorio", state);
             }
         }
 
@@ -301,7 +301,7 @@ namespace Deadheim.Wards
                     if (WardCore.HasWardTooClose(pos, __instance, out PrivateArea blocking))
                     {
                         blocking.FlashShield(false);
-                        __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Muito perto de outro ward", "Afaste-se da base de outro jogador para colocar o seu."));
+                        __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("ward.perto_t"), L.T("ward.perto_d")));
                         return false;
                     }
 
@@ -317,12 +317,12 @@ namespace Deadheim.Wards
                             if (Plugin.PlayerSafeAreaWardCount >= 999)
                             {
                                 WardCore.RequestWardCount();
-                                __instance.Message(MessageHud.MessageType.Center, Avisos.Info("Conferindo suas wards", "Tente de novo em instantes."));
+                                __instance.Message(MessageHud.MessageType.Center, Avisos.Info(L.T("ward.conferindo"), L.T("ward.tente")));
                                 return false;
                             }
                             if (Plugin.PlayerSafeAreaWardCount >= 1)
                             {
-                                __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Ward da area segura em uso", "So uma por jogador. Remova a antiga primeiro."));
+                                __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("ward.seguro_t"), L.T("ward.seguro_d")));
                                 return false;
                             }
                             ConstrucaoBarrada.AoColocar(() => Plugin.PlayerSafeAreaWardCount++);
@@ -332,7 +332,7 @@ namespace Deadheim.Wards
                         int limit = WardCore.GetWardLimit();
                         if (limit > 0 && Plugin.PlayerWardCount < 999 && Plugin.PlayerWardCount >= limit)
                         {
-                            __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Limite de wards atingido (" + limit + ")", "Remova uma ward para colocar outra."));
+                            __instance.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("ward.limite_t", limit), L.T("ward.limite_d")));
                             return false;
                         }
                         // Conta ja, como a de Territorio: sem isto a segunda ward nos 10 s ate a recontagem passava.
@@ -388,15 +388,15 @@ namespace Deadheim.Wards
             if (Plugin.PlayerTerritoryWardCount >= 999)
             {
                 WardCore.RequestWardCount();
-                player.Message(MessageHud.MessageType.Center, Avisos.Info("Conferindo suas wards", "Tente de novo em instantes."));
+                player.Message(MessageHud.MessageType.Center, Avisos.Info(L.T("ward.conferindo"), L.T("ward.tente")));
                 return false;
             }
 
             if (Plugin.PlayerTerritoryWardCount >= limit)
             {
                 player.Message(MessageHud.MessageType.Center,
-                    limit == 1 ? Avisos.Bloqueio("Voce ja tem uma Ward de Territorio", "Remova a antiga primeiro.")
-                               : Avisos.Bloqueio("Limite de Territorios atingido (" + limit + ")", "Remova um para colocar outro."));
+                    limit == 1 ? Avisos.Bloqueio(L.T("ward.ja_terr"), L.T("ward.remova_antiga"))
+                               : Avisos.Bloqueio(L.T("ward.limite_terr", limit), L.T("ward.remova_um")));
                 return false;
             }
 
@@ -441,7 +441,7 @@ namespace Deadheim.Wards
                     if (Admin.LocalPlayerIsAdmin()) return true;
 
                     if (!WardCore.IsBlocked(__instance.transform.position, Player.m_localPlayer,
-                            Avisos.Bloqueio("Terreno protegido", "Esta area pertence a um ward."))) return true;
+                            Avisos.Bloqueio(L.T("ward.terreno_t"), L.T("ward.area_ward")))) return true;
 
                     UnityEngine.Object.Destroy(__instance.gameObject);
                     return false;
@@ -471,7 +471,7 @@ namespace Deadheim.Wards
                     if (Admin.LocalPlayerIsAdmin()) return true;
 
                     if (!WardCore.IsBlocked(__instance.transform.position, Player.m_localPlayer,
-                            Avisos.Bloqueio("Protegido por um ward", "Voce nao tem acesso a este suporte de item."))) return true;
+                            Avisos.Bloqueio(L.T("ward.prot_t"), L.T("ward.sem_stand")))) return true;
 
                     __result = true;
                     return false;
@@ -497,7 +497,7 @@ namespace Deadheim.Wards
                     if (Admin.LocalPlayerIsAdmin()) return true;
 
                     return !WardCore.IsBlocked(__instance.transform.position, Player.m_localPlayer,
-                        Avisos.Bloqueio("Portal protegido", "Voce nao tem acesso a este portal."));
+                        Avisos.Bloqueio(L.T("ward.portal_t"), L.T("ward.sem_portal")));
                 }
                 catch (Exception ex)
                 {
@@ -520,7 +520,7 @@ namespace Deadheim.Wards
                     if (Admin.LocalPlayerIsAdmin()) return true;
 
                     return !WardCore.IsBlocked(__instance.transform.position, character as Player,
-                        Avisos.Bloqueio("Plantacao protegida", "Esta area pertence a um ward."));
+                        Avisos.Bloqueio(L.T("ward.plant_t"), L.T("ward.area_ward")));
                 }
                 catch (Exception ex)
                 {
@@ -544,7 +544,7 @@ namespace Deadheim.Wards
                     {
                         if (!WardProfiles.ProtectPlants.Value) return true;
                         return !WardCore.IsBlocked(__instance.transform.position, hit.GetAttacker() as Player,
-                            Avisos.Bloqueio("Plantacao protegida", "Esta area pertence a um ward."));
+                            Avisos.Bloqueio(L.T("ward.plant_t"), L.T("ward.area_ward")));
                     }
 
                     // Pedra pequena, toco, arbusto: Destructible que nao e peca construida.
@@ -581,7 +581,7 @@ namespace Deadheim.Wards
             if (limit > 0f && Utils.DistanceXZ(point, ward.transform.position) > limit) return false;
 
             ward.FlashShield(false);
-            attacker.Message(MessageHud.MessageType.Center, Avisos.Bloqueio("Natureza protegida", "Pedras e arvores desta base estao sob um ward."));
+            attacker.Message(MessageHud.MessageType.Center, Avisos.Bloqueio(L.T("ward.natureza_t"), L.T("ward.natureza_d")));
             return true;
         }
 

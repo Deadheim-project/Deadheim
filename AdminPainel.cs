@@ -229,7 +229,7 @@ namespace Deadheim
                         // Mandado pelo servidor: o PvpPatches (AdminTeleportPatch) deixa passar mesmo cacado ou em combate.
                         ZRoutedRpc.instance.InvokeRoutedRPC(alvo.m_uid, alvo.m_characterID, "RPC_TeleportTo",
                             destino, Quaternion.identity, true);
-                        Pvp.PvpNet.Message(alvo.m_uid, $"Voce foi puxado pelo admin {adminNome}.");
+                        Pvp.PvpNet.Message(alvo.m_uid, L.Net("ward.puxado", adminNome));
                         Responder(real, $"{alvo.m_playerName} esta vindo ate voce.");
                         Debug.Log($"[Deadheim] Admin: {adminNome} puxou {alvo.m_playerName}.");
                         return;
@@ -335,7 +335,7 @@ namespace Deadheim
                         player.Heal(player.GetMaxHealth(), true);
                         player.AddStamina(player.GetMaxStamina());
                         player.AddEitr(player.GetMaxEitr());
-                        player.Message(MessageHud.MessageType.TopLeft, $"O admin {adminNome} curou voce.");
+                        player.Message(MessageHud.MessageType.TopLeft, L.T("ward.curou", adminNome));
                         return;
                     }
                 }

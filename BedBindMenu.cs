@@ -45,7 +45,7 @@ namespace Deadheim
         private void OnGUI()
         {
             if (!_aberta || Player.m_localPlayer == null) return;
-            _rect = GUILayout.Window(0xD31, _rect, Desenhar, "Definir ponto nesta cama");
+            _rect = GUILayout.Window(0xD31, _rect, Desenhar, L.T("misc.titulo"));
             Event e = Event.current;
             if (e != null && e.isMouse && _rect.Contains(e.mousePosition)) e.Use();
         }
@@ -55,11 +55,11 @@ namespace Deadheim
             bool vip = VipList.VipListApi.IsLocalPlayerVip();
             bool dois = AesirConfig.Aesir18DoisPontos != null && AesirConfig.Aesir18DoisPontos.Value;
             Linha(0, "Hearthstone", true, "");
-            Linha(1, "Retreat 1", vip, "so Aesir");
-            Linha(2, "Retreat 2", vip && dois, vip ? "desligado neste servidor" : "so Aesir");
+            Linha(1, "Retreat 1", vip, L.T("misc.so_aesir_l"));
+            Linha(2, "Retreat 2", vip && dois, vip ? L.T("misc.desl_srv_l") : L.T("misc.so_aesir_l"));
             GUILayout.Space(4f);
             if (_ultimo.Length > 0) GUILayout.Label("<color=#7CFC00>" + _ultimo + "</color>");
-            if (GUILayout.Button("Fechar")) _aberta = false;
+            if (GUILayout.Button(L.T("misc.fechar"))) _aberta = false;
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 20f));
         }
 
@@ -67,15 +67,15 @@ namespace Deadheim
         {
             Vector3 atual = Retreat.GetHearthStonePosition(ponto);
             string estado = !disponivel ? motivo
-                : atual == Vector3.zero ? "não definido"
-                : $"definido ({atual.x:0}, {atual.z:0})";
+                : atual == Vector3.zero ? L.T("misc.nao_def")
+                : L.T("misc.definido_pos", atual.x.ToString("0"), atual.z.ToString("0"));
             GUILayout.BeginHorizontal();
             GUILayout.Label($"<b>{nome}</b>: {estado}", GUILayout.Width(250f));
             GUI.enabled = disponivel;
-            if (GUILayout.Button(atual == Vector3.zero ? "Definir aqui" : "Redefinir"))
+            if (GUILayout.Button(atual == Vector3.zero ? L.T("misc.definir_aqui") : L.T("misc.redefinir")))
             {
                 Retreat.SetHearthStonePosition(ponto);
-                _ultimo = nome + " definido nesta cama";
+                _ultimo = L.T("misc.definido_cama", nome);
                 Player.m_localPlayer.Message(MessageHud.MessageType.Center, _ultimo, 0, null);
                 if (ponto != 0) AesirLog.D(18, "gravou o ponto " + ponto + " de retreat (menu da cama).");
             }

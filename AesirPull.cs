@@ -259,7 +259,7 @@ namespace Deadheim
             fireView.InvokeRPC("RPC_AddFuelAmount", (float)take);
             AesirLog.D(10, "fogueira " + nomeFogo + ": puxou " + take + "x " + fuelName + " do bau " + Utils.GetPrefabName(chest.gameObject) + ".");
             local.Message(MessageHud.MessageType.TopLeft,
-                $"Aesir: {take}x {Localization.instance.Localize(fuelName)} do bau para a fogueira.");
+                L.T("pull.fogueira", take, Localization.instance.Localize(fuelName)));
         }
 
         /// <summary>O combustivel do prefab; AllowedFuel sobrescreve quando configurado.</summary>
@@ -346,7 +346,7 @@ namespace Deadheim
                 humanoid.m_consumeItemEffects.Create(ai.transform.position, Quaternion.identity);
 
             local.Message(MessageHud.MessageType.TopLeft,
-                $"Aesir: {Localization.instance.Localize(food)} do bau para {tameable.GetHoverName()}.");
+                L.T("pull.bicho", Localization.instance.Localize(food), tameable.GetHoverName()));
         }
 
         private static string FoodName(MonsterAI ai)
