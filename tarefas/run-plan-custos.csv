@@ -1,0 +1,6 @@
+﻿data;secao;modelo;status;turnos;custo_usd;tokens_entrada;tokens_cache_lidos;tokens_cache_criados;tokens_saida
+2026-11-04T05:38:36;### 1.6 Travadas ao abrir o TAB / menu de pets que não responde (Deadheim);padrao;success;19;0.1848422;28;282702;22469;6664
+2026-11-04T05:42:16;## Fase 2 — Cooldowns como buffs (Deadheim);sonnet;success;40;0.4197942;48;874182;47505;14226
+2026-11-04T05:45:40;## Fase 3 — Binds e cama (Deadheim);sonnet;success;33;0.4546035;58;1037535;45911;16709
+2026-11-04T05:47:25;## Fase 4 — Pets: tecla de Spawn/Despawn (Deadheim);sonnet;success;22;0.2674632;30;427452;34282;8753
+2026-11-04T05:50:55;## Fase 5 — Recompensas da arena balanceada (npc-valheim);sonnet;success;49;0.6542875;60;1478255;69713;22749

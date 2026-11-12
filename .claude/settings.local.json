@@ -9,7 +9,12 @@
       "Bash(powershell -File D:/deadheim-deploy/bin/restart-server.ps1:*)",
       "PowerShell(powershell -File D:\\deadheim-deploy\\bin\\restart-server.ps1:*)",
       "Bash(git -C D:/deadheim-launcher push:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cd /d/deadheim/npc-valheim/NpcValheim && ls Arena; wc -l Arena/*.cs; grep -n \"ArenaResult\\\\|Ended\\\\|IsVip\\\\|SenderIsVip\" Arena/*.cs | head -50; ls /d/valheim-ref | head)",
+      "Bash(cd /d/deadheim/npc-valheim && grep -rn \"SenderIsVip\" --include=*.cs . | head -5; sed -n 379,401p NpcValheim/Arena/ArenaServer.cs; grep -n \"Send\\(long\" -A12 NpcValheim/Arena/ArenaServer.cs | head -30; grep -n \"Skirmish\" NpcValheim/Arena/ArenaConfig.cs | head; grep -n \"IArenaHost\" -A12 tools/checks/arena/Program.cs | head -30)",
+      "Bash(cd /d/deadheim/npc-valheim/NpcValheim/Arena && sed -n 78,92p ArenaConfig.cs; sed -n 222,240p ArenaConfig.cs; grep -n \"Skirmish\" ArenaTuning.cs ../../tools/checks/arena/Program.cs | head; sed -n 36,60p ../../tools/checks/arena/Program.cs; sed -n 100,130p ArenaClient.cs; grep -n \"Player.m_localPlayer\\\\|GetPlayerID\" ArenaClient.cs | head -5; ls /d/valheim-ref/valheim_Data/Managed | grep -i \"assembly_valheim\\\\|publ\")",
+      "Bash(python -)",
+      "Bash(ls && ls *.cs | head -80 && grep -rn \"IsRaidEnabledHere\\\\|class PvpState\" --include=*.cs . | head -8; ls /d/valheim-ref | head; ls tarefas | head -30)"
     ]
   }
 }
