@@ -68,6 +68,18 @@ namespace Deadheim
                 "Pet: Seagull");
             L.Add("item.pet_gaivota_d", "Use para invocar ou guardar sua gaivota. Item permanente e negociável.",
                 "Use to summon or put away your seagull. Permanent, tradeable item.");
+            L.Add("item.pet_foca_n", "Pet: Foca",
+                "Pet: Seal");
+            L.Add("item.pet_foca_d", "Use para invocar ou guardar sua foca. Item permanente e negociável.",
+                "Use to summon or put away your seal. Permanent, tradeable item.");
+            L.Add("item.pet_ursinho_n", "Pet: Ursinho",
+                "Pet: Bear Cub");
+            L.Add("item.pet_ursinho_d", "Use para invocar ou guardar seu ursinho. Item permanente e negociável.",
+                "Use to summon or put away your bear cub. Permanent, tradeable item.");
+            L.Add("item.pet_veado_n", "Pet: Veado",
+                "Pet: Deer");
+            L.Add("item.pet_veado_d", "Use para invocar ou guardar seu veado. Item permanente e negociável.",
+                "Use to summon or put away your deer. Permanent, tradeable item.");
             L.Add("item.montaria_neck_n", "Montaria: Neck", "Mount: Neck");
             L.Add("item.montaria_deer_n", "Montaria: Deer", "Mount: Deer");
             L.Add("item.montaria_boar_n", "Montaria: Boar", "Mount: Boar");

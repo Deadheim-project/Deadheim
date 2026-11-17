@@ -33,7 +33,10 @@ namespace Deadheim
                 "wolf_cub=Wolf:1," +
                 "lox_cub=Lox:1," +
                 "corvo=Fenring:0.5," +
-                "gaivota=Serpent:1",
+                "gaivota=Serpent:1," +
+                "foca=Seal:1.5," +
+                "ursinho=Bjorn:1," +
+                "veado=Deer:1",
                 new ConfigDescription("Tabela de drops. Formato: petId=Monstro:chance%;Monstro:chance%, separados por virgula. " +
                                       "Chance em porcentagem (0 a 100). Pet sem entrada ou vazio = nao cai.")));
             DropTable.SettingChanged += (s, e) => Load();

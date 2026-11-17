@@ -276,9 +276,9 @@ namespace Deadheim.Pvp
             PvpBounty.OnDeath(victim, killerId, killerName, arena, death.Cause);
 
             if (killerId == 0L)
-                DiscordLog.Death($"**{victim.Name}** morreu ({death.Cause}) em X:{position.x:F0} Z:{position.z:F0}.");
+                DiscordLog.Death($"**{victim.Name}** morreu ({death.Cause}).");
             else if (!PvpConfig.KillFeed.Value)
-                DiscordLog.Pvp($"**{killerName}** matou **{victim.Name}**{(arena ? L.Net("pvpserver.na_arena") : castle != null ? " no castelo " + castle : string.Empty)} em X:{position.x:F0} Z:{position.z:F0}.");
+                DiscordLog.Pvp($"**{killerName}** matou **{victim.Name}**{(arena ? L.Net("pvpserver.na_arena") : castle != null ? " no castelo " + castle : string.Empty)}.");
 
             // A marca sai morto por jogador. Morte PvE so tira o PK comum com PkClearsOnPveDeath: senao
             // o PK morreria de proposito em casa para ficar limpo. O permanente so sai morto por jogador.

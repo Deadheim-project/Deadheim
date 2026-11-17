@@ -13,11 +13,14 @@ namespace Deadheim
     public static class AdminImortal
     {
         public static ConfigEntry<bool> Ligado;
+        public static ConfigEntry<bool> MantemLoot;
 
         public static void Bind(ConfigFile config)
         {
             Ligado = Plugin.Synced(config.Bind("Server config", "AdminsImortais", true,
                 new ConfigDescription("Admins (adminlist.txt) nao tomam dano nem morrem na borda do mundo.")));
+            MantemLoot = Plugin.Synced(config.Bind("Server config", "AdminsMantemLoot", true,
+                new ConfigDescription("Admins (adminlist.txt) que morrem nao perdem itens (sem tumba) nem skills.")));
         }
 
         private static bool Imortal(Character character) =>
@@ -36,6 +39,25 @@ namespace Deadheim
         {
             [HarmonyPriority(Priority.First)]
             private static bool Prefix(Player __instance) => !Imortal(__instance);
+        }
+
+        private static bool MantemItens(Player p) =>
+            MantemLoot != null && MantemLoot.Value && p != null
+            && p == Player.m_localPlayer && Admin.LocalPlayerIsAdmin();
+
+        // Sem tumba: o inventario inteiro (e o equipado) fica com o admin.
+        [HarmonyPatch(typeof(Player), "CreateTombStone")]
+        private static class SemTumba
+        {
+            [HarmonyPriority(Priority.First)]
+            private static bool Prefix(Player __instance) => !MantemItens(__instance);
+        }
+
+        [HarmonyPatch(typeof(Skills), nameof(Skills.OnDeath))]
+        private static class SemPerdaDeSkill
+        {
+            [HarmonyPriority(Priority.First)]
+            private static bool Prefix(Skills __instance) => !MantemItens(__instance.m_player);
         }
     }
 }

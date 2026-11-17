@@ -95,6 +95,7 @@ namespace Deadheim
             public float WalkSpeed;     // lido de Character.m_walkSpeed antes de Strip
             public float RunSpeed;      // lido de Character.m_runSpeed antes de Strip
             public bool Flying;         // prefab com RandomFlyingBird (corvo): voa em vez de andar
+            public bool White;          // clareia o modelo (gaivota = Crow branco: o jogo nao tem prefab de gaivota)
         }
 
         internal static void BindConfigs(ConfigFile config)
@@ -120,7 +121,10 @@ namespace Deadheim
                 "wolf_cub=Wolf_cub;1;item;forward_speed;sleeping," +
                 "lox_cub=Lox_Calf;0.8;item;forward_speed;," +
                 "corvo=Crow;1;item;forward_speed;," +
-                "gaivota=Seagull;1;item;forward_speed;",
+                "gaivota=Seagull;1;item;forward_speed;," +
+                "foca=Seal_Pup;1;item;forward_speed;," +
+                "ursinho=Bjorn;0.3;item;forward_speed;," +
+                "veado=Deer;0.7;item;forward_speed;",
                 new ConfigDescription("Catálogo de pets. Formato: id=prefab;escala;origem;speedParam;sitParam (separados por vírgula). speedParam=forward_speed, sitParam=sleeping ou vazio.")));
             PetCatalog.SettingChanged += (s, e) => LoadCatalog();
 
@@ -177,6 +181,11 @@ namespace Deadheim
                     string sitParam = parts.Length > 4 ? parts[4].Trim() : "";
                     if (sitParam == "null") sitParam = "";
 
+                    // O Valheim nao tem prefab "Seagull" no ZNetScene (so sfx/vfx de gaivota): usa o Crow, clareado.
+                    // Vale tambem para a cfg antiga do servidor (gaivota=Seagull;...), que sobrescreve o padrao.
+                    bool white = string.Equals(prefab, "Seagull", StringComparison.OrdinalIgnoreCase);
+                    if (white) prefab = "Crow";
+
                     if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(prefab))
                     {
                         Debug.LogWarning($"[Deadheim Pets] Entrada do catálogo ignorada (id ou prefab vazio): '{entry.Trim()}'.");
@@ -187,6 +196,7 @@ namespace Deadheim
                     {
                         Id = id,
                         PrefabName = prefab,
+                        White = white,
                         Scale = scale,
                         Origin = origin,
                         SpeedParam = speedParam,
@@ -956,7 +966,85 @@ namespace Deadheim
             template.SetActive(false);
             template.transform.localScale = Vector3.one * def.Scale;
             StripGameComponents(template);
+            if (def.White) WhitenModel(template);
             return template;
+        }
+
+        private static Texture2D _whiteTex;
+
+        private const string SeagullAsset = "assets/characters/animals/birds/crow/model/seagull_d.png";
+
+        /// <summary>
+        /// A seagull_d fica no bundle SoftRef do jogo (junto do Crow, da Seal e do Bjorn), que o Valheim
+        /// carrega sob demanda. Procura nos bundles ja carregados e, se o bundle ainda nao subiu, abre o
+        /// arquivo so para ler essa textura (Unload(false) mantem a textura viva).
+        /// </summary>
+        private static Texture2D LoadSeagullFromBundle()
+        {
+            try
+            {
+                foreach (AssetBundle b in AssetBundle.GetAllLoadedAssetBundles())
+                {
+                    if (b == null) continue;
+                    foreach (string n in b.GetAllAssetNames())
+                    {
+                        if (!string.Equals(n, SeagullAsset, StringComparison.OrdinalIgnoreCase)) continue;
+                        Texture2D tex = b.LoadAsset<Texture2D>(n);
+                        if (tex != null) return tex;
+                    }
+                }
+
+                string dir = System.IO.Path.Combine(Application.streamingAssetsPath, "SoftRef", "Bundles");
+                string path = System.IO.Path.Combine(dir, "c4210710");
+                if (!System.IO.File.Exists(path)) return null;
+                AssetBundle opened = AssetBundle.LoadFromFile(path);
+                if (opened == null) return null; // ja carregado pelo jogo sem aparecer na lista
+                try
+                {
+                    foreach (string n in opened.GetAllAssetNames())
+                        if (string.Equals(n, SeagullAsset, StringComparison.OrdinalIgnoreCase))
+                            return opened.LoadAsset<Texture2D>(n);
+                }
+                finally { opened.Unload(false); }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[Deadheim Pets] seagull_d indisponível no bundle: " + ex.Message);
+            }
+            return null;
+        }
+
+        /// <summary>Gaivota: o Crow com a textura branca (a seagull_d do jogo, se estiver carregada; senao lisa).</summary>
+        private static void WhitenModel(GameObject model)
+        {
+            if (_whiteTex == null)
+            {
+                foreach (Texture2D t in Resources.FindObjectsOfTypeAll<Texture2D>())
+                {
+                    if (t != null && t.name == "seagull_d") { _whiteTex = t; break; }
+                }
+                if (_whiteTex == null) _whiteTex = LoadSeagullFromBundle();
+                if (_whiteTex == null)
+                {
+                    _whiteTex = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+                    Color[] px = new Color[16];
+                    for (int i = 0; i < px.Length; i++) px[i] = new Color(0.93f, 0.94f, 0.95f, 1f);
+                    _whiteTex.SetPixels(px);
+                    _whiteTex.Apply();
+                }
+            }
+            foreach (Renderer r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                Material[] mats = r.materials; // copias: nao mexe no material do Crow original
+                foreach (Material m in mats)
+                {
+                    if (m == null) continue;
+                    if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", _whiteTex);
+                    if (m.HasProperty("_Color")) m.SetColor("_Color", Color.white);
+                    if (m.HasProperty("_BumpMap")) m.SetTexture("_BumpMap", null);
+                }
+                r.materials = mats;
+            }
         }
 
         private static bool IsUnityType(Type t)

@@ -91,6 +91,10 @@
       <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
           <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.AssetBundleModule.dll</HintPath>
+          <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
       <HintPath>$(ValheimManaged)\UnityEngine.ImageConversionModule.dll</HintPath>
           <Private>false</Private>
@@ -153,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdminImortal.cs" />
+    <Compile Include="AdminSemNevoa.cs" />
     <Compile Include="BedBindMenu.cs" />
     <Compile Include="AdminPainel.cs" />
     <Compile Include="ConstrucaoBarrada.cs" />
@@ -330,6 +335,9 @@
     <EmbeddedResource Include="assets\pet-lox_cub.png" />
     <EmbeddedResource Include="assets\pet-corvo.png" />
     <EmbeddedResource Include="assets\pet-gaivota.png" />
+    <EmbeddedResource Include="assets\pet-foca.png" />
+    <EmbeddedResource Include="assets\pet-ursinho.png" />
+    <EmbeddedResource Include="assets\pet-veado.png" />
     <EmbeddedResource Include="assets\fichafundador.png" />
     <EmbeddedResource Include="assets\fichahalloween.png" />
     <EmbeddedResource Include="assets\fichatemporada.png" />
